@@ -1,0 +1,22 @@
+{
+  "name": "nero-rome-reader",
+  "version": "0.21.0",
+  "private": true,
+  "description": "3D Roman sandbox reader for the novel 《尼禄重工纪元》 (Rome, Antium, Ostia, AD 54–68)",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "build:test": "node tools/build.mjs --test",
+    "check": "node tools/build.mjs && node tools/check.mjs",
+    "serve": "npx --yes http-server dist -p 8080 -c-1",
+    "test:boot": "node tools/test/boot.mjs",
+    "test:shot": "node tools/test/shot.mjs"
+  },
+  "devDependencies": {
+    "three": "0.147.0",
+    "puppeteer": "^23.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "order": [
+    "src/core/renderer.js",
+    "src/core/materials.js",
+    "src/world/builders.js",
+    "src/world/terrain-roads.js",
+    "src/world/lots.js",
+    "src/scenes/rome/monuments.js",
+    "src/scenes/rome/layers.js",
+    "src/scenes/antium/terrain.js",
+    "src/scenes/antium/fortress.js",
+    "src/scenes/antium/islet.js",
+    "src/scenes/antium/harbour.js",
+    "src/scenes/antium/main.js",
+    "src/ui/app.js",
+    "src/ui/empire.js"
+  ],
+  "shell": "src/shell.html",
+  "data": {
+    "/*__DMAP__*/null": "data/dmap.json",
+    "/*__EMPIRE__*/null": "data/empire.json"
+  },
+  "glb": [
+    [
+      "JOM_GLB",
+      "assets/models/jupiter.glb"
+    ],
+    [
+      "DT_GLB",
+      "assets/models/tiberiana.glb"
+    ],
+    [
+      "CU_GLB",
+      "assets/models/curia.glb"
+    ]
+  ],
+  "three": {
+    "cdn": "https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js",
+    "cdnGltf": "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"
+  }
+}
