@@ -1,0 +1,92 @@
+{
+  "order": [
+    "src/core/renderer.js",
+    "src/core/materials.js",
+    "src/world/builders.js",
+    "src/world/terrain-roads.js",
+    "src/world/lots.js",
+    "src/world/streets.js",
+    "src/scenes/rome/monuments.js",
+    "src/scenes/rome/palrock.js",
+    "src/scenes/rome/palatine.js",
+    "src/scenes/rome/layers.js",
+    "src/scenes/rome/assets.js",
+    "src/scenes/antium/terrain.js",
+    "src/scenes/antium/fortress.js",
+    "src/scenes/antium/islet.js",
+    "src/scenes/antium/harbour.js",
+    "src/scenes/antium/main.js",
+    "src/ui/book.js",
+    "src/ui/app.js",
+    "src/ui/empire.js"
+  ],
+  "shell": "src/shell.html",
+  "data": {
+    "/*__DMAP__*/null": "data/dmap.json",
+    "/*__EMPIRE__*/null": "data/empire.json"
+  },
+  "glb": [
+    [
+      "JOM_GLB",
+      "assets/models/jupiter.glb"
+    ],
+    [
+      "DT_GLB",
+      "assets/models/tiberiana.glb"
+    ],
+    [
+      "CU_GLB",
+      "assets/models/curia.glb"
+    ]
+  ],
+  "three": {
+    "cdn": "https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js",
+    "cdnGltf": "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"
+  },
+  "lazy": [
+    {
+      "file": "antium-assets.js",
+      "var": "ANT_GLB",
+      "cb": "antAssetsLoaded",
+      "dir": "assets/models/antium"
+    },
+    {
+      "file": "rome-assets.js",
+      "var": "ROME_GLB",
+      "cb": "romeAssetsLoaded",
+      "dir": "assets/models/rome"
+    }
+  ],
+  "book": {
+    "src": "data/book.txt",
+    "out": "book.js",
+    "title": "尼禄重工纪元",
+    "author": "半海潮",
+    "intro": "作为理工博士的我穿越了。是罗马。罗马啊……尼禄，你和罗马就等着享福吧！",
+    "tags": [
+      "纯爱历史",
+      "穿越",
+      "工业",
+      "罗马"
+    ],
+    "vols": [
+      [
+        "卷一 缘起",
+        1,
+        12
+      ],
+      [
+        "卷二 风起",
+        13,
+        31
+      ],
+      [
+        "卷三 在劫",
+        32,
+        35
+      ]
+    ],
+    "lastChapter": 35
+  },
+  "counter": ""
+}

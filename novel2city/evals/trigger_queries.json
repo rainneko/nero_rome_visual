@@ -1,0 +1,82 @@
+[
+  {
+    "query": "我写了40万字的穿越基建文，背景是北宋汴京，想做个阅读网站，背景是会随章节变化的3D城市，从哪开始？",
+    "should_trigger": true
+  },
+  {
+    "query": "can you help me turn my fantasy novel's capital into a 3D city readers can explore on my site? i have the manuscript as a txt, ~200k words",
+    "should_trigger": true
+  },
+  {
+    "query": "帮我从这几章里把所有工程的立项开工完工时间和钱整理成表，以后做城市可视化要用",
+    "should_trigger": true
+  },
+  {
+    "query": "我要给小说里的古罗马港口建模，帮我找几张适合建模的复原图，并判断哪些是后世的",
+    "should_trigger": true
+  },
+  {
+    "query": "网站背景想做公元1世纪罗马的鸟瞰，城市密度和房子高度应该怎么定才不假",
+    "should_trigger": true
+  },
+  {
+    "query": "小说里有座桥只容两人并行没有栏杆，想做成GLB放网页上，怎么写任务书让Blender那边的agent去建",
+    "should_trigger": true
+  },
+  {
+    "query": "Building a chapter-synced 3D background for a historical web novel: how should I structure states, layers and paragraph triggers in three.js?",
+    "should_trigger": true
+  },
+  {
+    "query": "我们打算用三个AI一起还原小说里的城市：一个查史料，一个写代码，一个管原文，怎么分工、怎么互相核实？",
+    "should_trigger": true
+  },
+  {
+    "query": "做了个罗马城网页，房子老漂在半空、建筑互相穿插、整城像工厂，怎么系统排查",
+    "should_trigger": true
+  },
+  {
+    "query": "清明上河图能不能当北宋开封3D还原的参考？怎么用它估街道密度",
+    "should_trigger": true
+  },
+  {
+    "query": "帮我写一章罗马竞技场的战斗场景，要有画面感一点",
+    "should_trigger": false
+  },
+  {
+    "query": "推荐几款古罗马题材的城建游戏，最好有中文",
+    "should_trigger": false
+  },
+  {
+    "query": "three.js 里加载 glb 报错 Cannot read properties of undefined (reading 'scene')，代码如下",
+    "should_trigger": false
+  },
+  {
+    "query": "给我的小说设计一个封面，主题是罗马帝国的黄昏",
+    "should_trigger": false
+  },
+  {
+    "query": "summarize my novel chapter by chapter, 2 sentences each, attached txt",
+    "should_trigger": false
+  },
+  {
+    "query": "尼禄是哪一年出生的？在哪出生？",
+    "should_trigger": false
+  },
+  {
+    "query": "我想用Blender做一个咖啡杯模型，给我步骤",
+    "should_trigger": false
+  },
+  {
+    "query": "做一个小说阅读器App，要夜间模式、书签和字体切换",
+    "should_trigger": false
+  },
+  {
+    "query": "Make a timeline infographic of the Julio-Claudian emperors for my class",
+    "should_trigger": false
+  },
+  {
+    "query": "用 Python 写一个随机地牢地图生成器",
+    "should_trigger": false
+  }
+]
