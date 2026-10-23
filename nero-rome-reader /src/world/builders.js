@@ -1,14 +1,14 @@
 /* ---------- other materials ---------- */
-MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;',env:.4,fSurf:`
+MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];',env:.4,fSurf:`
  vec3 N=normalize(vWN);float sl=1.-clamp(N.y,0.,1.);vec2 p=vWP.xz;
  vec3 grass=mix(vec3(.07,.11,.035),vec3(.16,.19,.06),fbm2(p*.008));vec3 dry=vec3(.34,.29,.17);
  vec3 c=mix(grass,dry,.36+.36*fbm2(p*.0035+7.));
 #define SDS(p,a,b) length((p)-(a)-((b)-(a))*clamp(dot((p)-(a),(b)-(a))/dot((b)-(a),(b)-(a)),0.,1.))
  vec3 htG=vec3(0.),fcG=vec3(0.);float hwG=0.,fmG=0.;float sS=uSeason;float sDry=sS<1.?mix(-.18,.32,sS):sS<2.?mix(.32,.12,sS-1.):sS<3.?mix(.12,-.05,sS-2.):mix(-.05,-.18,sS-3.);c=mix(c,sDry>0.?dry*1.05:vec3(.1,.17,.05),abs(sDry));
  float fBl=sS<1.?mix(.35,1.,min(1.,sS*2.)):sS<2.?mix(1.,.45,sS-1.):sS<3.?mix(.45,.06,sS-2.):mix(.06,.35,sS-3.);
- {vec3 ht=vec3(0.);float hwt=0.,dd;dd=SDS(p,vec2(0.,280.),vec2(230.,320.));float w1=1.-smoothstep(140.,190.,dd);ht+=vec3(.1,.17,.05)*w1;hwt+=w1;dd=SDS(p,vec2(-262.,40.),vec2(-205.,-225.));float w2=1.-smoothstep(90.,125.,dd);ht+=mix(vec3(.3,.26,.16),vec3(.4,.35,.1),step(.82,vn2(p*.3)))*w2;hwt+=w2;dd=SDS(p,vec2(-700.,900.),vec2(-300.,1150.));float w3=1.-smoothstep(180.,250.,dd);ht+=vec3(.07,.12,.04)*w3;hwt+=w3;dd=SDS(p,vec2(700.,700.),vec2(1500.,600.));float w4=1.-smoothstep(160.,220.,dd);ht+=vec3(.13,.14,.06)*w4;hwt+=w4;dd=SDS(p,vec2(480.,-40.),vec2(1300.,-300.));float w5=1.-smoothstep(170.,230.,dd);ht+=vec3(.12,.2,.06)*w5;hwt+=w5;dd=SDS(p,vec2(-60.,-560.),vec2(900.,-1520.));float w6=1.-smoothstep(170.,230.,dd);ht+=mix(vec3(.08,.14,.05),vec3(.17,.15,.22),step(.84,vn2(p*.3)))*w6;hwt+=w6;dd=SDS(p,vec2(500.,-760.),vec2(1350.,-1080.));float w7=1.-smoothstep(120.,170.,dd);ht+=vec3(.18,.22,.08)*w7;hwt+=w7;if(hwt>.01){ht/=hwt;float sd2=(sS>.5&&sS<2.)?.35:0.;htG=mix(ht,dry,sd2*(1.-w1)*(1.-w5));hwG=min(1.,hwt);}}{float hm=smoothstep(.72,.9,vn2(p*.5))*fBl;vec3 fc2=vec3(0.);float hw=0.;float hk=h12(floor(p/2.3));
-  if(SDS(p,vec2(0.,280.),vec2(230.,320.))<190.){fc2=hk<.5?vec3(.86,.56,.62):vec3(.52,.36,.66);hw=1.;}
-  else if(SDS(p,vec2(-262.,40.),vec2(-205.,-225.))<125.){fc2=vec3(.88,.76,.16);hw=1.;}
+ {vec3 ht=vec3(0.);float hwt=0.,dd;dd=SDS(p,vec2(0.,280.),vec2(230.,320.));float w1=1.-smoothstep(140.,190.,dd);ht+=vec3(.1,.17,.05)*w1;hwt+=w1;dd=SDS(p,vec2(-262.,40.),vec2(-205.,-225.));float w2=1.-smoothstep(98.,104.,dd);ht+=mix(vec3(.2,.21,.1),vec3(.27,.25,.13),smoothstep(.4,.7,fbm2(p*.04)))*w2;hwt+=w2;dd=SDS(p,vec2(-700.,900.),vec2(-300.,1150.));float w3=1.-smoothstep(180.,250.,dd);ht+=vec3(.07,.12,.04)*w3;hwt+=w3;dd=SDS(p,vec2(700.,700.),vec2(1500.,600.));float w4=1.-smoothstep(160.,220.,dd);ht+=vec3(.13,.14,.06)*w4;hwt+=w4;dd=SDS(p,vec2(480.,-40.),vec2(1300.,-300.));float w5=1.-smoothstep(170.,230.,dd);ht+=vec3(.12,.2,.06)*w5;hwt+=w5;dd=SDS(p,vec2(-60.,-560.),vec2(900.,-1520.));float w6=1.-smoothstep(170.,230.,dd);ht+=mix(vec3(.08,.14,.05),vec3(.17,.15,.22),step(.84,vn2(p*.3)))*w6;hwt+=w6;dd=SDS(p,vec2(500.,-760.),vec2(1350.,-1080.));float w7=1.-smoothstep(120.,170.,dd);ht+=vec3(.18,.22,.08)*w7;hwt+=w7;if(hwt>.01){ht/=hwt;float sd2=(sS>.5&&sS<2.)?.35:0.;htG=mix(ht,dry,sd2*(1.-w1)*(1.-w5)*(1.-w2));hwG=min(1.,hwt);}}{float hm=smoothstep(.72,.9,vn2(p*.5))*fBl;vec3 fc2=vec3(0.);float hw=0.;float hk=h12(floor(p/2.3));
+  if(SDS(p,vec2(0.,280.),vec2(230.,320.))<190.){fc2=hk<.5?vec3(.62,.46,.36):vec3(.5,.42,.3);hw=.25;}   // (was bright pink/violet at full strength: the pale speckle on the Palatine slopes)
+  else if(SDS(p,vec2(-262.,40.),vec2(-205.,-225.))<125.){fc2=vec3(.78,.66,.2);hw=.45;}
   else if(SDS(p,vec2(-700.,900.),vec2(-300.,1150.))<250.){fc2=hk<.45?vec3(.92,.45,.6):hk<.75?vec3(.94,.92,.9):vec3(.8,.18,.12);hw=1.;}
   else if(SDS(p,vec2(700.,700.),vec2(1500.,600.))<220.){fc2=hk<.6?vec3(.92,.92,.88):vec3(.46,.36,.72);hw=.8;}
   else if(SDS(p,vec2(480.,-40.),vec2(1300.,-300.))<230.){fc2=hk<.5?vec3(.8,.28,.34):vec3(.95,.9,.55);hw=.9;}
@@ -16,38 +16,45 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
   else if(SDS(p,vec2(500.,-760.),vec2(1350.,-1080.))<170.){fc2=hk<.5?vec3(.92,.56,.15):vec3(.46,.36,.72);hw=.8;}
   fcG=fc2;fmG=hm*hw*.32;}
 
- c=mix(c,mix(vec3(.34,.29,.19),vec3(.28,.25,.17),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*.8);   // town ground: open earth between the streets
- c=mix(c,vec3(.08,.14,.04)*(.75+.5*fbm2(p*.03)),vZ.y);c=mix(c,htG*(.85+.3*fbm2(p*.02)),hwG*.5);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
- vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
+ c=mix(c,mix(vec3(.4,.29,.17),vec3(.32,.23,.135),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*(1.-vZ.y)*1.);   // town ground: open earth between the streets
+ c=mix(c,vec3(.08,.14,.04)*(.75+.5*fbm2(p*.03)),vZ.y);c=mix(c,htG*(.85+.3*fbm2(p*.02)),hwG*.7);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
+ vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);if(vZ.z>.85)chs=.1;float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
  float rw=dot(p,dr)/3.3;float aaF=fwidth(rw);float vine=smoothstep(.24+aaF,.24-aaF,abs(fract(rw)-.5));vec3 soil=vec3(.4,.32,.2)*(.85+.2*fbm2(p*.05)),vc=vec3(.19,.2,.1)*(.8+.3*fbm2(p*.2));
  vec3 fc=chs<.42?mix(soil,vc,mix(vine,.45,smoothstep(.15,.5,aaF))):chs<.62?mix(vec3(.5,.43,.22),vec3(.42,.39,.18),fbm2(p*.03)):chs<.82?mix(vec3(.19,.23,.1),vec3(.27,.27,.12),fbm2(p*.04)):mix(vec3(.3,.29,.14),vec3(.44,.38,.22),fbm2(p*.02));
  float edge=1.-smoothstep(0.,.018+fwidth(qq.x)*1.5,min(min(fq.x,1.-fq.x),min(fq.y,1.-fq.y)));fc=mix(fc,vec3(.07,.1,.04),edge*.85);c=mix(c,fc,vZ.z*.92);
  c=mix(c,vec3(.7,.62,.45)*(.9+.15*vn2(p*.5)),vZ.w);
- float pal=1.-smoothstep(230.,380.,length(p-vec2(100.,300.)));   // the Palatine: pale limestone with moss on the ledges (rock_and_base brief)
- c=mix(c,vec3(.085,.11,.05)*(.8+.4*fbm2(p*.03)),smoothstep(.22,.45,sl)*(1.-vZ.w)*.8);
- c=mix(c,vec3(.33,.35,.11)*(.8+.4*fbm2(p*.06)),pal*smoothstep(.16,.32,sl)*(1.-smoothstep(.46,.66,sl))*.6);
- vec3 rock=mix(vec3(.31,.28,.19),vec3(.2,.18,.16),vZ.w)*(.75+.4*fbm2(vec2(p.x+p.y,vWP.y*5.)*.06));
- rock=mix(rock,vec3(.58,.52,.41)*(.8+.4*fbm2(vec2(p.x+p.y,vWP.y*4.)*.07)),pal*.85);
- c=mix(c,rock,mix(smoothstep(.6,.9,sl),smoothstep(.4,.7,sl),pal)*.85);
+ float pal=(1.-smoothstep(230.,380.,length(p-vec2(100.,300.))))*(1.-uDbg.x);   // the Palatine: pale limestone with moss on the ledges (rock_and_base brief)
+ // (the dark-green slope band that used to sit here was the soft smear in front of the Jupiter temple; steep cells are now the rocky scarp below)
+ vec3 rock=mix(vec3(.31,.28,.19),vec3(.2,.18,.16),vZ.w)*(.75+.4*fbm2(p*.07));
+ rock=mix(rock,vec3(.58,.52,.41)*(.85+.3*fbm2(p*.08)),pal*.85);
+ c=mix(c,rock,mix(smoothstep(.6,.9,sl),smoothstep(.5,.78,sl),pal)*.85);
+ {   // bare rock/earth: only within 6-10 m of a rock cluster and on near-vertical cells (gradient > .9), as irregular fBm patches in world xz (no height term: bands read as a topographic map)
+  float rkd=1e3;for(int i=0;i<16;i++){vec4 rs=uRk[i];rkd=min(rkd,SDS(p,rs.xy,rs.zw));}
+  float nearR=1.-smoothstep(6.,10.,rkd+(fbm2(p*.35)-.5)*5.),steep=smoothstep(.25,.31,sl);
+  float pn=fbm2(p*.06+vec2(31.,7.))+.18*(fbm2(p*.37+3.)-.5);
+  float scarp=max(nearR,steep)*smoothstep(.5,.6,pn+.2*nearR+.15*steep)*(1.-vZ.w)*(1.-pal*.6);
+  vec3 bare=mix(vec3(.305,.254,.171),vec3(.216,.181,.127),smoothstep(.4,.6,fbm2(p*.045+vec2(11.,23.))))*(.93+.14*vn2(p*1.3));   // sRGB ~150/138/115 and ~128/118/100
+  c=mix(c,bare,scarp*.92);}
  // streets (streets.js): coverage / grade / wall distance from the street raster, direction from the coarse texture
  float stR=.95;
- if(uStX.z>0.){vec2 q0=(vWP.xz-uStX.xy)/uStX.zw;
+ if(uStX.z>0.&&uDbg.y<.5){vec2 q0=(vWP.xz-uStX.xy)/uStX.zw;
   if(q0.x>0.&&q0.y>0.&&q0.x<1.&&q0.y<1.){
    vec2 wob=(vec2(fbm2(vWP.xz*.31),fbm2(vWP.xz*.31+7.3))-.5)*1.7;vec2 q=q0+wob/uStX.zw;vec4 t=texture2D(uSt,q);
    float mini=smoothstep(.8,2.6,fwidth(q.x)*uStN.x);float cov=mix(smoothstep(.26,.5,t.r),t.r,mini);
    if(cov>.004){
-    float gc=t.g*255.;float wM=clamp((gc-128.)/64.,0.,1.),wD=clamp((128.-gc)/64.,0.,1.),wS=1.-max(wM,wD);float dw=t.b*8.;
+    float gc=t.g*255.;float wM=clamp((gc-128.)/64.,0.,1.),wD=clamp((128.-gc)/64.,0.,1.),wS=1.-max(wM,wD);float dw=t.b*8.;cov*=1.-smoothstep(.16,.26,sl)*(1.-wD);   // no stone/marble paving painted on steep faces (the pale wedge over the Capitol slope was marble street colour on a cut face; real stairs are geometry)
     vec4 ta=texture2D(uStA,q0);vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);float across=dot(vWP.xz,nv),along=dot(vWP.xz,tv);
     float trk=smoothstep(.22,.06,abs(fract((across+vn2(vec2(along*.05,3.))*1.4)/1.45)-.5)*1.45)*smoothstep(.3,.7,vn2(vec2(along*.1,across*.3)))*clamp(ta.b*4.,0.,1.);
     vec2 rp=vec2(vWP.x*.866+vWP.z*.5,-vWP.x*.5+vWP.z*.866);
-    vec3 cM=vec3(.66,.62,.54),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
-    if(wM>.01){float sl=2.6,sw=1.3,row=floor(rp.y/sw),u=rp.x+mod(row,2.)*sl*.5,id=floor(u/sl),jx=abs(fract(u/sl+.5)-.5)*sl,jy=abs(fract(rp.y/sw+.5)-.5)*sw,aa=fwidth(rp.x)*1.5+.01,jn=1.-smoothstep(.02,.02+aa,min(jx,jy)),hh=h12(vec2(id,row)+3.1);
-     cM=vec3(.66,.62,.54)*(.88+.18*hh)*(.94+.1*vn2(rp*.6));cM=mix(cM,cM*vec3(.84,.8,.73),step(.84,hh));cM*=1.-.34*jn*(1.-mini);cM*=mix(.72,1.,smoothstep(0.,1.1,dw));}
+    vec3 cM=vec3(.55,.49,.395),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
+    if(wM>.01){float sl=3.4,sw=1.7,row=floor(rp.y/sw),u=rp.x+mod(row,2.)*sl*.5,id=floor(u/sl),jx=abs(fract(u/sl+.5)-.5)*sl,jy=abs(fract(rp.y/sw+.5)-.5)*sw,aa=fwidth(rp.x)*1.5+.01,jn=1.-smoothstep(.02,.02+aa,min(jx,jy)),hh=h12(vec2(id,row)+3.1);
+     cM=vec3(.55,.49,.395)*(.9+.16*hh)*(.94+.1*vn2(rp*.6));cM=mix(cM,cM*vec3(.84,.8,.73),step(.84,hh));cM*=1.-.34*jn*(1.-mini);cM*=mix(.72,1.,smoothstep(0.,1.1,dw));}
     if(wS>.01){vec2 p=vWP.xz*1.15;vec2 ip=floor(p),fp=fract(p);float m1=8.,m2=8.;vec2 id=ip;
      for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 g=vec2(i,j);vec2 o=vec2(h12(ip+g),h12(ip+g+17.3));vec2 r=g+o-fp;float d=dot(r,r);if(d<m1){m2=m1;m1=d;id=ip+g;}else if(d<m2)m2=d;}
-     float e=sqrt(m2)-sqrt(m1),far=smoothstep(.2,.7,fwidth(p.x)*2.);cS=vec3(.27,.225,.17)*(.7+.5*h12(id));cS*=mix(.45,1.,smoothstep(0.,.08,e));cS=mix(cS,vec3(.27,.225,.17)*.95,far);
+     float e=sqrt(m2)-sqrt(m1),far=smoothstep(.2,.7,fwidth(p.x)*2.);cS=vec3(.28,.225,.165)*(.7+.5*h12(id));cS*=mix(.45,1.,smoothstep(0.,.08,e));cS=mix(cS,vec3(.28,.225,.165)*.95,far);
      cS*=(.82+.4*fbm2(vWP.xz*.17))*(1.-.18*smoothstep(.62,.78,fbm2(vWP.xz*.06+11.)));   // large-scale tone: worn, repaired and dirty stretches
-     cS*=1.+.3*smoothstep(1.4,3.4,dw);cS*=mix(.6,1.,smoothstep(0.,1.4,dw));}
+     cS*=1.+.3*smoothstep(1.4,3.4,dw);cS*=mix(.6,1.,smoothstep(0.,1.4,dw));
+     }   // (the crown / drain line / ruts painted from a 2.5 m raster were invisible at street height; they are real strips now: roadKerbs/roadWear in streets.js)
     if(wD>.01){cD=mix(vec3(.38,.27,.155),vec3(.29,.2,.115),fbm2(vWP.xz*.9));cD*=.85+.3*vn2(vWP.xz*5.);cD=mix(cD,vec3(.55,.47,.33),step(.93,vn2(vWP.xz*9.))*.5);
      cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(vWP.xz*.12+4.)));cD*=1.-.28*trk;cD*=mix(.68,1.,smoothstep(0.,1.2,dw));}
     vec3 stC=cM*wM+cS*wS+cD*wD;stR=.52*wM+.72*wS+.95*wD;
@@ -172,12 +179,25 @@ function flushPeople(W,list,parent){if(W.people.length>9000){const k=9000/W.peop
   m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);return m;}
 
 /* ---------- monument generators (into GB g) ---------- */
-function statue(g,F,x,y,z,h,gilt=false,spear=false){const part=gilt?28:6;g.set(part,.4);const r=h*.13;
-  lathe(g,F,x,y,z,[[r*1.25,0],[r*1.1,h*.25],[r*.9,h*.55],[r*1.05,h*.7],[r*.75,h*.8],[0,h*.8]],7);
-  lathe(g,F,x,y+h*.8,z,[[0,0],[r*.55,h*.03],[r*.62,h*.1],[r*.45,h*.18],[0,h*.2]],6);
-  box(g,F,x+r*.95,y+h*.52,z,r*.22,h*.28,r*.22,31);if(spear){g.set(13,.3);box(g,F,x-r*1.1,y+h*.3,z,.05*h/4,h*.95,.05*h/4,31);}}
+function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand
+  const part=gilt?40:6,u=h/10;g.set(part,.4);
+  lathe(g,F,x,y,z,[[1.45*u,0],[1.5*u,.4*u],[1.15*u,1.5*u],[1.0*u,3.4*u],[1.15*u,4.7*u],[0,4.7*u]],8,part);   // plinth + legs/drapery block
+  box(g,F,x,y+4.6*u,z,1.55*u,3.1*u,1.0*u,31);   // torso, square shoulders
+  lathe(g,F,x,y+7.6*u,z,[[.4*u,0],[.75*u,.45*u],[.85*u,1.2*u],[.7*u,2.0*u],[0,2.3*u]],8,part);   // neck and head
+  box(g,F,x-1.95*u,y+4.9*u,z,.38*u,2.7*u,.38*u,31);   // arm hanging in the drapery
+  box(g,F,x+2.0*u,y+6.5*u,z,.5*u,1.0*u,.38*u,31);box(g,F,x+2.55*u,y+7.4*u,z,.42*u,1.1*u,.36*u,31);box(g,F,x+3.0*u,y+8.4*u,z,.38*u,1.2*u,.34*u,31);   // raised arm in three steps (a diagonal)
+  if(gilt){g.set(28,.4);box(g,F,x+3.0*u,y+9.6*u,z,.5*u,.6*u,.5*u,31);}   // small gilt detail (a wreath or orb) in the raised hand
+  if(spear){g.set(13,.3);box(g,F,x-2.3*u,y+2*u,z,.05*h/4,h*.95,.05*h/4,31);}}
 function pedestalStatue(g,F,x,z,y,h,opts={}){g.set(6,.6);box(g,F,x,y,z,h*.22,h*.22,h*.22,31);g.set(2,.6);box(g,F,x,y+h*.22,z,h*.26,h*.06,h*.26,31);statue(g,F,x,y+h*.28,z,h*.72,opts.gilt,opts.spear);}
-function honorCol(W,g,F,x,z,y,h){W.cols.cor.push([...F.p(x,y+1.2,z),F.rot,h,[.95,.92,.86]]);g.set(6,.5);box(g,F,x,y,z,h*.07,1.2,h*.07,31);statue(g,F,x,y+1.2+h,z,2.4,true);}
+function honorCol(W,g,F,x,z,y,h){W.cols.cor.push([...F.p(x,y+1.2,z),F.rot,h,[.95,.92,.86]]);g.set(6,.5);box(g,F,x,y,z,h*.07,1.2,h*.07,31);statue(g,F,x,y+1.2+h,z,2.2,true);}
+// square furniture (phase 4). Honorific column: 2 m pedestal + plain shaft + abacus + gilt statue, ~12.5 m in all (no spiral relief: that is a later invention). y is relative to F.oy.
+function honorCol2(W,g,F,x,z,y){const H=8;g.set(6,.5);box(g,F,x,y,z,1.5,.5,1.5,31);box(g,F,x,y+.5,z,1.15,1.35,1.15,31);g.set(2,.5);box(g,F,x,y+1.85,z,1.35,.22,1.35,31);
+  W.cols.cor.push([...F.p(x,y+2.07,z),F.rot,H,[.95,.92,.86]]);g.set(2,.5);box(g,F,x,y+2.07+H,z,.9,.45,.9,31);(W.statLog=W.statLog||[]).push(F.p(x,y+2.52+H,z).map(v=>Math.round(v)));statue(g,F,x,y+2.52+H,z,2.2,true);return 12.4;}
+// large statue base: two steps, a block with a moulded cap and a gilt statue (or a horse-and-rider blob when o.eq)
+function bigBase(g,F,x,z,y,w,d,h,o={}){g.set(2,.5);box(g,F,x,y,z,w/2+.9,.3,d/2+.9,31);box(g,F,x,y+.3,z,w/2+.45,.3,d/2+.45,31);g.set(6,.55);box(g,F,x,y+.6,z,w/2,h,d/2,31);g.set(2,.5);box(g,F,x,y+.6+h,z,w/2+.25,.3,d/2+.25,31);
+  const yt=y+.9+h;if(o.eq){g.set(40,.4);box(g,F,x,yt+.9,z,d*.18,1.0,d*.42,31);box(g,F,x+d*.14,yt+1.9,z-d*.34,.28,1.1,.3,31);statue(g,F,x-.2,yt+1.8,z,1.9,true);}else statue(g,F,x,yt,z,1.9,o.gilt!==false,false);}
+// a row of cypresses between two local points (y from the ground); trees go in W.trees (the instanced tree pass)
+function cypRow(W,F,ax,az,bx,bz,step,gyF,sc=1){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<=n;i++){const q=F.p(ax+(bx-ax)*i/n,0,az+(bz-az)*i/n);W.trees.push([q[0],gyF(q[0],q[2]),q[2],'cyp',sc*(.92+.16*((i*37)%7)/7)]);}}
 // temple: front faces +z of the frame
 function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
   const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1);
@@ -223,6 +243,37 @@ function arcade(g,F,cx,y0,cz,len,h,nArch,thick,part,o={}){const s=new THREE.Shap
   const M=new THREE.Matrix4().makeRotationY(F.rot);const pp=F.p(cx,y0,cz);M.setPosition(pp[0],pp[1],pp[2]);g.set(part,o.seed||.4);g.addGeo(geo,M);
   if(o.pilasters!==false){g.set(part,o.seed||.4);for(let i=0;i<=nArch;i++){const x=-len/2+bay*i;box(g,F,cx+x,y0,cz+thick/2+.18,.32,h*.94,.18,1|2|8);}}
   if(o.cornice!==false){g.set(2,.5);box(g,F,cx,y0+h-.35,cz,len/2+.15,.35,thick/2+.35,31);}}
+/* Roman substructure face (phase 5b): a blind-arcade wall along a plain block wall. S = frame whose local x runs along the wall (centred on it); the existing wall face is the plane z=zf and `out` (+1/-1)
+   is the local z direction that points away from the building. Between pilaster buttresses every 6-8 m: two or three storeys of recessed, darker blind arches (each with a moulded ring and sill),
+   a string course per storey and a cornice on top. Storeys are counted down from yTop; a storey is drawn in a bay only while enough of it stands above the ground in front of the wall.
+   o.unfinished = {x0,x1} (local x range): that stretch is left as rough block with scaffolding poles (AD 56: the Claudius precinct was still being built). */
+const _subGeo={};
+function _archGeo(aw,ah,depth,ring){const k=[aw.toFixed(2),ah.toFixed(2),depth,ring].join('|');if(_subGeo[k])return _subGeo[k];
+  const arch=(w,h,y0,P)=>{const sp=h-w/2;P.moveTo(-w/2,y0);P.lineTo(w/2,y0);P.lineTo(w/2,sp);P.absarc(0,sp,w/2,0,Math.PI,false);P.lineTo(-w/2,y0);return P;};
+  let s;if(ring){s=arch(aw+1.0,ah+.5,-.45,new THREE.Shape());s.holes.push(arch(aw,ah,0,new THREE.Path()));}else s=arch(aw,ah,0,new THREE.Shape());
+  return _subGeo[k]=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false,curveSegments:6});}
+function substructure(W,g,S,L,yTop,zf,out,o={}){
+  const gy=W.gy,nb=Math.max(1,Math.round(L/(o.bay||7))),bw=L/nb,hs=o.hs||9.5,pil=o.pil??2,dk=o.dark??38,Z=d=>zf+out*d,x0=-L/2,uf=o.unfinished,
+    fin=x=>!(uf&&x>uf.x0&&x<uf.x1),yc=yTop-1.0;
+  const gAt=(x,w=0)=>{let m=1e9;for(const dx of[-w,0,w])for(const d of[-1.5,0,2,5]){const q=S.p(x+dx,0,Z(d));m=Math.min(m,gy(q[0],q[2]));}return m;};
+  const B=(cx,y0,cz,hx,h,hz,f)=>box(g,S,cx,y0-S.oy,cz,hx,h,hz,f);
+  const rot=S.rot+(out<0?Math.PI:0),addX=(geo,x,y,part,seed)=>{const M=new THREE.Matrix4().makeRotationY(rot),p=S.p(x,y-S.oy,zf);M.setPosition(p[0],p[1],p[2]);g.set(part,seed);g.addGeo(geo,M);};
+  for(const[ca,cb]of uf?[[x0-.4,Math.max(x0-.4,uf.x0)],[Math.min(-x0+.4,uf.x1),-x0+.4]]:[[x0-.4,-x0+.4]]){if(cb-ca<.5)continue;g.set(pil,.5);B((ca+cb)/2,yTop-1.0,Z(.6),(cb-ca)/2,1.0,.6,31&~32);B((ca+cb)/2,yTop-1.35,Z(.3),(cb-ca)/2-.2,.4,.3,31&~32);}   // cornice and its soffit course
+  let nA=0;
+  for(let j=0;j<nb;j++){const xa=x0+j*bw,xc=xa+bw/2,gB=gAt(xc,bw*.4);
+    if(!fin(xc)){g.set(pil,.5);continue;}
+    for(let k=0;k<4;k++){const yt=yc-k*hs,yb=yt-hs;if(yt<gB+2.5)break;
+      const y0=Math.max(yb+.9,gB+.15),ah=yt-.9-y0,aw=Math.min(bw-2.5,6);if(ah<.5*(hs-1.8)||aw<1.8)continue;   // a storey the ground cuts to less than half is left as plain wall
+      addX(_archGeo(aw,ah,.5,true),xc,y0,pil,.5);addX(_archGeo(aw,ah,.2,false),xc,y0,dk,.5);nA++;
+      g.set(pil,.5);B(xc,yb-.1,Z(.2),bw/2-.55,.55,.2,31&~32);}   // string course under every storey, between the buttresses
+    g.set(pil,.5);B(xc,yc-.25,Z(.2),bw/2-.55,.55,.2,31&~32);}
+  for(let i=0;i<=nb;i++){const x=x0+i*bw;if(uf&&x>uf.x0+.1&&x<uf.x1-.1)continue;const b=gAt(x,.7)-1.5;g.set(pil,.5);B(x,b,Z(.35),.62,yTop-1.0-b,.35,31&~32);B(x,yc-1.1,Z(.45),.82,.55,.45,31&~32);}   // buttress pilasters with a capital
+  if(uf){const xa=Math.max(x0,uf.x0),xb=Math.min(-x0,uf.x1),n=Math.max(2,Math.round((xb-xa)/2.4)),P=(x,y,d)=>S.p(x,y,Z(d));   // scaffolding: poles, ledgers, putlogs and two plank decks
+    for(let i=0;i<=n;i++){const x=xa+(xb-xa)*i/n,b=gAt(x)-.4,h=yTop+2.5-b;g.set(32,.5);B(x,b,Z(1.5),.07,h,.07,31&~32);B(x,b,Z(2.9),.07,h,.07,31&~32);
+      for(let l=0;l<=Math.floor(h/3.2);l++){const y=b+1.5+l*3.2;if(y>yTop+2)break;g.set(32,.4);B(x,y,Z(2.2),.04,.1,1.5,31);}}
+    for(let l=0;;l++){const yy=yTop-2.3-l*3.2;const lo=gAt(xa,xb-xa)+2;if(yy<lo)break;g.set(32,.5);B((xa+xb)/2,yy,Z(1.5),(xb-xa)/2,.1,.07,31);B((xa+xb)/2,yy,Z(2.9),(xb-xa)/2,.1,.07,31);
+      if(l<3){g.set(32,.2);B((xa+xb)/2,yy+.12,Z(2.2),(xb-xa)/2-.2,.05,.8,31);}}}
+  return nA;}
 // building block with courtyard (palace wing ring)
 function courtBlock(W,g,F,o){const{cx,cz,w,d,y0,nSt,sH,cw,cd}=o,gH=o.gH||sH*1.2,yT=y0+gH+(nSt-1)*sH;
   const fac={part:o.part??0,seed:o.seed??.5,sty:o.sty??(5+8*1),fl:o.fl??(8|32),nSt,gH,sH,lit:1,burn:o.burn||0};

@@ -43,7 +43,7 @@ vec3 atmo(vec3 col,vec3 wp){
 const U={uTime:{value:0},uNight:{value:0},uSunDir:{value:new THREE.Vector3(.4,.5,.7).normalize()},uSunCol:{value:new THREE.Color(1,.9,.7)},
   uHazeCol:{value:new THREE.Color(.6,.62,.7)},uHaze:{value:new THREE.Vector4(1.6e-4,420,0,.8)},uLit:{value:0},uGlass:{value:.03},
   uWet:{value:0},uBurn:{value:0},uRust:{value:0},uSeason:{value:1},uSkyRefl:{value:new THREE.Color(.5,.6,.75)},
-  uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)}};   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
+  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))}};   // uRk: rock-cluster segments (ax,az,bx,bz) for the terrain's rocky scarp   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
 
 function procMat(o){
   const M=o.physical?THREE.MeshPhysicalMaterial:THREE.MeshStandardMaterial;
@@ -66,9 +66,9 @@ an=mat3(instanceMatrix)*an;
 #endif
 vWN=normalize(mat3(modelMatrix)*an);}`);
     sh.fragmentShader=sh.fragmentShader
-      .replace('#include <common>','#include <common>\n'+head+'struct PS{vec3 alb;float rough;float metal;vec3 nw;float useN;vec3 emit;float ao;};\n'+(o.fHead||'')+
-        '\nPS surf(){PS S;S.alb=vec3(.6);S.rough=.85;S.metal=0.;S.nw=normalize(vWN);S.useN=0.;S.emit=vec3(0.);S.ao=1.;\n'+o.fSurf+'\nreturn S;}\n')
-      .replace('#include <color_fragment>','#include <color_fragment>\nPS S=surf();diffuseColor.rgb*=S.alb;')
+      .replace('#include <common>','#include <common>\n'+head+'struct PS{vec3 alb;float rough;float metal;vec3 nw;float useN;vec3 emit;float ao;float a;};\n'+(o.fHead||'')+
+        '\nPS surf(){PS S;S.alb=vec3(.6);S.rough=.85;S.metal=0.;S.nw=normalize(vWN);S.useN=0.;S.emit=vec3(0.);S.ao=1.;S.a=1.;\n'+o.fSurf+'\nreturn S;}\n')
+      .replace('#include <color_fragment>','#include <color_fragment>\nPS S=surf();diffuseColor.rgb*=S.alb;diffuseColor.a*=S.a;')
       .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=S.rough;')
       .replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=S.metal;')
       .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\nif(S.useN>.5){normal=normalize((viewMatrix*vec4(S.nw,0.)).xyz);}')
@@ -120,7 +120,7 @@ const P={rt:null,mips:[],blur:null,ldr:null,w:1,h:1,
     void main(){vec3 h=texture2D(tS,vUv).rgb;
      if(tilt>0.){float d=abs(vUv.y-fy);h=mix(h,texture2D(tBl,vUv).rgb,smoothstep(.12,.42,d)*tilt);}
      h+=texture2D(tB,vUv).rgb*bloom;h*=uExpo*(1.+flash);
-     vec3 c=pow(aces(h),vec3(1./2.2));
+     vec3 c=pow(aces(h),vec3(1./2.2));c=mix(c,.8+.2*(1.-exp(-(max(c,.8)-.8)/.2)),step(.8,c));   // soft shoulder above .8: bright marble compresses instead of clipping
      float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);
      c=clamp((c-.5)*con+.5,0.,1.);
      c*=mix(cool,warm,smoothstep(.15,.85,l));

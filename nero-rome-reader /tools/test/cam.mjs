@@ -13,6 +13,6 @@ const t0=Date.now();while(Date.now()-t0<400000){if(await p.evaluate(()=>!!window
 console.log('boot',((Date.now()-t0)/1000).toFixed(0)+'s');
 await p.evaluate(()=>{if(typeof romeLoadModels==='function')romeLoadModels();if(typeof antLoadModels==='function')antLoadModels();});
 const t1=Date.now();while(Date.now()-t1<120000){if(await p.evaluate(()=>(typeof ROME==='undefined'||!ROME.GLB.length||window.__romeReady)&&(typeof ANT==='undefined'||window.__antReady)))break;await new Promise(r=>setTimeout(r,1500));}
-for(const j of jobs){await p.evaluate(j=>{if(j.pos)W0.views.__cam={n:'cam',pg:j.pg,pos:j.pos,tgt:j.tgt};window.__shot(j.state||0,j.pos?'__cam':j.view,j.tod??.45);if(j.js)(0,eval)(j.js);},j);
+for(const j of jobs){await p.evaluate(j=>{if(j.pos)W0.views.__cam={n:'cam',pg:j.pg,pos:j.pos,tgt:j.tgt};window.__shot(j.state||0,j.pos?'__cam':j.view,j.tod??.45);window.__r=j.js?(0,eval)(j.js):null;},j);if(j.js)console.log(JSON.stringify(await p.evaluate(()=>window.__r)));
   await new Promise(r=>setTimeout(r,j.wait||2500));await p.screenshot({path:path.join(root,'shots',j.out)});console.log('shot',j.out);}
 if(errs.length)console.log('PAGE ERRORS:\n'+errs.join('\n'));await b.close();

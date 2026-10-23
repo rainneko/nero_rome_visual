@@ -2,7 +2,7 @@
 // Build: concatenate the sources in build.config.json order, inline data and GLB models,
 // and write one self-contained page (dist/index.html). `--test` also writes dist/test.html,
 // which loads three.js from node_modules instead of the CDN (for headless checks).
-import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';import {optimize} from './glbopt.mjs';import zlib from 'node:zlib';import path from 'node:path';import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const rd=p=>fs.readFileSync(path.join(root,p),'utf8');
 const cfg=JSON.parse(rd('build.config.json'));
 let js=cfg.order.map(f=>rd(f)+'\n').join('');
@@ -28,8 +28,8 @@ if(cfg.book&&fs.existsSync(path.join(root,cfg.book.src))){const B=cfg.book,lines
   console.log('dist/'+B.out,chs.length+' chapters',(words/1e4).toFixed(1)+' 万字',(out.length/1e6).toFixed(2)+' MB');}
 // lazy model bundles (loaded by the page on demand): dist/<file> sets window[var]={name:base64} and calls window[cb]()
 for(const L of cfg.lazy||[]){const dir=path.join(root,L.dir),names=fs.existsSync(dir)?fs.readdirSync(dir).filter(f=>f.endsWith('.glb')).sort():[];
-  const body=names.map(f=>`${JSON.stringify(f.slice(0,-4))}:'${fs.readFileSync(path.join(dir,f)).toString('base64')}'`).join(',\n');
-  const out=`window.${L.var}={${body}};if(window.${L.cb})window.${L.cb}();\n`;fs.writeFileSync(path.join(root,'dist',L.file),out);console.log('dist/'+L.file,names.length+' models',(out.length/1e6).toFixed(2)+' MB');}
+  const body=names.map(f=>`${JSON.stringify(f.slice(0,-4))}:'${(L.optimize?zlib.gzipSync(optimize(fs.readFileSync(path.join(dir,f))),{level:9}):fs.readFileSync(path.join(dir,f))).toString('base64')}'`).join(',\n');
+  const out=`window.${L.var}={${body}};${L.optimize?`window.${L.var}_gz=true;`:''}if(window.${L.cb})window.${L.cb}();\n`;fs.writeFileSync(path.join(root,'dist',L.file),out);console.log('dist/'+L.file,names.length+' models',(out.length/1e6).toFixed(2)+' MB');}
 if(process.argv.includes('--test')){const three=path.join(root,'node_modules/three');if(!fs.existsSync(three)){console.error('npm install first (three@0.147.0 is a dev dependency)');process.exit(1);}
   const t=page.split(cfg.three.cdn).join('../node_modules/three/build/three.min.js').split(cfg.three.cdnGltf).join('../node_modules/three/examples/js/loaders/GLTFLoader.js').replace(/<link href="https:\/\/fonts.googleapis.com[^>]*>/g,'');
   fs.writeFileSync(path.join(root,'dist/test.html'),t);console.log('dist/test.html');}

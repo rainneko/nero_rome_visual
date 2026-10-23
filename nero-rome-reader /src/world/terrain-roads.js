@@ -25,18 +25,19 @@ function buildGrid(W,ext,n,hfn){const g={x0:ext[0],z0:ext[1],x1:ext[2],z1:ext[3]
 function terrainPatchSpec(W,rect,sub){const g=W.grid,n=g.n,i0=Math.max(0,Math.ceil((rect[0]-g.x0)/g.dx)),i1=Math.min(n,Math.floor((rect[2]-g.x0)/g.dx)),j0=Math.max(0,Math.ceil((rect[1]-g.z0)/g.dz)),j1=Math.min(n,Math.floor((rect[3]-g.z0)/g.dz));return{i0,i1,j0,j1,sub};}
 function buildPatch(W,sp,hfn,zoneFn){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,dx=g.dx/sub,dz=g.dz/sub,x0=g.x0+i0*g.dx,z0=g.z0+j0*g.dz,H=new Float32Array(NX*NZ),gy0=W.gy;
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const x=x0+i*dx,z=z0+j*dz,hc=gy0(x,z),ed=Math.min(i,nx-i,j,nz-j)/sub,w=sstep(0,1.6,ed);H[j*NX+i]=w>0?lerp(hc,hfn(x,z),w):hc;}
+  for(let it=0;it<3;it++){const B=H.slice();for(let j=2;j<NZ-2;j++)for(let i=2;i<NX-2;i++){const k=j*NX+i;let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=H[k+b*NX+a];B[k]=lerp(H[k],s/9,sstep(0,1,Math.min(i,j,NX-1-i,NZ-1-j)/(2*sub)));}H.set(B);}   // smooth the interior: the exact height function has steps (min/blend terms), the patch must not zigzag
   const P=new Float32Array(NX*NZ*3),Z=new Float32Array(NX*NZ*4);
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=x0+i*dx,z=z0+j*dz;P[k*3]=x;P[k*3+1]=H[k];P[k*3+2]=z;Z.set(zoneFn(x,z,H[k]),k*4);}
   const I=new Uint32Array(nx*nz*6);let q=0;for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*NX+i,b=a+1,c=a+NX,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I,1));G.computeVertexNormals();
   const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);
-  W.patch={x0,z0,dx,dz,nx,nz,h:H,x1:x0+nx*dx,z1:z0+nz*dz};
-  W.gy=(x,z)=>{const p=W.patch;if(x<p.x0||x>=p.x1||z<p.z0||z>=p.z1)return gy0(x,z);const fx=(x-p.x0)/p.dx,fz=(z-p.z0)/p.dz,i=Math.min(p.nx-1,Math.floor(fx)),j=Math.min(p.nz-1,Math.floor(fz)),u=fx-i,v=fz-j,N=p.nx+1,a=p.h[j*N+i],b=p.h[j*N+i+1],c=p.h[(j+1)*N+i],d=p.h[(j+1)*N+i+1];return(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);};}
+  const pt=W.patch={x0,z0,dx,dz,nx,nz,h:H,x1:x0+nx*dx,z1:z0+nz*dz};
+  W.gy=(x,z)=>{const p=pt;if(x<p.x0||x>=p.x1||z<p.z0||z>=p.z1)return gy0(x,z);const fx=(x-p.x0)/p.dx,fz=(z-p.z0)/p.dz,i=Math.min(p.nx-1,Math.floor(fx)),j=Math.min(p.nz-1,Math.floor(fz)),u=fx-i,v=fz-j,N=p.nx+1,a=p.h[j*N+i],b=p.h[j*N+i+1],c=p.h[(j+1)*N+i],d=p.h[(j+1)*N+i+1];return(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);};}
 function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float32Array(N*N*3),Z=new Float32Array(N*N*4);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
-  const sp=patch?terrainPatchSpec(W,patch.rect,patch.sub||4):null,I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sp&&i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1)continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
+  const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I.slice(0,q),1));G.computeVertexNormals();
-  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);if(sp)buildPatch(W,sp,patch.hfn,zoneFn);
+  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));
   if(far){const F=new THREE.PlaneGeometry(120000,120000,140,140);F.rotateX(-Math.PI/2);const p=F.attributes.position,FZ=new Float32Array(p.count*4);
     for(let i=0;i<p.count;i++){const x=p.getX(i)+W.farC[0],z=p.getZ(i)+W.farC[1];p.setX(i,x);p.setZ(i,z);const inside=x>g.x0+60&&x<g.x1-60&&z>g.z0+60&&z<g.z1-60;
       p.setY(i,inside?far(x,z)-40:far(x,z)-1);FZ.set([0,0,.8*sstep(5000,9000,Math.hypot(x-W.farC[0],z-W.farC[1]))*(1-sstep(30000,45000,Math.hypot(x,z))),0],i*4);}

@@ -48,3 +48,22 @@ Palettes: rich = ivory/cream, ochre-red base, travertine trim, red/purple accent
 base, brown shutters, small purple/blue motifs; poor = grey-beige rough plaster, brown timber, faded ochre.
 Neighbouring buildings must not repeat the same combination (hash per building, re-roll if equal to the left
 neighbour). Remove the dotted/noisy window-frame texture; frames are either clean painted shapes or geometry.
+
+## Phase 4 additions (from `refs/city_street_square.jpg`) — implemented 2026-10-23
+Decided once per building from a hash of its lot seed (`hz(seed,k)` in monuments.js, so the city layout does not change), tier = rich (domus lots), mid, poor (dense insula lots).
+| Feature | poor | mid | rich | Where |
+|---|---|---|---|---|
+| Top-floor open loggia with real arches (stone arcade, recessed top storey; needs 2+ storeys for rich, 3+ for mid) | 0 | 10 % | 20 % | `o.loggiaA`, lots.js (`arcade`) |
+| Painted garland frieze under the eaves (cream band, green festoons, red ties) | 0 | 15 % | 25 % | fl bit 16384, `wallS` |
+| Small blue-ground painted shrine panel (arched, framed, gilt figure) in the bay next to the door | 8 % | 8 % | 8 % | fl bit 32768, `wallS` (front wall only) |
+| Stone voussoirs over ground-floor arches + corner quoins | 0 | 20 % | 40 % | fl bit 65536, `wallS` |
+| Wooden balcony: plank deck, corbels, railing, terracotta pots with plants | (old awning/balcony kit) | 30 % | 0 | `o.balc`, lots.js |
+| Red-painted base storey with a street arcade (front wall only) | 0 | 20 % | 0 | fl bit 131072, `wallS` |
+Voussoirs and quoins ignore the blank-wall flag for quoins only; the shrine and garland also draw on blank rich walls.
+Squares (not houses): tholos fountain GLB, honorific column (2 m pedestal + plain shaft + abacus + gilt statue, ~12.4 m), statue bases, cypress rows.
+
+## Phase 5 changes (2026-10-23)
+* Timber frame: one upper storey only, houses of <= 4 storeys only (dense lots 35 %; shader grid 10 % of mid; rich 0 %). Dense lots with more storeys are plain plaster.
+* Wooden balconies carry 3-4 beam ends with diagonal brackets and a fascia board at the slab edge.
+* Open loggia (arcade or colonnade): dark flat recess (part 39, ~sRGB 45/38/34) for back wall, returns and soffit; stone parapet with coping across the openings.
+* The black stipple near windows was a float32 interpolation jitter of the `seed` attribute fed into `h12`; the shader now rounds `seed` to 1/4096 per fragment.

@@ -59,7 +59,7 @@ function palShape(x,z,h){const[lx,lz]=palL(x,z);if(lx<-260||lx>300||lz<-220||lz>
   // office blocks last: their pads win over a neighbour's rock skirt
   for(const B of palBL){const dx=lx-B.lx,dz=lz-B.lz,u=B.c*dx-B.s*dz,v=B.s*dx+B.c*dz,e=Math.min(B.hw+1.5-Math.abs(u),B.hd+1.5-Math.abs(v));
     if(e>-3)h=Math.min(h,lerp(h,lerp(B.y-.5,B.y-B.dr-.5,sstep(-4,4,v)),clamp((e+3)/4,0,1)));
-    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+3.5-Math.abs(u),B.hd+3.5-Math.abs(v));if(e2>-8&&h<yb)h=lerp(h,yb,clamp((e2+8)/8,0,1));}   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m
+    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb)h=lerp(h,yb,clamp((e2+8)/8,0,1));}   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m
   return h;}
 const palInBasin=(lx,lz,m=0)=>PAL_BASIN.some(([x0,x1,z0,z1])=>lx>x0-m&&lx<x1+m&&lz>z0-m&&lz<z1+m);
 function palInAsset(lx,lz,m){for(const A of PAL_ASSETS){const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;
@@ -67,8 +67,8 @@ function palInAsset(lx,lz,m){for(const A of PAL_ASSETS){const t=A.turn*DEG,c=Mat
   for(const B of palBL){const dx=lx-B.lx,dz=lz-B.lz,u=B.c*dx-B.s*dz,v=B.s*dx+B.c*dz;if(Math.abs(u)<B.hw+m&&Math.abs(v)<B.hd+m)return true;}
   return false;}
 // stair corridors kept free of walls (local lx ranges at the south foot)
-const PAL_STAIRS=[[44,53,120,230]];
-const palSkip=(lx,lz)=>palInAsset(lx,lz,4)||palInBasin(lx,lz,8)||PAL_STAIRS.some(([a,b,c,d])=>lx>a&&lx<b&&lz>c&&lz<d);
+const PAL_CL=[];   // local points of the south-slope road (switchbacks from the Apollo precinct to the Circus): terrace walls leave a gate where it crosses
+const palSkip=(lx,lz)=>palInAsset(lx,lz,4)||palInBasin(lx,lz,8)||PAL_CL.some(p=>Math.abs(p[0]-lx)<5.5&&Math.abs(p[1]-lz)<5.5);
 
 /* models: stand-ins now, GLBs from rome-assets.js later */
 function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);
@@ -86,7 +86,8 @@ function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);
 /* terraces: for each level, march rays out from the hilltop; the outer wall stands where the ground drops 6 m below the
    terrace, the floor reaches back to where the ground is level with it */
 const PAL_LV=[51,44,37,30,23,16];
-function palTerraces(W){const g=new GB(1<<16),C=[20,-15],P=(lx,lz)=>palW(lx,lz),H=(lx,lz)=>{const q=P(lx,lz);return W.gy(q[0],q[1]);},R=RNG(57);
+function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W,a,b,{lim:.15,half:34,step:2.5});W.palClivus=R;PAL_CL.length=0;for(const p of R)PAL_CL.push(palL(p[0],p[1]));}
+  const g=new GB(1<<16),C=[20,-15],P=(lx,lz)=>palW(lx,lz),H=(lx,lz)=>{const q=P(lx,lz);return W.gy(q[0],q[1]);},R=RNG(57);
   const xyz=(l,y)=>{const q=P(l[0],l[1]);return[q[0],y,q[1]];};
   W.palWalls=0;
   PAL_LV.forEach((yk,ki)=>{const tk=yk-6,S=[];
@@ -143,10 +144,11 @@ function palTerraces(W){const g=new GB(1<<16),C=[20,-15],P=(lx,lz)=>palW(lx,lz),
       if(!porch&&k%17===5&&A.d>13){const c=[(A.o[0]+A.i[0])/2,(A.o[1]+A.i[1])/2],q=xyz(c,yk);fountain(W,g,q[0],q[2],{hx:2.6,hz:2.6,y:yk+.05,statue:1.8});}
       if(k%11===3){const q=xyz(sh(oA,A.n,-1.1),yk);pedestalStatue(g,frame(q[0],yk,q[2],0),0,0,0,2.4,{gilt:R()<.2});}
       // stairs climbing along the wall face to the terrace below, with a cheek wall on the open side
-      if(ki<PAL_LV.length-1&&k%RS===1&&hz(k,4)>.62){const run=12,n=36;
+      if(ki<PAL_LV.length-1&&k%RS===1&&(runOf(k)+ki*2)%5===0){   // staggered by two runs per level: flights never line up into one long stair; you walk along each terrace to the next flight
+        const run=12,n=36;
         for(let s=0;s<n;s++){const t=(s+.5)/n*run,p=[oA[0]+ux*t+nx*2.1,oA[1]+uz*t+nz*2.1],q=xyz(p,0),ys=yk-7+(s+1)*7/n;g.set(2,.42);box(g,frame(q[0],0,q[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5),1.3,31);
           const p2=[p[0]+nx*1.55,p[1]+nz*1.55],q2=xyz(p2,0);g.set(2,.55);box(g,frame(q2[0],0,q2[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5)+.7,.18,31);}}
-      const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr);}});
+      const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr,'open');}});   // 'open': garden terraces count as vegetation for the street raster
   flushColumns(W);const m=g.mesh(MAT.city);if(m)W.scene.add(m);}
 
 /* ================= crowded saddle: block stand-ins, basin deck, walls, cryptoporticus, temple, gardens ================= */
@@ -263,6 +265,11 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
     if(c>7.5&&R()<.8){W.trees.push([q[0],y,q[2],'pine',.75+R()*.3]);lastP.push([lx,lz,1]);}
     else if(c>2.4&&R()<.7){W.trees.push([q[0],y,q[2],R()<.75?'cyp':'broad',.55+R()*.3]);lastP.push([lx,lz,0]);}
     else if(R()<.55){W.trees.push([q[0],y,q[2],R()<.5?'shrub':'flower',.7+R()*.5,R()<.5?null:[.5,.16,.26]]);lastP.push([lx,lz,0]);}}
+  // buttress blocks under the last rim cells where a hill model's lowest ledge still hangs above the terrain (found with __floatCheck)
+  for(const[lx,lz,hw,top]of[[62,-125,6,42.9],[6,25,6,53.9],[-10,80,5,55.9]]){const q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,hw,top-gh+1.5,hw,31);(ROME.supports=ROME.supports||[]).push({x:q[0],z:q[2],c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:hw+2,hd:hw+2});}
+  // phase 3: more rim cells found with __floatCheck (world x, z, height of the model's lowest geometry there): a small plinth under each
+  for(const[wx,wz,top]of[[234,234,42.7],[-22,345,55.6],[44,376,55.6],[46,372,55.6],[-34,367,50.6],[-32,363,50.6],[-28,355,50.6],[28,403,50.6],[33,394,50.6],[30,399,50.6],[-81,392,41.5],[155,155,31.7],[118,215,51.2]]){
+    const[lx,lz]=palL(wx,wz),gh=W.gy(wx,wz);if(top-gh<.3)continue;g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,2.3,top-gh+1.55,2.3,31);(ROME.supports=ROME.supports||[]).push({x:wx,z:wz,c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:3.3,hd:3.3});}
   W.foot.add(PFR.p(-31,0,-40)[0],PFR.p(-31,0,-40)[2],56,76,PALF.rot);
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);flushColumns(W);}
 // paved ground on the plateau strips (follows the terrain), Jupiter Victor temple with stair and altar

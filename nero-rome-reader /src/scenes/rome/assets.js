@@ -4,7 +4,7 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,grass:8,hedge:8,gravel:8,roof:9,stucco:6};
+const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:1,hedge:8,gravel:8,roof:9,stucco:6};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 vec3 romePat(vec3 c,vec3 wp,float pat){
@@ -34,14 +34,15 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   if(mt.name==='flame'){mt.emissive=new THREE.Color(2.2,.8,.18);mt.color.setRGB(1,.5,.1);}
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
   if(mt.name==='dark')mt.color.setRGB(.13,.105,.08);
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],tuff:[.37,.33,.275]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
-    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWPa;').replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\nvWPa=(modelMatrix*instanceMatrix*vec4(transformed,1.)).xyz;\n#else\nvWPa=(modelMatrix*vec4(transformed,1.)).xyz;\n#endif');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+GL_NOISE+GL_ATMO+GL_ROMEPAT+'\nvarying vec3 vWPa;')
-      .replace('#include <color_fragment>','#include <color_fragment>\n'+(pat?'diffuseColor.rgb=romePat(diffuseColor.rgb,vWPa,'+pat+'.);':''))
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWPa;varying float vBY;').replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\nvWPa=(modelMatrix*instanceMatrix*vec4(transformed,1.)).xyz;\n#else\nvWPa=(modelMatrix*vec4(transformed,1.)).xyz;\n#endif\n#ifdef USE_INSTANCING\nvBY=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).y;\n#else\nvBY=(modelMatrix*vec4(0.,0.,0.,1.)).y;\n#endif');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+GL_NOISE+GL_ATMO+GL_ROMEPAT+'\nuniform vec4 uDbg;varying vec3 vWPa;varying float vBY;')
+      .replace('#include <color_fragment>','#include <color_fragment>\n'+(mt.name==='moss'?'if(fbm2(vWPa.xz*.9+vWPa.y*.4)<.5)discard;':'')+(pat?'diffuseColor.rgb=romePat(diffuseColor.rgb,vWPa,'+pat+'.);':'')+'\nif(uDbg.z<.5){vec3 wn=normalize(cross(dFdx(vWPa),dFdy(vWPa)));float hy=vWPa.y-vBY;float gr=1.-smoothstep(0.,3.,hy);diffuseColor.rgb*=1.-.28*gr*(.6+.8*fbm2(vWPa.xz*.6));diffuseColor.rgb*=mix(1.,.72,smoothstep(-.3,-.8,wn.y));if(abs(wn.y)<.5)diffuseColor.rgb*=1.-.1*smoothstep(.55,.85,fbm2(vec2((vWPa.x+vWPa.z)*.9,vWPa.y*.07)));}')
       .replace('#include <fog_fragment>','gl_FragColor.rgb=atmo(gl_FragColor.rgb,vWPa);');};
-  mt.customProgramCacheKey=()=>'romeglb'+pat;mt.needsUpdate=true;}
+  mt.customProgramCacheKey=()=>'romeglb'+pat+(mt.name==='moss'?'m':'');mt.needsUpdate=true;}
 // register a placement; fn(g,F) draws the stand-in (optional). o: {parent: group, sx, sy, sz: scale}
 function romeStand(W,n,x,z,y,rot,fn,o){const G=new THREE.Group();G.name='stand_'+n;
   if(fn){flushColumns(W);const g=new GB(1<<14);W.colGroup=G;fn(g,frame(x,y,z,rot||0));const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=null;}
@@ -52,10 +53,12 @@ function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.r
   const inst=[];for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const o=scene.clone(true);p.obj=o;o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;
     if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);(p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene).add(o);if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
   if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
-    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),mt=tn?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(0,p.r,0));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});im.castShadow=false;im.receiveShadow=true;W0.scene.add(im);});}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
+    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.21,.18,.127],rock2:[.165,.138,.096],moss:[.188,.216,.08]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn)mt.color.setRGB(...RK);if(RK&&m.material.name==='moss'){mt.userData.rome=0;romeMat(mt);}const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});im.castShadow=false;im.receiveShadow=true;W0.scene.add(im);});}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
-  const go=()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
-    for(const n of new Set(ROME.GLB.map(p=>p.n))){if(!D[n])continue;left++;try{const bin=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)).buffer;new THREE.GLTFLoader().parse(bin,'',gl=>{romePutModels(n,gl.scene);fin();},e=>{console.warn('rome glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
+  const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
+    const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;
+    for(const n of names){try{const raw=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)),buf=window.ROME_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;   // rome-assets.js holds gzipped, quantized GLBs (tools/glbopt.mjs)
+      new THREE.GLTFLoader().parse(buf,'',gl=>{romePutModels(n,gl.scene);fin();},e=>{console.warn('rome glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
     if(!left)window.__romeReady=true;};
   if(window.ROME_GLB){go();return;}window.romeAssetsLoaded=go;const s=document.createElement('script');s.src='rome-assets.js';
   s.onerror=()=>{console.warn('rome-assets.js not found: procedural stand-ins stay');window.__romeReady=true;};document.head.appendChild(s);}
@@ -77,4 +80,10 @@ window.__floatCheck=(opt)=>{const W=W0,out=[],CS=3,tolF=opt&&opt.tolF||.4,tolB=o
       if(d>tolF&&!supported(c.x,c.z)){fN++;hits.push([Math.round(c.x),Math.round(c.z),+yN.toFixed(1),+g.toFixed(1)]);if(d>fMax){fMax=d;at=[Math.round(c.x),Math.round(c.z)];}}}
     for(let i=0;i<inn.length;i+=stI){const c=inn[i],d=W.gy(c.x+CS/2,c.z+CS/2)-p.y;if(d>tolB){bN++;if(d>bMax)bMax=d;}}
     out.push({n:p.n,x:Math.round(p.x),z:Math.round(p.z),y:+p.y.toFixed(1),floatN:fN,floatMax:+fMax.toFixed(1),at,buriedN:bN,buriedMax:+bMax.toFixed(1),hits});}
+  for(const pts of ROME.porticos||[]){if(pts.carried)continue;let fN=0,fMax=0,at=null;   // pts.carried: stands on a building (reason in the string), not on the ground
+   for(const[x,y,z]of pts){const d=y-W.gy(x,z);if(d>Math.max(tolF,(pts.fd||12)-.5)&&!supported(x,z)){fN++;if(d>fMax){fMax=d;at=[Math.round(x),Math.round(z)];}}}   // procedural porticoes: every column foot against the ground
+    if(fN)out.push({n:'portico',x:Math.round(pts[0][0]),z:Math.round(pts[0][2]),y:+pts[0][1].toFixed(1),floatN:fN,floatMax:+fMax.toFixed(1),at,buriedN:0,buriedMax:0,hits:[]});}
   return out;};
+
+// TEST: window.__temple(false) = the old near-white GLB look (colours and grime off), true = the new ivory/grime shading
+window.__temple=on=>{U.uDbg.value.z=on?0:1;W0.scene.traverse(m=>{if(m.isMesh&&m.material&&m.material.userData.oc){const W={marble:1,travertine:1,plaster:1,plaster2:1,plaster3:1,stone:1,tuff:1}[m.material.name];if(W){if(!m.material.userData.nc)m.material.userData.nc=m.material.color.clone();m.material.color.copy(on?m.material.userData.nc:m.material.userData.oc);}}});};

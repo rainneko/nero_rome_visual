@@ -54,7 +54,8 @@
       "file": "rome-assets.js",
       "var": "ROME_GLB",
       "cb": "romeAssetsLoaded",
-      "dir": "assets/models/rome"
+      "dir": "assets/models/rome",
+      "optimize": true
     }
   ],
   "book": {

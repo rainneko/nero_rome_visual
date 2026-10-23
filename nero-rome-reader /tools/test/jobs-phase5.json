@@ -1,0 +1,213 @@
+[
+{
+"out": "p5b_before_port_claud.png",
+"pos": [
+1100,
+75,
+800
+],
+"tgt": [
+900,
+50,
+640
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_port_livia.png",
+"pos": [
+1050,
+80,
+-380
+],
+"tgt": [
+930,
+40,
+-280
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_road_a.png",
+"pos": [
+482.9,
+2.8,
+-359.4
+],
+"tgt": [
+523.8,
+2,
+-372.7
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_road_c.png",
+"pos": [
+882,
+2.8,
+222.8
+],
+"tgt": [
+925,
+2,
+228
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_boarium.png",
+"pos": [
+-440,
+95,
+130
+],
+"tgt": [
+-440,
+0,
+215
+],
+"js": "[JSON.stringify(__floatCheck().filter(o=>o.floatN>0||o.buriedN>0).map(o=>[o.n,o.x,o.z,o.floatN,o.floatMax,o.buriedN].join(' '))),JSON.stringify(__houseFloat())]",
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_N.png",
+"pos": [
+900,
+52,
+470
+],
+"tgt": [
+900,
+42,
+545
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_NW.png",
+"pos": [
+760,
+60,
+500
+],
+"tgt": [
+850,
+42,
+560
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_W.png",
+"pos": [
+740,
+55,
+640
+],
+"tgt": [
+810,
+45,
+640
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_E.png",
+"pos": [
+1050,
+45,
+640
+],
+"tgt": [
+990,
+40,
+640
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_S.png",
+"pos": [
+900,
+62,
+830
+],
+"tgt": [
+900,
+52,
+745
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_claud_NE.png",
+"pos": [
+1040,
+40,
+490
+],
+"tgt": [
+950,
+40,
+550
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_livia_N.png",
+"pos": [
+930,
+45,
+-400
+],
+"tgt": [
+930,
+42,
+-325
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_livia_W.png",
+"pos": [
+780,
+50,
+-280
+],
+"tgt": [
+867,
+42,
+-280
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_livia_E.png",
+"pos": [
+1090,
+50,
+-280
+],
+"tgt": [
+993,
+42,
+-280
+],
+"wait": 2500
+},
+{
+"out": "p5b_before_livia_NW.png",
+"pos": [
+820,
+50,
+-370
+],
+"tgt": [
+900,
+40,
+-310
+],
+"wait": 2500
+}
+]
