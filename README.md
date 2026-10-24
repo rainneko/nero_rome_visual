@@ -18,3 +18,9 @@ The project was made for the novel from the start.
 Build and run: see [`nero-rome-reader /README.md`](nero-rome-reader%20/README.md).
 
 The novel text and the reference images belong to their owners; see the licence notes in each folder.
+
+## Licence
+
+- Documentation: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Scripts and source code: MIT License.
+- Novel and other text: © the author; all rights reserved unless the author states otherwise.

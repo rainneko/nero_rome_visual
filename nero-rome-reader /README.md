@@ -108,6 +108,7 @@ npm run test:shot -- '[[0,"forum",0.3,"forum.png"],[1,"antBridge",0.3,"bridge.pn
 
 ## Licences
 
-* Code: choose a licence before publishing (none is set yet).
-* Novel text (`data/book.txt`, excerpts in `src/ui/app.js`): © the author, all rights reserved unless the author decides otherwise.
+* Documentation: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+* Scripts and source code: MIT License.
+* Novel text (`data/book.txt`, excerpts in `src/ui/app.js`): © the author, all rights reserved unless the author states otherwise.
 * Third‑party data: see `NOTICE.md`.
