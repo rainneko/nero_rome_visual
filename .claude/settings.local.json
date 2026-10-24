@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -f \"Blender -b\")",
+      "Bash(printf '\\\\n## 第4轮中断（额度）\\\\n* 所有工人已停；后台 Blender 已全部关闭。脚本都在 tools/models/rome/*.py，已导出的 GLB 在 assets/models/rome/。\\\\n* 续做方法：用 SendMessage 给原工人（id 见 scratchpad/workers.md）说\"继续\"；同时最多开 8 个（内存）。\\\\n* 我这边未完成：palatine.js 写好但未接入 monuments.js/构建；街道铺装与内院改动已写未截图验证。\\\\n')"
+    ]
+  }
+}
