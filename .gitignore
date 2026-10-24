@@ -1,0 +1,19 @@
+# macOS metadata
+.DS_Store
+
+# Logs and local runtime output
+*.log
+
+# Node / build artifacts
+node_modules/
+dist/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+

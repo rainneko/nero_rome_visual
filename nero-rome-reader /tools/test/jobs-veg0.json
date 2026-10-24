@@ -1,0 +1,6 @@
+[{"out":"x0_pal_su.png","view":"palatine","tod":2.45},
+ {"out":"x0_pal_au.png","view":"palatine","tod":3.45},
+ {"out":"x0_ave_su.png","pos":[-330,95,1190],"tgt":[-455,50,1085],"tod":2.45},
+ {"out":"x0_ave_au.png","pos":[-330,95,1190],"tgt":[-455,50,1085],"tod":3.45},
+ {"out":"x0_tib_su.png","view":"boarium","tod":2.45},
+ {"out":"x0_tib_au.png","view":"boarium","tod":3.45}]

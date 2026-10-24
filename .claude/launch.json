@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nero-reader",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "/Users/Rainy/PycharmProjects/nero_rome_reader/nero-rome-reader /dist"],
+      "port": 8765
+    }
+  ]
+}

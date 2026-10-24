@@ -1,0 +1,13 @@
+name = "nero-visits"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nero-visits"
+database_id = "PASTE-THE-ID-FROM-wrangler-d1-create"
+
+[vars]
+# the site that may call the counter (comma-separated list, or "*")
+ALLOW_ORIGINS = "https://rainneko.github.io"
+# SALT is a secret, set it with:  npx wrangler secret put SALT

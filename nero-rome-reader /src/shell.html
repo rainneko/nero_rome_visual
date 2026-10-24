@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>尼禄重工纪元 · 罗马沙盘阅读器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --porph:#5b1f2e;--porph2:#7d2c3e;--gilt:#c9a24e;--gilt2:#e9cf8f;
+  --paper:#f2e9d6;--paper2:#e6d9bf;--ink:#2b2119;--ink2:#6b5745;--rule:rgba(91,31,46,.2);
+  --glass:rgba(26,19,14,.66);--gtext:#f1e6cf;--gmute:#c6b597;
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
+  --roman:"Cinzel","Trajan Pro",Georgia,serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#2a221b;--paper2:#211a14;--ink:#eee2c9;--ink2:#bba78a;--rule:rgba(201,162,78,.22);--acc:#e9cf8f;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#2a221b;--paper2:#211a14;--ink:#eee2c9;--ink2:#bba78a;--rule:rgba(201,162,78,.22);--acc:#e9cf8f;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;overflow:hidden;background:#17120e;font-family:var(--serif);color:var(--gtext)}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;cursor:grab}
+#gl.drag{cursor:grabbing}
+button,select,input{font-family:inherit}
+#renderQuality{color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:5px 7px;font-size:12px;max-width:100%}
+button:focus-visible,select:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--gilt2);outline-offset:2px}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:calc(8px + env(safe-area-inset-top,0px)) 16px 18px;
+  display:flex;gap:18px;align-items:flex-start;pointer-events:none;
+  background:linear-gradient(180deg,rgba(22,16,12,.82),rgba(22,16,12,.5) 60%,rgba(22,16,12,0))}
+#hud>*{pointer-events:auto}
+.brand{display:flex;gap:12px;align-items:center;min-width:0;flex:0 1 auto}
+.year{font-family:var(--roman);font-weight:600;font-size:15px;letter-spacing:.06em;color:var(--gilt2);
+  border:1px solid rgba(201,162,78,.5);padding:6px 9px;border-radius:3px;white-space:nowrap;background:rgba(91,31,46,.55)}
+.brand h1{margin:0;font-size:16px;font-weight:600;color:#fff4dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--gmute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw}
+#ledgers{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-end}
+.led{background:rgba(14,10,8,.55);border:1px solid rgba(201,162,78,.28);border-radius:3px;padding:3px 7px;min-width:80px}
+.led b{display:block;font-size:10.5px;font-weight:400;color:var(--gmute)}
+.led span{font-size:12.5px;font-weight:600;color:#fff1d6;font-variant-numeric:tabular-nums;transition:color .6s}
+.led span.up{color:var(--gilt2)}
+.seg{display:flex;border:1px solid rgba(201,162,78,.5);border-radius:3px;overflow:hidden;flex:0 0 auto}
+.seg button{background:rgba(14,10,8,.55);color:var(--gmute);border:0;padding:7px 12px;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--porph);color:#fff3da}
+
+/* reader */
+#reader{position:fixed;z-index:15;top:calc(78px + env(safe-area-inset-top,0px));right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  width:min(38vw,520px);display:flex;flex-direction:column;border-radius:6px;overflow:hidden;
+  background:color-mix(in srgb,var(--paper) 94%,transparent);color:var(--ink);
+  box-shadow:0 10px 40px rgba(0,0,0,.45);border:1px solid var(--rule);transition:transform .45s cubic-bezier(.2,.7,.2,1)}
+#reader.closed{transform:translateX(calc(100% + 24px))}
+.rhead{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule);background:var(--paper2)}
+.rhead strong{font-size:14px;flex:1}
+.rbtn{background:transparent;border:1px solid var(--rule);color:var(--ink);border-radius:3px;padding:4px 9px;font-size:12px;cursor:pointer}
+.rbtn:hover{background:var(--porph);color:#fff3da;border-color:var(--porph)}
+.rbtn.rmain{background:var(--porph);color:#fff3da;border-color:var(--porph);font-weight:600}.rbtn.rmain:hover{filter:brightness(1.12)}
+#rscroll>.bacts{display:flex;gap:8px;margin:-10px 0 24px}
+#rscroll{flex:1;overflow-y:auto;padding:22px 28px 40vh;scroll-behavior:smooth}
+.ch{margin:0 0 56px;padding-left:16px;border-left:2px solid transparent;transition:border-color .5s,opacity .5s;opacity:.62}
+.ch.on{border-left-color:var(--gilt);opacity:1}
+.ch .when{font-size:12px;color:var(--ink2);margin:0 0 6px}
+.ch h2{font-size:20px;line-height:1.35;margin:0 0 14px;font-weight:700}
+.ch p{font-size:15.5px;line-height:1.95;margin:0 0 14px;text-align:justify;text-indent:2em}
+.ch .note{font-size:12.5px;line-height:1.7;text-indent:0;color:var(--ink2);border-top:1px solid var(--rule);padding-top:8px}
+#rtab{position:fixed;z-index:16;right:14px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;background:var(--porph);color:#fff3da;
+  border:0;border-radius:4px;padding:12px 7px;font-size:13px;cursor:pointer;display:none}
+#reader.closed ~ #rtab{display:block}
+
+/* dock */
+#dock{position:fixed;z-index:14;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;align-items:flex-end;pointer-events:none}
+#dock>*{pointer-events:auto}
+.panel{background:var(--glass);border:1px solid rgba(201,162,78,.28);border-radius:6px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#mapbox{padding:8px}
+#minimap{display:block;width:210px;height:210px;border-radius:3px;cursor:crosshair}
+#mapcap{font-size:11px;color:var(--gmute);margin-top:5px;max-width:210px;line-height:1.45}
+#ctrl{padding:10px 12px;width:290px}
+#views{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+#views button{background:rgba(255,255,255,.06);color:var(--gtext);border:1px solid rgba(201,162,78,.3);border-radius:3px;padding:4px 8px;font-size:12px;cursor:pointer}
+#views button.on,#views button:hover{background:var(--porph);border-color:var(--gilt)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;color:var(--gmute)}
+.row label{flex:0 0 74px}
+.row input[type=range]{flex:1;accent-color:var(--gilt)}
+.row output{flex:0 0 58px;text-align:right;color:var(--gtext);font-size:11.5px}
+.toggles{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tg{background:rgba(255,255,255,.06);color:var(--gtext);border:1px solid rgba(201,162,78,.3);border-radius:3px;padding:4px 8px;font-size:12px;cursor:pointer}
+.tg.on{background:rgba(201,162,78,.25);border-color:var(--gilt)}
+
+/* timeline */
+#timeline{position:fixed;z-index:13;left:16px;right:calc(min(38vw,520px) + 40px);top:calc(84px + env(safe-area-inset-top,0px));height:30px;display:flex;align-items:flex-start;gap:2px;pointer-events:none}
+#timeline button{pointer-events:auto;flex:1;min-width:0;background:none;border:0;border-top:2px solid rgba(241,230,207,.35);color:rgba(241,230,207,.7);
+  font-size:11px;padding:6px 2px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
+#timeline button.on{border-top-color:var(--gilt2);color:#fff3da;font-weight:600}
+#timeline button.ant{border-top-style:dashed}
+
+/* labels, card, loading */
+#labels{position:fixed;inset:0;z-index:10;pointer-events:none;overflow:hidden}
+.lab{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;pointer-events:auto;cursor:pointer;
+  font-size:12px;color:#fff6e2;background:rgba(32,22,15,.72);border:1px solid rgba(201,162,78,.45);border-radius:3px;padding:3px 7px 3px 6px;
+  text-shadow:0 1px 2px #000;transition:opacity .35s}
+.lab::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:14px;background:rgba(233,207,143,.8)}
+.lab.new{background:rgba(91,31,46,.85);border-color:var(--gilt2)}
+.lab small{color:var(--gmute);margin-left:4px;font-size:10.5px}
+#card{position:fixed;z-index:22;left:14px;top:calc(84px + env(safe-area-inset-top,0px));width:300px;padding:12px 14px;font-size:13px;line-height:1.7;color:var(--gtext)}
+#card h3{margin:0 0 4px;font-size:15px;color:#fff3da}
+#card .lat{font-family:var(--roman);font-size:11px;color:var(--gilt2);letter-spacing:.04em}
+#card button{float:right;background:none;border:0;color:var(--gmute);font-size:18px;cursor:pointer;line-height:1}
+#loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:#17120e;color:var(--gmute);font-size:14px;transition:opacity .8s}
+#loading .yr{font-family:var(--roman);font-size:28px;color:var(--gilt2);letter-spacing:.08em;text-align:center;margin-bottom:10px}
+#loading.gone{opacity:0;pointer-events:none}
+/* table of contents and full-text chapters */
+#btoc{position:absolute;inset:0;z-index:5;background:var(--paper);color:var(--ink);overflow-y:auto;padding:0 22px 40px}
+#btoc[hidden]{display:none}
+#btoc .btop{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;padding:10px 0;background:var(--paper)}
+#btoc .binfo h2{font-size:22px;margin:2px 0 6px;font-weight:700;color:var(--acc,var(--porph))}
+#btoc .bmeta{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
+#btoc .bintro{font-size:14px;line-height:1.8;margin:0 0 12px}
+#btoc .bacts{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+#btoc .bvol h3{font-size:15px;margin:20px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--rule);color:var(--acc,var(--porph))}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.bgrid a{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 2px;color:var(--ink);text-decoration:none;font-size:14px;border-bottom:1px dashed var(--rule)}
+.bgrid a:hover{color:var(--acc,var(--porph))}
+.bgrid a em{font-style:normal;font-size:11.5px;color:var(--ink2);white-space:nowrap}
+.bgrid.fold a.more{display:none}
+.bmore{margin:10px 0 0}
+.bnav{display:flex;justify-content:space-between;gap:8px;margin:0 0 18px}
+.bnav.bot{margin:30px 0 0}
+.bnav button[disabled]{opacity:.35;cursor:default}
+#rscroll .bcount{font-size:12px;text-indent:0;color:var(--ink2);margin:-8px 0 16px}
+@media (max-width:520px){.bgrid{grid-template-columns:1fr}}
+@media (max-width:860px){
+  #reader{top:auto;left:8px;right:8px;width:auto;height:46vh;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  #reader.closed{transform:translateY(calc(100% + 20px))}
+  #ledgers{display:none}
+  #dock{bottom:calc(46vh + 18px);left:8px}
+  #mapbox{display:none}
+  #ctrl{width:240px}
+  #timeline{left:8px;right:8px;bottom:calc(46vh + 14px);display:none}
+  .brand p{max-width:60vw}
+}
+@media (prefers-reduced-motion:reduce){#reader{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="labels"></div>
+<header id="hud">
+  <div class="brand"><div class="year" id="hudYear">A.D. LIV</div><div><h1 id="hudTitle">正在建造罗马</h1><p id="hudSub"></p></div></div>
+  <div id="ledgers"></div>
+  <div class="seg" id="pages"><button data-page="rome" class="on">罗马</button><button data-page="antium">安齐奥</button></div>
+</header>
+<section id="reader">
+  <div class="rhead"><strong>尼禄重工纪元</strong>
+    <label class="rbtn" for="txt">导入全书 TXT</label><input id="txt" type="file" accept=".txt,.md" hidden>
+    <button class="rbtn" id="rclose">收起</button></div>
+  <div id="rscroll"></div>
+</section>
+<button id="rtab">展开正文</button>
+<div id="dock">
+  <div class="panel" id="mapbox"><canvas id="minimap" width="420" height="420"></canvas><div id="mapcap">小地图：点击可飞到该处</div></div>
+  <div class="panel" id="ctrl">
+    <div id="views"></div>
+    <div class="row"><label for="tod">昼夜</label><input id="tod" type="range" min="0" max="1000" value="180"><output id="todv">清晨</output></div>
+    <div class="row"><label>季节</label><span id="seasons"><button class="tg" data-s="0">春</button><button class="tg on" data-s="1">夏</button><button class="tg" data-s="2">秋</button><button class="tg" data-s="3">冬</button></span></div>
+    <div class="row"><label for="glassop">玻璃不透明</label><input id="glassop" type="range" min="5" max="95" value="38"><output id="glassv">38%</output></div>
+    <div class="toggles">
+      <button class="tg on" id="tLabels">地名</button><button class="tg" id="tPaint" title="Kuwahara 油画平涂">画意滤镜</button><button class="tg" id="tCrystL" title="晶格油画的约半强度：更细更柔的色块，和原图混合">轻晶格</button><button class="tg" id="tCryst" title="晶格化厚涂油画：多边形色块 + 交叉短笔触">晶格油画</button><button class="tg" id="tTilt">移轴</button>
+      <button class="tg" id="tMusic">八音盒《卡农》</button><button class="tg" id="tBell">风铃</button>
+      <label class="tg" for="glb">导入 .glb</label><input id="glb" type="file" accept=".glb,.gltf" hidden>
+    </div>
+  </div>
+</div>
+<div id="timeline"></div>
+<div class="panel" id="card" hidden></div>
+<div id="loading"><div><div class="yr">ROMA · A.D. LIV</div><div id="loadmsg">正在铺设七丘……</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>
