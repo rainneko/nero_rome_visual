@@ -1,23 +1,41 @@
 /* ---------- other materials ---------- */
-MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];',env:.4,fSurf:`
+MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];',env:.4,fSurf:`
  vec3 N=normalize(vWN);float sl=1.-clamp(N.y,0.,1.);vec2 p=vWP.xz;
- vec3 grass=mix(vec3(.07,.11,.035),vec3(.16,.19,.06),fbm2(p*.008));vec3 dry=vec3(.34,.29,.17);
- vec3 c=mix(grass,dry,.36+.36*fbm2(p*.0035+7.));
-#define SDS(p,a,b) length((p)-(a)-((b)-(a))*clamp(dot((p)-(a),(b)-(a))/dot((b)-(a),(b)-(a)),0.,1.))
- vec3 htG=vec3(0.),fcG=vec3(0.);float hwG=0.,fmG=0.;float sS=uSeason;float sDry=sS<1.?mix(-.18,.32,sS):sS<2.?mix(.32,.12,sS-1.):sS<3.?mix(.12,-.05,sS-2.):mix(-.05,-.18,sS-3.);c=mix(c,sDry>0.?dry*1.05:vec3(.1,.17,.05),abs(sDry));
- float fBl=sS<1.?mix(.35,1.,min(1.,sS*2.)):sS<2.?mix(1.,.45,sS-1.):sS<3.?mix(.45,.06,sS-2.):mix(.06,.35,sS-3.);
- {vec3 ht=vec3(0.);float hwt=0.,dd;dd=SDS(p,vec2(0.,280.),vec2(230.,320.));float w1=1.-smoothstep(140.,190.,dd);ht+=vec3(.1,.17,.05)*w1;hwt+=w1;dd=SDS(p,vec2(-262.,40.),vec2(-205.,-225.));float w2=1.-smoothstep(98.,104.,dd);ht+=mix(vec3(.2,.21,.1),vec3(.27,.25,.13),smoothstep(.4,.7,fbm2(p*.04)))*w2;hwt+=w2;dd=SDS(p,vec2(-700.,900.),vec2(-300.,1150.));float w3=1.-smoothstep(180.,250.,dd);ht+=vec3(.07,.12,.04)*w3;hwt+=w3;dd=SDS(p,vec2(700.,700.),vec2(1500.,600.));float w4=1.-smoothstep(160.,220.,dd);ht+=vec3(.13,.14,.06)*w4;hwt+=w4;dd=SDS(p,vec2(480.,-40.),vec2(1300.,-300.));float w5=1.-smoothstep(170.,230.,dd);ht+=vec3(.12,.2,.06)*w5;hwt+=w5;dd=SDS(p,vec2(-60.,-560.),vec2(900.,-1520.));float w6=1.-smoothstep(170.,230.,dd);ht+=mix(vec3(.08,.14,.05),vec3(.17,.15,.22),step(.84,vn2(p*.3)))*w6;hwt+=w6;dd=SDS(p,vec2(500.,-760.),vec2(1350.,-1080.));float w7=1.-smoothstep(120.,170.,dd);ht+=vec3(.18,.22,.08)*w7;hwt+=w7;if(hwt>.01){ht/=hwt;float sd2=(sS>.5&&sS<2.)?.35:0.;htG=mix(ht,dry,sd2*(1.-w1)*(1.-w5)*(1.-w2));hwG=min(1.,hwt);}}{float hm=smoothstep(.72,.9,vn2(p*.5))*fBl;vec3 fc2=vec3(0.);float hw=0.;float hk=h12(floor(p/2.3));
-  if(SDS(p,vec2(0.,280.),vec2(230.,320.))<190.){fc2=hk<.5?vec3(.62,.46,.36):vec3(.5,.42,.3);hw=.25;}   // (was bright pink/violet at full strength: the pale speckle on the Palatine slopes)
-  else if(SDS(p,vec2(-262.,40.),vec2(-205.,-225.))<125.){fc2=vec3(.78,.66,.2);hw=.45;}
-  else if(SDS(p,vec2(-700.,900.),vec2(-300.,1150.))<250.){fc2=hk<.45?vec3(.92,.45,.6):hk<.75?vec3(.94,.92,.9):vec3(.8,.18,.12);hw=1.;}
-  else if(SDS(p,vec2(700.,700.),vec2(1500.,600.))<220.){fc2=hk<.6?vec3(.92,.92,.88):vec3(.46,.36,.72);hw=.8;}
-  else if(SDS(p,vec2(480.,-40.),vec2(1300.,-300.))<230.){fc2=hk<.5?vec3(.8,.28,.34):vec3(.95,.9,.55);hw=.9;}
-  else if(SDS(p,vec2(-60.,-560.),vec2(900.,-1520.))<230.){fc2=hk<.6?vec3(.94,.94,.9):vec3(.56,.5,.76);hw=.9;}
-  else if(SDS(p,vec2(500.,-760.),vec2(1350.,-1080.))<170.){fc2=hk<.5?vec3(.92,.56,.15):vec3(.46,.36,.72);hw=.8;}
-  fcG=fc2;fmG=hm*hw*.32;}
+ vec3 grass=mix(vec3(.07,.11,.035),vec3(.16,.19,.06),fbm2(p*.008));vec3 dry=vec3(.34,.29,.17);vec3 wcG=vec3(0.);float wmG=0.;
 
+ // seasonal grass (vegetation_seasons brief): Rome is summer-dry. Unwatered ground goes straw in summer, regrows after the autumn rains, is green in winter and freshest in spring.
+ float sS=uSeason;const vec3 W3=vec3(.3,.5,.2);
+ float dryA=smoothstep(.4,.95,sS)*(1.-smoothstep(1.45,1.95,sS));
+ vec3 gSp=vec3(.103,.345,.036),gAu=vec3(.038,.169,.037),gWi=vec3(.047,.169,.044);
+ vec3 gS=sS<2.?mix(gSp,gAu,sS*.5):sS<3.?mix(gAu,gWi,sS-2.):mix(gWi,gSp,sS-3.);
+ vec3 gr=gS*mix(.82,1.18,fbm2(p*.008))*(.93+.14*vn2(p*.4));
+ vec3 stw=vec3(.54,.42,.16)*mix(.85,1.15,fbm2(p*.0035+7.))*(.94+.12*vn2(p*.5));
+ vec3 c=mix(gr,stw,dryA*(.9+.1*fbm2(p*.004+3.)));
+ {float lc=dot(c,W3);float wW=0.;for(int i=0;i<56;i++){vec4 w=uWat[i];if(w.z>0.){if(w.w>0.){float cr=cos(uWatR[i]),sr=sin(uWatR[i]);vec2 dd=p-w.xy,l=vec2(dd.x*cr-dd.y*sr,dd.x*sr+dd.y*cr),q=abs(l)-w.zw;float sd=length(max(q,0.))+min(max(q.x,q.y),0.);   // garden rectangle: solid inside, a soft noisy edge about 5 m wide outside
+   wW=max(wW,1.-smoothstep(0.,5.,sd+(fbm2(p*.03+w.xy)-.5)*7.+(vn2(p*.3)-.5)*3.));}
+  else{float d=length(p-w.xy);wW=max(wW,1.-smoothstep(w.z*.6,w.z,d+(fbm2(p*.03+w.xy)-.5)*w.z*.5));}}}
+  vec3 wSp=vec3(.058,.19,.04),wAu=vec3(.05,.171,.036),wWi=vec3(.042,.141,.034);vec3 wc=sS<1.?wSp:sS<2.?mix(wSp,wAu,sS-1.):sS<3.?mix(wAu,wWi,sS-2.):mix(wWi,wSp,sS-3.);
+  wcG=wc*(.88+.24*fbm2(p*.03));wmG=wW;}
+#define SDS(p,a,b) length((p)-(a)-((b)-(a))*clamp(dot((p)-(a),(b)-(a))/dot((b)-(a),(b)-(a)),0.,1.))
+ vec3 htG=vec3(0.),fcG=vec3(0.);float hwG=0.,fmG=0.;
+ float fBl=sS<1.4?1.-smoothstep(.55,1.3,sS):sS<3.5?0.:smoothstep(3.5,4.,sS);   // wild flowers: spring only
+ {vec3 ht=vec3(0.);float hwt=0.,dd;dd=SDS(p,vec2(0.,280.),vec2(230.,320.));float w1=1.-smoothstep(140.,190.,dd);ht+=vec3(.1,.17,.05)*w1;hwt+=w1;dd=SDS(p,vec2(-262.,40.),vec2(-205.,-225.));float w2=1.-smoothstep(98.,104.,dd);ht+=mix(vec3(.2,.21,.1),vec3(.27,.25,.13),smoothstep(.4,.7,fbm2(p*.04)))*w2;hwt+=w2;dd=SDS(p,vec2(-700.,900.),vec2(-300.,1150.));float w3=1.-smoothstep(180.,250.,dd);ht+=vec3(.07,.12,.04)*w3;hwt+=w3;dd=SDS(p,vec2(700.,700.),vec2(1500.,600.));float w4=1.-smoothstep(160.,220.,dd);ht+=vec3(.13,.14,.06)*w4;hwt+=w4;dd=SDS(p,vec2(480.,-40.),vec2(1300.,-300.));float w5=1.-smoothstep(170.,230.,dd);ht+=vec3(.12,.2,.06)*w5;hwt+=w5;dd=SDS(p,vec2(-60.,-560.),vec2(900.,-1520.));float w6=1.-smoothstep(170.,230.,dd);ht+=mix(vec3(.08,.14,.05),vec3(.17,.15,.22),step(.84,vn2(p*.3)))*w6;hwt+=w6;dd=SDS(p,vec2(500.,-760.),vec2(1350.,-1080.));float w7=1.-smoothstep(120.,170.,dd);ht+=vec3(.18,.22,.08)*w7;hwt+=w7;if(hwt>.01){ht/=hwt;htG=ht;hwG=min(1.,hwt);}}{float hw=0.,aa=fwidth(p.x*1.1)*.9;   // wild spring flowers (vegetation_fix): small warm dots in loose clusters, about 3 % of the grass, where the hill slopes are open
+  if(SDS(p,vec2(0.,280.),vec2(230.,320.))<190.)hw=.3;
+  else if(SDS(p,vec2(-262.,40.),vec2(-205.,-225.))<125.)hw=.5;
+  else if(SDS(p,vec2(-700.,900.),vec2(-300.,1150.))<250.)hw=1.;
+  else if(SDS(p,vec2(700.,700.),vec2(1500.,600.))<220.)hw=.8;
+  else if(SDS(p,vec2(480.,-40.),vec2(1300.,-300.))<230.)hw=.9;
+  else if(SDS(p,vec2(-60.,-560.),vec2(900.,-1520.))<230.)hw=.9;
+  else if(SDS(p,vec2(500.,-760.),vec2(1350.,-1080.))<170.)hw=.8;
+  if(hw>0.&&fBl>.01){vec2 fq2=p*1.1,id=floor(fq2),lc=fract(fq2)-.5;vec2 jt=vec2(h12(id+3.7),h12(id+11.3))-.5;float d=length(lc-jt*.5);
+   float dotM=(1.-smoothstep(.15-aa,.15+aa,d))*step(h12(id+9.9),.85*hw)*(1.-smoothstep(.5,1.,aa));
+   float clus=smoothstep(.5,.7,fbm2(p*.03+11.));float hk2=h12(id+5.1);
+   fcG=hk2<.4?vec3(.52,.032,.021):hk2<.65?vec3(.83,.75,.51):hk2<.9?vec3(.75,.51,.045):vec3(.26,.1,.4);   // poppy red, cream, yellow, a few violet (linear)
+   fmG=dotM*clus*fBl;}}
+
+ vec3 cGr=c;{vec3 gn=gS/max(dot(gS,W3),.01);vec3 hc=htG/max(dot(htG,W3),.01);cGr=c*mix(vec3(1.),clamp(hc/gn,vec3(.7),vec3(1.4)),.6*(1.-dryA));}   // hill grass: the season colour with a slight hue of its own (applied over the town ground below)
  c=mix(c,mix(vec3(.4,.29,.17),vec3(.32,.23,.135),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*(1.-vZ.y)*1.);   // town ground: open earth between the streets
- c=mix(c,vec3(.08,.14,.04)*(.75+.5*fbm2(p*.03)),vZ.y);c=mix(c,htG*(.85+.3*fbm2(p*.02)),hwG*.7);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
+ c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y+wmG,0.,1.)*.95);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
  vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);if(vZ.z>.85)chs=.1;float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
  float rw=dot(p,dr)/3.3;float aaF=fwidth(rw);float vine=smoothstep(.24+aaF,.24-aaF,abs(fract(rw)-.5));vec3 soil=vec3(.4,.32,.2)*(.85+.2*fbm2(p*.05)),vc=vec3(.19,.2,.1)*(.8+.3*fbm2(p*.2));
  vec3 fc=chs<.42?mix(soil,vc,mix(vine,.45,smoothstep(.15,.5,aaF))):chs<.62?mix(vec3(.5,.43,.22),vec3(.42,.39,.18),fbm2(p*.03)):chs<.82?mix(vec3(.19,.23,.1),vec3(.27,.27,.12),fbm2(p*.04)):mix(vec3(.3,.29,.14),vec3(.44,.38,.22),fbm2(p*.02));
@@ -89,23 +107,76 @@ MAT.foliage=procMat({key:'fol',vHead:'attribute vec3 aF;varying vec3 vF;',fHead:
   float sunF=max(dot(N,uSunDir),0.);
   S.alb=vec3(1.)*(.6+.55*n)*mix(.5,1.05,vF.z);S.alb+=vec3(.25,.3,.1)*step(.68,n2)*sunF*.6;
   S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
-  S.emit=vec3(.04,.07,.015)*max(dot(-N,uSunDir),0.)*(1.-uNight);}`});
-MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;varying vec3 vF;',fHead:'varying vec3 vF;',env:.5,
- vBody:`vF=aF;
+  S.emit=vec3(.04,.07,.015)*max(dot(-N,uSunDir),0.)*(1.-uNight);}
+ if(vF.x>.5){float s5=uSeason,sw=s5>3.4?s5-4.:s5;float spr=1.-smoothstep(0.,.8,sw>0.?sw:0.);float win=smoothstep(2.3,3.,s5)*(1.-smoothstep(3.5,4.,s5));float sum=1.-smoothstep(0.,.8,abs(s5-1.));
+  S.alb*=mix(vec3(1.),vec3(1.55,1.45,.7),spr*smoothstep(.45,1.,vF.z)*.75);   // spring: pale new growth on the tips
+  S.alb*=mix(vec3(1.),vec3(.88,.95,.98),win*.8)*(1.-.1*sum);}   // winter slightly grey, summer darkest
+`});
+// deciduous crowns (vegetation_seasons brief). aI = (type, hash, owner, hash2) per instance. type 1 oak/elm, 2 plane, 3 poplar/willow, 4 pomegranate, 5 almond, 6 fig.
+// The season colour is worked out per instance in the vertex shader (autumn is staggered by the instance hash: a third green, a third yellow, a third yellow-brown at mid-autumn).
+const DEC_GL=`
+vec3 decCol(float ty,float h,float s,out float lv,out vec2 ex){
+ float spr=s>3.5?s-4.:(s<1.?s:9.);
+ vec3 sp=vec3(.319,.504,.0625),gr=vec3(.096,.215,.036),ye=vec3(1.05,.72,.10),br=vec3(.30,.125,.05),ba=vec3(.21,.15,.10);   // linear albedo, calibrated so a sunlit crown probes about 120/150/60 (spring), 200/165/60 (yellow), 150/100/45 (brown)
+ if(ty>2.5&&ty<3.5){gr*=vec3(1.2,1.4,1.1);sp*=vec3(1.1,1.1,1.2);}
+ vec3 tg=ty<1.5?br:ty<2.5?mix(br,ye,.4):ty<3.5?ye*.95:ty<4.5?ye:ty<5.5?mix(ye*.75,br,.5):mix(ye*.85,br,.25);
+ vec3 c;lv=1.;ex=vec2(0.);
+ if(s<1.||s>3.5){float lf=smoothstep(-.4,.2,spr);c=mix(ba,mix(sp,gr,smoothstep(.1,.9,max(spr,0.))),lf);lv=mix(.2,1.,lf);}
+ else{float u=(s-2.)*1.4+(.5-h)*1.6-.1;if(ty>2.5&&ty<3.5)u-=.12;if(ty>5.5)u+=.15;
+  c=gr;c=mix(c,ye,smoothstep(-.35,0.,u));c=mix(c,tg,smoothstep(.05,.35,u));float bz=smoothstep(.5,.95,u);c=mix(c,ba,bz);lv=mix(1.,.2,bz);}
+ if(ty>3.5&&ty<4.5){ex=vec2(smoothstep(.45,.8,s)*(1.-smoothstep(1.1,1.6,s)),1.);if(s>1.5){ex=vec2(smoothstep(1.5,1.9,s)*(1.-smoothstep(2.7,3.1,s)),2.);}}
+ if(ty>4.5&&ty<5.5){ex=vec2(smoothstep(-.45,-.15,spr)*(1.-smoothstep(.15,.55,spr)),3.);}
+ return c;}`;
+MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;'+DEC_GL,fHead:'varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;',env:.5,
+ vBody:`vF=aF;float lv0;vec2 ex0;vSC=decCol(aI.x,aI.y,uSeason,lv0,ex0);vEx=ex0;vLv=lv0;
+#ifdef USE_INSTANCING
+ float ph=instanceMatrix[3].x*.07+instanceMatrix[3].z*.05;
+#else
+ float ph=0.;
+#endif
+ if(aF.x>.5){float k=mix(.7,1.,smoothstep(.2,1.,lv0));transformed.xz*=k;transformed.y=mix(transformed.y,transformed.y*.88+.35,1.-k);}
+ float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`,
+ fSurf:`vec3 N=normalize(vWN);
+ if(vF.x<.5){S.alb=vec3(.42,.36,.3)*(.8+.4*vn2(vWP.xy*2.));S.rough=.9;}
+ else{float n=fbm3(vWP*.7);float n2=vn3(vWP*2.6);
+  float sunF=max(dot(N,uSunDir),0.);
+  if(vLv<.95&&vn3(vWP*2.1+7.)>vLv*1.1+.12+smoothstep(.55,.2,vLv)*.9)discard;   // leaves falling: the crown thins out and breaks up in clumps
+  S.alb=vSC*(.6+.55*n)*mix(.5,1.05,vF.z);S.alb+=vec3(.25,.3,.1)*step(.68,n2)*sunF*.15;
+  S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
+  S.emit=vec3(.04,.07,.015)*max(dot(-N,uSunDir),0.)*(1.-uNight)*.6;
+  if(vEx.x>.01){float kd=vEx.y;vec3 fc=kd<1.5?vec3(.8,.07,.03):kd<2.5?vec3(.62,.05,.035):vec3(.97,.74,.78);float mk;
+   if(kd>2.5){float nn=vn3(vWP*1.9);mk=smoothstep(.15,.4,nn+vEx.x*.35-.35);}
+   else{vec3 q3=vWP*2.,id=floor(q3);vec3 jt=vec3(h13(id+1.3),h13(id+7.7),h13(id+13.1))-.5;float d=length(fract(q3)-.5-jt*.35);   // flowers and fruit: a few distinct dots on the outer shell, never noise over the whole crown
+    mk=(1.-smoothstep(.26,.34,d))*step(h13(id+21.9),.8)*smoothstep(.72,.9,vF.z)*smoothstep(0.,.35,vEx.x);}
+   S.alb=mix(S.alb,fc*(.8+.4*n),mk*min(1.,vEx.x*1.2));}}
+`});
+// shadow pass for deciduous crowns: the same winter shrink as the vertex shader above, so bare trees cast a thinner shadow
+const DEPTH_D=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});
+DEPTH_D.onBeforeCompile=sh=>{sh.uniforms.uSeason=U.uSeason;
+ sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec3 aF;attribute vec4 aI;uniform float uSeason;'+DEC_GL)
+  .replace('#include <begin_vertex>','#include <begin_vertex>\n{float lv0;vec2 ex0;decCol(aI.x,aI.y,uSeason,lv0,ex0);if(aF.x>.5){float k=mix(.7,1.,smoothstep(.2,1.,lv0));transformed.xz*=k;transformed.y=mix(transformed.y,transformed.y*.88+.35,1.-k);}}');};
+// flower shrubs: green body, flower dots whose cover and colour family follow the season and the owner (0 public/wild, 1 imperial, 2 senatorial, 4 plebeian pots)
+const FLW_GL=`
+float flDens(float ow,float s){vec4 d=ow<.5?vec4(1.,.08,0.,0.):ow<1.5?vec4(1.,.5,.35,.3):ow<2.5?vec4(1.,.4,.14,0.):ow<3.5?vec4(0.):vec4(1.,.8,0.,0.);
+ return s<1.?mix(d.x,d.y,s):s<2.?mix(d.y,d.z,s-1.):s<3.?mix(d.z,d.w,s-2.):mix(d.w,d.x,s-3.);}
+vec3 flCol(float ow,float s,float h){
+ if(s<.55||s>3.45){ if(ow<.5)return h<.3?vec3(.62,.05,.03):h<.6?vec3(.85,.84,.78):h<.85?vec3(.8,.58,.08):vec3(.3,.14,.55);
+  if(ow>3.5)return h<.3?vec3(.62,.06,.05):h<.55?vec3(.82,.3,.4):h<.8?vec3(.88,.86,.8):vec3(.8,.58,.08);
+  return h<.28?vec3(.62,.06,.1):h<.5?vec3(.82,.3,.4):h<.68?vec3(.3,.14,.55):h<.84?vec3(.9,.88,.82):vec3(.2,.18,.6);}
+ if(s<1.5){ if(ow<.5)return h<.5?vec3(.8,.58,.08):vec3(.85,.84,.78);return h<.55?vec3(.8,.25,.4):h<.8?vec3(.9,.9,.85):vec3(.7,.06,.03);}
+ if(s<2.7){ return h<.5?vec3(.65,.05,.08):h<.8?vec3(.85,.4,.5):vec3(.45,.2,.6);}
+ return h<.6?vec3(.7,.04,.07):vec3(.85,.45,.5);}`;
+MAT.bloom=procMat({key:'bloom',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec4 vBc;'+FLW_GL,fHead:'varying vec3 vF;varying vec4 vBc;',env:.5,
+ vBody:`vF=aF;vBc=vec4(flCol(aI.z,uSeason,aI.w),flDens(aI.z,uSeason)*(.6+.4*aI.y));
 #ifdef USE_INSTANCING
  float ph=instanceMatrix[3].x*.07+instanceMatrix[3].z*.05;
 #else
  float ph=0.;
 #endif
  float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`,
- fSurf:`vec3 N=normalize(vWN);
- if(vF.x<.5){S.alb=vec3(.42,.36,.3)*(.8+.4*vn2(vWP.xy*2.));S.rough=.9;}
- else{float n=fbm3(vWP*.7);float n2=vn3(vWP*2.6);
-  float sunF=max(dot(N,uSunDir),0.);
-  S.alb=vec3(1.)*(.6+.55*n)*mix(.5,1.05,vF.z);S.alb+=vec3(.25,.3,.1)*step(.68,n2)*sunF*.6;
-  S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
-  S.emit=vec3(.04,.07,.015)*max(dot(-N,uSunDir),0.)*(1.-uNight);}
- if(vF.x>.5){float s5=uSeason;vec3 tS=vec3(.82,1.12,.6),tU=vec3(1.),tA=vec3(1.5,.82,.3),tW=vec3(.66,.6,.5);vec3 tn=s5<1.?mix(tS,tU,s5):s5<2.?mix(tU,tA,s5-1.):s5<3.?mix(tA,tW,s5-2.):mix(tW,tS,s5-3.);S.alb*=tn;}
+ fSurf:`vec3 N=normalize(vWN);float n=fbm3(vWP*.7);
+ S.alb=vec3(.07,.12,.032)*(.6+.55*n)*mix(.5,1.05,vF.z);S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
+ {float nn=vn3(vWP*3.4);float cov=vBc.w;float thr=.74-cov*.32;float mk=cov>.02?smoothstep(thr,thr+.07,nn):0.;S.alb=mix(S.alb,vBc.rgb*(.85+.3*n),mk);}
 `});
 MAT.glaze=procMat({key:'glaze',physical:true,env:1.35,params:{roughness:.16,clearcoat:1,clearcoatRoughness:.04},
  fSurf:`S.alb=vec3(1.)*mix(1.,.5,uRust);S.rough=mix(.14,.55,uRust);`});
@@ -157,18 +228,33 @@ function treeGeo(type){const P=[],N=[],F=[],I=[];let base=0;
     add(bump(new THREE.LatheGeometry(prof,9),.28,1.4),1,11.5,1.2);}
   else if(type==='pine'){const tr=new THREE.CylinderGeometry(.22,.38,12,6);tr.translate(0,6,0);add(tr,0,16,0);
     for(let k=0;k<5;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(3.6+rnd()*1.6,1.3+rnd()*.5,3.4+rnd()*1.6);s.translate((rnd()-.5)*4.5,12.6+rnd()*1.6,(rnd()-.5)*4.5);add(bump(s,.2,.8),1,15,7);}}
+  else if(type==='palm'){const tr=new THREE.CylinderGeometry(.2,.34,9,6);tr.translate(0,4.5,0);add(tr,0,13,0);   // date palm (one, at the House of Augustus): trunk and nine arching fronds
+    for(let k=0;k<9;k++){const f=new THREE.IcosahedronGeometry(1,0);f.scale(2.9,.09,.5);f.translate(2.7,0,0);f.rotateZ(.55-.25*(k%3)/2);f.rotateY(k/9*TAU+rnd()*.3);f.translate(0,9.2,0);add(f,1,13,3.4);}}
   else{const tr=new THREE.CylinderGeometry(.2,.32,3.2,5);tr.translate(0,1.6,0);add(tr,0,9,0);
     for(let k=0;k<4;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(2.4+rnd(),2.2+rnd(),2.4+rnd());s.translate((rnd()-.5)*2.6,4.6+rnd()*2.2,(rnd()-.5)*2.6);add(bump(s,.25,.9),1,8,4);}}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
   G.setAttribute('aF',new THREE.Float32BufferAttribute(F,3));G.computeBoundingSphere();return G;}
-const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad')};
-const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive:[.08,.088,.058]};TREEGEO.olive=TREEGEO.broad;TREEGEO.shrub=(()=>{const g=new THREE.IcosahedronGeometry(1,0).toNonIndexed();g.scale(1.25,.8,1.25);g.translate(0,.62,0);g.computeVertexNormals();const p=g.attributes.position,a=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){a[i*3]=1;a[i*3+1]=Math.min(1,p.getY(i)/1.4);a[i*3+2]=.85;}g.setAttribute('aF',new THREE.BufferAttribute(a,3));return g;})();TREEGEO.flower=TREEGEO.shrub;TREECOL.shrub=[.055,.085,.03];TREECOL.flower=[.3,.1,.16];
-function flushTrees(W,list,parent){if(W.trees.length>60000*Q.trees){const k=60000*Q.trees/W.trees.length;W.trees=W.trees.filter(()=>Math.random()<k);}W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],broadD:[],shrub:[],flower:[]};list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
-  for(const k in by){const L=by[k];if(!L.length)continue;const m=new THREE.InstancedMesh(TREEGEO[k==='broadD'?'broad':k],k==='broadD'&&MAT.foliageD?MAT.foliageD:MAT.foliage,L.length);if(k==='flower')m.userData.flower=true;
+const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad'),palm:treeGeo('palm')};
+const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive:[.08,.088,.058]};TREEGEO.olive=TREEGEO.broad;TREEGEO.shrub=(()=>{const g=new THREE.IcosahedronGeometry(1,0).toNonIndexed();g.scale(1.25,.8,1.25);g.translate(0,.62,0);g.computeVertexNormals();const p=g.attributes.position,a=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){a[i*3]=1;a[i*3+1]=Math.min(1,p.getY(i)/1.4);a[i*3+2]=.85;}g.setAttribute('aF',new THREE.BufferAttribute(a,3));return g;})();TREEGEO.flower=TREEGEO.shrub;TREECOL.shrub=[.055,.085,.03];TREECOL.palm=[.06,.095,.03];TREECOL.flower=[.3,.1,.16];
+// Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
+// t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
+const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
+function flushTrees(W,list,parent){if(W.trees.length>60000*Q.trees){const k=60000*Q.trees/W.trees.length;W.trees=W.trees.filter(()=>Math.random()<k);}W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
+  for(const k in by){const L=by[k];if(!L.length)continue;const kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
+    if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
+    const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,L.length);
+    const aI=kd.m?new Float32Array(L.length*4):null;
     const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),c=new THREE.Color();
-    L.forEach((t,i)=>{const s=t[4]||1;q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(s*(.85+.3*hash2(i,7)),s,s*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
-      M.compose(Pp,q,S);m.setMatrixAt(i,M);const v=.75+.5*hash2(i,3),b=TREECOL[k==='broadD'?'broad':k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);m.setColorAt(i,c);});
+    L.forEach((t,i)=>{const s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
+      M.compose(Pp,q,S);m.setMatrixAt(i,M);const v=.75+.5*hash2(i,3);
+      if(kd.m){c.setRGB(v,v,v);aI[i*4]=kd.t;aI[i*4+1]=hash2(t[0]*.37,t[2]*.53);aI[i*4+2]=t[6]||0;aI[i*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
+      else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
+      m.setColorAt(i,c);});
+    if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
+    if(kd.m===1)m.customDepthMaterial=DEPTH_D;
     m.castShadow=true;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out;}
+// watered ground (palace and domus gardens): discs the terrain shader keeps green all year (uWat)
+const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.uWat.value[this.n++].set(x,z,r,hd);}}};   // circle (x,z,r) or rectangle (x,z,half-width,half-depth,rot as in Foot)
 
 /* ---------- people ---------- */
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);

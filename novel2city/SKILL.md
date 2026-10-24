@@ -170,5 +170,5 @@ description: >
 - 想看完整案例：`references/11-case-study-nero-rome.md`
 - 资料少、别的文明或虚构世界：`references/13-other-settings.md`
 - 一个地方该分成哪些功能区（宫殿、要塞、港口）：`references/14-zoning-from-text.md`
-- 多代理花费、哪一步最烧 token、什么时候新开工人：`references/15-token-cost.md`
+- 预算、哪一步最烧 token、什么时候新开工人、量自己的花费：`references/15-token-cost.md` + `scripts/token_ledger.py`
 - 试用 img2threejs（纯代码 three.js 重建）与 Blender 流程的同题对比：`references/16-img2threejs-trial.md`

@@ -85,7 +85,7 @@ function antFortress(W,g,G){const AX=ANT.AX,AZ=ANT.AZ,lawn=[],T={};for(const t o
     for(let x=254;x>136;x-=7){if(Math.abs(x-200)<9)continue;for(const sd of[-1,1]){if(sd>0&&Math.abs(x-rotunda[0])<12)continue;W.trees.push([AX+x,gl,AZ+zs(x)+sd*6.5,'cyp',1]);}}
     {const F=antF(200,zs(200),0,gl);g.set(6,.6);lathe(g,F,0,0,0,[[6,0],[6,.6],[5.4,.6],[5.4,0]],28);const pool=new THREE.Mesh(new THREE.CircleGeometry(5.4,28).rotateX(-Math.PI/2),MAT.pool),pp=F.p(0,.45,0);pool.position.set(...pp);G.add(pool);pedestalStatue(g,F,0,0,0,2,{gilt:true});}
     const bed=(x,z,w,d)=>{const F=antF(x,z,0,gl);g.set(23,.35);for(const[cx,cz,hx,hz]of[[0,-d/2,w/2,.35],[0,d/2,w/2,.35],[-w/2,0,.35,d/2],[w/2,0,.35,d/2]])box(g,F,cx,0,cz,hx,.6,hz,31);g.set(21,.4);box(g,F,0,0,0,w/2-.4,.15,d/2-.4,16);
-      for(let i=0;i<6;i++)W.trees.push([AX+x-w/2+1.4+(w-2.8)*((i%3)/2),gl+.1,AZ+z+(i<3?-1:1)*d*.2,'flower',.55]);};
+      for(let i=0;i<6;i++)W.trees.push([AX+x-w/2+1.4+(w-2.8)*((i%3)/2),gl+.1,AZ+z+(i<3?-1:1)*d*.2,'flower',.55,null,1]);};
     for(const x of[246,225,204,183]){const z0=zs(x);bed(x,z0-16,14,7);if(x>=225||x===183)bed(x,z0-27,14,7);bed(x,z0+16,12,7);if(x<=204)bed(x,z0+28,12,7);}
     antStand(G,'antiumBase','ant_rotunda',rotunda[0],rotunda[1],gl,0,(g2,F)=>{g2.set(6,.6);lathe(g2,F,0,-1.2,0,[[27,0],[27,1.2],[0,1.2]],32);g2.set(1,.42);lathe(g2,F,0,7,0,[[25,0],[21.5,2.4],[18,0]],32);
       for(let k=0;k<26;k++){const a=k/26*TAU;for(const R of[24,19]){g2.set(6,.8);box(g2,F,Math.cos(a)*R,0,Math.sin(a)*R,.3,6.6,.3,31);}}});

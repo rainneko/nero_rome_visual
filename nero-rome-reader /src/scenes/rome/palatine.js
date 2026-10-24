@@ -5,6 +5,8 @@
    some terraces, gardens and stairs climbing along the walls — the "hill base" of the reference picture. */
 const PALF={ox:100,oz:300,c:Math.cos(-Math.PI/6),s:Math.sin(-Math.PI/6),rot:-Math.PI/6};
 const palW=(lx,lz)=>[PALF.ox+lx*PALF.c+lz*PALF.s,PALF.oz-lx*PALF.s+lz*PALF.c];
+// imperial garden planting (vegetation_seasons brief): clipped box and rose beds, almond (white-pink blossom in early spring) and pomegranate (scarlet flowers in summer, yellow leaves and red fruit in autumn)
+const impGarden=r=>r<.25?'shrub':r<.5?'flower':r<.72?'almond':r<.88?'pomegr':'shrub';
 const palL=(x,z)=>{const dx=x-PALF.ox,dz=z-PALF.oz;return[PALF.c*dx-PALF.s*dz,PALF.s*dx+PALF.c*dz];};
 // hero models on the hill: centre (local), turn (deg, added to the grid), half sizes in the model's own axes, floor height (the four domus a/b stand at the top of their slope: the rock foot carries the drop)
 const PAL_ASSETS=[
@@ -109,7 +111,7 @@ function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W,a,b,{
       const off=(Q,d)=>[Q[0]+nx*d,Q[1]+nz*d];
       if(gap){   // garden gap: the slope stays; cypresses and pines in loose groups, shrubs and flowers
         if(k%3===0){const q=xyz(off(A.o,-3-R()*3),0),y=H(off(A.o,-3)[0],off(A.o,-3)[1]);W.trees.push([q[0],y,q[2],R()<.55?'cyp':'pine',.8+R()*.4]);}
-        if(k%2===0){const t2=off(A.o,-1-R()*5),q=xyz(t2,0),y=H(t2[0],t2[1]);W.trees.push([q[0],y,q[2],R()<.5?'shrub':'flower',.7+R()*.6,R()<.5?null:[.5,.16,.26]]);}
+        if(k%2===0){const t2=off(A.o,-1-R()*5),q=xyz(t2,0),y=H(t2[0],t2[1]);W.trees.push([q[0],y,q[2],impGarden(R()),.7+R()*.6,null,1]);}
         continue;}
       // floor: a garden terrace (gravel path along the edge), paving only behind the porticoes
       const wp=porch&&hz(k,5)>.45;g.set(wp?11:23,.4);g.poly([xyz(oA,yk+.06),xyz(oB,yk+.06),xyz(iB,yk+.06),xyz(iA,yk+.06)],[0,1,0]);
@@ -140,7 +142,7 @@ function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W,a,b,{
         const eA=[cA2[0]+A.n[0]*.6,cA2[1]+A.n[1]*.6],eB=[cB2[0]+B.n[0]*.6,cB2[1]+B.n[1]*.6];
         g.set(1,.5);g.poly([xyz(eA,yk+6),xyz(eB,yk+6),xyz(iB,yk+7.4),xyz(iA,yk+7.4)],[0,1,0]);g.poly([xyz(iA,yk+7.3),xyz(iB,yk+7.3),xyz(eB,yk+5.9),xyz(eA,yk+5.9)],[0,-1,0]);}
       else{if(k%4===0&&A.d>6){const q=xyz(sh(oA,A.n,-2.2),yk);W.trees.push([q[0],yk,q[2],R()<.62?'cyp':'pine',.8+R()*.3]);}
-        if(k%3===1&&A.d>5){const t2=sh(oA,A.n,-3.4-R()*Math.max(1,A.d-6)*.5),q=xyz(t2,yk);W.trees.push([q[0],yk,q[2],R()<.5?'shrub':'flower',.7+R()*.6,R()<.5?null:[.5,.16,.26]]);}}
+        if(k%3===1&&A.d>5){const t2=sh(oA,A.n,-3.4-R()*Math.max(1,A.d-6)*.5),q=xyz(t2,yk);W.trees.push([q[0],yk,q[2],impGarden(R()),.7+R()*.6,null,1]);}}
       if(!porch&&k%17===5&&A.d>13){const c=[(A.o[0]+A.i[0])/2,(A.o[1]+A.i[1])/2],q=xyz(c,yk);fountain(W,g,q[0],q[2],{hx:2.6,hz:2.6,y:yk+.05,statue:1.8});}
       if(k%11===3){const q=xyz(sh(oA,A.n,-1.1),yk);pedestalStatue(g,frame(q[0],yk,q[2],0),0,0,0,2.4,{gilt:R()<.2});}
       // stairs climbing along the wall face to the terrace below, with a cheek wall on the open side
@@ -257,19 +259,28 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
   // a fountain in the corner of the south basin, planters along the lanes
   fountain(W,g,PFR.p(1,0,13)[0],PFR.p(1,0,13)[2],{hx:3.2,hz:3.2,y:dk,statue:2.6,rot:PALF.rot});
   palGallery(W,g);
+  // watered ground (cisterns and pipes): palace gardens stay green all summer, the bare slopes outside dry to straw
+  for(const[lx,lz,r]of[[-138,-30,80],[73,-63,66],[37,74,68],[-47,100,52],[-154,100,44],[-24,-30,72],[-100,-80,40],[190,-30,52]]){const q=PFR.p(lx,0,lz);WAT.add(q[0],q[2],r);}
+  {const dq=(lx,lz)=>{const q=PFR.p(lx,0,lz);return[q[0],W.gy(q[0],q[2]),q[2]];};   // Suetonius, Aug. 92: a date palm sprang up between the paving stones before the house; two laurels flank the door
+   for(const lx of[-52,-43]){const q=dq(lx,74.5);W.trees.push([q[0],q[1],q[2],'broad',.5,[.04,.085,.03],1]);}
+   {const q=dq(-30,73);W.trees.push([q[0],q[1],q[2],'palm',1,null,1]);}}
   // trees and shrubs in every gap: umbrella pines in the open corners, cypresses along the lanes, shrubs and flower beds elsewhere
   const spots=[];for(const[x0,x1,z0,z1]of PAL_BASIN)for(let lx=x0+2;lx<x1;lx+=3)for(let lz=z0+2;lz<z1;lz+=3)spots.push([lx+(R()-.5)*1.6,lz+(R()-.5)*1.6,PAL_DECK]);
   for(const[x0,x1,z0,z1]of PAL_ZONES)for(let lx=x0+2;lx<x1;lx+=3.5)for(let lz=z0+2;lz<z1;lz+=3.5)spots.push([lx+(R()-.5)*1.8,lz+(R()-.5)*1.8,null]);
   const lastP=[];for(const[lx,lz,yy]of spots){const c=palClear(O,lx,lz);if(c<1.6)continue;if(lastP.some(p=>Math.hypot(p[0]-lx,p[1]-lz)<(p[2]?7.5:3)))continue;
     const q=PFR.p(lx,0,lz),y=yy??W.gy(q[0],q[2]);
-    if(c>7.5&&R()<.8){W.trees.push([q[0],y,q[2],'pine',.75+R()*.3]);lastP.push([lx,lz,1]);}
-    else if(c>2.4&&R()<.7){W.trees.push([q[0],y,q[2],R()<.75?'cyp':'broad',.55+R()*.3]);lastP.push([lx,lz,0]);}
-    else if(R()<.55){W.trees.push([q[0],y,q[2],R()<.5?'shrub':'flower',.7+R()*.5,R()<.5?null:[.5,.16,.26]]);lastP.push([lx,lz,0]);}}
+    if(c>2.4&&hash2(lx*.77,lz*.61)<.24){const b=hash2(lx*.31,lz*1.7);W.trees.push([q[0],y,q[2],b<.45?'flower':b<.65?'almond':b<.8?'pomegr':'shrub',.7+R()*.5,null,1]);lastP.push([lx,lz,0]);continue;}   // rose and flower beds, almond and pomegranate between the trees (Nero's garden: the winter forced roses are here)
+    const nAp=Math.hypot(lx-37,lz-74)<80,nMM=Math.hypot(lx+154,lz-100)<60;   // laurel grove at the Apollo precinct, stone pines at the Magna Mater (Attis)
+    if(c>7.5&&R()<.8){W.trees.push([q[0],y,q[2],nMM||R()<.45?'pine':'plane',.75+R()*.3,null,1]);lastP.push([lx,lz,1]);}
+    else if(c>2.4&&R()<.7){const r=R();W.trees.push([q[0],y,q[2],nAp?(r<.8?'broad':'cyp'):nMM?'pine':(r<.5?'cyp':r<.75?'broad':'plane'),.55+R()*.3,nAp||r>=.5&&r<.75?[.04,.085,.03]:null,1]);lastP.push([lx,lz,0]);}
+    else if(R()<.55){W.trees.push([q[0],y,q[2],impGarden(R()),.7+R()*.5,null,1]);lastP.push([lx,lz,0]);}}
+  {let nb=0;for(const[lx,lz,yy]of spots){if(nb>110)break;if(hash2(lx*.53,lz*.47)>.34)continue;const c=palClear(O,lx+1.5,lz+1.5);if(c<1.2)continue;const q=PFR.p(lx+1.5,0,lz+1.5),y=yy??W.gy(q[0],q[2]);W.trees.push([q[0],y,q[2],'flower',.5+R()*.4,null,1]);nb++;}W.palBeds=nb;}   // imperial rose and flower beds (the richest planting in Rome; a few roses stay in flower all winter, forced with warm water: Seneca, Ep. 122.8)
   // buttress blocks under the last rim cells where a hill model's lowest ledge still hangs above the terrain (found with __floatCheck)
   for(const[lx,lz,hw,top]of[[62,-125,6,42.9],[6,25,6,53.9],[-10,80,5,55.9]]){const q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,hw,top-gh+1.5,hw,31);(ROME.supports=ROME.supports||[]).push({x:q[0],z:q[2],c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:hw+2,hd:hw+2});}
   // phase 3: more rim cells found with __floatCheck (world x, z, height of the model's lowest geometry there): a small plinth under each
   for(const[wx,wz,top]of[[234,234,42.7],[-22,345,55.6],[44,376,55.6],[46,372,55.6],[-34,367,50.6],[-32,363,50.6],[-28,355,50.6],[28,403,50.6],[33,394,50.6],[30,399,50.6],[-81,392,41.5],[155,155,31.7],[118,215,51.2]]){
     const[lx,lz]=palL(wx,wz),gh=W.gy(wx,wz);if(top-gh<.3)continue;g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,2.3,top-gh+1.55,2.3,31);(ROME.supports=ROME.supports||[]).push({x:wx,z:wz,c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:3.3,hd:3.3});}
+  {const cell=new Map();for(const t of W.trees){if(t[6]!==1)continue;const k=Math.floor(t[0]/48)+','+Math.floor(t[2]/48),c=cell.get(k)||[0,0,0];c[0]+=t[0];c[1]+=t[2];c[2]++;cell.set(k,c);}for(const c of cell.values())if(c[2]>=2)WAT.add(c[0]/c[2],c[1]/c[2],30);}   // every imperial garden cluster is watered (green all summer)
   W.foot.add(PFR.p(-31,0,-40)[0],PFR.p(-31,0,-40)[2],56,76,PALF.rot);
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);flushColumns(W);}
 // paved ground on the plateau strips (follows the terrain), Jupiter Victor temple with stair and altar

@@ -15,16 +15,33 @@ and place names in the text that fly to the right spot.
 * Ostia: harbour and slipways. Empire map (AD 58): provinces, cities, legion bases (AWMC data, ODbL).
 * Reader: sample excerpts with sandbox cues, or the **full text** (目录 → a chapter) with previous / contents / next,
   the reading place remembered, links like `…/#ch12`, and optional per-chapter reader counts.
-* Filters: 画意 (Kuwahara oil flattening) and 晶格油画 (crystallized painterly: Voronoi facets + crossed brush dabs);
-  both off by default.
+* Rome hero buildings: 50 Blender models (temples, palaces, the Circus Maximus, aqueduct terminals, rock outcrops…),
+  compressed into `dist/rome-assets.js` and loaded after the page starts.
+* Filters: 画意 (Kuwahara oil flattening), 轻晶格 (light crystal, **on by default**) and 晶格油画 (crystallized painterly:
+  Voronoi facets + crossed brush dabs).
 
 ![Antium from the gate](docs/screenshots/antium-from-gate.jpg)
+
+## Making of: Building Rome in One Day
+
+The reader was built with the skill [`novel2city`](../novel2city/) (in this repository), which turns a novel into a
+chapter-synced 3D city.
+
+* **Day one:** the whole city stood after one day, using an estimated one or two 5-hour usage windows. That covered
+  city models and historical sources, district densities measured from reference views, low- and high-density
+  housing, temples, palaces, the reader and the story states. The day-one page is kept as
+  [`novel2city/examples/rome-day1.html`](../novel2city/examples/rome-day1.html), a single file you can open directly.
+* **The next two weeks:** refining assets, at roughly two weekly usage allowances (the author's estimate). That
+  meant Blender hero buildings by worker agents, roads, facades, ground contact and float fixes. Measured from the
+  session logs for 21–23 October: 1.12 B tokens processed by 44 agents (Opus lead, Sonnet integrators, Haiku Blender
+  workers), about 94 % of them cache reads.
+* Per stage and per asset, roads included, plus a video plan and a blog outline: [`docs/making-of/`](docs/making-of/).
 
 ## Quick start
 
 ```bash
 npm install            # three (for local tests) and puppeteer
-npm run build          # -> dist/index.html, dist/antium-assets.js, dist/book.js
+npm run build          # -> dist/index.html, dist/rome-assets.js, dist/antium-assets.js, dist/book.js
 npm run serve          # http://localhost:8080 (use a server: the page loads book.js and antium-assets.js)
 ```
 
@@ -57,7 +74,11 @@ tools/models/                  Python generators of the Rome models
 tools/models/antium/           Blender kit (bl_kit.py), one script per Antium model, optimize.sh
 briefs/antium/                 modelling briefs (sizes, book quotes, checklists) and reference images
 server/visit-counter/          optional Cloudflare Worker that counts readers per chapter
-docs/                          architecture, content guide, asset pipeline, screenshots
+assets/models/rome/*.glb       Rome Blender models, compressed into dist/rome-assets.js (tools/glbopt.mjs)
+tools/models/rome/             Rome kit (rk.py) and one Blender script per Rome model
+briefs/rome/                   Rome modelling briefs, phase hand-offs (phase*.md) and reference images
+docs/                          architecture, content guide, asset pipeline, TODO, screenshots
+docs/making-of/                token ledger, video plan, blog outline
 .claude/agents/                Claude Code subagent for Blender modelling
 ```
 

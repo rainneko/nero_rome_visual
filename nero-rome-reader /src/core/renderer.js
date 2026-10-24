@@ -11,9 +11,13 @@ function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=x
 function fbm(x,y,o=4){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f+i*13.7,y*f-i*7.3);f*=2.03;a*=.5;}return s;}
 const nextFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
 const TEST=/[?&]test/.test(location.search);
+const PERF_PROFILES={smooth:{pr:1,shadow:1024,msaa:0,oil:.5},balanced:{pr:1.25,shadow:2048,msaa:2,oil:.5},fine:{pr:1.5,shadow:4096,msaa:4,oil:1}};
+let perfMode='balanced';
+try{const saved=localStorage.getItem('rome-quality');if(PERF_PROFILES[saved])perfMode=saved;}catch(e){}
 const isTouch=matchMedia('(pointer:coarse)').matches, small=Math.min(innerWidth,innerHeight)<700;
 const Q=(isTouch||small)?{name:'low',pr:Math.min(devicePixelRatio,1.25),shadow:2048,dens:.4,trees:.45,msaa:0,paint:false}
   :{name:'high',pr:Math.min(devicePixelRatio,1.5),shadow:4096,dens:1,trees:1,msaa:4,paint:true};
+if(!TEST){const q=PERF_PROFILES[perfMode];Q.pr=Math.min(Q.pr,q.pr);Q.shadow=q.shadow;Q.msaa=isTouch||small?0:q.msaa;}
 if(TEST){Q.pr=1;Q.dens=.8;Q.trees=.8;}if(!TEST&&navigator.deviceMemory&&navigator.deviceMemory<=4){Q.dens=Math.min(Q.dens,.7);}
 
 /* ---------- GLSL ---------- */
@@ -43,7 +47,8 @@ vec3 atmo(vec3 col,vec3 wp){
 const U={uTime:{value:0},uNight:{value:0},uSunDir:{value:new THREE.Vector3(.4,.5,.7).normalize()},uSunCol:{value:new THREE.Color(1,.9,.7)},
   uHazeCol:{value:new THREE.Color(.6,.62,.7)},uHaze:{value:new THREE.Vector4(1.6e-4,420,0,.8)},uLit:{value:0},uGlass:{value:.03},
   uWet:{value:0},uBurn:{value:0},uRust:{value:0},uSeason:{value:1},uSkyRefl:{value:new THREE.Color(.5,.6,.75)},
-  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))}};   // uRk: rock-cluster segments (ax,az,bx,bz) for the terrain's rocky scarp   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
+  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))},uWat:{value:Array.from({length:56},()=>new THREE.Vector4(1e6,0,0,0))},uWatR:{value:new Array(56).fill(0)}};   // uWat: watered ground discs (x,z,r) that stay green all year (palace and domus gardens), see WAT in builders.js
+   // uRk: rock-cluster segments (ax,az,bx,bz) for the terrain's rocky scarp   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
 
 function procMat(o){
   const M=o.physical?THREE.MeshPhysicalMaterial:THREE.MeshStandardMaterial;
@@ -171,7 +176,8 @@ const P={rt:null,mips:[],blur:null,ldr:null,w:1,h:1,
     for(let i=0;i<6;i++){mw=Math.max(2,mw>>1);mh=Math.max(2,mh>>1);this.mips.push(mkRT(mw,mh));this.ups.push(mkRT(mw,mh));}
     if(this.blur)this.blur.dispose();this.blur=mkRT(Math.max(2,W>>2),Math.max(2,H>>2));
     if(this.blur2)this.blur2.dispose();this.blur2=mkRT(Math.max(2,W>>1),Math.max(2,H>>1));
-    if(this.ldr)this.ldr.dispose();this.ldr=mkRT(W,H,{type:THREE.UnsignedByteType});if(this.ldr2)this.ldr2.dispose();this.ldr2=mkRT(W,H,{type:THREE.UnsignedByteType});this.cryst.uniforms.res.value.set(W,H);},
+    if(this.ldr)this.ldr.dispose();this.ldr=mkRT(W,H,{type:THREE.UnsignedByteType});if(this.ldr2)this.ldr2.dispose();this.ldr2=mkRT(W,H,{type:THREE.UnsignedByteType});this.cryst.uniforms.res.value.set(W,H);
+    if(this.oilLight)this.oilLight.dispose();const os=PERF_PROFILES[perfMode].oil;this.oilLight=mkRT(Math.max(2,Math.round(W*os)),Math.max(2,Math.round(H*os)),{type:THREE.UnsignedByteType});},
   render(scene,cam){
     renderer.setRenderTarget(this.rt);renderer.clear();renderer.render(scene,cam);
     const d=this.down,u=this.up;let src=this.rt.texture;
@@ -181,11 +187,12 @@ const P={rt:null,mips:[],blur:null,ldr:null,w:1,h:1,
     if(c.uniforms.tilt.value>0){d.uniforms.thr.value=-1;d.uniforms.t.value=this.rt.texture;d.uniforms.tx.value.set(1/this.blur2.width,1/this.blur2.height);fsPass(d,this.blur2);
       d.uniforms.t.value=this.blur2.texture;d.uniforms.tx.value.set(1/this.blur.width,1/this.blur.height);fsPass(d,this.blur);}
     c.uniforms.tS.value=this.rt.texture;c.uniforms.tB.value=(this.mips.length>1?this.ups[0]:this.mips[0]).texture;c.uniforms.tBl.value=this.blur.texture;
-    if(settings.cryst||settings.crystL){const lt=settings.crystL;this.cryst.uniforms.k.value=lt?.58:1;this.cryst.uniforms.cz.value=lt?.66:1;this.cryst.uniforms.t0.value=this.ldr.texture;fsPass(c,this.ldr);this.kuw.uniforms.t.value=this.ldr.texture;this.kuw.uniforms.tx.value.set(1/this.ldr.width,1/this.ldr.height);fsPass(this.kuw,this.ldr2);
-      this.cryst.uniforms.t.value=this.ldr2.texture;this.cryst.uniforms.time.value=c.uniforms.time.value;fsPass(this.cryst,null);}
+    if(settings.cryst||settings.crystL){const lt=settings.crystL;this.cryst.uniforms.k.value=lt?.58:1;this.cryst.uniforms.cz.value=lt?.66:1;this.cryst.uniforms.t0.value=this.ldr.texture;fsPass(c,this.ldr);this.kuw.uniforms.t.value=this.ldr.texture;this.kuw.uniforms.tx.value.set(1/this.ldr.width,1/this.ldr.height);const oilTarget=lt?this.oilLight:this.ldr2;fsPass(this.kuw,oilTarget);
+      this.cryst.uniforms.t.value=oilTarget.texture;this.cryst.uniforms.time.value=c.uniforms.time.value;fsPass(this.cryst,null);}
     else if(settings.paint){fsPass(c,this.ldr);this.kuw.uniforms.t.value=this.ldr.texture;this.kuw.uniforms.tx.value.set(1/this.ldr.width,1/this.ldr.height);fsPass(this.kuw,null);}
     else fsPass(c,null);
   }};
+function setPerfMode(mode){if(!PERF_PROFILES[mode])return;perfMode=mode;const q=PERF_PROFILES[mode];Q.msaa=isTouch||small?0:q.msaa;renderer.setPixelRatio(Math.min(devicePixelRatio,q.pr,isTouch||small?1.25:1.5));sun.shadow.mapSize.set(q.shadow,q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}renderer.shadowMap.needsUpdate=true;resize();try{localStorage.setItem('rome-quality',mode);}catch(e){}}
 const settings={paint:false,cryst:false,crystL:!TEST,labels:true,tilt:false,glassOp:.38};
 
 /* ---------- sky ---------- */
