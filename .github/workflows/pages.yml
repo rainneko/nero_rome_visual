@@ -28,12 +28,10 @@ jobs:
           cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
 
       - name: Install dependencies
-        working-directory: "nero-rome-reader "
-        run: npm install
+        run: cd "nero-rome-reader " && npm install
 
       - name: Build
-        working-directory: "nero-rome-reader "
-        run: npm run build
+        run: cd "nero-rome-reader " && npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
