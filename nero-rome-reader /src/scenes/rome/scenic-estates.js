@@ -45,8 +45,14 @@ function buildScenicEstates(W) {
     const estateColumns=W.cols.simple.splice(simpleStart);
     W.cols.ion.push(...estateColumns);
     // Fountain sits fully inside the open court, visible above the planting and arcade.
-    const courtX=ob.cx,courtZ=ob.cz,waterY=actualDeckY+.11;
-    fountain(W,g,courtX,courtZ,{y:waterY,hx:Math.min(3.4,(w-13)*.17),hz:Math.min(2.8,(d-13)*.17),statue:1.8});
+    const restScale=.86,restW=7.2*restScale,restD=4.2*restScale,openHW=innerW/2-2.6,openHD=innerD/2-2.6;
+    const hasRest=index%2===0&&openHW>restW/2+.6&&openHD>restD+.6;
+    const poolLocalZ=hasRest?openHD*.36:0,poolPosition=gardenFrame.p(0,.11,poolLocalZ);
+    const courtX=poolPosition[0],courtZ=poolPosition[2],waterY=actualDeckY+.11,poolHX=hasRest?2.2:Math.min(3.4,(w-13)*.17),poolHZ=hasRest?1.25:Math.min(2.8,(d-13)*.17);
+    fountain(W,g,courtX,courtZ,{y:waterY,hx:poolHX,hz:poolHZ,statue:1.8});
+    // A resting corner fits inside the actual column line, not just the outer courtyard wall.
+    const restCenter=hasRest?gardenFrame.p(0,.08,-openHD+restD/2+.65):null; // clear grass/path planes; shallow slab still embeds below the deck
+    const restSlot=restCenter?{x:restCenter[0],y:restCenter[1],z:restCenter[2],w:restW,d:restD,scale:restScale,openHW,openHD}:null;
     for(const [sx,sz,type,scale] of [[-.32,-.32,'cyp',.46],[.32,-.32,'cyp',.46],[-.32,.32,'flower',.62],[.32,.32,'flower',.62]]){
       const tx=ob.cx+sx*innerW,tz=ob.cz+sz*innerD;
       if(Math.hypot(tx-courtX,tz-courtZ)>4.8)W.trees.push([tx,waterY,tz,type,scale,null,2]);
@@ -58,7 +64,8 @@ function buildScenicEstates(W) {
     const rec={site,x:ob.cx,z:ob.cz,y,rot:ob.rot,w,d,storeys:2,roofTop:top,roofEaveY:top,
       lowestEaveY:courtEaveY,courtEaveClearance:+(courtEaveY-deckY).toFixed(2),
       groundMin:ground.min,groundMax:ground.max,groundRelief:+exposure.toFixed(2),deckExposure:+(actualDeckY-ground.min).toFixed(2),deckY:actualDeckY,deckBottom,
-      polygon:P,courtPolygon:innerPolygon,polygons:[P,innerPolygon],court:[innerW,innerD],fountain:true,index};
+      polygon:P,courtPolygon:innerPolygon,polygons:[P,innerPolygon],court:[innerW,innerD],fountain:true,index,
+      fountainPlan:{x:courtX,z:courtZ,hx:poolHX,hz:poolHZ,localZ:poolLocalZ},restSlot,peristyleColumns:estateColumns.map(c=>({x:c[0],z:c[2],clearance:.55}))};
     placed.push(rec);acceptedPolys.push(broad);return true;
   };
   const attemptSite=(site,center,candidates,target)=>{

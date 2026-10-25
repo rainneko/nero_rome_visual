@@ -12,6 +12,7 @@
     "src/scenes/rome/scenic-estates.js",
     "src/scenes/rome/housing.js",
     "src/scenes/rome/pocket-squares.js",
+    "src/scenes/rome/street-life.js",
     "src/scenes/rome/monuments.js",
     "src/scenes/rome/palrock.js",
     "src/scenes/rome/palatine.js",

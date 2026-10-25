@@ -316,12 +316,28 @@ async function buildRome(msg){
   for(const[x,z]of[[-790,-310],[-765,-330],[-740,-350]])temple(W,gM,{x,y:gy(x,z),z,rot:Math.PI/2,W:12,L:18,podH:2,colH:8,nf:4,rows:1,seed:.5,sculpt:false});
   tholos(W,gM,{x:-340,y:gy(-340,378),z:378,R:7.5,podH:1.5,colH:10,n:20});temple(W,gM,{x:-373,y:gy(-373,311),z:311,rot:Math.PI/2+.3,W:12,L:24,podH:2.5,colH:8.5,order:'ion',nf:4,rows:2,seed:.5});
   W.foot.add(-620,-100,160,52,0,'open');
-  {const F=frame(900,gy(900,640),640,0);gM.set(22,.4);
+  {const F=frame(900,gy(900,640),640,0);W.claudF=F;gM.set(22,.4);
     {let mg=1e9;for(let t=0;t<=40;t++){const a=-90+180*t/40,b=-100+200*t/40;for(const[lx,lz]of[[a,-100],[a,100],[-90,b],[90,b]]){const q=F.p(lx,0,lz);mg=Math.min(mg,gy(q[0],q[2]));}}
-     const D=SUB_ON?Math.min(60,Math.max(14,F.oy-mg+2)):14;box(gM,F,0,-D,0,90,D,100,31);   // the podium reaches the lowest ground round its edge (phase 5b: was 14 m deep, the 24-33 m walls below it were separate set-back blocks)
-     substructFaces(W,gM,F,0,0,90,100,F.oy,{unf:{N:{x0:60,x1:90},E:{x0:-100,x1:-70}}});}   // the NE corner of the precinct is still a building site in AD 56
-    arcade(gM,F.sub(-91,0,0,-Math.PI/2),0,-14,0,200,14,14,3,22,{span:.32});
-    temple(W,gM,{x:900,y:F.oy,z:640,rot:Math.PI/2,W:30,L:44,podH:4,colH:14,nf:8,rows:2,peri:true,seed:.3});for(const[ax,az,bx,bz]of[[-80,-90,80,-90],[80,90,-80,90]])portico(W,gM,F,ax,az,bx,bz,0,7,-6,4,[1,.97,.9]);W.foot.add(900,640,94,104,0);}
+     const D=SUB_ON?Math.min(60,Math.max(14,F.oy-mg+2)):14;box(gM,F,0,-D,0,90,D,100,31);}   // the podium reaches the lowest ground round its edge (phase 5b: was 14 m deep, the 24-33 m walls below it were separate set-back blocks)
+    // dressed faces, temple, colonnades and the east water works follow the story: layers claud* (layers.js)
+    arcade(gM,F.sub(-91,0,0,-Math.PI/2),0,-14,0,200,14,14,3,22,{span:.32});W.foot.add(900,640,94,104,0);
+    // Novel vols 10-13 (小说文本/发电房建设线_阶段与核算.md): the water works stand on the EAST face ("旧台基东面"), on its north half, where the ground falls away
+    // (level with the platform south of FE x = 20, -6 m at 50, -22 m at 80). Nothing is dug: the gallery, pool, wheel pit and machine room are built up from the low ground,
+    // and the 4-6 m head comes from the tail water outside, not from cutting under the platform. FE: local x along the face (north = +x), local z out (east); y from the platform top.
+    {const FE=F.sub(90,0,0,Math.PI/2),CE=W.claudEast={FE,fx0:34,fx1:54,zA:5.5,zB:3.2,zC:1.2,zBack:1.5,yF:-.8,yA:2.6,yB:4.4,yC:5.6,
+       pool:{x0:32,x1:56,z0:5.5,z1:11,y:-1,rim:-.7},tower:{x:44,z:-7},gauge:{x:52,z:-8},wheel:{x:62,z:6.5,r:2.2},floor:-6.8,
+       mill:{x:70,z:7,hw:5,hd:5,h:5.2},plate:{x:70,z:15.5,hw:4,hd:3,h:3.6},race:[[62,10],[62,16],[64,26],[72,36],[86,48],[100,60]]};
+     const res=(x,z,hw,hd,role)=>{const q=FE.p(x,0,z),f=W.foot.add(q[0],q[2],hw,hd,FE.rot,'open');f.siteRole=role;};
+     res(41.5,6.5,19,6.5,'claudius-nymphaeum');res(68,10.25,8.5,9.25,'claudius-mill');for(const p of densify(CE.race,6)){const q=FE.p(p[0],0,p[1]),f=W.foot.addCircle(q[0],q[2],3,'open');f.siteRole='claudius-tailrace';}
+     // the fullery at the foot of the slope (vol 11: it signs up to use the tail water for washing cloth, not drinking): there in every state; the tail race reaches its vats from 58
+     res(106,66,12,9,'claudius-fullery');{const yF=Math.min(...[[100,61],[114,61],[100,71],[114,71]].map(([x,z])=>{const q=FE.p(x,0,z);return gy(q[0],q[2]);}))-F.oy;
+      rectWalls(gM,FE,108,68,13,7,yF-1,yF+4.4,yF,{part:9,seed:.47,sty:0,fl:1|2,nSt:1,gH:4.4,sH:3,lit:.3});roof(gM,FE,'gable',108,68,13.8,7.8,yF+4.4,22*DEG,.35,.41,{part:9,seed:.47,nSt:1,gH:4.4,sH:3,floorY:yF});
+      for(let k=0;k<3;k++){const x=99.5+k*2.9,z=61;gM.set(2,.42);for(const[dx,dz,hx,hz]of[[0,-2.1,1.35,.15],[0,2.1,1.35,.15],[-1.2,0,.15,2.1],[1.2,0,.15,2.1]])box(gM,FE,x+dx,yF-.5,z+dz,hx,1.3,hz,31);const q=(a,b)=>FE.p(a,yF+.6,b);W.poolG.poly([q(x-1.05,z-1.95),q(x+1.05,z-1.95),q(x+1.05,z+1.95),q(x-1.05,z+1.95)],[0,1,0]);}   // treading vats
+      {const q=FE.p(103,0,64);poi('坡底漂洗坊','Fullonica',q[0],q[2],10,0,99,'【书中】第11卷：“塞维鲁先问他池子做什么用。洗布，踩毛，漂白。”转过水轮的尾水顺沟流到这里洗布，不接回饮水池。',700);}}}}
+  // Piso's house on the Aventine (vol 9: "那天夜里，城南阿文提诺山上，皮索家的宅子着火了。"): a fixed plot reserved before the city grows; layers pisoHouse / pisoRuin / pisoSmoke (layers.js)
+  {const rot=-30*DEG,hw=21,hd=17;let best=null;for(const r of[0,25,50,75,100])for(let k=0;k<(r?12:1)&&!best;k++){const x=-625+Math.cos(k/12*TAU)*r,z=1085+Math.sin(k/12*TAU)*r;if(W.foot.hits(x,z,hw+3,hd+3,rot,0))continue;
+     let lo=1e9,hi=-1e9;const S=frame(x,0,z,rot);for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){const q=S.p(i*hw/2,0,j*hd/2),y=gy(q[0],q[2]);lo=Math.min(lo,y);hi=Math.max(hi,y);}if(hi-lo<=2.5)best={x,z,rot,hw,hd,y:lo};}
+   if(best){W.pisoSite=best;const f=W.foot.add(best.x,best.z,hw+1.5,hd+1.5,rot,'open');f.siteRole='piso-domus';}}
   {const F=frame(1550,gy(1550,-1557),-1557,0);gM.set(9,.4,0,1);for(const s of[1,-1]){box(gM,F,s*220,-2,0,2,9,190,31);box(gM,F,0,-2,s*190,220,9,2,31);}
     for(let x=-200;x<=200;x+=40)for(let z=-170;z<=170;z+=34){rectWalls(gM,F,x,z,32,9,-1,4.5,0,{part:9,seed:.3,sty:0,fl:2,nSt:1,gH:4.5,sH:4});roof(gM,F,'gable',x,z,32,9,4.5,20*DEG,.4,.4,null);}W.foot.add(1550,-1557,224,194,0);}
   {const F=frame(-2429,gy(-2429,-1134),-1134,0);gM.set(27,.5);gM.poly([F.p(-250,.25,36),F.p(250,.25,36),F.p(250,.25,-36),F.p(-250,.25,-36)],[0,1,0]);gM.set(6,.4);box(gM,F,0,0,0,150,1.5,4,31);
@@ -338,7 +354,10 @@ async function buildRome(msg){
   poi('阿格里帕万神殿','Pantheon',-696,-734,30,0,99,'公元54年还是长方形门廊神庙。哈德良的圆顶万神殿约125年才建成。',1800);
   poi('奥古斯都陵','Mausoleum Augusti',-730,-1557,50,0,99,'圆形陵墓，土丘上种着柏树。',2200);
   poi('战神广场','Campus Martius',-800,-1050,20,0,99,'平坦的大平原，第7卷尼禄在旁边修大浴场，第10卷北面开军校。',3500);
-  poi('克劳狄神庙','Templum Divi Claudii',900,640,30,0,99,'阿格里皮娜在54年后开始修建。',1800);
+  poi('克劳狄神庙工地','Templum Divi Claudii',900,640,30,0,5,'【史】阿格里皮娜在54年后开始为封神的克劳狄乌斯修神庙；尼禄在位时没有完工，后由韦斯巴芗建成（苏埃托尼乌斯《韦斯巴芗传》9）。这几年工程停着。',1800);
+  poi('克劳狄神殿·东面工地','Templum Divi Claudii',900,640,30,6,6,'【书中】第10卷：“我们去的时候，石料堆在台基旁边，草从缝里长出来。”围板上有人写了炭字：“克劳狄乌斯淋雨，尼禄洗澡。”工料单上补了一行：“台基上旧殿，补梁，盖瓦，防渗。”水景和机房放在旧台基东面，“池子只挖在外侧探过的空地，没有往承重的拱脚下钻。”水从克劳狄水渠的配水里另分一支，先经水务测量，阿庇乌斯的合法供水不受影响；尾水往坡下流到漂洗坊。',1800);
+  poi('克劳狄神殿水景','Templum Divi Claudii',900,640,30,7,7,'【书中】第13卷：“旧台基东面，架子已经拆了大半。浅色石面一层层往里收，水从上面的槽里分开，沿着龛口落下来。”交付那晚“亮的只有这一龛。别的几道水还在暮色里。”旧殿已经封顶。第14卷：机房门上的木牌写着“来水少，停。轴承热，停。”七月来水不够，“那天晚上，灯没亮。”此后十年水照样流，机房停着。',1800);
+  poi('克劳狄神殿','Templum Divi Claudii',900,640,30,8,99,'【书中】第20卷：“我回来以后，镀房重新开了门。再往后，水后的灯从一龛添到几龛，仍得有人调炭棒，水少照样停，许诺里那一整面光迟迟没凑齐。”',1800);
   poi('禁卫军营','Castra Praetoria',1550,-1557,20,0,99,'禁卫军驻地。',2600);
   poi('梵蒂冈跑马场','Circus Gai et Neronis',-2429,-1134,30,0,99,'尼禄的私人赛车场，中轴立着方尖碑。57年看台加三层。',3000);
   await msg('架桥、引水、铺路……');
@@ -370,7 +389,8 @@ async function buildRome(msg){
       ROME.GLB.push({n:'rome_claudia_terminal',x:aqT[0],y:aqY,z:aqT[1],r:aqR,o:{}});W.foot.add(TF.p(5,0,6)[0],TF.p(5,0,6)[2],21,11,aqR);
       poi('克劳狄水渠终点','Aqua Claudia · castellum',aqT[0],aqT[1],22,0,99,'【史】公元56年，克劳狄水渠在大门旁止步：砖砌的沉淀塔，铅管分三路，一路给公共水池，一路给浴场，一路给私宅。尼禄支渠要到64年之后才从这里分出去。',900);}
     W.aqTop=top;
-    {const Ys=top,PB=[[994,632],[950,705],[815,735],[660,660],[505,575],[372,500],[305,430],[262,382]],Ye=gy(262,382)+10;let acc=0,tot=0;for(let i=0;i<PB.length-1;i++)tot+=Math.hypot(PB[i+1][0]-PB[i][0],PB[i+1][1]-PB[i][1]);
+    // the branch to the Palatine (PB) goes round the Claudius platform (x 810-990, z 540-740) on its east and south sides, not across it
+    {const Ys=top,PB=[[994,632],[1003,690],[1003,752],[815,752],[660,660],[505,575],[372,500],[305,430],[262,382]],Ye=gy(262,382)+10;let acc=0,tot=0;for(let i=0;i<PB.length-1;i++)tot+=Math.hypot(PB[i+1][0]-PB[i][0],PB[i+1][1]-PB[i][1]);
      for(let i=0;i<PB.length-1;i++){const a=PB[i],b=PB[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/52);for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,x0=lerp(a[0],b[0],t0),z0=lerp(a[1],b[1],t0),x1=lerp(a[0],b[0],t1),z1=lerp(a[1],b[1],t1),mx=(x0+x1)/2,mz=(z0+z1)/2,sl=L/n;
        let gmin=1e9;for(let j=0;j<=4;j++)gmin=Math.min(gmin,gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4)));const Yt=lerp(Ys,Ye,(acc+sl*(k+.5))/tot),h=Math.max(8,Yt-gmin),F=frame(mx,gmin-2,mz,Math.atan2(-(z1-z0),x1-x0));
        if(h>30){const h1=h*.55;arcade(gAq,F,0,0,0,sl+.3,h1+2,Math.max(2,Math.round(sl/10)),6,9,{span:.33,attic:3,pilasters:false});arcade(gAq,F,0,h1+2,0,sl+.3,h-h1,Math.max(3,Math.round(sl/7)),4.6,9,{span:.3,attic:2.6,pilasters:false,cornice:false});}
@@ -404,7 +424,7 @@ async function buildRome(msg){
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
     const C=frB(-1280,180,90,gy(-1280,180));courtBlock(W,gX,C,{cx:0,cz:0,w:36,d:30,y0:0,nSt:2,sH:3.6,gH:4.4,cw:16,cd:12,part:0,seed:.66,sty:16,fl:8|2,peristyle:false,garden:false});gX.set(3,.4);box(gX,C,0,5,15.3,3,1,.12,31);W.foot.add(-1280,180,19,16,C.rot);
-    poi('公社抚恤所','渔夫西蒙 · 第22章',-1280,180,22,2,99,'台伯河西岸的旧院落，挂着阿波罗神机公社的木牌，墙角画着两条交错弧线的白垩小鱼。渔夫西蒙（彼得）每天在这里用粗肥皂和麦芽糖渣救济穷人。',1500);{const F=frB(-440,215,120,gy(-440,215)),R2=RNG(8);W.foot.add(-440,215,34,22,F.rot,'road');for(let i=0;i<20;i++){const S=F.sub(-28+(i%7)*9,0,-14+Math.floor(i/7)*12,0);gX.set(3,.4);for(const[a,b]of[[-2,-1.5],[2,-1.5],[-2,1.5],[2,1.5]])box(gX,S,a,0,b,.08,2.4,.08,31);
+    poi('公社抚恤所','渔夫西蒙 · 第22章',-1280,180,22,2,99,'台伯河西岸的旧院落，挂着阿波罗神机公社的木牌，墙角画着两条交错弧线的白垩小鱼。渔夫西蒙（彼得）每天在这里用粗肥皂和麦芽糖渣救济穷人。',1500);{const F=frB(-440,215,120,gy(-440,215)),R2=RNG(8);W.foot.add(-440,215,34,22,F.rot,'road').marketSquare=true;for(let i=0;i<20;i++){const S=F.sub(-28+(i%7)*9,0,-14+Math.floor(i/7)*12,0);gX.set(3,.4);for(const[a,b]of[[-2,-1.5],[2,-1.5],[-2,1.5],[2,1.5]])box(gX,S,a,0,b,.08,2.4,.08,31);
       gX.set(8,(i*.37)%1);gX.poly([S.p(-2.4,2.6,-1.9),S.p(2.4,2.6,-1.9),S.p(2.4,2.1,1.9),S.p(-2.4,2.1,1.9)],[0,1,0]);gX.poly([S.p(2.4,2.6,-1.9),S.p(-2.4,2.6,-1.9),S.p(-2.4,2.1,1.9),S.p(2.4,2.1,1.9)],[0,-1,0]);gX.set(3,.5);box(gX,S,0,0,1.1,1.6,.8,.5,31);}
      {const gq=(x,z)=>{const q=F.p(x,0,z);return gy(q[0],q[2])-F.oy;};sqF(F,0,17,gq(0,17));honorCol2(W,gX,F,-31,16,gq(-31,16));bigBase(gX,F,31,16,gq(31,16),4,2.4,2.2,{sh:4.8});cypRow(W,F,-33,21,33,21,7,gy);}   // fountain, honorific column, statue base and a cypress row on the river side of the market
      for(let i=0;i<70;i++){const q=F.p((R2()-.5)*64,0,(R2()-.5)*40);W.people.push([q[0],gy(q[0],q[2])+.2,q[2]]);}poi('牛市广场','Forum Boarium',-440,215,16,0,99,'台伯河边的集市广场，旁边是圆形的胜利者赫丘利神庙。',1400);}
@@ -414,8 +434,17 @@ async function buildRome(msg){
   /* ---- city fabric ---- */
   await msg('补齐词典里的尼禄时期建筑……');
   {const gN=new GB(1<<16),T2=(x,z,b,o)=>temple(W,gN,Object.assign({x,y:gy(x,z),z,rot:Math.PI-b*DEG},o)),fw=(x,z,hw,hd,r=0)=>W.foot.add(x,z,hw,hd,r);
-   const aqd=(P,top0,thick,part)=>{let top=top0;for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/50);for(let k=0;k<n;k++){const x0=lerp(a[0],b[0],k/n),z0=lerp(a[1],b[1],k/n),x1=lerp(a[0],b[0],(k+1)/n),z1=lerp(a[1],b[1],(k+1)/n),mx=(x0+x1)/2,mz=(z0+z1)/2,sl=L/n;
-     let gm=1e9;for(let j=0;j<=4;j++)gm=Math.min(gm,gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4)));top-=sl*.003;const h=Math.max(6,top-gm),F=frame(mx,gm-2,mz,Math.atan2(-(z1-z0),x1-x0));arcade(gN,F,0,0,0,sl+.3,h+2,Math.max(2,Math.round(sl/8)),thick,part,{span:.32,attic:2.6,pilasters:false});gN.set(14,.4);box(gN,F,0,h+2,0,sl/2+.2,1.3,thick/2+.4,31);fw(mx,mz,sl/2,thick/2+1,F.rot);}}};
+   // aqueduct: the channel level falls 3 mm per metre. Where the ground reaches the channel the specus is buried (shaft heads every ~70 m) and a portal marks where it comes out of the hill;
+   // low runs are a solid wall, not squat arches; on top an open channel with flowing water (as on the Claudia: historically covered, opened here so the water is seen)
+   const aqV=new THREE.Group();W.scene.add(aqV);
+   const aqd=(P,top0,thick,part)=>{let top=top0,under=false,run=0;for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/50);for(let k=0;k<n;k++){const x0=lerp(a[0],b[0],k/n),z0=lerp(a[1],b[1],k/n),x1=lerp(a[0],b[0],(k+1)/n),z1=lerp(a[1],b[1],(k+1)/n),mx=(x0+x1)/2,mz=(z0+z1)/2,sl=L/n,rot=Math.atan2(-(z1-z0),x1-x0);
+     let gm=1e9,gx=-1e9;for(let j=0;j<=4;j++){const g0=gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4));gm=Math.min(gm,g0);gx=Math.max(gx,g0);}top-=sl*.003;const h=top-gm;
+     if(top-gx<1.2){run+=sl;if(run>=70){run-=70;const S=frame(mx,gy(mx,mz),mz,rot);gN.set(2,.45);box(gN,S,0,-.4,0,.8,1.1,.8,31);gN.set(7,.3);gN.poly([S.p(-.5,.72,-.5),S.p(.5,.72,-.5),S.p(.5,.72,.5),S.p(-.5,.72,.5)],[0,1,0]);fw(mx,mz,1.5,1.5,rot);}under=true;continue;}
+     if(under){const S=frame(x0,0,z0,rot+Math.PI/2);gN.set(2,.45);box(gN,S,0,gm-2,0,thick/2+2.2,top+2.6-(gm-2),.9,31);gN.set(7,.3);gN.poly(arch(gN,S,0,.6,top+.75,1.1,.92),S.d(0,0,1));}under=false;   // portal: the specus comes out of the hillside
+     const F=frame(mx,gm-2,mz,rot);if(h<3.5){gN.set(part,.4);box(gN,F,0,0,0,sl/2+.2,h+2,thick/2,31);}else arcade(gN,F,0,0,0,sl+.3,h+2,Math.max(2,Math.round(sl/8)),thick,part,{span:.32,attic:2.6,pilasters:false});
+     gN.set(14,.4);box(gN,F,0,h+2,0,sl/2+.2,.75,thick/2+.4,31);for(const sd of[1,-1])box(gN,F,0,h+2.75,sd*(thick/2-.25),sl/2+.2,.65,.65,31);   // channel floor and parapets
+     const wm=new THREE.Mesh(new THREE.PlaneGeometry(sl+.3,thick-1.85).rotateX(-Math.PI/2),MAT.aqWater),q=F.p(0,h+3.15,0);wm.position.set(q[0],q[1],q[2]);wm.rotation.y=rot;aqV.add(wm);
+     fw(mx,mz,sl/2,thick/2+1,rot);}}};
    {const q=FF.p(-30,0,108),rr=Math.PI-300*DEG,yq=gy(q[0],q[2]);romeStand(W,'rome_divus_augustus',q[0]+8*Math.sin(rr),q[2]+8*Math.cos(rr),yq,rr,g2=>temple(W,g2,{x:q[0],y:yq,z:q[2],rot:rr,W:24,L:38,podH:4,colH:13,order:'ion',nf:6,rows:2,seed:.31}));   // the GLB's origin is the middle of the precinct, its temple 8 m behind it
     poi('神君奥古斯都神庙','Templum Divi Augusti',q[0],q[2],30,0,99,'卡利古拉时建成，在尤利亚巴西利卡背后、帕拉蒂尼山脚下。',1400);}
    {const A=FF.sub(-60,0,16,Math.PI/2);arcade(gN,A,0,0,0,9,10,1,5,6,{span:.34,attic:3});statue(gN,A,0,10.2,0,2.6,true);}
@@ -423,7 +452,7 @@ async function buildRome(msg){
    T2(-30,392,210,{W:18,L:30,podH:4,colH:10,nf:6,rows:1,seed:.45});
    {const[cx,cz]=palW(-190,40),F=frame(cx,gy(cx,cz),cz,0);gN.set(21,.6);lathe(gN,F,0,0,0,[[3.4,0],[3.4,2.2],[2.6,3.6],[1.2,5],[0,5.6]],12);gN.set(3,.3);box(gN,F,0,0,3.3,.6,1.8,.15,1);fw(cx,cz,5,5);poi('罗慕路斯草屋','Casa Romuli',cx,cz,10,0,99,'传说中罗慕路斯住过的茅草屋，一直被保存。',700);}
    for(let k=0;k<3;k++)T2(-388,70+k*24,80,{W:14,L:24,podH:2.5,colH:8,order:k===1?'ion':'dor',nf:6,rows:1,seed:.4+k*.05,sculpt:false});poi('蔬菜广场三神庙','Forum Holitorium',-388,94,24,0,99,'雅努斯、希望女神、救护者朱诺三座神庙并排。',1200);
-   {const HF=frame(-418,gy(-418,160),160,0),gq=(x,z)=>{const q=HF.p(x,0,z);return gy(q[0],q[2])-HF.oy;};W.foot.add(-418,160,42,24,0,'road');   // the market square south of the three temples (the ground east of them is the Capitoline slope)
+   {const HF=frame(-418,gy(-418,160),160,0),gq=(x,z)=>{const q=HF.p(x,0,z);return gy(q[0],q[2])-HF.oy;};W.foot.add(-418,160,42,24,0,'road').marketSquare=true;   // the market square south of the three temples (the ground east of them is the Capitoline slope)
     sqF(HF,0,0,gq(0,0));bigBase(gN,HF,-22,-8,gq(-22,-8),4,2.6,2.4,{eq:true});bigBase(gN,HF,22,-8,gq(22,-8),4,2.6,2.4,{sh:5});honorCol2(W,gN,HF,-32,12,gq(-32,12));cypRow(W,HF,-38,19,38,19,7,gy);cypRow(W,HF,-38,-19,38,-19,7,gy);}
    {const F=frame(-898,gy(-898,1490),1490,-2.219);rectWalls(gN,F,0,0,380,60,-2,10,0,{part:22,seed:.35,sty:0,fl:1,nSt:1,gH:10,sH:4,lit:0});
     for(let i=0;i<40;i++)roof(gN,F,'gableZ',-190+9.5*(i+.5),0,9.5,60,10,28*DEG,.15,.35+(i%5)*.02,{part:22,seed:.35,nSt:1,gH:10,sH:4,floorY:0});fw(-898,1490,192,32,F.rot);poi('埃米利亚柱廊仓库','Porticus Aemilia',-898,1490,20,0,99,'公元前193年建成的巨型仓库，约487米长，屋顶是一排排拱顶。',2000);}
@@ -433,7 +462,17 @@ async function buildRome(msg){
     gN.set(23,.5);lathe(gN,F,0,-1,0,[[14,0],[14,2],[0,2]],16);temple(W,gN,{x:-1250,y:yw+1.6,z:600,rot:.15,W:8,L:12,podH:.8,colH:5,nf:4,rows:1,stairs:false,sculpt:false,acro:false,seed:.5});
     fw(-1250,600,132,100,.15);poi('奥古斯都海战池','Naumachia Augusti',-1250,600,16,0,99,'公元前2年奥古斯都在台伯河西岸挖的人工湖，用来表演海战。',2500);}
    {const yw=gy(-960,-525)+.35,wm=new THREE.Mesh(new THREE.PlaneGeometry(120,80).rotateX(-Math.PI/2),MAT.pool);wm.position.set(-960,yw,-525);W.scene.add(wm);const F=frame(-960,yw-.35,-525,0);gN.set(2,.4);for(const s of[1,-1]){box(gN,F,0,-1,s*41,61,1.6,1,31);box(gN,F,s*61,-1,0,1,1.6,41,31);}
-    const eu=densify([[-1021,-525],[-1150,-470],[-1290,-380],[-1395,-262]],12);riverMesh(W,eu,3.5,yw,MAT.pool);const ch=densify([[-787,-640],[-850,-600],[-900,-540]],10);riverMesh(W,ch,2.2,yw,MAT.pool);for(const p of ch)W.foot.addCircle(p[0],p[1],4);const kerb=(pts,hw)=>{for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],L2=Math.hypot(b[0]-a[0],b[1]-a[1]),Fk=frame((a[0]+b[0])/2,yw-.35,(a[1]+b[1])/2,Math.atan2(-(b[1]-a[1]),b[0]-a[0]));gN.set(2,.42);for(const sd of[1,-1])box(gN,Fk,0,-.6,sd*(hw+.35),L2/2+.3,1.1,.35,31);}};kerb(eu,3.5);kerb(ch,2.2);for(const p of eu)W.foot.addCircle(p[0],p[1],6);
+    // Euripus to the Tiber: open where the ground lies at or below the water, a vaulted culvert under the bank ridge (up to ~5.5 m above the water), an outlet arch in the bank; never drawn over the river
+    const EU=densify([[-1021,-525],[-1150,-470],[-1290,-380],[-1395,-262]],6),iOut=EU.findIndex(p=>polyDist(p[0],p[1],TIBER)[0]<RTW+7);let iIn=EU.findIndex(p=>gy(p[0],p[1])>yw-.05);if(iIn<0||iIn>iOut)iIn=iOut;
+    const eu=EU.slice(0,iIn+1);riverMesh(W,eu,3.5,yw,MAT.pool);const ch=densify([[-698,-598],[-787,-640],[-850,-600],[-900,-540]],10);riverMesh(W,ch,2.2,yw,MAT.pool);for(const p of ch)W.foot.addCircle(p[0],p[1],4);   // ch: from the Aqua Virgo castellum to the lake
+    const kerb=(pts,hw)=>{for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],L2=Math.hypot(b[0]-a[0],b[1]-a[1]),Fk=frame((a[0]+b[0])/2,yw-.35,(a[1]+b[1])/2,Math.atan2(-(b[1]-a[1]),b[0]-a[0]));gN.set(2,.42);for(const sd of[1,-1])box(gN,Fk,0,-.6,sd*(hw+.35),L2/2+.3,1.1,.35,31);}};kerb(eu,3.5);kerb(ch,2.2);for(const p of EU.slice(0,iOut+1))W.foot.addCircle(p[0],p[1],6);
+    {const dir=i=>{const a=EU[Math.max(0,i-1)],b=EU[Math.min(EU.length-1,i+1)];return Math.atan2(-(b[1]-a[1]),b[0]-a[0]);},
+       head=(i,face,y0,y1,hw,mouthY,mouthH,mouthW)=>{const p=EU[i],S=frame(p[0],0,p[1],dir(i)+face*Math.PI/2);gN.set(2,.45);box(gN,S,0,y0,0,hw,y1-y0,.7,31);gN.set(7,.3);gN.poly(arch(gN,S,0,mouthW,mouthY,mouthH,.72),S.d(0,0,1));gN.set(2,.5);box(gN,S,0,y1,0,hw+.2,.3,.85,31);};   // headwall across the channel (face 1: looking downstream, -1: upstream) with the culvert mouth
+     const gIn=gy(EU[iIn][0],EU[iIn][1]);head(iIn,-1,yw-2,Math.max(gIn+1.6,yw+3),5.5,yw-.3,1.4,2.4);
+     {const S=frame(EU[iIn][0],0,EU[iIn][1],dir(iIn));gN.set(2,.45);for(const sd of[1,-1])box(gN,S,-4,yw-2,sd*4.2,4,Math.max(gIn+1,yw+1.6)-(yw-2),.5,31);}   // wing walls holding the bank either side of the inlet
+     for(let i=iIn+12;i<iOut-4;i+=12){const p=EU[i],S=frame(p[0],gy(p[0],p[1]),p[1],dir(i));gN.set(2,.45);box(gN,S,0,-.4,0,.8,1.1,.8,31);gN.set(7,.3);gN.poly([S.p(-.5,.72,-.5),S.p(.5,.72,-.5),S.p(.5,.72,.5),S.p(-.5,.72,.5)],[0,1,0]);}   // shaft heads over the culvert
+     const pO=EU[iOut],gO=gy(pO[0],pO[1]);head(iOut,1,RW-1.5,Math.max(gO+2,RW+6),6,RW+1,2.2,1.8);   // outlet in the river bank
+     {const S=frame(pO[0],0,pO[1],dir(iOut)),P=(x,y,z)=>S.p(x,y,z);gN.set(2,.45);box(gN,S,1.65,RW-1.2,0,.95,2.2,2.1,31);W.poolG.poly([P(.7,RW+1.02,-1.6),P(2.6,RW+1.02,-1.6),P(2.6,RW+1.02,1.6),P(.7,RW+1.02,1.6)],[0,1,0]);W.poolG.poly([P(2.62,RW+1,-1.6),P(2.62,RW+1,1.6),P(2.62,RW-.1,1.6),P(2.62,RW-.1,-1.6)],S.d(1,0,0));}}   // apron and the short drop into the Tiber
     for(let i=0;i<26;i++){const a=i/26*TAU,x=-960+Math.cos(a)*72,z=-525+Math.sin(a)*50;W.trees.push([x,gy(x,z),z,i%3?'pine':'cyp',1]);}fw(-960,-525,64,44);poi('阿格里帕人工湖','Stagnum Agrippae',-960,-525,10,0,99,'阿格里帕浴场西边的人工湖，一条运河通往台伯河。',1800);}
    {const F=frame(-540,gy(-540,-560),-560,0);rectWalls(gN,F,0,0,110,40,-2,20,0,{part:24,seed:.3,sty:5,fl:8|32,nSt:2,gH:10,sH:9,lit:1});roof(gN,F,'hip',0,0,110,40,20,18*DEG,.8,.3);fw(-540,-560,56,21);poi('计票大厅','Diribitorium',-540,-560,26,0,99,'选举计票用的大厅，当时罗马最大的单跨木屋顶。',1400);}
    {const F=frame(-430,gy(-430,-780),-780,0);for(const[ax,az,bx,bz]of[[-28,-70,28,-70],[28,-70,28,70],[28,70,-28,70],[-28,70,-28,-70]])portico(W,gN,F,ax,az,bx,bz,0,6,-5,3.2,[1,.95,.85]);
@@ -444,7 +483,7 @@ async function buildRome(msg){
    courtBlock(W,gN,frame(1240,gy(1240,-560),-560,0),{cx:0,cz:0,w:64,d:46,y0:0,nSt:1,sH:4,gH:5,cw:40,cd:24,part:0,seed:.6,sty:16,fl:8|2,garden:false});tholos(W,gN,{x:1240,y:gy(1240,-560),z:-560,R:5,podH:.8,colH:5,n:12,roofPart:1});fw(1240,-560,33,24);poi('莉维亚市场','Macellum Liviae',1240,-560,14,0,99,'埃斯奎利诺门旁的肉菜市场。',1400);
    {const F=frame(1420,gy(1420,-415),-415,.3);tower(gN,F,0,0,12,0,7,4.2,{part:24,seed:.72});fw(1420,-415,8,8,.3);poi('梅塞纳斯塔','Turris Maecenatiana',1420,-415,40,0,6,'梅塞纳斯花园里的高塔。',1800);poi('梅塞纳斯塔','Turris Maecenatiana',1420,-415,40,7,99,'【史】相传64年大火时尼禄在这里看火。“我只听见风停的那一下，他念了一个名字。”',1800);}
    {const F=frame(-405,gy(-405,-880),-880,.33);arcade(gN,F,0,-1,0,20,15,1,7,2,{span:.36,attic:4.5});statue(gN,F,0,18.6,0,3.5,true);fw(-405,-880,11,5,.33);
-    aqd([[-120,-1060],[-395.5,-883.2]],gy(-260,-970)+12,3.2,22);aqd([[-414.5,-876.8],[-484,-861],[-484,-596],[-690,-596]],gy(-470,-760)+11,3.2,22);{const F2=frame(-692,gy(-692,-596),-596,0);gN.set(9,.45);lathe(gN,F2,0,-1,0,[[4.2,0],[4.2,13],[4.8,13],[4.8,14],[0,15.5]],14);}poi('克劳狄凯旋门·处女水道','Arcus Claudii · Aqua Virgo',-405,-880,22,0,99,'51年为征服不列颠而建，同时托着处女水道。水道通到阿格里帕浴场。',1800);}
+    aqd([[150,-935],[-120,-1060],[-395.5,-883.2]],gy(-260,-970)+12+Math.hypot(270,125)*.003,3.2,22);aqd([[-414.5,-876.8],[-484,-861],[-484,-596],[-690,-596]],gy(-470,-760)+11,3.2,22);{const F2=frame(-692,gy(-692,-596),-596,0);gN.set(9,.45);lathe(gN,F2,0,-1,0,[[4.2,0],[4.2,13],[4.8,13],[4.8,14],[0,15.5]],14);}poi('克劳狄凯旋门·处女水道','Arcus Claudii · Aqua Virgo',-405,-880,22,0,99,'【史】处女水道是阿格里帕在公元前19年建成的：源头在城东约八罗马里外的泉水，全长约20公里，几乎全程走地下，到城北山脚才出地面上拱，进战神广场，供给阿格里帕浴场和人工湖，湖水再经欧里普斯渠流进台伯河。克劳狄乌斯46年修复了它，51年为征服不列颠在拉塔大道上建了这座拱门，同时托着水渠。公元56–60年它照常通水，今天的特雷维喷泉仍用它的水。',1800);}
    aqd([[2790,-520],[2300,-640],[1840,-778]],98,4,22);{const F=frame(1840,gy(1840,-778),-778,.3);arcade(gN,F,0,-1,0,22,18,1,8,2,{span:.36,attic:5});}poi('马尔基亚水道','Aqua Marcia · Tepula · Iulia',2300,-640,40,0,99,'三条水道叠在同一道拱上，从蒂布尔蒂纳门进城。',3000);
    {const F=frame(555,gy(555,890),890,.514);arcade(gN,F,0,-1,0,16,11,1,6,22,{span:.36,attic:3});}{const F=frame(1100,gy(1100,-330),-330,1.326);arcade(gN,F,0,-1,0,14,10,1,6,22,{span:.36,attic:3});}
    T2(-560,975,90,{W:26,L:44,podH:3.5,colH:13,nf:8,rows:2,peri:true,seed:.3});poi('狄安娜神庙','Aedes Dianae',-560,975,30,0,99,'阿文提诺山上的平民圣所。',1600);
@@ -526,12 +565,6 @@ async function buildRome(msg){
    {const q=FF.p(-56,0,30);fountain(W,gW,q[0],q[2],{hx:3,hz:1.8,rot:FF.rot});poi('塞尔维利乌斯泉','Lacus Servilius',q[0],q[2],8,0,99,'【史】广场西南角的公共水池。',700);}
    {let mx=455,mz=300;for(const r of[0,14,28,42]){let hit=false;for(let k=0;k<(r?8:1);k++){const X=455+Math.cos(k/8*TAU)*r,Z=300+Math.sin(k/8*TAU)*r;if(!W.foot.hits(X,Z,7,7,0,2)){mx=X;mz=Z;hit=true;break;}}if(hit)break;}
     fountain(W,gW,mx,mz,{type:'meta',hx:5.5});poi('圆锥泉（梅塔苏丹斯）','Meta Sudans',mx,mz,18,0,99,'【史】奥古斯都时代的圆锥形喷泉，水从锥顶往下淌，在帕拉蒂尼山东北角的路口。',900);}
-   {let sx=-905,sz=-640;{let ok=false;for(const r of[0,20,40,60,80]){for(let k=0;k<(r?12:1);k++){const X=-905+Math.cos(k/12*TAU)*r,Z=-640+Math.sin(k/12*TAU)*r;if(polyDist(X,Z,TIBER)[0]<RTW+90)continue;if(!W.foot.hits(X,Z,78,48,0,3)){sx=X;sz=Z;ok=true;break;}}if(ok)break;}W.lakeOK=ok;}const sy=gy(sx,sz),SF=frame(sx,sy,sz,0);gW.set(2,.5);for(const sd of[1,-1]){box(gW,SF,0,-1,sd*46,76,1.6,1.2,31);box(gW,SF,sd*76,-1,0,1.2,1.6,46,31);}
-    const lake=new THREE.Mesh(new THREE.PlaneGeometry(150,90).rotateX(-Math.PI/2),MAT.pool);lake.position.set(sx,sy+.3,sz);W.scene.add(lake);W.foot.add(sx,sz,78,48,0);
-    const nr=polyDist(sx-80,sz,TIBER);let tx=sx-80,tz=sz;{let best=1e9;for(let a2=0;a2<TIBER.length;a2++){const p=TIBER[a2],d=Math.hypot(p[0]-(sx-80),p[1]-sz);if(d<best&&+p[0]<sx){best=d;tx=+p[0];tz=+p[1];}}}
-    const L3=Math.hypot(tx-(sx-76),tz-sz),cr=Math.atan2(-(tz-sz),tx-(sx-76)),CF=frame((sx-76+tx)/2,sy,(sz+tz)/2,cr);const can=new THREE.Mesh(new THREE.PlaneGeometry(L3,7).rotateX(-Math.PI/2),MAT.pool);can.position.set(CF.ox,sy+.25,CF.oz);can.rotation.y=cr;W.scene.add(can);
-    gW.set(2,.48);for(const sd of[1,-1])box(gW,CF,0,-1,sd*4,L3/2,1.4,.5,31);for(let t=0;t<=1;t+=.05){const q=CF.p(-L3/2+L3*t,0,0);W.foot.addCircle(q[0],q[2],7);}
-    poi('阿格里帕人工湖','Stagnum Agrippae',sx,sz,10,0,99,'【史】阿格里帕在战神广场修的人工湖，旁边是他的浴场，一条人工水渠（欧里普斯）通到台伯河。',1600);}
    for(const[fx,fz]of[[-925,-352],[-885,-352]]){if(!W.foot.hits(fx,fz,4,4,0,1))fountain(W,gW,fx,fz,{hx:3.4,hz:3.4});}
    let nl=0;for(const[fx,fz]of[[-330,290],[140,-120],[420,-200],[700,40],[260,560],[-560,600],[980,180],[1200,-200],[-200,-420],[-480,-280],[620,-420],[860,460],[-90,860],[380,820]]){for(const r of[0,10,20,30]){let ok=false;for(let k=0;k<(r?8:1);k++){const X=fx+Math.cos(k/8*TAU)*r,Z=fz+Math.sin(k/8*TAU)*r;if(polyDist(X,Z,TIBER)[0]<RTW+10)continue;if(!W.foot.hits(X,Z,2.4,2,0,1)){fountain(W,gW,X,Z,{type:'lacus',rot:(k*.7)});nl++;ok=true;if(nl===1)poi('街头水槽','Lacus',X,Z,5,0,99,'【史】阿格里帕在全城修了七百个水槽、一百零五座喷泉，街角都能接到水。',500);break;}}if(ok)break;}}
    W.scene.add(gW.mesh(MAT.city));W.nLacus=nl;}
@@ -648,7 +681,7 @@ async function buildRome(msg){
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
-   roadKerbs(W,W.roadList);streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});
+   roadKerbs(W,W.roadList);streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});populateStreetLife(W);
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.
    {const RC=RNG(77),dim={rome_rock_a:[6,4.5,6.5],rome_rock_b:[4.3,3.2,9.5],rome_rock_c:[3,2.2,4.3]};   // [half length along the contour, half depth, height from the cut base (-1.5 m) to the top]
@@ -691,6 +724,6 @@ async function buildRome(msg){
     south:{n:'南岸特区',pos:[-820,150,2380],tgt:[-1240,25,2790]},pagoda:{n:'琉璃塔',pos:[-1250,170,2280],tgt:[-1420,95,2460]},subura:{n:'苏布拉',pos:[520,135,-330],tgt:[700,30,-640]},circusW:{n:'竞技场西门',pos:[-382,70,490],tgt:[-242,12,533]},capitol:{n:'卡比托利欧',pos:[-150,95,170],tgt:[-275,35,10]},claudius:{n:'克劳狄神庙',pos:[720,95,470],tgt:[880,20,640]},jupiter:{n:'朱庇特神庙',pos:[-186,118,142],tgt:[-275,42,8]},palW:{n:'提比略宫西侧',pos:[-178,75,105],tgt:[-20,25,190]},campusS:{n:'战神广场南部',pos:[-450,140,250],tgt:[-620,20,-150]},boarium:{n:'牛市广场河岸',pos:[-245,75,455],tgt:[-370,8,330]},stoa:{n:'鸟瞰对照',pos:[280,1250,2150],tgt:[20,0,-300]},galba:{n:'城东',pos:[GALBA[0]-310,230,GALBA[1]-370],tgt:[GALBA[0],110,GALBA[1]]},
     gallery:(()=>{const a=palW(-34,-178),b=palW(-34,-102);return{n:'尼禄长廊',pos:[a[0],84,a[1]],tgt:[b[0],54,b[1]]};})(),
     overview:{n:'全城',pos:[700,1900,3500],tgt:[-200,0,200]}};
-  nobleViews(W);
+  nobleViews(W);streetLifeViews(W);
   W.defView='forum';W.mapName='尼禄时期的罗马（近似）';
   return W;}
