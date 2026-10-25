@@ -18,6 +18,7 @@
     "src/scenes/rome/palatine.js",
     "src/scenes/rome/layers.js",
     "src/scenes/rome/assets.js",
+    "src/scenes/rome/construction.js",
     "src/scenes/antium/terrain.js",
     "src/scenes/antium/fortress.js",
     "src/scenes/antium/islet.js",
@@ -62,6 +63,14 @@
       "var": "ROME_GLB",
       "cb": "romeAssetsLoaded",
       "dir": "assets/models/rome",
+      "optimize": true
+    },
+    {
+      "file": "construction-assets.js",
+      "var": "CONS_GLB",
+      "cb": "consAssetsLoaded",
+      "dir": "assets/models/construction",
+      "recursive": true,
       "optimize": true
     }
   ],
