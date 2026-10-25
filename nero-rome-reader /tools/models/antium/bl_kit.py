@@ -37,6 +37,8 @@ PAL = {
     'ochre':   ((0.78, 0.58, 0.30), 0.0, 0.85),
     'brick':   ((0.64, 0.38, 0.27), 0.0, 0.90),
     'wood':    ((0.38, 0.26, 0.17), 0.0, 0.85),
+    'gallery_wall': ((0.50, 0.44, 0.35), 0.0, 0.92),
+    'gallery_floor': ((0.47, 0.42, 0.34), 0.0, 0.92),
     'dark':    ((0.20, 0.17, 0.14), 0.0, 0.95),   # inside openings (never pure black)
     'felt':    ((0.035, 0.035, 0.035), 0.0, 1.0), # black wool felt (book: dark room windows)
     'bronze':  ((0.50, 0.36, 0.20), 0.7, 0.45),
@@ -309,7 +311,7 @@ def arcade(F, x0, y0, x1, y1, z0, h, t, n, mat='stone', open_w=None, open_h=None
             (ua, za), (ub, zb) = rim[i], rim[i + 1]
             add_poly(mat, [P(ua, za, yf), P(ua, za, yb), P(ub, zb, yb), P(ub, zb, yf)])
         if back == 'dark':
-            add_poly('dark', [P(a0, 0, yb - 0.05), P(a1, 0, yb - 0.05)] + [P(u, z, yb - 0.05) for u, z in reversed(arch)])
+            add_poly('gallery_wall', [P(a0, 0, yb - 0.05), P(a1, 0, yb - 0.05)] + [P(u, z, yb - 0.05) for u, z in reversed(arch)])
         if impost_mat:
             for uu in (a0, a1):
                 box(W, uu, 0, z0 + zs - 0.25, 0.5, t + 0.12, 0.25, impost_mat)
@@ -382,7 +384,10 @@ def opening_skin(F, x0, y0, x1, y1, z0, h, openings, mat='plaster', depth=0.35, 
         for i in range(len(rim_c) - 1):
             (ua, za), (ub, zb2) = rim_c[i], rim_c[i + 1]
             add_poly(rm, [P(ua, za), P(ua, za, -0.005), P(ub, zb2, -0.005), P(ub, zb2)])
-        add_poly(inner, [P(u, z, -0.02) for u, z in reversed(rim)])
+        back_mat = 'gallery_wall' if kind == 'arch' and inner == 'dark' else inner
+        add_poly(back_mat, [P(u, z, -0.02) for u, z in reversed(rim)])
+        if kind == 'arch':
+            add_poly('gallery_floor', [P(a, zb), P(b, zb), P(b, zb, -0.02), P(a, zb, -0.02)])
         if frame_mat:
             uc = (a + b) / 2; w = b - a
             box(W, uc, yo - 0.06, zb - 0.12, w + 0.4, 0.22, 0.14, frame_mat)

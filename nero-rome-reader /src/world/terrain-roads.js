@@ -51,7 +51,14 @@ function riverMesh(W,pts,half,y,mat){const P=[],I=[];let k=0;
 function densify(pts,step){const out=[];for(let i=0;i<pts.length-1;i++){const[a,b]=[pts[i],pts[i+1]];const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));
   for(let k=0;k<n;k++)out.push([lerp(a[0],b[0],k/n),lerp(a[1],b[1],k/n)]);}out.push(pts[pts.length-1]);return out;}
 /* main roads: only their corridors are reserved here (no buildings, no trees); the surface, grade and kerbs come from the street raster (streets.js) */
-function roads(W,list,g){W.roadList=list;for(const[w,pts0]of list){const pts=densify(pts0,8);for(let i=0;i<pts.length;i+=3)W.foot.addCircle(pts[i][0],pts[i][1],w/2+(w>=7?2.6:1.2),'road');}}
+function roads(W,list,g){W.roadList=list;for(const[w,pts]of list){
+  // Continuous segment reservations: spaced circles left gaps into which houses could grow.
+  const half=w/2+(w>=7?2.6:1.2);
+  const dense=densify(pts,6),allowed=p=>{const sx=(W.gy(p[0]+4,p[1])-W.gy(p[0]-4,p[1]))/8,sz=(W.gy(p[0],p[1]+4)-W.gy(p[0],p[1]-4))/8;return Math.hypot(sx,sz)<=.30;};
+  for(let i=1;i<dense.length;i++){const a=dense[i-1],b=dense[i],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);if(!len||!allowed(a)||!allowed([(a[0]+b[0])/2,(a[1]+b[1])/2])||!allowed(b))continue;
+    W.foot.add((a[0]+b[0])/2,(a[1]+b[1])/2,len/2,half,Math.atan2(-dz,dx),'road');W.foot.addCircle(a[0],a[1],half,'road');}
+  if(dense.length&&allowed(dense[dense.length-1]))W.foot.addCircle(dense[dense.length-1][0],dense[dense.length-1][1],half,'road');
+}}
 
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;
@@ -67,21 +74,30 @@ function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;le
     else if(typ==='tower'){w=d=9+R()*4;nSt=4+Math.floor(R()*2);}
     else if(typ==='ware'){w=34+R()*30;d=16+R()*8;nSt=2;}
     else{w=8+R()*6;d=7+R()*5;nSt=1;}
+    if(typ!=='domus'&&typ!=='ware'){w=Math.min(w,22);d=Math.min(d,16,260/w);}
     const rot=Z.rot+(R()-.5)*(typ==='slum'?.36:.07);const hw=w/2,hd=d/2;
-    if(W.foot.hits(x,z,hw,hd,rot,Z.m))continue;
-    const c=Math.cos(rot),s=Math.sin(rot);let y0=1e9,y1=-1e9;
-    for(const[lx,lz]of[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd],[0,0]]){const y=W.gy(x+lx*c+lz*s,z-lx*s+lz*c);y0=Math.min(y0,y);y1=Math.max(y1,y);}
-    if(y1-y0>Z.step)continue;
-    W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z),typ,x,z,rot,w,d,nSt,y0,y1,R,Z);n++;
+    if(W.foot.hits(x,z,hw,hd,rot,Z.m+.8))continue;   // reserve roof eaves as part of the residential clearance
+    const c=Math.cos(rot),s=Math.sin(rot),res=['insula','tower','domus','shed','hut','slum'].includes(typ),poly=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]].map(([lx,lz])=>[x+lx*c+lz*s,z-lx*s+lz*c]),gH=4.1+R()*.9,sH=3.05+R()*.45;let y0=1e9,y1=-1e9;
+    if(res&&typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,poly))continue;
+    if(res){const q=houseGround(W,poly,2.5);if(!q)continue;y0=q.min;y1=q.max;}else for(const[lx,lz]of[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd],[0,0]]){const y=W.gy(x+lx*c+lz*s,z-lx*s+lz*c);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+    const baseH=typ==='slum'?3.5:gH,storeyH=typ==='slum'?2.85:sH,slopeLimit=nSt>=3?baseH+(nSt-3)*storeyH-.65:nSt===2?baseH-.65:1.5;
+    if(res?y1-y0>slopeLimit:y1-y0>Z.step)continue;
+    W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z),typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH,sH);n++;
     if(Z.ppl&&R()<Z.ppl){for(let k=0;k<3;k++){const a=R()*TAU,rr=Math.max(hw,hd)+3;W.people.push([x+Math.cos(a)*rr,W.gy(x+Math.cos(a)*rr,z+Math.sin(a)*rr),z+Math.sin(a)*rr]);}}}
   const grp=new THREE.Group();for(const g of chunks.values()){const m=g.mesh(MAT.city);if(m)grp.add(m);}W.scene.add(grp);W.cityGroup=grp;return n;}
-function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z){
-  const F=frame(x,0,z,rot),seed=R(),floorY=y1+.15,winT=Math.floor(R()*8);let grT=0;
+function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R()*.45){
+  const PF=frame(x,0,z,rot),PP=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=PF.p(q[0],0,q[1]);return[p[0],p[2]];});if(typ!=='ware'&&typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,PP))return;
+
+  if(['insula','tower','domus','shed','hut','slum'].includes(typ)){
+    const E=frame(x,0,z,rot),poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=E.p(q[0],0,q[1]);return[p[0],p[2]];});
+    (W.residentialEnvelopes||(W.residentialEnvelopes=[])).push({polygon:poly,type:typ,storeys:nSt});
+  }
+  const F=frame(x,0,z,rot),seed=R(),res=['insula','tower','domus','shed','hut','slum'].includes(typ),floorY=(res?y0:y1)+.15,winT=Math.floor(R()*8);let grT=0;
   if(typ==='insula'&&R()<Z.shops)grT=R()<.55?1:2;if(typ==='domus')grT=R()<.5?2:0;if(typ==='ware')grT=3;
   let fl=2;if(R()<.7)fl|=8;if(R()<.55)fl|=16;if(R()<.3)fl|=32;if(R()<.22)fl|=64;if(R()<.18)fl|=4;if(typ==='tower'||(typ==='insula'&&R()<.13))fl|=256;
-  const gH=4.1+R()*.9,sH=3.05+R()*.45,part=R()<(Z.brick||0)?9:0,yT=floorY+gH+(nSt-1)*sH,lit=.4+R()*.6;
+  const part=R()<(Z.brick||0)?9:0,yT=floorY+gH+(nSt-1)*sH,lit=.4+R()*.6;
   const fac={part,seed,sty:winT+8*grT,fl,nSt,gH,sH,lit,shopMask:R()<.5?1:5,doorSide:Math.floor(R()*4),burn:Z.burn?Z.burn(x,z)*(R()<.65?1:0):0};
-  const yB=y0-2.5;
+  const yB=res?y0-.25:y0-2.5;
   if(typ==='hut'){const hp=R()<.6?22:30,hf={part:hp,seed,sty:3,fl:16|2,nSt:1,gH:3,sH:3,lit:.4,burn:0},yT2=floorY+3;rectWalls(g,F,0,0,w,d,yB,yT2,floorY,hf);const t0=g.nv;roof(g,F,'gable',0,0,w,d,yT2,(24+R()*10)*DEG,.35,seed+.2,{part:hp,seed,nSt:1,gH:3,sH:3,floorY});if(R()<.5)retag(g,1,21,t0);return;}
   if(typ==='slum'){const gh=3.5,sh=2.85,n=nSt,j1=.75,j2=1.35,y2=floorY+gh,k2=Math.min(3,n-1),y3=y2+k2*sh,bn=fac.burn;
     rectWalls(g,F,0,0,w,d,yB,y2,floorY,{part:9,seed,sty:3+8*(R()<.65?2:3),fl:2,nSt:1,gH:gh,sH:sh,lit,shopMask:R()<.5?1:5,doorSide:Math.floor(R()*4),burn:bn});
@@ -99,14 +115,14 @@ function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z){
     const ch=Math.min(3.8,gH*.82);for(let i=0;i<=4;i++){const t=i/4-.5;for(const[px,pz]of[[t*(cw-3),cd/2-1.6],[t*(cw-3),-cd/2+1.6],[cw/2-1.6,t*(cd-3)],[-cw/2+1.6,t*(cd-3)]])W.cols.simple.push([...F.p(px,floorY,pz),rot,ch,[1,.98,.94]]);}
     for(let i=0;i<3;i++){const ox=(R()<.5?-1:1)*(pw/2+2+R()*2),oz=(R()-.5)*cd*.5,q=F.p(ox,0,oz);W.trees.push([q[0],floorY,q[2],R()<.45?'cyp':'broad',.5+R()*.2]);}
     return;}
-  if(typ==='insula'&&w>25&&d>20&&R()<.55){const cw=w-14,cd=d-13;rectWalls(g,F,0,0,w,d,yB,yT,floorY,fac);rectWalls(g,F,0,0,cw,cd,floorY,yT,floorY,Object.assign({},fac,{sty:winT,fl:fl&~2,shopMask:0}),true);
+  if(typ==='insula'&&w>25&&d>20&&R()<.55){const cw=w-14,cd=d-13;houseRectWalls(W,g,F,0,0,w,d,yB,yT,floorY,fac);rectWalls(g,F,0,0,cw,cd,floorY,yT,floorY,Object.assign({},fac,{sty:winT,fl:fl&~2,shopMask:0}),true);
     roof(g,F,'ring',0,0,w,d,yT,21*DEG,.7,seed+.2,{cw,cd});g.set(11,seed);g.poly([F.p(-cw/2,floorY+.05,cd/2),F.p(cw/2,floorY+.05,cd/2),F.p(cw/2,floorY+.05,-cd/2),F.p(-cw/2,floorY+.05,-cd/2)],[0,1,0]);g.set(2,.5);lathe(g,F,0,floorY,0,[[.75,0],[.75,.85],[.55,.85],[.55,.1]],10);return;}
-  rectWalls(g,F,0,0,w,d,yB,yT,floorY,fac);
+  houseRectWalls(W,g,F,0,0,w,d,yB,yT,floorY,fac);
   const rr=R();const rt=typ==='tower'?'pyr':typ==='ware'?'gable':rr<.48?'hip':rr<.86?'gable':'flat';
   const wf=Object.assign({},fac,{floorY});
   roof(g,F,rt,0,0,w,d,yT,(typ==='tower'?24:19+R()*6)*DEG,typ==='tower'?1.2:.75,seed+.2,wf);
   if(typ==='insula'&&R()<.22){const tw=Math.min(w,d)*.45,tx=(R()<.5?-1:1)*(w/2-tw/2),tz=(R()<.5?-1:1)*(d/2-tw/2),tn=nSt+1+(R()<.3?1:0),tY=floorY+gH+(tn-1)*sH;
-    rectWalls(g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256,shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
+    houseRectWalls(W,g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256,shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
   if(typ==='insula'&&nSt>=3&&R()<.28){const by=floorY+gH+sH,bw=w*.7;g.set(3,seed);box(g,F,0,by-.2,d/2+.55,bw/2,.2,.55,31);box(g,F,0,by,d/2+1.05,bw/2,.95,.05,31);
     for(let k=-bw/2;k<=bw/2;k+=1.8)box(g,F,k,by-1.6,d/2+1.05,.06,1.6,.06,15);}
   if(grT>0&&R()<.55){const n=Math.max(1,Math.floor(w/3.4));for(let i=0;i<n;i++){if(R()<.35)continue;const bx=-w/2+(i+.5)*w/n,aw=w/n*.42,ay=floorY+gH-.75;g.set(8,R());

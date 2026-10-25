@@ -1,0 +1,5 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import * as THREE from 'three';
+const C={THREE,window:{},console};vm.createContext(C);
+const read=f=>fs.readFileSync(f,'utf8');vm.runInContext(read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/residential-policy.js'),C);
+const r=vm.runInContext(`(()=>{const B=[[-20,-15],[20,-15],[20,15],[-20,15]],C=pInset(B,8),wings=[];for(let i=0;i<4;i++){const j=(i+1)%4;wings.push({L:[B[i],B[j],C[j],C[i]]});}const complete=residentialCourtClosure(C,wings),missing=residentialCourtClosure(C,wings.slice(0,3)),split=wings.flatMap(r=>splitResidentialPolygon(r.L).map(L=>({L}))),segmented=residentialCourtClosure(C,split);return{complete,missing,segmented};})()`,C);
+assert.equal(r.complete.closed,true);assert.equal(r.missing.closed,false);assert.equal(r.segmented.closed,true);assert.ok(r.missing.uncovered.length);console.log(JSON.stringify(r));

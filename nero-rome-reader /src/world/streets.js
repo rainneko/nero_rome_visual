@@ -21,18 +21,34 @@ function stComps(m,nx,nz,fn,d8){const seen=new Uint8Array(m.length),q=new Int32A
       if(j>0&&m[k-nx]&&!seen[k-nx]){seen[k-nx]=1;q[t++]=k-nx;}if(j<nz-1&&m[k+nx]&&!seen[k+nx]){seen[k+nx]=1;q[t++]=k+nx;}
       if(d8){for(const[a,b]of[[-1,-1],[1,-1],[-1,1],[1,1]]){const ii=i+a,jj=j+b;if(ii<0||jj<0||ii>=nx||jj>=nz)continue;const kk=jj*nx+ii;if(m[kk]&&!seen[kk]){seen[kk]=1;q[t++]=kk;}}}}
     fn(q.subarray(0,t));}}
+function streetRoadAllowed(slope,blocked){return !blocked&&Number.isFinite(slope)&&slope<=.30;}
+function streetTextureVisible(solid,vegetation,water,naturalVeg,openLand,court,road){return !(solid||water||naturalVeg||court||(vegetation&&!(openLand&&road)));}
+function streetGroundAllowed(S,W,x,z){const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);if(i<0||j<0||i>=S.nx||j>=S.nz)return false;const k=j*S.nx+i;if(S.solid[k]||S.water[k]||S.waterAt?.(x,z)||S.naturalVeg[k]||S.court[k])return false;const sx=(W.gy(x+4,z)-W.gy(x-4,z))/8,sz=(W.gy(x,z+4)-W.gy(x,z-4))/8;return streetRoadAllowed(Math.hypot(sx,sz),false);}
+function streetRoadPointAllowed(S,W,x,z){const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz&&!!S.road[j*S.nx+i]&&streetGroundAllowed(S,W,x,z);}
+function streetStairFootprintAllowed(S,x,z,dx,dz,run,width,cs,requireEnds=true){const nx=-dz,nz=dx,steps=Math.max(2,Math.ceil(run/cs)),sideSteps=Math.max(2,Math.ceil(width/cs));
+  for(let i=0;i<=steps;i++)for(let si=0;si<=sideSteps;si++){const t=-run/2+run*i/steps,side=-width/2+width*si/sideSteps,px=x+dx*t+nx*side,pz=z+dz*t+nz*side,ix=Math.floor((px-S.x0)/cs),iz=Math.floor((pz-S.z0)/cs);if(ix<0||iz<0||ix>=S.nx||iz>=S.nz)return false;const k=iz*S.nx+ix;if(!S.st[k]||S.solid[k]||S.water[k])return false;}
+  if(requireEnds)for(const sign of[-1,1]){let linked=false;for(let a=-1;a<=1;a++){const px=x+dx*(sign*(run/2+cs*1.5))+nx*a*width*.35,pz=z+dz*(sign*(run/2+cs*1.5))+nz*a*width*.35,ix=Math.floor((px-S.x0)/cs),iz=Math.floor((pz-S.z0)/cs);if(ix<0||iz<0||ix>=S.nx||iz>=S.nz)continue;const k=iz*S.nx+ix;if(S.st[k]&&!S.solid[k]&&!S.water[k])linked=true;}if(!linked)return false;}
+  return true;}
+function streetCompactUPlan(F0,gy,spans,turns,depthRatio=1.42,maxRelief=1.84,sampleStep=2.5,offsets=[[0,0],[0,2],[0,-2],[2,0],[-2,0],[0,4],[0,-4],[4,0],[-4,0]],fit=[26,44,4]){for(const span of spans){for(const turn of turns)for(const[offsetX,offsetZ]of offsets){const F=F0.sub(offsetX,0,offsetZ,turn),depth=span*depthRatio,half=span/2,wingDepth=Math.min(5,span*.12),z0=-depth/2,z1=depth/2;
+    const fitX=fit[0]*Math.abs(Math.cos(turn))+fit[1]*Math.abs(Math.sin(turn)),fitZ=fit[0]*Math.abs(Math.sin(turn))+fit[1]*Math.abs(Math.cos(turn));if(half-wingDepth<fitX/2+fit[2]+Math.abs(offsetX)||depth/2-wingDepth<fitZ/2+fit[2]+Math.abs(offsetZ))continue;
+    const wings=[{lines:[[-half,z0,-half,z1],[-half+wingDepth,z0,-half+wingDepth,z1-wingDepth]]},{lines:[[half,z1,half,z0],[half-wingDepth,z1-wingDepth,half-wingDepth,z0]]},{lines:[[-half,z1,half,z1],[-half+wingDepth,z1-wingDepth,half-wingDepth,z1-wingDepth]]}],heights=[];
+    for(const wing of wings)for(const[ax,az,bx,bz]of wing.lines){const dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),rot=Math.atan2(-dz,dx),S=F.sub((ax+bx)/2,0,(az+bz)/2,rot),n=Math.ceil(L/sampleStep);for(let i=0;i<=n;i++){const q=S.p(-L/2+L*i/n,0,0);heights.push(gy(q[0],q[2]));}}
+    const lo=Math.min(...heights),hi=Math.max(...heights);if(hi-lo<=maxRelief)return{F,span,depth,wingDepth,wings,lo,hi,relief:hi-lo,offsetX,offsetZ};}}return null;}
+function streetPrecinctWingColumns(plan,wingIndex,spacing,gy,floorY){const columns=[];let supportMin=Infinity,supportMax=-Infinity,run=0;for(let row=0;row<2;row++){const[ax,az,bx,bz]=plan.wings[wingIndex].lines[row],L=Math.hypot(bx-ax,bz-az),rot=Math.atan2(-(bz-az),bx-ax),S=plan.F.sub((ax+bx)/2,0,(az+bz)/2,rot),n=Math.max(1,Math.ceil(L/spacing));run=Math.max(run,L);
+    for(let i=0;i<=n;i++){const t=i/n,q=S.p(-L/2+L*t,0,0),ground=gy(q[0],q[2]),support=floorY-ground;columns.push({x:q[0],y:floorY,z:q[2],ground,support,row,station:i/n});supportMin=Math.min(supportMin,support);supportMax=Math.max(supportMax,support);}}
+  return{columns,supportMin,supportMax,run,depth:plan.wingDepth};}
 /* o: {zone(x,z)->1|2|3 grade of ordinary streets, marble(x,z)->bool, veg(x,z)->bool, water(x,z)->bool, roads:[[w,pts],...], urban(x,z)->0..1} */
 function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,bz0=1e9,bx1=-1e9,bz1=-1e9;
   for(const f of F){if(f.tag==='road'||f.tag==='open'||f.r>400)continue;bx0=Math.min(bx0,f.cx);bx1=Math.max(bx1,f.cx);bz0=Math.min(bz0,f.cz);bz1=Math.max(bz1,f.cz);}
   const cs=Q.name==='low'&&!TEST?3.5:2.5,x0=Math.max(bx0-160,-3000),z0=Math.max(bz0-160,-2700),nx=Math.ceil((Math.min(bx1+160,3000)-x0)/cs),nz=Math.ceil((Math.min(bz1+160,3500)-z0)/cs),N=nx*nz;
-  const solid=new Uint8Array(N),veg=new Uint8Array(N),temple=new Uint8Array(N),K=(i,j)=>j*nx+i;
-  for(const f of F){if(f.tag==='road')continue;const open=f.tag==='open',m=open?0:.3,r=f.r+1,i0=Math.max(0,Math.floor((f.cx-r-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.cx+r-x0)/cs)),j0=Math.max(0,Math.floor((f.cz-r-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.cz+r-z0)/cs));
+  const solid=new Uint8Array(N),veg=new Uint8Array(N),openLand=new Uint8Array(N),court=new Uint8Array(N),temple=new Uint8Array(N),K=(i,j)=>j*nx+i;
+  for(const f of F){if(f.tag==='road')continue;const open=f.tag==='open'||f.tag==='court',isCourt=open&&(!!f.siteRole||!!f.reservation||f.tag==='court'),m=open?0:.3,r=f.r+1,i0=Math.max(0,Math.floor((f.cx-r-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.cx+r-x0)/cs)),j0=Math.max(0,Math.floor((f.cz-r-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.cz+r-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=x0+(i+.5)*cs-f.cx,z=z0+(j+.5)*cs-f.cz,u=f.c*x-f.s*z,v=f.s*x+f.c*z;
-      if(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m){if(open)veg[K(i,j)]=1;else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;}}}}
+      if(f.poly?nobleInside(x+f.cx,z+f.cz,f.poly):(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m)){if(open){veg[K(i,j)]=1;openLand[K(i,j)]=1;if(isCourt)court[K(i,j)]=1;}else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;}}}}
   // vegetation and water on a 10 m lattice, nearest-sampled
-  const wat=new Uint8Array(N),lat=Math.max(1,Math.round(10/cs));{const lx=Math.ceil(nx/lat)+1,lz=Math.ceil(nz/lat)+1,V=new Uint8Array(lx*lz),Wt=new Uint8Array(lx*lz);
+  const wat=new Uint8Array(N),naturalVeg=new Uint8Array(N),lat=Math.max(1,Math.round(10/cs));{const lx=Math.ceil(nx/lat)+1,lz=Math.ceil(nz/lat)+1,V=new Uint8Array(lx*lz),Wt=new Uint8Array(lx*lz);
     for(let j=0;j<lz;j++)for(let i=0;i<lx;i++){const x=x0+(i*lat+lat/2)*cs,z=z0+(j*lat+lat/2)*cs;V[j*lx+i]=o.veg(x,z)?1:0;Wt[j*lx+i]=o.water(x,z)?1:0;}
-    for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=Math.floor(j/lat)*lx+Math.floor(i/lat);if(V[k])veg[K(i,j)]=1;if(Wt[k])wat[K(i,j)]=1;}}
+    for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const kk=K(i,j),k=Math.floor(j/lat)*lx+Math.floor(i/lat);if(V[k]){veg[kk]=1;naturalVeg[kk]=1;}if(Wt[k])wat[kk]=1;}}
   const dist=stChamfer(solid,nx,nz),dens=stBlur(solid,nx,nz,Math.round(16/cs)),dens2=stBlur(solid,nx,nz,Math.round(30/cs));
   const st=new Uint8Array(N);
   for(let k=0;k<N;k++){if(solid[k]||veg[k]||wat[k])continue;const d=dist[k]*cs;if(d<=9&&(dens[k]>=.13||(d<=4&&dens2[k]>=.1)))st[k]=1;}   // streets hug buildings: no street more than 9 m from a wall (no highway rings round hills)
@@ -45,16 +61,23 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   for(const[w,pts0]of o.roads){const pts=densify(pts0,cs*.8);for(let p=0;p<pts.length-1;p++){const a=pts[p],b=pts[p+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,ur=o.urban(x,z),hw=w*(ur>.45?.5:(w>=9||w===6)?.5:.3);
       const i0=Math.max(0,Math.floor((x-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((x+hw-x0)/cs)),j0=Math.max(0,Math.floor((z-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((z+hw-z0)/cs));
       for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(solid[k]||wat[k])continue;const cx=x0+(i+.5)*cs-x,cz=z0+(j+.5)*cs-z;if(Math.hypot(cx,cz)>hw+cs*.5)continue;
+        // A road raster may not bridge a cliff simply because its hand-authored centreline does.
+        // Keep grades at or below 30%; steeper crossings need a separately modelled stair/bridge.
+        const rx=x0+(i+.5)*cs,rz=z0+(j+.5)*cs;
+        if(naturalVeg[k]||court[k])continue;const sx=(W.gy(rx+4,rz)-W.gy(rx-4,rz))/8,sz=(W.gy(rx,rz+4)-W.gy(rx,rz-4))/8;if(!streetRoadAllowed(Math.hypot(sx,sz),false))continue;
         st[k]=1;road[k]=ur>.45||w>=9?2:1;const kc=Math.floor(j/NC)*nxc+Math.floor(i/NC);ax[kc]+=3*(tx*tx-tz*tz);az[kc]+=3*2*tx*tz;aw[kc]+=3;}}}
   const plz=new Uint8Array(N);   // 'plaza' rects (5th entry): paved squares, always grade 3 (warm beige-grey slabs)
   for(const[xa,za,xb,zb,kind]of o.paved||[]){const i0=Math.max(0,Math.floor((xa-x0)/cs)),i1=Math.min(nx-1,Math.floor((xb-x0)/cs)),j0=Math.max(0,Math.floor((za-z0)/cs)),j1=Math.min(nz-1,Math.floor((zb-z0)/cs));   // market squares and the like: an open area with a purpose is paved
-    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!solid[k]&&!wat[k]){st[k]=1;road[k]=2;if(kind==='plaza')plz[k]=1;}}}
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!solid[k]&&!wat[k]&&!naturalVeg[k]&&!court[k]){st[k]=1;road[k]=2;if(kind==='plaza')plz[k]=1;}}}
   // stair feet and hillRoute joins: the mask must not balloon round them (a 30 m paved blob next to the Apollo stair). Within FR m of a foot only a road-width strip
   // (7 m) along the stair's axis and the real road corridors stay; everything else that the building-hugging growth added is dropped.
   for(const f of o.feet||[]){const FR=f.r||40,i0=Math.max(0,Math.floor((f.x-FR-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.x+FR-x0)/cs)),j0=Math.max(0,Math.floor((f.z-FR-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.z+FR-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!st[k]||road[k])continue;const rx=x0+(i+.5)*cs-f.x,rz=z0+(j+.5)*cs-f.z;if(Math.hypot(rx,rz)>FR)continue;
       const al=rx*f.dx+rz*f.dz,pe=Math.abs(rx*f.dz-rz*f.dx);if(al>=-3&&pe<=3.5)continue;st[k]=0;}}
-  for(let k=0;k<N;k++)if(solid[k])st[k]=0;
+  // The 10 m coarse water lattice is only a broad phase. Recheck every
+  // accepted street cell against the actual shoreline before assigning grades.
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=K(i,j);if(st[k]&&!wat[k]&&o.water(x0+(i+.5)*cs,z0+(j+.5)*cs))wat[k]=1;if(solid[k]||wat[k]||court[k]){st[k]=0;road[k]=0;}}
+
   // width of each street (distance to the nearest non-street, local maximum) -> alleys narrower than ~3 m are dirt
   const nonSt=new Uint8Array(N);for(let k=0;k<N;k++)nonSt[k]=st[k]?0:1;const dN=stChamfer(nonSt,nx,nz),wid=new Float32Array(N);
   {const R=2,m2=new Float32Array(N);for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=K(i,j);if(!st[k])continue;let m=0;for(let b=-R;b<=R;b++){const jj=j+b;if(jj<0||jj>=nz)continue;for(let a=-R;a<=R;a++){const ii=i+a;if(ii<0||ii>=nx)continue;const v=dN[K(ii,jj)];if(v>m)m=v;}}m2[k]=m*2*cs;}wid.set(m2);}
@@ -75,11 +98,11 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   const sm=stBlur(st,nx,nz,1),T1=new Uint8Array(N*4);
   // grade of cells without a street is the nearest street's (so filtering at the edge does not mix in zero)
   const gg=new Float32Array(N);for(let k=0;k<N;k++)gg[k]=grd[k];for(let it=0;it<3;it++){const g2=gg.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(gg[k]>0)continue;const v=gg[k-1]||gg[k+1]||gg[k-nx]||gg[k+nx];if(v)g2[k]=v;}gg.set(g2);}
-  for(let k=0;k<N;k++){T1[k*4]=Math.min(255,sm[k]*255*1.15);T1[k*4+1]=gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);T1[k*4+3]=255;}
+  for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);T1[k*4+3]=255;}
   const T2=new Uint8Array(nxc*nzc*4);for(let k=0;k<nxc*nzc;k++){const l=Math.hypot(ax[k],az[k]),vx=l>1e-4?ax[k]/l:0,vz=l>1e-4?az[k]/l:0;T2[k*4]=Math.round((vx*.5+.5)*255);T2[k*4+1]=Math.round((vz*.5+.5)*255);T2[k*4+2]=Math.min(255,aw[k]*40);T2[k*4+3]=255;}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
-  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,wid,dist,road,ax,az,nxc,NC,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
+  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,waterAt:o.water,nxc,NC,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
   W.streetAt=(x,z)=>W.street.at(x,z)>0;
   console.log('streets',nx+'x'+nz,'cs',cs,'dirt',cnt[1],'stone',cnt[2],'marble',cnt[3],Math.round(performance.now()-t0)+' ms');}
 /* stairs: connected steep stone/marble street cells become flights along the slope (dirt never does) */
@@ -94,8 +117,8 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
     const l=Math.hypot(sx,sz)||1,dx=-sx/l,dz=-sz/l;mx/=c.length;mz/=c.length;const px=-dz,pz=dx;let t0=1e9,t1=-1e9;const pp=[];
     for(const k of c){const i=k%nx,j=(k-i)/nx,x=x0+(i+.5)*cs-mx,z=z0+(j+.5)*cs-mz,t=x*dx+z*dz;pp.push(x*px+z*pz);t0=Math.min(t0,t);t1=Math.max(t1,t);}
     pp.sort((a,b)=>a-b);const pc=pp[pp.length>>1],span=pp[Math.floor(pp.length*.9)]-pp[Math.floor(pp.length*.1)],marble=mar>c.length*.5,wd=Math.min(marble?9:7,Math.max(3,span+1.5));if(span>12||t1-t0>42)continue;   // wide or very long patches are street networks on a hillside, not one climb: they stay ramps
-    t0-=cs*.8;t1+=cs*.8;if(t1-t0<5.5)continue;const cx=mx+px*pc,cz=mz+pz*pc,ax=cx+dx*t0,az=cz+dz*t0,bx=cx+dx*t1,bz=cz+dz*t1,yt=gy(ax,az),yb=gy(bx,bz),drop=yt-yb;if(drop<1.1||drop>40)continue;
-    const ri=marble?.16:.19,n=Math.max(4,Math.round(drop/ri)),rr=drop/n,nL=Math.floor((n-1)/12),run=t1-t0,ld=Math.min(2.4,run*.12),td=(run-nL*ld)/n,rot=Math.atan2(dx,dz),F=frame(ax,0,az,rot),hw=wd/2;
+    t0-=cs*.8;t1+=cs*.8;if(t1-t0<5.5)continue;const cx=mx+px*pc,cz=mz+pz*pc,run=t1-t0,ax=cx+dx*t0,az=cz+dz*t0,bx=cx+dx*t1,bz=cz+dz*t1,yt=gy(ax,az),yb=gy(bx,bz),drop=yt-yb;if(drop<1.1||drop>40||!streetStairFootprintAllowed(S,cx,cz,dx,dz,run,wd,cs,true))continue;
+    const ri=marble?.16:.19,n=Math.max(4,Math.round(drop/ri)),rr=drop/n,nL=Math.floor((n-1)/12),ld=Math.min(2.4,run*.12),td=(run-nL*ld)/n,rot=Math.atan2(dx,dz),F=frame(ax,0,az,rot),hw=wd/2;
     if(td<.25||td>1.5)continue;let z=0;
     for(let s=0;s<n;s++){const yy=yt-(s+1)*rr;g.set(marble?6:38,.4+(s%5)*.05);box(g,F,0,yy-1.3,z+td/2,hw,1.3,td/2+.02,31&~32);z+=td;
       if((s+1)%12===0&&s<n-1){g.set(marble?6:38,.4);box(g,F,0,yy-1.3,z+ld/2,hw,1.3,ld/2+.02,31&~32);z+=ld;}}
@@ -108,11 +131,10 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);W.nStairs=nSt;console.log('street stairs',nSt,'of',comps.length,'steep street patches');}
 // raised kerbs and sidewalks only along the grey-stone main roads (they stop where the road is dirt or a building stands)
 function roadKerbs(W,list){const g=new GB(1<<16),S=W.street;
-  const sol=(x,z)=>{const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz&&S.solid[j*S.nx+i]>0;};
-  for(const[w,pts0]of list){if(w<7)continue;const pts=densify(pts0,6);
+  for(const[w,pts0]of list){if(w<7)continue;const pts=densify(pts0,2);
     for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,nx=tz,nz=-tx,mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2;
-      if(S.at(mx,mz)!==2)continue;const rich=Math.hypot(mx-17,mz+22)<420,hw=w/2;
-      for(const sd of[1,-1]){const o0=hw,o1=hw+(rich?1.9:1.3),P=(p,o,y)=>[p[0]+sd*nx*o,y,p[1]+sd*nz*o],ok=!sol(mx+sd*nx*(o0+.4),mz+sd*nz*(o0+.4))&&!sol(mx+sd*nx*(o1-.2),mz+sd*nz*(o1-.2));if(!ok)continue;   // continuous: only a building footprint on the strip interrupts it
+      if(S.at(mx,mz)!==2||!streetRoadPointAllowed(S,W,mx,mz))continue;const rich=Math.hypot(mx-17,mz+22)<420,hw=w/2;
+      for(const sd of[1,-1]){const o0=hw,o1=hw+(rich?1.9:1.3),P=(p,o,y)=>[p[0]+sd*nx*o,y,p[1]+sd*nz*o];let ok=true;for(const t of[0,.5,1]){const px=lerp(a[0],b[0],t),pz=lerp(a[1],b[1],t);if(!streetRoadPointAllowed(S,W,px,pz)||!streetGroundAllowed(S,W,px+sd*nx*o0,pz+sd*nz*o0)||!streetGroundAllowed(S,W,px+sd*nx*o1,pz+sd*nz*o1)){ok=false;break;}}if(!ok)continue;   // curb strip follows the same land and grade limits as its road
         const ya=W.gy(P(a,o0,0)[0],P(a,o0,0)[2]),yb=W.gy(P(b,o0,0)[0],P(b,o0,0)[2]),h=.34;
         g.set(rich?37:36,.4);g.poly([P(a,o0,ya+h),P(b,o0,yb+h),P(b,o1,yb+h),P(a,o1,ya+h)],[0,1,0]);
         g.set(33,.3);g.poly([P(a,o0,ya-.08),P(b,o0,yb-.08),P(b,o0,yb+h),P(a,o0,ya+h)],[-sd*nx,0,-sd*nz]);
@@ -131,7 +153,7 @@ function roadKerbs(W,list){const g=new GB(1<<16),S=W.street;
         while(s0<Ltot-4){const len=5+R()*R()*30,s1=Math.min(Ltot,s0+len);   // run lengths 5-35 m, mostly short; gaps 2.5-12 m
           if(s1-s0>=4){const steps=Math.max(2,Math.round((s1-s0)/1.5)),row=[];let ok=true;
             for(let k=0;k<=steps;k++){const sp=s0+(s1-s0)*k/steps,c=at(sp),off=side*(.78+.07*Math.sin(sp*.11+ro))+(.12*Math.sin(sp*.37+side*2));
-              const x=c.x+c.nx*off,z=c.z+c.nz*off;if(S.at(x,z)!==2||S.at(c.x,c.z)!==2||nearJunction(x,z,ro)){ok=false;break;}row.push({x,z,nx:c.nx,nz:c.nz,t:k/steps});}
+              const x=c.x+c.nx*off,z=c.z+c.nz*off;if(S.at(x,z)!==2||!streetRoadPointAllowed(S,W,x,z)||!streetRoadPointAllowed(S,W,c.x,c.z)||!streetGroundAllowed(S,W,x+c.nx*.125,z+c.nz*.125)||!streetGroundAllowed(S,W,x-c.nx*.125,z-c.nz*.125)||nearJunction(x,z,ro)){ok=false;break;}row.push({x,z,nx:c.nx,nz:c.nz,t:k/steps});}
             if(ok){const hw=.125,P=(q,o)=>{const x=q.x+q.nx*o,z=q.z+q.nz*o;return[x,W.gy(x,z)+.17,z];};
               for(let k=0;k<row.length-1;k++){const a=row[k],b=row[k+1],ta=Math.min(1,Math.min(a.t,1-a.t)*(s1-s0)/3),tb=Math.min(1,Math.min(b.t,1-b.t)*(s1-s0)/3),va=.55+.45*Math.min(1,ta),vb=.55+.45*Math.min(1,tb);
                 for(const h of[-1,1]){gW.set(42,.4);gW.poly([P(a,h*hw),P(b,h*hw),P(b,0),P(a,0)],[0,1,0],[[0,va],[0,vb],[1,vb],[1,va]]);}}   // u = 0 at the edges, 1 on the centre line; v = fade at the run ends

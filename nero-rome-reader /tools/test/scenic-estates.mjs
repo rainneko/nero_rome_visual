@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../../src/scenes/rome/scenic-estates.js',import.meta.url),'utf8');
+const helper=source.match(/function scenicEstateReject\([\s\S]*?\n}\n/);
+assert.ok(helper,'selection policy helper exists');
+const context=vm.createContext({});
+vm.runInContext(`${helper[0]};globalThis.check=scenicEstateReject`,context);
+const check=context.check;
+assert.equal(check({min:3,max:4.5},1.8,1.5,false),null);
+assert.equal(check(null,1.8,1.5,false),'invalid-ground');
+assert.equal(check({min:0,max:2.1},1.8,2.1,false),'slope-too-steep');
+assert.equal(check({min:0,max:1},1.8,2.01,false),'terrace-exposure');
+assert.equal(check({min:0,max:1},1.8,1,true),'footprint-conflict');
+console.log('scenic estate admission tests passed');

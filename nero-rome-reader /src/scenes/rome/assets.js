@@ -4,7 +4,7 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:1,hedge:8,gravel:8,roof:9,stucco:6};
+const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:1,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 vec3 romePat(vec3 c,vec3 wp,float pat){
@@ -33,16 +33,18 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   if(mt.name==='gold'){mt.metalness=.35;mt.roughness=.38;mt.color.setRGB(.9,.62,.22);mt.emissive=new THREE.Color(.17,.1,.02);}
   if(mt.name==='flame'){mt.emissive=new THREE.Color(2.2,.8,.18);mt.color.setRGB(1,.5,.1);}
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
-  if(mt.name==='dark')mt.color.setRGB(.13,.105,.08);
-  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],tuff:[.37,.33,.275]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
+  if(mt.name==='dark'||mt.name==='gallery_wall'){mt.color.setRGB(.40,.35,.28);mt.roughness=.92;mt.userData.galleryInterior=true;}
+  if(mt.name==='gallery_floor'){mt.color.setRGB(.47,.42,.34);mt.userData.galleryInterior=true;}
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWPa;varying float vBY;').replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\nvWPa=(modelMatrix*instanceMatrix*vec4(transformed,1.)).xyz;\n#else\nvWPa=(modelMatrix*vec4(transformed,1.)).xyz;\n#endif\n#ifdef USE_INSTANCING\nvBY=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).y;\n#else\nvBY=(modelMatrix*vec4(0.,0.,0.,1.)).y;\n#endif');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+GL_NOISE+GL_ATMO+GL_ROMEPAT+'\nuniform vec4 uDbg;varying vec3 vWPa;varying float vBY;')
       .replace('#include <color_fragment>','#include <color_fragment>\n'+(mt.name==='moss'?'if(fbm2(vWPa.xz*.9+vWPa.y*.4)<.5)discard;':'')+(pat?'diffuseColor.rgb=romePat(diffuseColor.rgb,vWPa,'+pat+'.);':'')+'\nif(uDbg.z<.5){vec3 wn=normalize(cross(dFdx(vWPa),dFdy(vWPa)));float hy=vWPa.y-vBY;float gr=1.-smoothstep(0.,3.,hy);diffuseColor.rgb*=1.-.28*gr*(.6+.8*fbm2(vWPa.xz*.6));diffuseColor.rgb*=mix(1.,.72,smoothstep(-.3,-.8,wn.y));if(abs(wn.y)<.5)diffuseColor.rgb*=1.-.1*smoothstep(.55,.85,fbm2(vec2((vWPa.x+vWPa.z)*.9,vWPa.y*.07)));}')
+      .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\n'+(mt.userData.galleryInterior?'reflectedLight.indirectDiffuse=max(reflectedLight.indirectDiffuse,vec3(.080,.067,.049)*(1.-uNight));':''))
       .replace('#include <fog_fragment>','gl_FragColor.rgb=atmo(gl_FragColor.rgb,vWPa);');};
-  mt.customProgramCacheKey=()=>'romeglb'+pat+(mt.name==='moss'?'m':'');mt.needsUpdate=true;}
+  mt.customProgramCacheKey=()=>'romeglb'+pat+(mt.name==='moss'?'m':'')+(mt.userData.galleryInterior?'gi':'');mt.needsUpdate=true;}
 // register a placement; fn(g,F) draws the stand-in (optional). o: {parent: group, sx, sy, sz: scale}
 function romeStand(W,n,x,z,y,rot,fn,o){const G=new THREE.Group();G.name='stand_'+n;
   if(fn){flushColumns(W);const g=new GB(1<<14);W.colGroup=G;fn(g,frame(x,y,z,rot||0));const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=null;}

@@ -6,37 +6,124 @@ function pInset(P,d){const n=P.length,Ls=[];for(let i=0;i<n;i++){const a=P[i],b=
   if(pArea(Q)<4)return null;for(let i=0;i<n;i++){const a=P[i],b=P[(i+1)%n],c=Q[i],e=Q[(i+1)%n];if((b[0]-a[0])*(e[0]-c[0])+(b[1]-a[1])*(e[1]-c[1])<=0)return null;}return Q;}
 const lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
 const pCen=P=>{let x=0,z=0;for(const p of P){x+=p[0];z+=p[1];}return[x/P.length,z/P.length];};
+function houseGround(W,polygon,step=2.5){
+  if(!Array.isArray(polygon)||polygon.length<2||polygon.some(p=>!p||!Number.isFinite(p[0])||!Number.isFinite(p[1])))return null;
+  step=Number.isFinite(step)&&step>0?step:2.5;
+  let min=Infinity,max=-Infinity;const add=(x,z)=>{const h=W.gy(x,z);if(Number.isFinite(h)){min=Math.min(min,h);max=Math.max(max,h);}};
+  for(let e=0;e<polygon.length;e++){const a=polygon[e],b=polygon[(e+1)%polygon.length],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));for(let i=0;i<=n;i++){const t=i/n;add(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t);}}
+  let area=0;for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length];area+=a[0]*b[1]-b[0]*a[1];}
+  if(Math.abs(area)>1e-9){const xs=polygon.map(p=>p[0]),zs=polygon.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),z0=Math.min(...zs),z1=Math.max(...zs),inside=(x,z)=>{let hit=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){const a=polygon[i],b=polygon[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
+    let cx=0,cz=0;for(const p of polygon){cx+=p[0]/polygon.length;cz+=p[1]/polygon.length;}if(inside(cx,cz))add(cx,cz);
+    const sx=Math.min(step,Math.max((x1-x0)/2,1e-6)),sz=Math.min(step,Math.max((z1-z0)/2,1e-6));for(let z=z0+sz/2;z<z1;z+=sz)for(let x=x0+sx/2;x<x1;x+=sx)if(inside(x,z))add(x,z);
+  }
+  return min===Infinity?null:{min,max};
+}
 function lotOBB(L){const a=L[0],b=L[1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,ux=dx/l,uz=dz/l,c=pCen(L);let hw=0,hd=0;
   for(const p of L){const rx=p[0]-c[0],rz=p[1]-c[1];hw=Math.max(hw,Math.abs(rx*ux+rz*uz));hd=Math.max(hd,Math.abs(-rx*uz+rz*ux));}return{cx:c[0],cz:c[1],hw,hd,rot:Math.atan2(-uz,ux),ux,uz};}
+// A gallery is actual geometry, not a painted opening. The inner room block is inset;
+// no wall crosses the corner between neighbouring exterior arcade runs.
+function houseGalleryPlan(L,o){
+  const flags=(o.fl||0)|(o.flUp||0),ns=o.nSt||1,sd=o.seed||0;
+  const lengths=L.map((a,i)=>Math.hypot(L[(i+1)%L.length][0]-a[0],L[(i+1)%L.length][1]-a[1]));
+  if(L.length!==4||Math.min(...lengths)<5.2||ns<2)return[];
+  const levels=[],wide=lengths[0]>=14.5,hash=k=>((Math.sin(sd*12.9898+k*78.233)*43758.5453)%1+1)%1;
+  if(!o.flat&&(o.loggia||o.loggiaA||(flags&(256|512))))levels.push({level:ns-1,wrap:true});
+  // A broad facade may have a single three-bay gallery on storey 3 or 4,
+  // always below the penultimate storey. Other bays remain load-bearing wall.
+  if(wide&&ns>=5&&hash(81)<.38){const level=ns>=6&&hash(82)>.5?3:2;
+    if(level<ns-2)levels.push({level,wrap:false,t0:(1-8.7/lengths[0])/2,t1:(1+8.7/lengths[0])/2});}
+  return levels;
+}
+function houseGallery(W,g,F,L,y,h,o,wrap=true){
+  const wallT=.32,walk=wrap?Math.max(.8,Math.min(1.1,Math.min(...L.map((a,i)=>Math.hypot(L[(i+1)%4][0]-a[0],L[(i+1)%4][1]-a[1])))*.12)):Math.hypot(L[3][0]-L[0][0],L[3][1]-L[0][1])-wallT/2;
+  const I=wrap?pInset(L,walk+wallT/2):L;
+  if(!I)return false;
+  const p=(q,z)=>F.p(q[0],z,q[1]),sd=o.seed||.4;
+  const edges=wrap?[0,1,2,3]:[0];
+  for(const e of edges){const a=L[e],b=L[(e+1)%4],a2=wrap?I[e]:L[3],b2=wrap?I[(e+1)%4]:L[2],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),rot=Math.atan2(-dz,dx),S=F.sub((a[0]+b[0])/2,0,(a[1]+b[1])/2,rot);
+    const bays=wrap?Math.max(1,Math.round(len/2.9)):3;
+    arcade(g,S,0,y,.0,len,h,bays,wallT,44,{span:.36,attic:.28,pilasters:false,cornice:false,seed:sd});
+    g.set(44,sd);g.poly([p(a,y+.02),p(b,y+.02),p(b2,y+.02),p(a2,y+.02)],F.d(0,1,0));
+    g.set(44,sd);g.poly([p(a,y+h-.04),p(b,y+h-.04),p(b2,y+h-.04),p(a2,y+h-.04)],F.d(0,-1,0));
+    // A physical 32 cm rear wall, facing the gallery, with closed room doors.
+    const ix=b2[0]-a2[0],iz=b2[1]-a2[1],il=Math.hypot(ix,iz),B=F.sub((a2[0]+b2[0])/2,0,(a2[1]+b2[1])/2,Math.atan2(-iz,ix));
+    g.set(44,sd,0,1);box(g,B,0,y,wallT/2,il/2,h,wallT/2,31);
+    const count=Math.max(1,Math.floor(il/7));for(let k=0;k<count;k++){
+      const x=(k+.5)*il/count-il/2;g.set(45,sd);box(g,B,x,y+.04,-.025,.38,Math.min(2.05,h-.25),.025,31);
+      g.set(45,sd);box(g,B,x,y+Math.min(2.1,h-.2),-.04,.46,.1,.065,31);}
+    // Low parapet and coping leave the arch springing and diagonal view clear.
+    g.set(44,sd,0,1);box(g,S,0,y,-.01,len/2,.62,.11,31);
+    g.set(44,sd);box(g,S,0,y+.62,-.01,len/2,.09,.15,31);
+  }
+  if(!wrap){g.set(44,sd,0,1);for(const[a,b]of[[L[0],L[3]],[L[2],L[1]]]){
+    const dx=b[0]-a[0],dz=b[1]-a[1],S=F.sub((a[0]+b[0])/2,0,(a[1]+b[1])/2,Math.atan2(-dz,dx));box(g,S,0,y,0,Math.hypot(dx,dz)/2,h,wallT/2,31);}}
+  (W.houseGalleryLog||(W.houseGalleryLog=[])).push({wrap,y:F.oy+y,h,walk,wall:wallT,outer:L.map(q=>p(q,0)),inner:(wrap?I:[L[3],L[2]]).map(q=>p(q,0))});
+  return true;
+}
+function houseShell(W,g,F,L,yB,H,floorY,o){
+  const plan=houseGalleryPlan(L,o),gH=o.gH,sH=o.sH,flags=o.fl||0,two=o.up!==undefined&&o.up!==o.part;
+  const at=k=>floorY+gH+(k-1)*sH;
+  for(let e=0;e<L.length;e++){
+    const A=L[e],B=L[(e+1)%L.length],front=e===0;
+    const draw=(a,b,lo,hi)=>{if(hi-lo<.001)return;
+      const upper=two&&lo>=floorY+gH-.001,pt=upper?o.up:o.part;
+      const fl=two?(upper?(o.flUp||16):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072));
+      g.set(pt,o.seed,upper?3:front?o.sty:o.sty%8,fl,upper||!two?o.nSt:1,gH,o.burn||0,o.lit);
+      wall(g,F,a[0],a[1],b[0],b[1],lo,hi,floorY,sH);};
+    const cuts=[yB,H];if(two)cuts.push(floorY+gH);
+    const active=plan.filter(t=>t.wrap||front);
+    for(const t of active)cuts.push(at(t.level),at(t.level)+sH);
+    const ys=[...new Set(cuts)].sort((a,b)=>a-b);
+    for(let j=0;j<ys.length-1;j++){const lo=ys[j],hi=ys[j+1],gap=active.find(t=>lo>=at(t.level)-.001&&hi<=at(t.level)+sH+.001);
+      if(!gap)draw(A,B,lo,hi);else if(!gap.wrap){draw(A,lp(A,B,gap.t0),lo,hi);draw(lp(A,B,gap.t1),B,lo,hi);}}
+  }
+  for(const t of plan){if(t.wrap)houseGallery(W,g,F,L,at(t.level),sH,o,true);else{
+    const a=lp(L[0],L[1],t.t0),b=lp(L[0],L[1],t.t1),dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),depth=1.1;
+    houseGallery(W,g,F,[a,b,[b[0]-dz/len*depth,b[1]+dx/len*depth],[a[0]-dz/len*depth,a[1]+dx/len*depth]],at(t.level),sH,o,false);}}
+  return plan;
+}
+
+// Existing infill generator shares the same structural gallery rules as parcel houses.
+function houseRectWalls(W,g,F,cx,cz,w,d,yB,yT,floorY,fac){
+  const L=[[cx-w/2,cz-d/2],[cx+w/2,cz-d/2],[cx+w/2,cz+d/2],[cx-w/2,cz+d/2]];
+  houseShell(W,g,F,L,yB,yT,floorY,fac);
+}
 // one lot = one building; L[0]→L[1] faces the street
-function lotBuild(W,g,L,o,R,smk){if(o.nSt>6||o.sH>3.05||o.gH>4.6)o=Object.assign({},o,{nSt:Math.min(6,o.nSt),sH:Math.min(o.sH,3.05),gH:Math.min(o.gH,4.6)});
-  if(L.length===4&&!o.noSplit&&!o.flat&&(o.nSt||1)>=3&&R){const A=L[0],B=L[1],C=L[2],D=L[3],ab=Math.hypot(B[0]-A[0],B[1]-A[1]),ad=Math.hypot(D[0]-A[0],D[1]-A[1]),lg=Math.max(ab,ad);
-    if(lg>17){const k=Math.max(2,Math.round(lg/(9.5+R()*2.5)));let ok=false;for(let i=0;i<k;i++){const t0=i/k,t1=(i+1)/k,Q=ab>=ad?[lp(A,B,t0),lp(A,B,t1),lp(D,C,t1),lp(D,C,t0)]:[lp(A,D,t0),lp(B,C,t0),lp(B,C,t1),lp(A,D,t1)];
-      const o2=Object.assign({},o,{nSt:Math.max(2,Math.min(6,o.nSt+Math.round((R()-.5)*2.6))),seed:(o.seed+i*.137+R()*.05)%1,noSplit:true,loggia:o.loggia&&R()<.4,loggiaA:o.loggiaA&&R()<.5});if(lotBuild0(W,g,Q,o2,R,smk)){ok=true;decorLot(W,g,Q,o2,R);}}return ok;}}
+function lotSlopeLimit(nSt,gH,sH,area){if(nSt<3)return Infinity;return Math.max(0,gH+(nSt-3)*sH-.65-Math.max(0,Math.sqrt(area)-12)*.045);}
+function lotBuild(W,g,L,o,R,smk){if(typeof residentialSolidFits==='function'&&!residentialSolidFits(L)){
+    if((o.massDepth||0)>=6)return false;let ok=false;for(const Q of splitResidentialPolygon(L)){const oo=Object.assign({},o,{massDepth:(o.massDepth||0)+1,seed:((o.seed||.4)+.137*(ok?2:1))%1});if(lotBuild(W,g,Q,oo,R,smk))ok=true;}return ok;}
+  const cc=pCen(L);if(typeof nobleQuarterAt==='function'&&nobleQuarterAt(...cc)==='core'){
+    const ns=o.nSt===3||o.nSt===4?o.nSt:(hash2(cc[0],cc[1])<.82?3:4);o=Object.assign({},o,{nSt:ns,fl:(o.fl||0)|262144});}
+  if(o.nSt>6||o.sH>3.05||o.gH>4.6)o=Object.assign({},o,{nSt:Math.min(6,o.nSt),sH:Math.min(o.sH,3.05),gH:Math.min(o.gH,4.6)});
+  if(o.minRoofY!==undefined){const h=houseGround(W,L),need=h?1+Math.ceil((o.minRoofY-h.min-.15-o.gH)/o.sH):99;if(need>6)return false;o=Object.assign({},o,{nSt:Math.max(o.nSt,need)});}
+  const ground=houseGround(W,L),rise=ground?ground.max-ground.min:Infinity,area=Math.abs(pArea(L)),slopeLimit=lotSlopeLimit(o.nSt||1,o.gH||4,o.sH||3,area);
+  const slopeFail=rise>slopeLimit;
+  if(L.length===4&&(!o.noSplit||slopeFail)&&!o.flat&&(o.nSt||1)>=3&&R&&(o.splitDepth||0)<4){const A=L[0],B=L[1],C=L[2],D=L[3],ab=Math.hypot(B[0]-A[0],B[1]-A[1]),ad=Math.hypot(D[0]-A[0],D[1]-A[1]),hA=(W.gy(A[0],A[1])+W.gy(B[0],B[1]))/2,hC=(W.gy(C[0],C[1])+W.gy(D[0],D[1]))/2,hD=(W.gy(A[0],A[1])+W.gy(D[0],D[1]))/2,hB=(W.gy(B[0],B[1])+W.gy(C[0],C[1]))/2,alongAB=Math.abs(hA-hC),alongAD=Math.abs(hD-hB),splitAB=slopeFail?alongAB>=alongAD:ab>=ad,lg=splitAB?ab:ad;
+    if(lg>8&&(lg>17||slopeFail)){const k=Math.max(2,Math.round(lg/(slopeFail?7.5:9.5+R()*2.5)));let ok=false;for(let i=0;i<k;i++){const t0=i/k,t1=(i+1)/k,Q=splitAB?[lp(A,B,t0),lp(A,B,t1),lp(D,C,t1),lp(D,C,t0)]:[lp(A,D,t0),lp(B,C,t0),lp(B,C,t1),lp(A,D,t1)];
+      const o2=Object.assign({},o,{nSt:slopeFail?o.nSt:o.fl&262144?o.nSt:Math.max(2,Math.min(6,o.nSt+Math.round((R()-.5)*2.6))),seed:(o.seed+i*.137+R()*.05)%1,noSplit:false,splitDepth:(o.splitDepth||0)+1,loggia:o.loggia&&R()<.4,loggiaA:o.loggiaA&&R()<.5});if(lotBuild(W,g,Q,o2,R,smk)){ok=true;}}return ok;}}
   const okB=lotBuild0(W,g,L,o,R,smk);if(okB)decorLot(W,g,L,o,R);return okB;}
-function decorLot(W,g,L,o,R){if(L.length!==4||(o.nSt||1)<3||!R)return;const A=L[0],B=L[1],len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<6)return;let y1=-1e9;for(const p of L)y1=Math.max(y1,W.gy(p[0],p[1]));const fy=y1+.15,ux=(B[0]-A[0])/len,uz=(B[1]-A[1])/len;
+function roadDecorationClear(W,L,reach){const A=L[0],B=L[1],dx=B[0]-A[0],dz=B[1]-A[1],len=Math.hypot(dx,dz)||1,ux=dx/len,uz=dz/len,cx=(L[0][0]+L[1][0]+L[2][0]+L[3][0])/4,cz=(L[0][1]+L[1][1]+L[2][1]+L[3][1])/4,mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,zo=((mx-cx)*uz+(mz-cz)*(-ux))>0?-1:1,rot=Math.atan2(-uz,ux),center=frame(mx,0,mz,rot).p(0,0,zo*reach/2),q={cx:center[0],cz:center[2],hw:len/2,hd:reach/2,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(len/2,reach/2)};
+  for(const road of W.foot.list||[])if(road.tag==='road'&&Math.hypot(road.cx-q.cx,road.cz-q.cz)<=road.r+q.r&&obb(road,q))return false;return true;}
+function decorLot(W,g,L,o,R){if(o.noDecor)return;if(o.lux){decorateNobleLot(W,g,L,o);return;}if(L.length!==4||(o.nSt||1)<3||!R)return;const A=L[0],B=L[1],len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<6)return;const ground=houseGround(W,L);if(!ground)return;const fy=ground.min+.15,ux=(B[0]-A[0])/len,uz=(B[1]-A[1])/len;
   const cx=(L[0][0]+L[1][0]+L[2][0]+L[3][0])/4,cz=(L[0][1]+L[1][1]+L[2][1]+L[3][1])/4,mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,zo=((mx-cx)*uz+(mz-cz)*(-ux))>0?-1:1,F=frame(mx,fy,mz,Math.atan2(-uz,ux)),r=R(),gH=o.gH||4;
   if(r<.24){g.set(3,.45);box(g,F,0,gH-.2,zo*.5,len/2-.5,.2,.5,31);box(g,F,0,gH,zo*.96,len/2-.5,.95,.04,31);for(let x=-len/2+.9;x<len/2-.5;x+=1.7)box(g,F,x,gH-.62,zo*.3,.07,.42,.3,31);}
-  else if(r<.38){const k=Math.max(2,Math.round(len/3.2));for(let i=0;i<=k;i++){const q=F.p(-len/2+.4+(len-.8)*i/k,0,zo*2.5);W.cols.simple.push([q[0],fy,q[2],F.rot,gH-.5,[.96,.92,.86]]);}g.set(1,o.seed);g.poly([F.p(-len/2,gH-.3,0),F.p(len/2,gH-.3,0),F.p(len/2,gH-.8,zo*2.9),F.p(-len/2,gH-.8,zo*2.9)],[0,1,0]);}}
+  else if(r<.38&&roadDecorationClear(W,L,2.9)){const k=Math.max(2,Math.round(len/3.2));for(let i=0;i<=k;i++){const q=F.p(-len/2+.4+(len-.8)*i/k,0,zo*2.5);W.cols.simple.push([q[0],fy,q[2],F.rot,gH-.5,[.96,.92,.86]]);}g.set(1,o.seed);g.poly([F.p(-len/2,gH-.3,0),F.p(len/2,gH-.3,0),F.p(len/2,gH-.8,zo*2.9),F.p(-len/2,gH-.8,zo*2.9)],[0,1,0]);}}
+// Final road check uses the generated eave polygon, including long mitres at acute corners.
+function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.hypot(o.hw,o.hd),cs=W.foot.cell,seen=new Set();
+  for(let i=Math.floor((o.cx-rad)/cs);i<=Math.floor((o.cx+rad)/cs);i++)for(let j=Math.floor((o.cz-rad)/cs);j<=Math.floor((o.cz+rad)/cs);j++)for(const f of W.foot.map.get(W.foot.key(i,j))||[]){if(f.tag!=='road'||seen.has(f))continue;seen.add(f);
+    if(typeof nobleOverlap==='function'?nobleOverlap(P,f):obb({...o,c:Math.cos(o.rot),s:Math.sin(o.rot)},f))return false;}return true;
+}
 function lotBuild0(W,g,L,o,R,smk){if(o.up===30&&o.nSt>4)o=Object.assign({},o,{up:0});   // timber frame only on houses of <= 4 storeys (facades.md); taller ones are plain plaster
-  let y0=1e9,y1=-1e9;for(const p of L){const y=W.gy(p[0],p[1]);if(y<y0)y0=y;if(y>y1)y1=y;}if(y1-y0>16)return false;
-  const perim=(Q,d)=>{let m=1e9;for(let e=0;e<Q.length;e++){const a=Q[e],b=Q[(e+1)%Q.length],k=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));for(let i=0;i<k;i++){const t=i/k;m=Math.min(m,W.gy(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t));}}return m;},ym=Math.min(y0,perim(L)),
-    floorY=y1+.15,yB=ym-2.5,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part,lg=!!(o.loggia||o.loggiaA)&&n===4&&o.nSt>=(o.loggiaA?2:3)&&!o.flat,Hw=lg?H-sH:H;
-  for(let e=0;e<n;e++){const a=L[e],b=L[(e+1)%n],st=e===0,top=st?Hw:H;
-    if(two){g.set(o.part,o.seed,st?o.sty:3,st?(2|(o.shr?32768:0)):0,1,gH,bn,o.lit);wall(g,IDF,a[0],a[1],b[0],b[1],yB,floorY+gH,floorY,sH);g.set(o.up,o.seed,3,o.flUp||16,o.nSt,gH,bn,o.lit);wall(g,IDF,a[0],a[1],b[0],b[1],floorY+gH,top,floorY,sH);}
-    else{g.set(o.part,o.seed,st?o.sty:o.sty%8,st?o.fl:(o.fl&~(2|32768|131072)),o.nSt,gH,bn,o.lit);wall(g,IDF,a[0],a[1],b[0],b[1],yB,top,floorY,sH);}}
-  // a house on a slope stands on a terrace: a retaining wall 2 m outside the walls up to the floor, paved on top (the old walls stopped 2.5 m below the lowest corner and could hang over a hollow)
-  const sl=y1-ym;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,ym,sl});
-  if(sl>1.6){const E=pInset(L,-2)||L,yE=Math.min(ym,perim(E))-1.2;g.set(22,.4);for(let e=0;e<E.length;e++){const a=E[e],b=E[(e+1)%E.length];wall(g,IDF,a[0],a[1],b[0],b[1],yE,floorY-.05,floorY,sH);}
-    g.set(11,.4);g.poly(E.map(p=>P(p,floorY-.05)),[0,1,0]);g.set(2,.45);for(let e=0;e<E.length;e++){const a=E[e],b=E[(e+1)%E.length];g.poly([P(a,floorY-.05),P(b,floorY-.05),P(b,floorY+.1),P(a,floorY+.1)],[b[1]-a[1],0,-(b[0]-a[0])]);}}
-  if(lg){const A=L[0],B=L[1],C=L[2],D=L[3],ta=Math.min(.45,2.4/(Math.hypot(D[0]-A[0],D[1]-A[1])||1)),tb=Math.min(.45,2.4/(Math.hypot(C[0]-B[0],C[1]-B[1])||1)),A2=lp(A,D,ta),B2=lp(B,C,tb),dx=B[0]-A[0],dz=B[1]-A[1],l=Math.hypot(dx,dz)||1,ix=-dz/l*.4,iz=dx/l*.4,k=Math.max(2,Math.round(l/3.6));
-    g.set(5,o.seed);g.poly([P(A,Hw+.03),P(B,Hw+.03),P(B2,Hw+.03),P(A2,Hw+.03)],[0,1,0]);
-    // an open arcade has depth: the back wall, the two returns and the soffit are one dark flat recess (sRGB ~45/38/34), the street front is the stone arcade/colonnade
-    g.set(39,o.seed,0,1,1,4,0,1);wall(g,IDF,A2[0],A2[1],B2[0],B2[1],Hw,H,floorY,sH);{const ux=dx/l*.05,uz=dz/l*.05,Ai=[A[0]+ux,A[1]+uz],A2i=[A2[0]+ux,A2[1]+uz],Bi=[B[0]-ux,B[1]-uz],B2i=[B2[0]-ux,B2[1]-uz];g.poly([P(Ai,Hw),P(A2i,Hw),P(A2i,H),P(Ai,H)],[dx,0,dz]);g.poly([P(B2i,Hw),P(Bi,Hw),P(Bi,H),P(B2i,H)],[-dx,0,-dz]);}   /* 5 cm inside the real side walls: coplanar they z-fought into a black sliver at the corner */g.poly([P(A,H-.05),P(B,H-.05),P(B2,H-.05),P(A2,H-.05)],[0,-1,0]);
-    if(o.loggiaA){(W.loggiaLog=W.loggiaLog||[]).push([Math.round((A[0]+B[0])/2),Math.round(Hw),Math.round((A[1]+B[1])/2),o.nSt,+(dz/l).toFixed(2),+(-dx/l).toFixed(2)]);const kk=Math.max(2,Math.round(l/3.3));arcade(g,frame((A[0]+B[0])/2,0,(A[1]+B[1])/2,Math.atan2(-dz/l,dx/l)),0,Hw,.5,l*.99,sH-.2,kk,.8,2,{span:.3,attic:.55,pilasters:false,cornice:false,seed:o.seed});}   // open top-floor loggia with real arches (stone)
-    else for(let t=0;t<=k;t++){const p=lp(A,B,.04+.92*t/k);W.cols.simple.push([p[0]+ix,Hw,p[1]+iz,0,sH*.84,[1,.97,.92]]);}
-    g.set(2,o.seed);wall(g,IDF,A[0],A[1],B[0],B[1],H-.5,H,H-30,4);wall(g,IDF,B[0],B[1],A[0],A[1],H-.5,H,H-30,4);
-    {const Fp=frame((A[0]+B[0])/2,0,(A[1]+B[1])/2,Math.atan2(-dz/l,dx/l));g.set(2,o.seed);box(g,Fp,0,Hw,o.loggiaA?.22:-.1,l/2*.99,.95,.1,31);box(g,Fp,0,Hw+.95,o.loggiaA?.22:-.1,l/2*.99,.1,.15,31);}}   // parapet line across the openings (balustrade wall with a coping)
+  if(typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,L))return false;
+  const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!houseRoadClear(W,eave))return false;
+  const ground=houseGround(W,L);if(!ground)return false;const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
+  const roofRise=n===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
+  if(groundMax>H+roofRise)return false;
+  const lotArea=Math.abs(pArea(L)),slopeLimit=lotSlopeLimit(o.nSt||1,gH,sH,lotArea);
+  if(groundMax-groundMin>slopeLimit)return false;
+  const yB=groundMin-.25;
+  houseShell(W,g,IDF,L,yB,H,floorY,o);
+  const sl=groundMax-groundMin;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,groundMin,groundMax,embeddedRise:sl,terrace:false,storeys:o.nSt,gH,sH,elite:!!(o.fl&262144)});
   if(n===4&&!o.flat){const E=pInset(L,-.55)||L,A=L[0],B=L[1],C=L[2],D=L[3],m0=lp(D,A,.5),m1=lp(B,C,.5),e0=lp(E[3],E[0],.5),e1=lp(E[1],E[2],.5),
       dep=Math.hypot((A[0]+B[0]-C[0]-D[0])/2,(A[1]+B[1]-C[1]-D[1])/2),tp=Math.tan(o.pitch),yR=H+Math.min(dep*.5*tp,6.5),yE=H-.55*tp;
     g.set(1,o.seed+.2);g.poly([P(E[0],yE),P(E[1],yE),P(e1,yR),P(e0,yR)],[0,1,0]);g.poly([P(e0,yR),P(e1,yR),P(E[2],yE),P(E[3],yE)],[0,1,0]);g.set(4,o.seed);ridgeCap(g,P(e0,yR),P(e1,yR));
@@ -85,6 +172,43 @@ function paveBlock(W,g,P0,B,Z){if(!B||P0.length!==B.length)return;const n=P0.len
         s0=sw?lp(i0,o0,sw/w):i0,s1=sw?lp(i1,o1,sw/w):i1;
       g.set(bas?10:31,.3);g.poly([y(o0,.14),y(o1,.14),y(s1,.14),y(s0,.14)],[0,1,0]);
       if(sw){g.set(11,.4);g.poly([y(s0,.36),y(s1,.36),y(i1,.36),y(i0,.36)],[0,1,0]);g.set(33,.3);g.poly([y(s0,-.05),y(s1,-.05),y(s1,.36),y(s0,.36)],[nx,0,nz]);}}}}
+
+// Residential inner courts never call the housing generator. This is shared by
+// dense/middle-income ring blocks; later passes see their open-space reservation.
+function residentialCourtGarden(W,g,C,R){
+  const I=pInset(C,1)||C,h=houseGround(W,I),c=pCen(I);if(!h)return;
+  g.set(5,.42);for(let i=0;i<I.length;i++){const a=I[i],b=I[(i+1)%I.length];g.poly([[c[0],W.gy(...c)+.12,c[1]],[a[0],W.gy(...a)+.12,a[1]],[b[0],W.gy(...b)+.12,b[1]]],[0,1,0]);}
+  const bb=lotOBB(I),size=Math.min(bb.hw,bb.hd),pool=size>3.2&&h.max-h.min<1.3;
+  if(pool){const J=courtyardPoolPolygon(I);if(J){const o=lotOBB(J),F=frame(o.cx,h.max+.14,o.cz,o.rot),hx=Math.max(.65,o.hw*.75),hz=Math.max(.65,o.hd*.75);g.set(2,.42);for(const sd of[-1,1]){box(g,F,0,0,sd*hz,hx+.12,.55,.12,31);box(g,F,sd*hx,0,0,.12,.55,hz+.12,31);}if(W.poolG)W.poolG.poly([F.p(-hx,.4,-hz),F.p(hx,.4,-hz),F.p(hx,.4,hz),F.p(-hx,.4,hz)],[0,1,0]);g.set(6,.48);lathe(g,F,0,.4,0,[[.2,0],[.16,.45],[.4,.6],[.35,.69],[.02,.78]],10);}}
+  for(let k=0;k<I.length;k++){const q=lp(I[k],c,.23);if(pool&&Math.hypot(q[0]-c[0],q[1]-c[1])<2.5)continue;W.trees.push([q[0],W.gy(...q)+.15,q[1],k%2?'shrub':'flower',.42,null,2]);}
+}
+// Detached horrea are a separate building type. They are never passed through
+// residential mass splitting, never a roof mosaic covering a whole ring block.
+function warehouseBlock(W,g,B,R,margin=0){
+  const o=lotOBB(B),F=frame(o.cx,0,o.cz,o.rot),inside=q=>B.every((a,i)=>{const b=B[(i+1)%B.length];return(b[0]-a[0])*(q[1]-a[1])-(b[1]-a[1])*(q[0]-a[0])>.3;});let count=0;
+  for(const u of[-o.hw*.47,o.hw*.47])for(const v of[-o.hd*.45,o.hd*.45]){
+    const w=10.4+R()*1.2,d=17+R()*2.5,P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([x,z])=>{const p=F.p(u+x,0,v+z);return[p[0],p[2]];});
+    if(!P.every(inside)||(W.name==='rome'&&P.some(p=>polyDist(...p,TIBER)[0]<RTW+12)))continue;const b=lotOBB(P),h=houseGround(W,P,2);if(!h||h.max-h.min>1.65||W.foot.hits(b.cx,b.cz,b.hw+.8,b.hd+.8,b.rot,margin)||!houseRoadClear(W,pInset(P,-.65)||P)||!residentialSiteAllowed(W,P))continue;
+    const y=h.max+.12,T=frame(b.cx,y,b.cz,b.rot),height=5.6;
+    rectWalls(g,T,0,0,w,d,h.min-y-.25,height,0,{part:9,seed:.35+R()*.2,sty:3,fl:1,nSt:1,gH:height,sH:3,lit:.6});
+    roof(g,T,'gableZ',0,0,w,d,height,23*DEG,.55,.37+R()*.2);
+    // Broad timber loading doors, raised stone threshold and small high vents.
+    g.set(45,.4);box(g,T,0,0,d/2+.025,1.1,3.4,.04,31);g.set(2,.35);box(g,T,0,-.08,d/2+.35,1.4,.2,.4,31);
+    g.set(33,.4);for(const x of[-w*.3,w*.3])box(g,T,x,4.35,d/2+.025,.36,.45,.03,31);
+    const f=W.foot.add(b.cx,b.cz,b.hw+.65,b.hd+.65,b.rot);f.poly=pInset(P,-.6)||P;f.warehouse=true;
+    (W.warehouseLog||(W.warehouseLog=[])).push({polygon:P,x:b.cx,z:b.cz,y,groundMin:h.min,groundMax:h.max,height,role:'warehouse',roof:'gableZ'});count++;
+  }return count;
+}
+function estateAppendGB(dst,src){if(!src||!src.nv)return;dst.grow(dst.nv+src.nv,dst.ni+src.ni);const vo=dst.nv,io=dst.ni;for(const k of['p','n','a','b','c']){const w=k==='p'||k==='n'?3:4;dst[k].set(src[k].subarray(0,src.nv*w),vo*w);}for(let i=0;i<src.ni;i++)dst.ix[io+i]=src.ix[i]+vo;dst.nv+=src.nv;dst.ni+=src.ni;}
+function estateChildWorld(W){const C=Object.assign({},W,{cols:{},trees:[],people:[],lotLog:[],poolG:new GB(),houseGalleryLog:[],balcLog:[],residentialReservations:[],residentialRejects:{}});for(const k of Object.keys(W.cols||{}))C.cols[k]=[];return C;}
+function estateMergeWorld(W,C){for(const k of Object.keys(C.cols||{})){const a=W.cols[k]||(W.cols[k]=[]),b=C.cols[k];for(let i=0;i<b.length;i+=8192)a.push(...b.slice(i,i+8192));}for(const k of['trees','people','lotLog','houseGalleryLog','balcLog'])if(C[k]?.length)(W[k]||(W[k]=[])).push(...C[k]);if(C.poolG?.nv)estateAppendGB(W.poolG||(W.poolG=new GB()),C.poolG);}
+function estatePlanStats(W){return W.estatePlanStats||(W.estatePlanStats={attempted:0,committed:0,fallback:0,fallbackHomes:0,fallbackFloors:{},reasons:{},transactions:[]});}
+function estateReject(W,reason,record){const S=estatePlanStats(W);S.fallback++;S.reasons[reason]=(S.reasons[reason]||0)+1;record.status='fallback';record.reason=reason;}
+function estatePlanReason(W,B,C,lots,o,mg,deck){const h=houseGround(W,B);if(!h)return'invalid-block-ground';if(h.max-h.min>2.001)return'block-relief-over-2m';if(!deck)return'court-exposure-over-1.8m';const block=lotOBB(B);if(W.foot.hits(block.cx,block.cz,block.hw,block.hd,block.rot,mg+.8))return'block-foot-conflict';if(!lots.length)return'incomplete-perimeter';const expected=Math.abs(pArea(B))-Math.abs(pArea(C)),covered=lots.reduce((a,L)=>a+Math.abs(pArea(L)),0);if(expected<=0||Math.abs(covered-expected)>Math.max(2,expected*.015))return'incomplete-perimeter';for(const L of lots){if(pArea(L)<14)return'incomplete-wing-lot';const ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))return'lot-policy';if(W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8))return'reserved-road-or-foot';if(!houseRoadClear(W,L))return'road-collision';}return null;}
+function estateFallback(W,lots,o,R,addLot,record){let placed=0;const floors={};const put=(P,depth=0)=>{if(pArea(P)<14||depth>8)return;const ob=lotOBB(P),key=o.grp?o.grp(ob.cx,ob.cz):'',small=ob.hw*2<=12.01&&ob.hd*2<=11.01&&Math.abs(pArea(P))<=110;
+  if(small&&key!==null&&key!==undefined&&(!o.lotOK||o.lotOK(ob.cx,ob.cz))&&!W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,(o.margin||0)+.8)&&houseRoadClear(W,P)){const p={part:R()<.5?0:9,seed:R(),sty:R()<.5?0:3,fl:2|16,nSt:2+Math.floor(R()*2),gH:3.8,sH:2.9,pitch:.36+R()*.09,lit:1,flat:false,noSplit:true,noDecor:true};if(typeof nobleQuarterAt==='function'&&nobleQuarterAt(ob.cx,ob.cz)==='core')p.nSt=3;if(lotBuild(W,addLot(ob.cx,ob.cz,key),P,p,R,null)){W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);placed++;const rows=(W.lotLog||[]).slice(-1),n=rows[0]?.storeys||p.nSt;floors[n]=(floors[n]||0)+1;return;}}
+  const halves=splitResidentialPolygon(P);if(halves.length===2){put(halves[0],depth+1);put(halves[1],depth+1);}};for(const L of lots){const inset=pInset(L,.4);if(inset&&Math.abs(pArea(inset))>14)put(inset);}
+  record.fallbackHomes=placed;record.fallbackFloors=floors;const S=estatePlanStats(W);S.fallbackHomes+=placed;for(const k of Object.keys(floors))S.fallbackFloors[k]=(S.fallbackFloors[k]||0)+floors[k];return placed;}
 function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.dens),sx=o.sx,sz=o.sz,th=o.rot,c=Math.cos(th),s=Math.sin(th),E=o.ext,chunks=new Map(),cs=o.chunk||600,smk=[];let nL=0;
   const G=(x,z,k)=>{const key=k+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};
   let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,z]of[[E[0],E[1]],[E[2],E[1]],[E[2],E[3]],[E[0],E[3]]]){const u=x*c-z*s,v=x*s+z*c;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v);}
@@ -95,7 +219,7 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
     const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
     let polys=[Qd];if(R()<Z.tri)polys=R()<.5?[[Qd[0],Qd[1],Qd[2]],[Qd[0],Qd[2],Qd[3]]]:[[Qd[0],Qd[1],Qd[3]],[Qd[1],Qd[2],Qd[3]]];
     for(const P0 of polys){const B=pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
-      if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;const built=[],lw=Z.lotW/Math.sqrt(dq);
+      if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
       const ring=Z.kind==='domus'||Z.kind==='ware'||B.length===3||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;
       if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),I=pInset(B,dd);
         if(I&&pArea(I)>40){court=I;for(let e=0;e<B.length;e++){const a=B[e],b=B[(e+1)%B.length],ia=I[e],ib=I[(e+1)%B.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));
@@ -104,18 +228,37 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
       else{let A=B[0],Bq=B[1],C=B[2],D=B[3];if(Math.hypot(Bq[0]-A[0],Bq[1]-A[1])+Math.hypot(D[0]-C[0],D[1]-C[1])<Math.hypot(C[0]-Bq[0],C[1]-Bq[1])+Math.hypot(A[0]-D[0],A[1]-D[1])){const t=A;A=Bq;Bq=C;C=D;D=t;}
         const M1=lp(D,A,.5),M2=lp(Bq,C,.5),len=Math.hypot(Bq[0]-A[0],Bq[1]-A[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));let t0=0;
         for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(A,Bq,t0),lp(A,Bq,t1),lp(M1,M2,t1),lp(M1,M2,t0)]);lots.push([lp(D,C,t1),lp(D,C,t0),lp(M1,M2,t0),lp(M1,M2,t1)]);t0=t1;}}
-      if(o.whole&&lots.some(L=>{const ob=lotOBB(L);return W.foot.hits(ob.cx,ob.cz,ob.hw*.9,ob.hd*.9,ob.rot,mg);}))continue;
-      for(let L of lots){if(pArea(L)<14)continue;let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;
-        if(W.foot.hits(ob.cx,ob.cz,ob.hw*.9,ob.hd*.9,ob.rot,mg)){if(L.length!==4)continue;L=[L[0],L[1],lp(L[1],L[2],.55),lp(L[0],L[3],.55)];ob=lotOBB(L);if(W.foot.hits(ob.cx,ob.cz,ob.hw*.9,ob.hd*.9,ob.rot,mg))continue;}
+      const blockLotStart=W.lotLog?.length||0;
+      let courtPlan=court&&Z.kind==='domus'&&typeof courtyardDeckPlan==='function'?courtyardDeckPlan(W,court):null;
+      if(o.whole&&Z.kind!=='domus'&&lots.some(L=>{const ob=lotOBB(L);return W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8);}))continue;
+      const domus=Z.kind==='domus',estate=domus?{block:B.map(p=>p.slice()),court:court&&court.map(p=>p.slice()),wings:lots.length}:null;
+      if(domus){const S=estatePlanStats(W);S.attempted++;S.transactions.push(estate);const h=houseGround(W,B);estate.relief=h?h.max-h.min:null;estate.maxExposure=courtPlan?courtPlan.maxExposure:null;
+        {let reason=estatePlanReason(W,B,court,lots,o,mg,courtPlan);
+          if(reason)estateReject(W,reason,estate);else{
+            const child=estateChildWorld(W),stages=new Map(),stageSmoke=[],stageR=RNG(Math.floor(R()*0xffffffff)||1);let ok=true;
+            for(let wi=0;wi<lots.length;wi++){const L=lots[wi],ob=lotOBB(L),key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){ok=false;reason='layer-rejected';estate.failedWing=wi;break;}let st=stages.get(key);if(!st){st={g:new GB(1<<14),cx:ob.cx,cz:ob.cz,key};stages.set(key,st);}const p=Z.lot(stageR);p.minRoofY=courtPlan.y+3.9;p.burn=0;const logStart=child.lotLog.length,builtWing=lotBuild(child,st.g,L,p,stageR,key===''?stageSmoke:null),covered=child.lotLog.slice(logStart).reduce((a,l)=>a+Math.abs(pArea(l.L)),0),wingArea=Math.abs(pArea(L));if(!builtWing||Math.abs(covered-wingArea)>Math.max(1.5,wingArea*.015)){ok=false;reason='wing-build-incomplete';estate.failedWing=wi;estate.failedWingArea=wingArea;estate.builtWingArea=covered;break;}}
+            if(ok){for(const st of stages.values())estateAppendGB(G(st.cx,st.cz,st.key),st.g);estateMergeWorld(W,child);smk.push(...stageSmoke);estate.status='committed';estate.wingLots=lots.length;S.committed++;for(const L of lots){const ob=lotOBB(L);built.push(ob);nL++;}}
+            else estateReject(W,reason||'wing-build-rejected',estate);
+          }}
+        if(estate.status!=='committed'){const fbLots=lots.concat(court?[court]:[]);court=null;courtPlan=null;const count=estateFallback(W,fbLots,o,R,(x,z,k)=>G(x,z,k),estate);nL+=count;}
+      }
+      if(!domus)for(let L of lots){if(pArea(L)<14)continue;let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;
+        // The entire lot envelope, plus roof overhang, must clear every reserved road.
+        // Shrinking the OBB or trimming only one end let the rendered building cross the road.
+        if(W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8))continue;
         const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
-        const p=Z.lot(R);p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){built.push(ob);nL++;
+        const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){built.push(ob);nL++;
           if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}}
-      if(court&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
+      const closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
+      if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
+      else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
+      if(court&&built.length&&typeof reserveResidentialArea==='function'&&(!domus||estate?.status==='committed')){
+        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:['garden','fountain','columns','paths'],deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1});
+        if(Z.kind==='domus')reserveResidentialArea(W,B,'senatorial-estate');}
       for(const ob of built)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);}}
   const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){G2=groups[e.k]=new THREE.Group();W.scene.add(G2);if(e.k!==''){G2.name=e.k;G2.userData.rise=0;G2.visible=false;(W.preLayers=W.preLayers||{})[e.k]=G2;}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 
-/* TEST tool: window.__houseFloat() after the build: for every procedural lot building (W0.lotLog) the lowest ground along its perimeter against the base of its walls, plus how many are on a slope (terraced) */
-window.__houseFloat=()=>{const L=W0.lotLog||[];let fl=0,old=0,terr=0,mx=0;const sm=(Q)=>{let m=1e9;for(let e=0;e<Q.length;e++){const a=Q[e],b=Q[(e+1)%Q.length],k=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));for(let i=0;i<k;i++){const t=i/k;m=Math.min(m,W0.gy(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t));}}return m;};
-  for(const l of L){const m=sm(l.L);if(l.yB-m>.3){fl++;mx=Math.max(mx,l.yB-m);}let c=1e9;for(const p of l.L)c=Math.min(c,W0.gy(p[0],p[1]));if(c-2.5-m>.3)old++;if(l.sl>1.6)terr++;}
-  return{lots:L.length,floating:fl,floatMax:+mx.toFixed(2),wouldFloatWithCornerOnlyBase:old,terraced:terr};};
+/* TEST tool: residential embedding under the lowest-ground policy; no raised terraces. */
+window.__houseFloat=()=>{const L=W0.lotLog||[];let embedded=0,embeddedMax=0;for(const l of L)if(l.embeddedRise>0){embedded++;embeddedMax=Math.max(embeddedMax,l.embeddedRise);}
+  return{lots:L.length,embedded,embeddedMax:+embeddedMax.toFixed(2),terraces:L.filter(l=>l.terrace).length};};

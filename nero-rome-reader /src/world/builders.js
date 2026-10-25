@@ -376,6 +376,7 @@ function courtBlock(W,g,F,o){const{cx,cz,w,d,y0,nSt,sH,cw,cd}=o,gH=o.gH||sH*1.2,
         else{const x1=sx*(cw/2-ins+.4),x2=sx*cw/2;g.poly([F.p(cx+x1,yr,cz-cd/2+ins),F.p(cx+x1,yr,cz+cd/2-ins),F.p(cx+x2,yi,cz+cd/2),F.p(cx+x2,yi,cz-cd/2)],F.d(-sx,1,0));}}}
     if(W.trees&&o.garden!==false){const n=Math.floor(cw*cd/180);for(let i=0;i<n;i++){const q=F.p(cx+(hash2(i,cw|0)-.5)*(cw-9),y0,cz+(hash2(i,cd|0)-.5)*(cd-9));W.trees.push([q[0],y0,q[2],hash2(i,3)<.5?'cyp':'broad',.6+.4*hash2(i,5)]);}}
   }else roof(g,F,o.roof||'hip',cx,cz,w,d,yT,22*DEG,.8,fac.seed+.1);
+  if(cw>2&&typeof reserveResidentialArea==='function'){const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(cx+q[0],0,cz+q[1]);return[p[0],p[2]];});reserveResidentialArea(W,P,'authored-courtyard-estate');}
   return yT;}
 function tower(g,F,cx,cz,w,y0,nSt,sH,o={}){const gH=sH*1.1,yT=y0+gH+(nSt-1)*sH;
   rectWalls(g,F,cx,cz,w,w,y0-8,yT,y0,{part:o.part??0,seed:o.seed??.7,sty:7,fl:(8|4|256|32),nSt,gH,sH,lit:1});

@@ -126,7 +126,7 @@ function bridgeAt(g,x,z,ux,uz,len,nA,w,h,part,wood,gyF){const F=frame(x,RW-3,z,M
   else{arcade(g,F,0,0,0,len,h,nA,w,part,{span:.36,attic:2.2,pilasters:false,cornice:false});g.set(10,.3);box(g,F,0,h,0,len/2,.35,w/2-.6,16);}
   g.set(2,.4);box(g,F,0,h,w/2-.4,len/2,1.1,.4,31);box(g,F,0,h,-w/2+.4,len/2,1.1,.4,31);}
 
-function rustica(W,g,F,w,d,y0,y1,R){const floorY=y1+.15,yB=y0-2.5,cw=w-12,cd=d-12,brick=R()<.45,fac={part:brick?9:0,seed:brick?.3:.04+R()*.02,sty:3,fl:16|2,nSt:1,gH:4.2,sH:3,lit:.5},yT=floorY+4.2;
+function rustica(W,g,F,w,d,y0,y1,R){const floorY=y0+.15,yB=y0-.25,cw=w-12,cd=d-12,brick=R()<.45,fac={part:brick?9:0,seed:brick?.3:.04+R()*.02,sty:3,fl:16|2,nSt:1,gH:4.2,sH:3,lit:.5},yT=floorY+4.2;
   rectWalls(g,F,0,0,w,d,yB,yT,floorY,fac);rectWalls(g,F,0,0,cw,cd,floorY,yT,floorY,Object.assign({},fac,{fl:2}),true);roof(g,F,'ring',0,0,w,d,yT,20*DEG,.5,R(),{cw,cd});
   g.set(21,.25);g.poly([F.p(-cw/2,floorY+.05,cd/2),F.p(cw/2,floorY+.05,cd/2),F.p(cw/2,floorY+.05,-cd/2),F.p(-cw/2,floorY+.05,-cd/2)],[0,1,0]);
   g.set(22,.4);lathe(g,F,cw*.22,floorY,0,[[1.4,0],[1.4,.8],[0,.8]],10);box(g,F,-cw*.22,floorY,0,.9,1.2,.9,31);
@@ -199,11 +199,9 @@ async function buildRome(msg){
     let yb=1e9;for(let x=-68;x<=68;x+=17)for(const zz of[-53,-57,-62]){const q=F.p(x,0,zz);yb=Math.min(yb,gy(q[0],q[2]));}const hh=F.oy-yb+1;
     if(hh>2.5){const yb0=yb-F.oy-3,H0=-yb0,nA=11,FA=F.sub(0,0,-61.3,Math.PI);gS.set(33,.5);box(gS,F,0,yb0,-57,68,H0,4,31);if(H0>15)arcade(gS,FA,0,yb0,0,136,H0-12,17,1.4,2,{span:.38,attic:1.2});const yU=Math.max(yb0,-12);arcade(gS,FA,0,yU,0,136,-yU-.2,nA,2.4,2,{span:.36,attic:1.6});gS.set(2,.52);for(let k=0;k<=nA;k++)lathe(gS,F,-68+k*136/nA,yU+.2,-62.3,[[.75,0],[.75,.35],[.6,.45],[.55,-yU-2.6],[.72,-yU-2.35],[.78,-yU-2]],10);gS.set(2,.55);box(gS,F,0,-2,-62.4,68.6,1.4,.7,31);box(gS,F,0,-.6,-57,68.8,.6,5.6,31);}gS.set(2,.5);for(let x=-66;x<=66;x+=2.4)box(gS,F,x,0,-60,.18,1.1,.18,31);{let ymin=1e9;for(let x=-66;x<=66;x+=11)for(let z=-53;z<=51;z+=13){const q=F.p(x,0,z);ymin=Math.min(ymin,gy(q[0],q[2]));}const yb1=ymin-F.oy-3;if(yb1<-1.5){gS.set(2,.5);box(gS,F,0,yb1,-1,66,-yb1,52,31);}for(const[cx,cz,rot,len]of[[-66,0,-Math.PI/2,104],[66,0,Math.PI/2,104],[0,51,0,132]]){let ym=1e9;for(let t=-len/2;t<=len/2;t+=len/8){const q=F.p(rot===0?t:cx+Math.sign(cx)*2,0,rot===0?cz+2:t);ym=Math.min(ym,gy(q[0],q[2]));}if(F.oy-ym<2.5)continue;const y0s=ym-F.oy-3,FS=F.sub(rot===0?0:cx+Math.sign(cx)*.9,0,rot===0?cz+.9:0,rot),hU=Math.min(-y0s-.2,12),yU=-hU-.2,nA=Math.max(4,Math.round(len/12));gS.set(33,.5);box(gS,FS,0,y0s,-1.1,len/2,-y0s,.7,31);if(-y0s>13)arcade(gS,FS,0,y0s,0,len,-y0s-12.4,Math.max(5,Math.round(len/9)),1.4,2,{span:.38,attic:1});arcade(gS,FS,0,yU,0,len,hU,nA,2.4,2,{span:.36,attic:1.4});gS.set(2,.52);for(let k=0;k<=nA;k++)lathe(gS,FS,-len/2+k*len/nA,yU+.2,1,[[.7,0],[.7,.3],[.56,.4],[.5,hU-2.5],[.68,hU-2.25],[.72,hU-1.9]],10);gS.set(2,.55);box(gS,FS,0,-1.8,1.05,len/2+.6,1.3,.6,31);}}{const sm=gS.mesh(MAT.city);if(sm)DG.add(sm);}}
   palPlace(W,gP);palTerraces(W);palBlocks(W);palBasins(W);palStrips(W);   // palatine.js: hero models (stand-ins until the GLBs load), hill-base terraces, the crowded saddle
-  {const pts=[[252,232],[330,172],[420,112],[520,42],[620,-28]];for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2;
-    const F=frame(mx,gy(mx,mz),mz,Math.atan2(-(b[1]-a[1]),b[0]-a[0]));const fac={part:24,seed:.8,sty:0,fl:512|8,nSt:2,gH:5.2,sH:4.6,lit:.8};
-    rectWalls(gP,F,0,0,L-2,13,-9,9.8,0,fac);roof(gP,F,'hip',0,0,L-2,13,9.8,20*DEG,.7,.82);fpw(F,0,0,L/2,7);}}
+  // The speculative freestanding eastern link was removed at the author's request (2026-10-24).
   W.scene.add(gP.mesh(MAT.city));
-  poi('帕拉蒂尼山·尼禄皇宫','Domus Transitoria',195,282,44,0,99,'尼禄的“过渡宫”，用柱廊长廊连到埃斯奎利诺山。东侧塔楼顶层是观景露台（第三卷，看见城东火球的地方）。',2600);
+  poi('帕拉蒂尼山·尼禄皇宫','Domus Transitoria',195,282,44,0,99,'帕拉蒂尼山上的皇家宫殿区域。东侧塔楼顶层是观景露台（第三卷，看见城东火球的地方）。',2600);
   poi('提比略宫','Domus Tiberiana',-5,205,30,0,99,'俯瞰罗马广场的旧皇宫，北面是巨大的拱券基座。',1800);
   poi('阿波罗神庙','Aedes Apollinis',95,382,32,0,99,'白色卢那大理石，前面是达那伊得斯柱廊。',1600);
   await msg('建造卡比托利欧山与大竞技场……');
@@ -396,9 +394,13 @@ async function buildRome(msg){
     [7,[[150,-200],[500,-600],[900,-1000],[1200,-1300]]],[7,[[100,-500],[500,-1000],[900,-1500]]],[8,[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]],
     [7,[[-1235,-44],[-1400,-200],[-1650,-450]]],[7,[[-1666,-912],[-2000,-1000],[-2400,-1150]]],[7,[[-1100,2700],[-1400,2200],[-1450,1500],[-1350,1000]]]],gR);
   /* ---- reserved open land (novel sites, gardens) ---- */
-  for(const[x,z,r]of[[1350,-330,170],[-1190,2760,280],[-765,3141,175],[-1420,2450,80],[GALBA[0],GALBA[1],100],[-500,-1300,120],[1640,-60,120],[195,282,40]])W.foot.addCircle(x,z,r,'open');W.foot.add(-895,-834,184,96,0,'open');
+  W.foot.add(AF.ox,AF.oz,32,50,AF.rot,'open').siteRole='academy-campus';
+  // Reserve real future teaching wings separately, not a single empty city block.
+  W.academyProtectedPlots=[[46,-14,16,19],[-44,-24,16,10],[20,-52,7,7],[-58,-58,11,8],[60,-62,11,8],[-70,36,11,8],[-42,12,18,9]];
+  for(const[x,z,hw,hd]of W.academyProtectedPlots){const q=AF.p(x,0,z);W.foot.add(q[0],q[2],hw,hd,AF.rot,'open').siteRole='academy-future-wing';}
+  for(const[x,z,r]of[[-1190,2760,280],[-765,3141,175],[-1420,2450,80],[GALBA[0],GALBA[1],100],[-500,-1300,120],[1640,-60,120],[195,282,40]])W.foot.addCircle(x,z,r,'open');W.foot.add(-895,-834,184,96,0,'open');
   for(const p of densify([[-640,1450],[-560,1900],[-470,2400],[-430,2900],[-470,3300],[-560,3580]],18))W.foot.addCircle(p[0],p[1],7,'road');
-  for(const[x,z,r]of[[-480,940,7],[-470,2520,7],[-560,3480,7],[-1460,2380,7],[-660,1430,26],[430,140,10]])W.foot.addCircle(x,z,r,'open');W.foot.add(850,-40,142,26,Math.PI-190*DEG,'open');
+  for(const[x,z,r]of[[-480,940,7],[-470,2520,7],[-560,3480,7],[-1460,2380,7],[-660,1430,26],[430,140,10]])W.foot.addCircle(x,z,r,'open');W.foot.add(850,-40,142,26,Math.PI-190*DEG,'open').preAurea=true;
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
     const C=frB(-1280,180,90,gy(-1280,180));courtBlock(W,gX,C,{cx:0,cz:0,w:36,d:30,y0:0,nSt:2,sH:3.6,gH:4.4,cw:16,cd:12,part:0,seed:.66,sty:16,fl:8|2,peristyle:false,garden:false});gX.set(3,.4);box(gX,C,0,5,15.3,3,1,.12,31);W.foot.add(-1280,180,19,16,C.rot);
@@ -447,14 +449,25 @@ async function buildRome(msg){
    {const F=frame(555,gy(555,890),890,.514);arcade(gN,F,0,-1,0,16,11,1,6,22,{span:.36,attic:3});}{const F=frame(1100,gy(1100,-330),-330,1.326);arcade(gN,F,0,-1,0,14,10,1,6,22,{span:.36,attic:3});}
    T2(-560,975,90,{W:26,L:44,podH:3.5,colH:13,nf:8,rows:2,peri:true,seed:.3});poi('狄安娜神庙','Aedes Dianae',-560,975,30,0,99,'阿文提诺山上的平民圣所。',1600);
    // Temple of Diana: a colonnaded precinct (porticoes on three sides, the front open to the forecourt) and a clear footprint, so no apartment block touches the temple
-   {const F=frame(-560,gy(-560,975),975,Math.PI/2),pc=F.p(0,0,-7);W.foot.add(pc[0],pc[2],42,70,F.rot);
-    // each wing is trimmed to its longest stretch where the ground is within -0.35..+2.5 m of the floor (both column lines; the columns then stand on the ground): none stands on stilts over the river slope
-    const wing=(ax,az,bx,bz,dep)=>{const L=Math.hypot(bx-ax,bz-az),S=F.sub((ax+bx)/2,0,(az+bz)/2,Math.atan2(-(bz-az),bx-ax)),n=Math.ceil(L/2.5);let best=[0,-1],cur=-1;
-      for(let i=0;i<=n+1;i++){let ok=i<=n;if(ok)for(const off of[0,dep]){const q=S.p(-L/2+L*i/n,0,off),d=gy(q[0],q[2])-F.oy;if(d<-.35||d>2.5){ok=false;break;}}
-        if(ok){if(cur<0)cur=i;}else if(cur>=0){if(i-1-cur>best[1]-best[0])best=[cur,i-1];cur=-1;}}
-      if(best[1]-best[0]<2)return;const t0=best[0]/n,t1=best[1]/n;portico(W,gN,F,ax+(bx-ax)*t0,az+(bz-az)*t0,ax+(bx-ax)*t1,az+(bz-az)*t1,0,8,dep,5,[1,.97,.9]);};
-    wing(-38,-70,-38,56,-6);wing(38,56,38,-70,-6);wing(-38,56,38,56,-6);
-    for(const[lx,lz]of[[-24,-52],[24,-52],[-24,-62],[24,-62],[-12,-58],[12,-58]]){const q=F.p(lx,0,lz);W.trees.push([q[0],gy(q[0],q[2]),q[2],'cyp',.9]);}}
+   {const F0=frame(-560,gy(-560,975),975,Math.PI/2),plan=streetCompactUPlan(F0,gy,[44,48,52,56,60],[0,Math.PI],1.42,6.84,2.5,[[0,0],[0,2],[0,-2],[2,0],[-2,0],[0,4],[0,-4],[4,0],[-4,0]],[26,44,4]);
+    // The U must surround the existing 26 x 44 m temple with 4 m minimum clear space.
+    if(!plan)W.dianaPrecinct={built:false,complete:false,form:'U',reason:'No full temple-sized three-wing court fits the 7 m civic footing limit at the searched ridge positions.',wings:[],bounds:[]};
+    else{const{F,span,depth,wings,hi,lo}=plan,floorY=hi+.12,localY=floorY-F.oy,supportAudit=wings.map((_,wi)=>streetPrecinctWingColumns(plan,wi,5,gy,floorY)),entryRise=[-span/2,span/2].map(x=>{const q=F.p(x,0,-depth/2);return floorY-gy(q[0],q[2]);}),valid=supportAudit.length===3&&supportAudit.every(w=>w.columns.length>=3&&w.supportMax<=7.001&&w.supportMin>=0)&&entryRise.every(r=>r>=0&&r<=7.001);
+      if(!valid)W.dianaPrecinct={built:false,complete:false,form:'U',reason:'Sampled column or entry support exceeds 7 m.',span,depth,wings:[],bounds:[]};
+      else{W.foot.add(F.ox,F.oz,span/2+3,depth/2+2,F.rot,'open').siteRole='diana-precinct';
+      const wingMeta=[],placed=new Set();for(let wi=0;wi<wings.length;wi++){const wing=wings[wi],[oa,oz,ob,op]=wing.lines[0],[ia,iz,ib,ip]=wing.lines[1],outerL=Math.hypot(ob-oa,op-oz),rot=Math.atan2(-(op-oz),ob-oa),omx=(oa+ob)/2,omz=(oz+op)/2,imx=(ia+ib)/2,imz=(iz+ip)/2,S=F.sub((omx+imx)/2,0,(omz+imz)/2,rot),support=streetPrecinctWingColumns(plan,wi,5,gy,floorY),columns=support.columns;let placedCount=0;
+        for(const c of columns){const key=Math.round(c.x*100)+':'+Math.round(c.z*100);if(placed.has(key))continue;placed.add(key);placedCount++;W.cols.simple.push([c.x,c.y,c.z,F.rot,6,[1,.97,.9]]);}
+        // The footing is a continuous solid plinth: lower face at the sampled ground low point, top at the column feet.
+        const padY=lo-F.oy;gN.set(2,.5);box(gN,S,0,padY,0,outerL/2+.35,floorY-lo,plan.wingDepth/2+.35,31);
+        gN.set(2,.48);box(gN,S,0,localY+5.9,0,outerL/2+.45,.38,plan.wingDepth/2+.5,31);gN.set(2,.42);box(gN,S,0,localY+6.55,0,outerL/2+.65,.28,plan.wingDepth/2+.7,31);roof(gN,S,'gableX',0,0,outerL+1.6,plan.wingDepth+1.6,localY+6.82,18*DEG,.25,.43);
+        const corners=wing.lines.flatMap(([x0,z0,x1,z1])=>[F.p(x0,0,z0),F.p(x1,0,z1)]),bounds=[Math.min(...corners.map(p=>p[0])),Math.min(...corners.map(p=>p[2])),Math.max(...corners.map(p=>p[0])),Math.max(...corners.map(p=>p[2]))];wingMeta.push({columns:placedCount,supportMin:support.supportMin,supportMax:support.supportMax,bounds});}
+      // Two stepped entries descend from the open front to the real ground surface.
+      const stairMeta=[],closedEntries=[];for(const x of[-span/2,span/2]){const z=-depth/2,q=F.p(x,0,z),ground=gy(q[0],q[2]),rise=floorY-ground;
+        // The river-side end terminates on a retaining terrace, not a flight down a cliff.
+        if(rise>1.4){const sign=Math.sign(x),Sg=F.sub(x-sign*plan.wingDepth/2,localY,z,0);gN.set(2,.48);box(gN,Sg,0,0,0,plan.wingDepth/2,.82,.16,31);closedEntries.push({x,z,rise,railing:true});continue;}
+        const n=Math.max(1,Math.ceil(rise/.16)),stepRun=Math.max(1.2,n*.32);for(let k=0;k<n;k++){const top=ground+(n-k)*rise/n,dist=stepRun*(k+.5)/n,Ss=F.sub(x,0,z-dist,0),p=Ss.p(0,0,0),bottom=Math.min(top-.12,gy(p[0],p[2])-.2)-F.oy;gN.set(2,.45);box(gN,Ss,0,bottom,0,.9,top-F.oy-bottom,stepRun/(2*n)+.02,31);}stairMeta.push({steps:n,rise,run:stepRun});}
+      W.dianaPrecinct={built:true,complete:true,form:'U',span,depth,offset:[plan.offsetX,plan.offsetZ],floorY,supportLimit:7,templeClearance:{width:4,length:4},wings:wingMeta,stairs:stairMeta,closedEntries,bounds:wingMeta.map(w=>w.bounds)};
+      for(const lx of[-span/2-6,span/2+6]){const q=F.p(lx,0,0);W.trees.push([q[0],gy(q[0],q[2]),q[2],'cyp',.9]);}}}}
    // two noble houses (domus a/b) on the Aventine ridge and a third on the upper slope: this hill is mostly plebeian, so only a few
    for(const[hx,hz,hn,hr]of[[-455,1080,'rome_domus_a',0],[-385,1108,'rome_domus_b',Math.PI/2],[-520,1118,'rome_domus_b',Math.PI]]){romePlace(hn,hx,gy(hx,hz),hz,hr);W.foot.add(hx,hz,hr===Math.PI/2?27:17,hr===Math.PI/2?17:27,hr);WAT.add(hx,hz,(hr===Math.PI/2?27:17)+18,(hr===Math.PI/2?17:27)+18,hr);
      ['plane','broad','pomegr','fig','flower','shrub','almond','broad','flower','plane'].forEach((kd,k)=>{const a=k/10*TAU+hx*.01,x=hx+Math.cos(a)*34,z=hz+Math.sin(a)*34;if(W.foot.hits(x,z,1.5,1.5,0,0))return;W.trees.push([x,gy(x,z),z,kd,kd==='plane'?.7:.9,kd==='broad'?[.04,.085,.035]:null,2]);});}   // senatorial garden (watered: stays green in summer)
@@ -552,34 +565,41 @@ async function buildRome(msg){
   const lotP={dense:R=>{const r=R();const p={part:9,up:r<.35?30:r<.88?0:9,seed:R(),sty:3+8*(R()<.6?2:1),flUp:16|(R()<.3?32:0),nSt:4+Math.floor(R()*4),gH:3.6,sH:2.9,pitch:(15+R()*9)*DEG,lit:.4+R()*.6,flat:R()<.18,awn:.35,balc:.35};p.shr=hz(p.seed,2)<.08;if(p.up===p.part&&p.shr)p.fl=32768;return p;},
     mid:R=>{let fl=2;if(R()<.75)fl|=8;if(R()<.5)fl|=16;if(R()<.45)fl|=32;if(R()<.5)fl|=64;if(R()<.2)fl|=1024;if(R()<.15)fl|=2048;if(R()<.4)fl|=8192;if(R()<.15)fl|=4;if(R()<.3)fl|=128;const p={part:R()<.38?9:0,seed:R(),sty:Math.floor(R()*8)+8*(R()<.62?1:2),fl,nSt:3+Math.floor(R()*3),gH:4.2,sH:3.15,pitch:(17+R()*8)*DEG,lit:.4+R()*.6,flat:R()<.12,awn:.3,balc:.3,loggia:R()<.12};p.fl|=fxb(p.seed,'mid');p.loggiaA=hz(p.seed,5)<.1;return p;},
     domus:R=>{const k=R()<.22;const p={part:0,seed:.15+R()*.015,sty:0,fl:1|64|8|4096|8192|(R()<.4?128:0),nSt:k?2:(R()<.7?1:2),gH:4.6,sH:3.6,pitch:20*DEG,lit:.3,flat:k,kiosk:k};const sd=p.seed*977.7;p.fl|=fxb(sd,'rich');p.loggiaA=!k&&hz(sd,5)<.2;return p;},ware:R=>({part:22,seed:R(),sty:0,fl:1,nSt:2,gH:5,sH:4,pitch:18*DEG,lit:.2})};
-  const courtFill={dense:(W,g,C,R,ca)=>{if(ca>80&&R()<.7){const I=pInset(C,2.2);if(I&&pArea(I)>28)lotBuild(W,g,I,{part:9,up:30,seed:R(),sty:3,flUp:16,nSt:2+Math.floor(R()*2),gH:3.4,sH:2.8,pitch:.3,lit:.8,flat:R()<.5},R,null);}},
-    mid:(W,g,C,R,ca)=>{if(ca>110&&R()<.45){const I=pInset(C,3);if(I&&pArea(I)>36)lotBuild(W,g,I,{part:0,seed:R(),sty:0,fl:8,nSt:2,gH:3.8,sH:3,pitch:.33,lit:.8,flat:R()<.4},R,null);}else if(R()<.5){const c=pCen(C),r=R();W.trees.push([c[0],W.gy(c[0],c[1]),c[1],r<.22?'cyp':r<.5?'broad':r<.75?'fig':'pomegr',.6]);if(R()<.3)W.trees.push([c[0]+1.4,W.gy(c[0],c[1]),c[1]+1.1,'flower',.3,null,4]);}},   // plebeian yard: fig or pomegranate, a few flower pots
-    domus:(W,g,C,R,ca)=>{const c=pCen(C),y=W.gy(c[0],c[1])+.2;g.set(23,R());g.poly(C.map(p=>[p[0],y,p[1]]),[0,1,0]);if(C.length===4){g.set(5,R());for(const[i0,i1,i2,i3]of[[0,1,2,3],[1,2,3,0]]){const m0=lp(C[i0],C[i1],.5),m1=lp(C[i2],C[i3],.5),dx=m1[0]-m0[0],dz=m1[1]-m0[1],l=Math.hypot(dx,dz)||1,ox=-dz/l*.8,oz=dx/l*.8;g.poly([[m0[0]+ox,y+.04,m0[1]+oz],[m1[0]+ox,y+.04,m1[1]+oz],[m1[0]-ox,y+.04,m1[1]-oz],[m0[0]-ox,y+.04,m0[1]-oz]],[0,1,0]);}}const I=pInset(C,Math.min(3.2,Math.sqrt(ca)*.15));
-      if(I){const J=pInset(I,Math.sqrt(pArea(I))*.28);if(J&&W.poolG)W.poolG.poly(J.map(p=>[p[0],y+.32,p[1]]),[0,1,0]);
-        for(let k=0;k<I.length;k++){const a=I[k],b=I[(k+1)%I.length],n=Math.max(1,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/4.4));for(let t=0;t<n;t++){const p=lp(a,b,t/n);W.cols.simple.push([p[0],y,p[1],0,3.4,[1,.98,.94]]);}}}
+  const courtFill={dense:(W,g,C,R,ca)=>residentialCourtGarden(W,g,C,R),
+    mid:(W,g,C,R,ca)=>residentialCourtGarden(W,g,C,R),
+    domus:(W,g,C,R,ca)=>{const c=pCen(C),plan=courtyardDeckPlan(W,C),y=courtyardDeck(W,g,C,plan);if(y===null)return;g.set(23,R());g.poly(C.map(p=>[p[0],y,p[1]]),[0,1,0]);if(C.length===4){g.set(5,R());for(const[i0,i1,i2,i3]of[[0,1,2,3],[1,2,3,0]]){const m0=lp(C[i0],C[i1],.5),m1=lp(C[i2],C[i3],.5),dx=m1[0]-m0[0],dz=m1[1]-m0[1],l=Math.hypot(dx,dz)||1,ox=-dz/l*.8,oz=dx/l*.8;g.poly([[m0[0]+ox,y+.04,m0[1]+oz],[m1[0]+ox,y+.04,m1[1]+oz],[m1[0]-ox,y+.04,m1[1]-oz],[m0[0]-ox,y+.04,m0[1]-oz]],[0,1,0]);}}const I=pInset(C,Math.min(3.2,Math.sqrt(ca)*.15));
+      if(I){const J=courtyardPoolPolygon(I);if(J&&W.poolG){W.poolG.poly(J.map(p=>[p[0],y+.18,p[1]]),[0,1,0]);const K=pInset(J,-.18);if(K){g.set(2,.4);for(let e=0;e<J.length;e++){const n=(e+1)%J.length;g.poly([[J[e][0],y+.28,J[e][1]],[J[n][0],y+.28,J[n][1]],[K[n][0],y+.28,K[n][1]],[K[e][0],y+.28,K[e][1]]],[0,1,0]);}}}
+        for(let k=0;k<I.length;k++){const a=I[k],b=I[(k+1)%I.length],n=Math.max(1,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/4.4));for(let t=0;t<n;t++){const p=lp(a,b,t/n);W.cols.ion.push([p[0],y,p[1],0,3.4,[1,.98,.94]]);}}}
       for(let k=0;k<2;k++){const p=lp(C[k],c,.3+R()*.25),r=R();W.trees.push(r<.25?[p[0],y,p[1],'cyp',.55]:r<.5?[p[0],y,p[1],'broad',.55,[.04,.085,.035]]:r<.65?[p[0],y,p[1],'plane',.45]:r<.8?[p[0],y,p[1],'pomegr',.9]:r<.9?[p[0],y,p[1],'fig',.8]:[p[0],y,p[1],'flower',.7,null,2]);}},   // senatorial peristyle: laurel, plane, pomegranate, fig, a rose bed
     ware:(W,g,C,R,ca)=>{const c=pCen(C),y=W.gy(c[0],c[1])+.2;g.set(11,.3);g.poly(C.map(p=>[p[0],y,p[1]]),[0,1,0]);}};
-  const bzone=(x,z)=>{let D=dCity(x,z);if(x>-1500&&x<-950&&z>-1000&&z<-400)D=Math.max(D,.46);if(D<.36||inPal(x,z)||CAMPN(x,z)||VAL(x,z))return null;const[rd]=polyDist(x,z,TIBER);if(rd<RTW+12)return null;const gd=romeHorti(x,z);if(gd>.55)return null;
+  const bzone=(x,z)=>{const acadNear=Math.hypot(x-1350,z+330)<235;let D=dCity(x,z);if(acadNear)D=Math.max(D,.64);if(x>-1500&&x<-950&&z>-1000&&z<-400)D=Math.max(D,.46);if(D<.36||inPal(x,z)||CAMPN(x,z)||VAL(x,z))return null;const[rd]=polyDist(x,z,TIBER);if(rd<RTW+12)return null;const gd=acadNear?Math.min(.25,romeHorti(x,z)):romeHorti(x,z);if(gd>.55)return null;
     const h=gy(x,z),sx=gy(x+10,z)-gy(x-10,z),sz=gy(x,z+10)-gy(x,z-10);if(Math.hypot(sx,sz)/20>1.25)return null;const rel=(h-RW-8)/VEX,burn=Math.hypot(x-250,z-300)<950?1:0;
     const SUB=x>200&&x<1050&&z>-950&&z<-120,VEL=x>-400&&x<-60&&z>60&&z<480,CIR=x>250&&x<720&&z>540&&z<1000,TRV=x<-1060&&z>-560&&z<1450&&rd<560,AVN=x>-780&&x<-160&&z>680&&z<1380&&rel<15;
     if(x>-820&&x<-300&&z>-460&&z<160)return{kind:'mid',street:3.6,lotW:12,depth:13,ringA:1600,ringP:.5,tri:.14,lot:R=>{const p=lotP.mid(R);p.nSt=4+Math.floor(R()*3);p.loggia=false;p.balc=.35;p.awn=.45;return p;},court:courtFill.mid,ppl:.3,burn};
-    if(x<-560&&x>-1150&&z>1050&&z<1950&&rd<300)return{kind:'ware',street:6,lotW:30,depth:14,ringA:0,ringP:1,tri:.05,lot:lotP.ware,court:courtFill.ware,ppl:.1,burn};
+    if(x<-560&&x>-1150&&z>1050&&z<1950&&rd<300){const depot=hash2(Math.floor(x/58),Math.floor(z/44))<.48;return depot?{kind:'ware',street:6,lotW:21,depth:12,ringA:1e9,ringP:0,tri:0,lot:lotP.ware,court:null,ppl:.1,burn:0}:{kind:'mid',street:4.8,lotW:13,depth:12,ringA:1250,ringP:.35,tri:.08,lot:lotP.mid,court:courtFill.mid,ppl:.1,burn:0};}
+    const nq=nobleQuarterAt(x,z);if(nq==='core')return null; // Dedicated attached courtyard parcels own this district.
+    if(nq==='transition')return{kind:'mid',street:5.5,lotW:17,depth:11,ringA:1100,ringP:.7,tri:.05,lot:lotP.mid,court:courtFill.mid,ppl:.12,burn};
     const core=Math.hypot(x-120,z+160)<1000;if(core&&(SUB||VEL||D>.74))return{kind:'dense',street:3.2,lotW:11.5,depth:12,ringA:1500,ringP:.6,tri:.16,lot:lotP.dense,court:courtFill.dense,ppl:.3,burn};
     if(rel>15&&gd<.3&&hash2(Math.floor(x/60),Math.floor(z/60))<.6)return{kind:'domus',street:5.5,lotW:14,depth:9,ringA:0,ringP:1,tri:.08,lot:lotP.domus,court:courtFill.domus,ppl:.04,burn};
     return{kind:'mid',street:4.8,lotW:16,depth:14,ringA:1300,ringP:.4,tri:.12,lot:lotP.mid,court:courtFill.mid,ppl:.15,burn};};
+  buildScenicEstates(W);
+  buildAcademyHousing(W);
+  buildNobleQuarter(W);
   /* ---- GLB apartment blocks (rome_insula_a/b/c) as variety among the procedural houses: dropped into free ground of the dense districts BEFORE the lots are laid out ---- */
   {const RI2=RNG(2024),spec={rome_insula_a:[15.3,13.7],rome_insula_b:[14.7,13.4],rome_insula_c:[8.9,14.3]},names=Object.keys(spec);let nIn=0;
-   for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
+   for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
-     const hh=Math.max(Math.abs(gy(px+8,pz)-gy(px-8,pz)),Math.abs(gy(px,pz+8)-gy(px,pz-8)));if(hh>2.2)continue;{let ym=1e9;for(const[a,b]of[[0,0],[1,1],[1,-1],[-1,1],[-1,-1]]){const c=Math.cos(rot),s=Math.sin(rot),xx=px+a*w/2*c+b*d/2*s,zz=pz-a*w/2*s+b*d/2*c;ym=Math.min(ym,gy(xx,zz));}ROME.GLB.push({n,x:px,y:ym-.7,z:pz,r:rot,o:{}});}W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
+     const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
+     ROME.GLB.push({n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
-  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z),chunk:600});
+  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',chunk:600});
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,chunk:600});
   W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,chunk:600});
 
   {const gI=new GB(1<<17),RI=RNG(77);let nI=0,nS=0;const zones=[[-760,-330,-400,190],[-430,-150,90,460],[-330,-160,-330,90],[-665,-515,10,125]];
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
-     const w=7+RI()*4.5,d=8+RI()*4.5,rot=(RI()<.5?0:Math.PI/2)+(RI()-.5)*.25;if(W.foot.hits(px,pz,w/2+.7,d/2+.7,rot,0))continue;const y=gy(px,pz);if(Math.abs(gy(px+w/2,pz)-gy(px-w/2,pz))>3.5)continue;
+     const w=7+RI()*4.5,d=8+RI()*4.5,rot=(RI()<.5?0:Math.PI/2)+(RI()-.5)*.25;if(W.foot.hits(px,pz,w/2+.7,d/2+.7,rot,0))continue;const B=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=B.p(...[p[0],0,p[1]]);return[q[0],q[2]];}),ground=houseGround(W,P),y=ground.min+.15;if(ground.max-ground.min>4)continue;
+     if(!residentialSiteAllowed(W,P))continue;
      const n=3+Math.floor(RI()*3),top=3.9+(n-1)*2.9,F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16,nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());
      if(RI()<.3){gI.set(3,.42);box(gI,F,0,3.7,d/2+.45,w/2-.4,.16,.45,31);box(gI,F,0,3.9,d/2+.86,w/2-.4,.9,.04,31);}W.foot.add(px,pz,w/2+.5,d/2+.5,rot);nI++;}
    for(const[cx,cz]of[[-485,-60],[-520,-10],[-455,-70],[-540,30],[-360,300],[-330,260],[-300,330]])for(let k=0;k<6;k++){const px=cx+(RI()-.5)*30,pz=cz+(RI()-.5)*30,rot=RI()*Math.PI;if(W.foot.hits(px,pz,1.8,1.3,rot,0))continue;const F=frame(px,gy(px,pz),pz,rot);
@@ -595,18 +615,19 @@ async function buildRome(msg){
         rectWalls(gd,F,0,0,9,7.5,-1.5,top,0,{part:R7()<.5?0:9,seed:R7(),sty:3,fl:2|16,nSt:two?2:1,gH:3.4,sH:3,lit:.6});roof(gd,F,'gable',0,0,9.8,8.3,top,24*DEG,.4,R7());}}}
    for(const[nm,gg]of[['fisherHuts',gh],['downstreamHomes',gd]]){const m=gg.mesh(MAT.city),G2=new THREE.Group();if(m)G2.add(m);G2.name=nm;G2.userData.rise=0;G2.visible=false;W.scene.add(G2);(W.preLayers=W.preLayers||{})[nm]=G2;}}
   await msg('见缝插针：补齐街角与空隙……');
-  const izone=(x,z)=>{const u=dCity(x,z);if(u<.1||inPal(x,z)||CAMPN(x,z)||VAL(x,z))return null;const[rd]=polyDist(x,z,TIBER);if(rd<RTW+14)return null;const gd=romeHorti(x,z),sxg=gy(x+8,z)-gy(x-8,z),szg=gy(x,z+8)-gy(x,z-8);if(Math.hypot(sxg,szg)/16>.75)return null;
+  const izone=(x,z)=>{const u=dCity(x,z);if(u<.1||inPal(x,z)||CAMPN(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core')return null;const[rd]=polyDist(x,z,TIBER);if(rd<RTW+14)return null;const gd=romeHorti(x,z),sxg=gy(x+8,z)-gy(x-8,z),szg=gy(x,z+8)-gy(x,z-8);if(Math.hypot(sxg,szg)/16>.75)return null;
     const rot=-30*DEG+.9*(fbm(x*.0006+11,z*.0006,2)-.5),burn=(x,z)=>Math.hypot(x-250,z-300)<950?1:0;
     if(u>=.5)return{d:.8*(1-gd*.8),mix:{shed:.5,tower:.15,insula:.35},st:[2,4],rot,m:.7,step:7,shops:.7,brick:.35,ppl:.05,burn};
     return{d:Math.min(.5,u*1.2)*(1-gd*.9),mix:{hut:.55,shed:.2,insula:.15,domus:.1},st:[1,3],rot,m:2,step:6,shops:.3,brick:.25,ppl:.03,burn};};
   W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:izone,chunk:700});
+  fillCentralHousing(W);
   await msg('郊野：农庄、佃农棚屋、墓道……');
   {const R=RNG(33),gV=new GB(1<<15),Zv={shops:0,brick:.25},MR=[[[555,890],[900,1500],[1500,2600],[2000,3500]],[[-500,2400],[-440,2950],[-520,3600]],[[-480,-1100],[-720,-2300],[-900,-2800]],[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]],[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]];
     const nr=(x,z)=>{let m=1e9;for(const P0 of MR)m=Math.min(m,polyDist(x,z,P0)[0]);return m;};let nb=0;
     for(let k=0;k<3000&&nb<190;k++){const x=lerp(-3000,2600,R()),z=lerp(-2600,3400,R());if(romeUrban(x,z)>.2||polyDist(x,z,TIBER)[0]<RTW+50)continue;
       const rel=(gy(x,z)-RW-8)/VEX,r=R();let typ=r<.1?'villa':r<.4?'rustica':'casale';if(typ==='villa'&&nr(x,z)>200&&rel<14)typ='rustica';
       const w=typ==='villa'?40+R()*14:typ==='rustica'?28+R()*10:6+R()*3,d=typ==='villa'?34+R()*12:typ==='rustica'?22+R()*8:6+R()*4,rot=R()*TAU;if(W.foot.hits(x,z,w/2,d/2,rot,typ==='casale'?3:10))continue;
-      let y0=1e9,y1=-1e9;for(const[a,b]of[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]]){const yy=gy(x+a*Math.cos(rot)+b*Math.sin(rot),z-a*Math.sin(rot)+b*Math.cos(rot));y0=Math.min(y0,yy);y1=Math.max(y1,yy);}if(y1-y0>5)continue;
+      let y0=1e9,y1=-1e9;for(const[a,b]of[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]]){const yy=gy(x+a*Math.cos(rot)+b*Math.sin(rot),z-a*Math.sin(rot)+b*Math.cos(rot));y0=Math.min(y0,yy);y1=Math.max(y1,yy);}const S=frame(x,0,z,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=S.p(q[0],0,q[1]);return[p[0],p[2]];}),ground=houseGround(W,P);y0=ground.min;y1=ground.max;if(y1-y0>5)continue;
       W.foot.add(x,z,w/2,d/2,rot);if(typ==='villa')emitBuilding(W,gV,'domus',x,z,rot,w,d,1,y0,y1,R,Zv);else if(typ==='rustica')rustica(W,gV,frame(x,0,z,rot),w,d,y0,y1,R);else emitBuilding(W,gV,'hut',x,z,rot,w,d,1,y0,y1,R,Zv);nb++;}
     for(const P0 of MR.slice(0,3)){const pts=densify(P0,26);for(let i=0;i<pts.length-1;i++){const[x,z]=pts[i];if(romeUrban(x,z)>.45)continue;const a=Math.atan2(pts[i+1][1]-z,pts[i+1][0]-x);
       for(const s of[-1,1]){const off=9+R()*11,ox=x+Math.sin(a)*s*off,oz=z-Math.cos(a)*s*off;if(W.foot.hits(ox,oz,3,3,0,.5))continue;const y=gy(ox,oz),F=frame(ox,y,oz,-a),rr=R();
@@ -614,6 +635,7 @@ async function buildRome(msg){
         else if(rr<.85){gV.set(22,.4);box(gV,F,0,-1,0,3,5.5,3.6,31);roof(gV,F,'gable',0,0,6.2,7.4,4.5,18*DEG,.3,.5);}else{gV.set(22,.45);box(gV,F,0,-1,0,2.2,2.6,2.2,31);gV.set(6,.4);box(gV,F,0,1.6,0,1.6,.6,1.6,31);}
         W.foot.addCircle(ox,oz,rr<.4?1.2:5);if(rr>.4&&R()<.5)W.trees.push([ox+Math.cos(a)*6,y,oz+Math.sin(a)*6,'cyp',1]);}}}
     W.scene.add(gV.mesh(MAT.city));}
+  fillPocketSquares(W);
   flushColumns(W);{const pm=W.poolG.mesh(MAT.pool,false);if(pm)W.scene.add(pm);}
   poi('苏布拉区','Subura',650,-560,30,0,99,'最拥挤的平民区，五六层的公寓楼。',2400);
   poi('特拉斯提弗列','Trans Tiberim',-1380,300,26,0,99,'台伯河西岸的平民和外邦人街区。',3000);
@@ -622,10 +644,10 @@ async function buildRome(msg){
   /* ---- streets: grown from the buildings (streets.js) ---- */
   {const inR=(F,x,z,x0,x1,z0,z1)=>{const dx=x-F.ox,dz=z-F.oz,u=F.c*dx-F.s*dz,v=F.s*dx+F.c*dz;return u>x0&&u<x1&&v>z0&&v<z1;},FC=frame(-99,0,-143,-30*DEG),FA=frame(110,0,-235,-45*DEG),SUBR=(x,z)=>x>200&&x<1050&&z>-950&&z<-120,VELR=(x,z)=>x>-400&&x<-60&&z>60&&z<480;
    {const ends=(R)=>{const A=R[R.length-2],B=R[R.length-1],l=Math.hypot(B[0]-A[0],B[1]-A[1])||1;return{x:B[0],z:B[1],dx:(B[0]-A[0])/l,dz:(B[1]-A[1])/l};};W.stairFeet=(W.stairFeet||[]).concat([ends(W.palClivus),ends(clCap)]);}
-   buildStreets(W,{feet:W.stairFeet,paved:[[-775,-152,-655,-50],[-535,-156,-462,-84],[-461,137,-377,183,'plaza'],[-478,195,-402,236,'plaza'],[-478,181,-377,197,'plaza']],roads:W.roadList,urban:romeUrban,veg:(x,z)=>romeHorti(x,z)>.35||Math.hypot(gy(x+5,z)-gy(x-5,z),gy(x,z+5)-gy(x,z-5))>3.6,   // hill slopes steeper than ~27 % count as vegetation (no street), except the main roads
+   buildStreets(W,{feet:W.stairFeet,paved:[[-775,-152,-655,-50],[-535,-156,-462,-84],[-461,137,-377,183,'plaza'],[-478,195,-402,236,'plaza'],[-478,181,-377,197,'plaza']],roads:W.roadList,urban:romeUrban,veg:(x,z)=>(romeHorti(x,z)>.35&&Math.hypot(x-1350,z+330)>235)||Math.hypot(gy(x+5,z)-gy(x-5,z),gy(x,z+5)-gy(x,z-5))>3.6,   // hill slopes steeper than ~27 % count as vegetation (no street), except the main roads
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
-     zone:(x,z)=>{const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
+     zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
    roadKerbs(W,W.roadList);streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.
@@ -669,5 +691,6 @@ async function buildRome(msg){
     south:{n:'南岸特区',pos:[-820,150,2380],tgt:[-1240,25,2790]},pagoda:{n:'琉璃塔',pos:[-1250,170,2280],tgt:[-1420,95,2460]},subura:{n:'苏布拉',pos:[520,135,-330],tgt:[700,30,-640]},circusW:{n:'竞技场西门',pos:[-382,70,490],tgt:[-242,12,533]},capitol:{n:'卡比托利欧',pos:[-150,95,170],tgt:[-275,35,10]},claudius:{n:'克劳狄神庙',pos:[720,95,470],tgt:[880,20,640]},jupiter:{n:'朱庇特神庙',pos:[-186,118,142],tgt:[-275,42,8]},palW:{n:'提比略宫西侧',pos:[-178,75,105],tgt:[-20,25,190]},campusS:{n:'战神广场南部',pos:[-450,140,250],tgt:[-620,20,-150]},boarium:{n:'牛市广场河岸',pos:[-245,75,455],tgt:[-370,8,330]},stoa:{n:'鸟瞰对照',pos:[280,1250,2150],tgt:[20,0,-300]},galba:{n:'城东',pos:[GALBA[0]-310,230,GALBA[1]-370],tgt:[GALBA[0],110,GALBA[1]]},
     gallery:(()=>{const a=palW(-34,-178),b=palW(-34,-102);return{n:'尼禄长廊',pos:[a[0],84,a[1]],tgt:[b[0],54,b[1]]};})(),
     overview:{n:'全城',pos:[700,1900,3500],tgt:[-200,0,200]}};
+  nobleViews(W);
   W.defView='forum';W.mapName='尼禄时期的罗马（近似）';
   return W;}

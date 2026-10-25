@@ -71,14 +71,14 @@ an=mat3(instanceMatrix)*an;
 #endif
 vWN=normalize(mat3(modelMatrix)*an);}`);
     sh.fragmentShader=sh.fragmentShader
-      .replace('#include <common>','#include <common>\n'+head+'struct PS{vec3 alb;float rough;float metal;vec3 nw;float useN;vec3 emit;float ao;float a;};\n'+(o.fHead||'')+
-        '\nPS surf(){PS S;S.alb=vec3(.6);S.rough=.85;S.metal=0.;S.nw=normalize(vWN);S.useN=0.;S.emit=vec3(0.);S.ao=1.;S.a=1.;\n'+o.fSurf+'\nreturn S;}\n')
+      .replace('#include <common>','#include <common>\n'+head+'struct PS{vec3 alb;float rough;float metal;vec3 nw;float useN;vec3 emit;float ao;float a;float bounce;};\n'+(o.fHead||'')+
+        '\nPS surf(){PS S;S.alb=vec3(.6);S.rough=.85;S.metal=0.;S.nw=normalize(vWN);S.useN=0.;S.emit=vec3(0.);S.ao=1.;S.a=1.;S.bounce=0.;\n'+o.fSurf+'\nreturn S;}\n')
       .replace('#include <color_fragment>','#include <color_fragment>\nPS S=surf();diffuseColor.rgb*=S.alb;diffuseColor.a*=S.a;')
       .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=S.rough;')
       .replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=S.metal;')
       .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\nif(S.useN>.5){normal=normalize((viewMatrix*vec4(S.nw,0.)).xyz);}')
       .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=S.emit;')
-      .replace('#include <aomap_fragment>','#include <aomap_fragment>\nreflectedLight.indirectDiffuse*=S.ao;reflectedLight.indirectSpecular*=S.ao;reflectedLight.directDiffuse*=mix(1.,S.ao,.35);')
+      .replace('#include <aomap_fragment>','#include <aomap_fragment>\nreflectedLight.indirectDiffuse*=S.ao;reflectedLight.indirectSpecular*=S.ao;reflectedLight.directDiffuse*=mix(1.,S.ao,.35);\nif(S.bounce>0.)reflectedLight.indirectDiffuse=max(reflectedLight.indirectDiffuse,S.alb*S.bounce*(1.-uNight));')
       .replace('#include <fog_fragment>','gl_FragColor.rgb=atmo(gl_FragColor.rgb,vWP);');
   };
   m.customProgramCacheKey=()=>o.key;

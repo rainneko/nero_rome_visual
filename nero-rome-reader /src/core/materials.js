@@ -56,6 +56,10 @@ function wallTri0(g,F,ax,az,bx,bz,y0,yApex,floorY,sH){const A0=F.p(ax,y0,az),B0=
 // rectangle walls (4 facades). fac: {part,seed,sty,fl,nSt,gH,sH,lit,shopMask,doorSide,burn}
 function rectWalls(g,F,cx,cz,w,d,y0,y1,floorY,fac,inward=false){const hw=w/2,hd=d/2;
   let C=[[cx-hw,cz-hd],[cx+hw,cz-hd],[cx+hw,cz+hd],[cx-hw,cz+hd]];if(inward)C=C.reverse();
+  // Direct callers used to bypass the real gallery shell and retain painted black arches.
+  if(!inward&&typeof houseShell==='function'&&((fac.fl||0)&(256|512))&&fac.nSt>=2&&Math.min(w,d)>=5.2){
+    const owner=g.galleryOwner||(g.galleryOwner={houseGalleryLog:[]});houseShell(owner,g,F,C,y0,y1,floorY,{...fac,sH:fac.sH||3,gH:fac.gH||4,flat:false});return;}
+
   for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4];let sty=fac.sty,fl=fac.fl;
     if(fac.shopMask!==undefined&&!(fac.shopMask&(1<<i)))sty=sty%8;
     if(fac.doorSide!==undefined&&fac.doorSide!==i)fl&=~2;
@@ -176,30 +180,38 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  if((bNiche>.5||bMed>.5)&&nSt>1.5&&v>gH&&v<gH+sH){float bw3=3.+fract(seed*5.1);float by3=L/max(1.,floor(L/bw3+.3));float kb=floor(u/by3+.5);vec2 q2=vec2(u-kb*by3,v-(gH+sH*.48));if(bNiche>.5&&abs(mod(kb,3.)-1.)<.5&&kb>.5){float inA=clamp(step(abs(q2.x),.42)*step(-.72,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.42)),0.,1.);float fr2=clamp(step(abs(q2.x),.52)*step(-.82,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.52)),0.,1.);float fig=clamp(step(abs(q2.x),.1)*step(-.6,q2.y)*step(q2.y,.12)+step(length(q2-vec2(0.,.24)),.09),0.,1.);alb=mix(alb,vec3(.88,.84,.74),fr2*dfar);alb=mix(alb,vec3(.1,.2,.48),inA*dfar);alb=mix(alb,vec3(.92,.72,.32),fig*inA*dfar);}if(bMed>.5&&abs(mod(kb,3.)-2.)<.5){float dd=length(q2);float rays=step(.5,fract(atan(q2.y,q2.x)*2.546));alb=mix(alb,vec3(.9,.86,.76),step(dd,.44)*dfar);alb=mix(alb,vec3(.86,.66,.28),clamp(step(.36,dd)*step(dd,.44)+step(.08,dd)*step(dd,.3)*rays,0.,1.)*dfar);}}
  S.alb=alb;S.rough=.92-uWet*.4;
  if(bBlank>.5||v>topV||si>=nSt)return;
- float bayW=bArc>.5?4.8:bGAr>.5?4.6:3.+fract(seed*5.1);float nb=max(1.,floor(L/bayW+.3));float bay=L/nb;float bi=floor(u/bay);float bu=u-(bi+.5)*bay;
- if(nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sH,.1,aa),joint(sv+sH*.5,sH,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
- float winT=mod(sty,8.),grT=floor(sty/8.);float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.;
- float wsd=h12(vec2(bi+seed*97.,si+seed*31.));bool top=si>nSt-1.5;
- if(bArc>.5){kind=2.;hw=bay*.31;float hh=si<.5?gH:sH;oh=hh*.8;ar=1.;dep=2.4;}
+ bool inwardTown=mod(floor(fl/262144.),2.)>.5; // Elite courtyard-house profile, scoped to this district.
+ bool residential=P<.5||(P>8.5&&P<9.5);
+ bool top=si>nSt-1.5;
+ float winT=mod(sty,8.),grT=floor(sty/8.);
+ // Residential arcades are generated as real gallery geometry by houseShell.
+ // Keep legacy analytic arches for non-residential facades only.
+ bool arcLevel=bArc>.5&&!residential;
+ float bayW=arcLevel?4.8:(!residential&&bGAr>.5)?4.6:inwardTown?4.5+fract(seed*5.1)*1.5:3.+fract(seed*5.1);float nb=max(1.,floor(L/bayW+.3));float bay=L/nb;float bi=floor(u/bay);float bu=u-(bi+.5)*bay;
+ if(!inwardTown&&nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sH,.1,aa),joint(sv+sH*.5,sH,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
+ float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.;
+ float wsd=h12(vec2(bi+seed*97.,si+seed*31.));
+ if(arcLevel){kind=2.;hw=bay*.31;float hh=si<.5?gH:sH;oh=hh*.8;ar=1.;dep=2.4;}
  else if(si<.5){float doorBay=floor(fract(seed*11.3)*nb);bool isDoor=bDoor>.5&&abs(bi-doorBay)<.5;
-  if(bGAr>.5){kind=2.;hw=min(bay*.32,1.7);oh=min(gH-.5,2.9);ar=1.;dep=2.2;}
+  if(bGAr>.5&&!residential){kind=2.;hw=min(bay*.32,1.7);oh=min(gH-.5,2.9);ar=1.;dep=2.2;}
   else if(grT>.5&&grT<1.5){kind=2.;hw=min(bay*.34,1.6);oh=min(gH-.45,2.1+hw);ar=1.;dep=1.4;}
   else if(grT>1.5&&grT<2.5){kind=3.;hw=min(bay*.38,1.5);oh=min(gH-.6,2.6);ar=step(.55,fract(seed*4.1));dep=.6;}
   else if(grT>2.5){if(isDoor){kind=1.;hw=.75;oh=2.7;ar=1.;dep=.5;}}
   else{if(isDoor){kind=1.;hw=.6;oh=2.3;ar=step(.5,fract(seed*8.7));dep=.45;}else if(wsd>.35){kind=0.;hw=.3;oh=.6;sill=gH-1.25;}}}
- else{if(bLog>.5&&top){kind=4.;float sb=bay*.5;bu=u-(floor(u/sb)+.5)*sb;hw=min(sb*.36,1.1);sill=.85;oh=sH-1.2;ar=1.;dep=1.8;}
+ else{if(bLog>.5&&top&&!residential){kind=4.;float sb=bay*.5;bu=u-(floor(u/sb)+.5)*sb;hw=min(sb*.36,1.1);sill=.85;oh=sH-1.2;ar=1.;dep=1.8;}
   else if(wsd>.15){kind=0.;hw=.36+.12*fract(seed*5.3);oh=1.05+.3*fract(seed*1.9);sill=.95;
    ar=((winT>.5&&winT<1.5)||(winT>3.5&&winT<4.5)||winT>6.5)?1.:0.;
    if((winT>2.5&&winT<3.5)||top){hw=.3;oh=.75;sill=1.;ar=0.;}
    if(winT>4.5&&winT<5.5&&si<1.5){oh=1.8;hw=.48;sill=.55;ar=1.;}}}
- if(kind>-.5&&kind<.5&&nSt>2.5&&si>.5&&si<1.5&&!(bLog>.5&&top)){hw=max(hw,.5);oh=max(oh,1.55);sill=min(sill,1.05);ar=1.;}
- if(kind>-.5&&kind<.5&&si>.5&&fract(seed*3.9)<.3&&P<.5){hw=min(bay*.36,1.25);oh=max(oh,1.7);ar=1.;sill=min(sill,.8);}   
+ if(!inwardTown&&kind>-.5&&kind<.5&&nSt>2.5&&si>.5&&si<1.5&&!(bLog>.5&&top)){hw=max(hw,.5);oh=max(oh,1.55);sill=min(sill,1.05);ar=1.;}
+ if(inwardTown&&kind>-.5&&kind<.5){ar=0.;hw=min(hw,.38);oh=min(oh,1.15);if(si>.5&&wsd<.38)kind=-1.;}
+ if(kind>-.5&&kind<.5&&si>.5&&fract(seed*3.9)<.18&&P<.5&&(top||si<1.5)){hw=min(bay*.36,1.25);oh=max(oh,1.7);ar=1.;sill=min(sill,.8);}
  if(kind<0.||(uDbg.w>.5&&uDbg.w<1.5))return;
  vec2 q=vec2(bu,sv-sill);float ins=openM(q,hw,oh,ar,aa);
  if(bVou>.5&&ar>.5&&si<.5){float ro=clamp(openM(q+vec2(0.,.03),hw+.3,oh+.3,ar,aa)-openM(q,hw+.015,oh+.015,ar,aa),0.,1.);float an=atan(q.x,q.y-(oh-hw));float vs=step(.5,fract(an*5.7))*.14;float onA=smoothstep(oh-hw-.05,oh-hw+.05,q.y);S.alb=mix(S.alb,vec3(.74,.68,.56)*(1.-vs*onA),ro*.95*dfar);}
  if(kind<.5){if(bFrame>.5||winT>6.5||(winT>1.5&&winT<2.5)){float fr=clamp(openM(q+vec2(0.,.13),hw+.14,oh+.26,ar,aa)-ins,0.,1.);vec3 frc=P<.5?vec3(.66,.38,.25):vec3(.82,.77,.66);S.alb=mix(S.alb,frc*(.9+.1*big),fr*.9);}if(bFrame>.5&&si>.5){float py=q.y-(oh+.16);float pw=(hw+.24)*(1.-py/.4);vec3 frc2=P<.5?vec3(.68,.4,.27):vec3(.85,.8,.7);S.alb=mix(S.alb,frc2,step(0.,py)*step(py,.4)*step(abs(q.x),pw)*.85);}
   float sl=step(abs(q.x),hw+.14)*smoothstep(-.14-aa,-.14+aa,q.y)*(1.-smoothstep(-aa,aa,q.y));S.alb=mix(S.alb,vec3(.78,.73,.63),sl*.85);}
- if(kind>1.5&&kind<2.5&&(bArc>.5||bGAr>.5)){float pil=1.-smoothstep(.0,aa+.02,abs(abs(bu)-bay*.5)-.28);S.alb=mix(S.alb,S.alb*1.08,pil);}
+ if(kind>1.5&&kind<2.5&&!residential&&(bArc>.5||bGAr>.5)){float pil=1.-smoothstep(.0,aa+.02,abs(abs(bu)-bay*.5)-.28);S.alb=mix(S.alb,S.alb*1.08,pil);}
  if(kind>-.5&&kind<.5&&ar>.5&&P<.5&&fract(seed*5.7)<.4){float er=clamp(openM(q+vec2(0.,.06),hw+.12,oh+.18,ar,aa)-openM(q,hw+.03,oh+.03,ar,aa),0.,1.);S.alb=mix(S.alb,vec3(.6,.2,.13),er*.9);}
  if(kind>.5&&kind<1.5&&P<.5&&fract(seed*8.1)<.25){float pn=step(abs(q.x),.62)*step(oh+.2,q.y)*step(q.y,oh+.72);float ink=step(.5,fract(q.x*5.))*step(abs(q.y-oh-.46),.08);S.alb=mix(S.alb,mix(vec3(.85,.8,.7),vec3(.55,.12,.08),ink),pn*.95);}
  if(ins<.01||uDbg.w>1.5)return;
@@ -207,18 +219,37 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  float vt=dot(V,T),vu=dot(V,Up),vnn=min(dot(V,N),-.06);float t=dep/(-vnn);vec2 qb=q+vec2(vt,vu)*t;
  float back=openM(qb,hw,oh,ar,aa*2.+.01);
  float glz=step(h12(vec2(bi*3.1+seed*11.,si*7.7+seed)),uGlass);float rnd=h12(vec2(bi*1.7+seed*5.,si*2.3+seed*3.));float lit=step(rnd,uLit*litB*(si<.5?.55:mix(.07,.55,uGlass)));float flk=.78+.22*sin(uTime*7.+seed*30.+bi*1.7);
+ bool archInterior=ar>.5||kind>3.5; if(archInterior)dep=min(dep,.8);
  vec3 inter;vec3 em=vec3(0.);vec3 lamp=vec3(1.,.42,.13);
- if(kind<.5){float sh=bShut*step(.45,fract(wsd*7.3))*(1.-glz);vec3 wc=(fract(seed*13.37)<.5)?vec3(.1,.15,.1):vec3(.17,.1,.05);
+ if(kind<.5&&!archInterior){float sh=bShut*step(.45,fract(wsd*7.3))*(1.-glz);vec3 wc=(fract(seed*13.37)<.5)?vec3(.1,.15,.1):vec3(.17,.1,.05);
   inter=mix(vec3(.27,.2,.125)*(.88+.24*smoothstep(-1.,1.2,qb.y)),wc*1.5,sh);S.rough=1.;   // flat dark warm void (sRGB ~40/34/30): one soft vertical gradient, a shutter as a flat shape, no per-pixel hash
   if(glz>.5){float fr=pow(1.-abs(vnn),4.);inter=mix(vec3(.07,.08,.09),uSkyRefl,.3+.6*fr);S.rough=.08;}
   em=lamp*lit*uNight*(glz>.5?2.4:(sh>.5?.14:.5))*flk*back;}
- else if(kind<1.5){inter=vec3(.15,.08,.04)*(.8+.2*step(.5,fract(qb.x*3.)));em=lamp*lit*uNight*.45*flk*back;}
+ else if(kind<1.5&&!archInterior){inter=vec3(.15,.08,.04)*(.8+.2*step(.5,fract(qb.x*3.)));em=lamp*lit*uNight*.45*flk*back;}
+ else if(archInterior){
+  // Analytic shallow gallery: the viewing ray hits a rear wall, a return, the floor or the soffit.
+  // Unlike a repeated black arch mask, the rear wall is closed and rectangular.
+  float txG=abs(vt)>.0001?max(0.,((vt>0.?hw:-hw)-q.x)/vt):1e5;
+  float tyG=abs(vu)>.0001?max(0.,((vu>0.?oh:0.)-q.y)/vu):1e5;
+  float hitG=min(t,min(txG,tyG));vec2 hit=q+vec2(vt,vu)*hitG;
+  bool rear=t<=min(txG,tyG);bool sideHit=txG<tyG;bool floorHit=!rear&&!sideHit&&vu<0.;
+  back=rear?1.:0.;
+  vec3 plaster=vec3(.43,.39,.33)*(.94+.08*vn2(hit*3.+seed));
+  vec3 corridor=sideHit?vec3(.33,.30,.25):(floorHit?vec3(.40,.35,.28):vec3(.39,.36,.31));
+  float floorJoint=max(joint(hit.x,1.,.015,aa),joint(hit.y,.65,.015,aa));
+  if(floorHit)corridor*=1.-floorJoint*.16;
+  float door=step(.72,fract(seed*31.7))*step(abs(hit.x),.24)*step(.08,hit.y)*step(hit.y,min(2.05,oh-.15));
+  float doorFrame=door*(1.-step(abs(hit.x),.18));
+  inter=rear?plaster:corridor;
+  if(rear){inter=mix(inter,vec3(.20,.14,.09),door);inter=mix(inter,vec3(.52,.46,.36),doorFrame*.75);}
+  em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<2.5){inter=S.alb*.44;em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<3.5){inter=vec3(.13,.1,.07)*(.8+.4*h12(vec2(bi,si)+seed));em=lamp*lit*uNight*1.5*flk*back*step(fract(rnd*7.3),.22);}
  else{inter=S.alb*.46;em=lamp*lit*uNight*.8*flk*back;}
  vec3 revN=N;if(back<.5){float tx=((vt>0.?hw:-hw)-q.x)/(abs(vt)>1e-4?vt:1e-4);float ty=((vu>0.?oh:0.)-q.y)/(abs(vu)>1e-4?vu:1e-4);revN=(tx<ty)?(vt>0.?-T:T):(vu>0.?-Up:Up);}
- S.alb=mix(S.alb,mix(S.alb*.9,inter,back),ins);S.emit=em*ins;
- S.ao=mix(1.,mix(.6,.32,back),ins);}
+ if(archInterior){S.bounce=.24;S.nw=revN;S.useN=1.;}
+ S.alb=mix(S.alb,archInterior?inter:mix(S.alb*.9,inter,back),ins);S.emit=em*ins;
+ S.ao=mix(1.,archInterior?mix(.86,.72,back):mix(.6,.32,back),ins);}
 `;
 const CITY_S=`
 float P=vB.y;float seed=floor(vB.x*4096.+.5)/4096.;vec3 N=normalize(vWN);vec2 uv=vA.xy;float aa=max(fwidth(uv.x),fwidth(uv.y))*1.2+.002;
@@ -257,7 +288,15 @@ else if(P<25.5){S.alb=vec3(.45,.25,.21)*(.85+.25*vn2(uv*20.));S.rough=.4;}
 else if(P<26.5){S.alb=vec3(.69,.615,.49)*mix(.7,1.,step(.45,fract(uv.y/.8)))*(.9+.15*fbm2(uv*.5));S.rough=.85;}
 else if(P<27.5){S.alb=vec3(.66,.55,.38)*(.85+.2*fbm2(vWP.xz*.3));S.rough=.95;}
 else if(P<28.5){S.alb=vec3(1.,.74,.34);S.metal=1.;S.rough=.28;}
-else if(P>38.5&&P<39.5){S.alb=vec3(.05,.04,.034)*(.9+.2*vn2(uv*2.));S.rough=1.;S.ao=.5;}   // open loggia interior: dark recess (sRGB ~45/38/34)
+else if(P>43.5&&P<44.5){ // Physical residential gallery: subdued plaster, with a slight lift under roofs and at the inner wall.
+ float up=max(N.y,0.),side=1.-abs(N.y);vec3 c=mix(vec3(.48,.43,.35),vec3(.56,.51,.43),up*.34+side*.12);
+ S.alb=c*(.96+.04*vn2(vWP.xz*1.7+seed));S.rough=.94;S.ao=.9;S.bounce=.24;
+}
+else if(P>44.5&&P<45.5){ // Gallery room doors: readable medium warm timber, matte and non-emissive.
+ S.alb=vec3(.34,.19,.085)*(.94+.06*vn2(vWP.xz*3.+seed));S.rough=.9;S.ao=.9;S.bounce=.18;
+}
+else if(P>42.5&&P<43.5){roofS(S,N,0.,aa);S.alb*=vec3(1.,.60,.52);} // warm red tile for elite courtyard wings
+else if(P>38.5&&P<39.5){S.alb=vec3(.43,.38,.30)*(.94+.08*vn2(uv*2.));S.rough=1.;S.ao=.9;S.bounce=.24;}   // open loggia interior: dark recess (sRGB ~45/38/34)
 else if(P>40.5&&P<41.5){S.alb=vec3(.1,.088,.07)*(.85+.3*vn2(vWP.xz*2.5));S.rough=.9;}   // drain line on the axis of a main street
 else if(P>41.5&&P<42.5){S.alb=vec3(.2,.165,.125)*(.85+.3*vn2(vWP.xz*3.));S.rough=.8;}   // wheel ruts
 else if(P>39.5&&P<40.5){S.alb=vec3(.061,.065,.038)*(.88+.24*vn2(vWP.xz*3.+vWP.y*2.));S.metal=.35;S.rough=.6;}   // dark bronze statuary (sRGB ~70/72/55)
