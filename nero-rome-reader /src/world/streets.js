@@ -136,9 +136,8 @@ function roadKerbs(W,list){const g=new GB(1<<16),S=W.street;
       if(S.at(mx,mz)!==2||!streetRoadPointAllowed(S,W,mx,mz))continue;const rich=Math.hypot(mx-17,mz+22)<420,hw=w/2;
       for(const sd of[1,-1]){const o0=hw,o1=hw+(rich?1.9:1.3),P=(p,o,y)=>[p[0]+sd*nx*o,y,p[1]+sd*nz*o];let ok=true;for(const t of[0,.5,1]){const px=lerp(a[0],b[0],t),pz=lerp(a[1],b[1],t);if(!streetRoadPointAllowed(S,W,px,pz)||!streetGroundAllowed(S,W,px+sd*nx*o0,pz+sd*nz*o0)||!streetGroundAllowed(S,W,px+sd*nx*o1,pz+sd*nz*o1)){ok=false;break;}}if(!ok)continue;   // curb strip follows the same land and grade limits as its road
         const ya=W.gy(P(a,o0,0)[0],P(a,o0,0)[2]),yb=W.gy(P(b,o0,0)[0],P(b,o0,0)[2]),h=.34;
-        g.set(rich?37:36,.4);g.poly([P(a,o0,ya+h),P(b,o0,yb+h),P(b,o1,yb+h),P(a,o1,ya+h)],[0,1,0]);
-        g.set(33,.3);g.poly([P(a,o0,ya-.08),P(b,o0,yb-.08),P(b,o0,yb+h),P(a,o0,ya+h)],[-sd*nx,0,-sd*nz]);
-        g.set(33,.5);g.poly([P(a,o0-.14,ya+h*.98),P(b,o0-.14,yb+h*.98),P(b,o0+.1,yb+h*1.02),P(a,o0+.1,ya+h*1.02)],[0,1,0]);}}}
+        g.set(38,.4);g.poly([P(a,o0,ya+h),P(b,o0,yb+h),P(b,o1,yb+h),P(a,o1,ya+h)],[0,1,0]);   // worn grey kerb top, no pale edge strip (from above two light strips read as rails)
+        g.set(38,.3);g.poly([P(a,o0,ya-.08),P(b,o0,yb-.08),P(b,o0,yb+h),P(a,o0,ya+h)],[-sd*nx,0,-sd*nz]);}}}
   {// wheel ruts of the main grey streets (phase 5b: no drain line, no continuous rails). Each rut is a 0.25 m wide translucent darkening (about 12 % at the centre, soft edges and ends)
     // laid in irregular runs with gaps, never within 6 m of a junction. Drawn with MAT.cityDecal (alpha), so the paving's stones show through.
     const gW=new GB(1<<15);let nW=0,ri=0;const JR=6;

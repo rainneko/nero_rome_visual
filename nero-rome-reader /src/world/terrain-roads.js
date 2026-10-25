@@ -54,7 +54,7 @@ function densify(pts,step){const out=[];for(let i=0;i<pts.length-1;i++){const[a,
 function roads(W,list,g){W.roadList=list;for(const[w,pts]of list){
   // Continuous segment reservations: spaced circles left gaps into which houses could grow.
   const half=w/2+(w>=7?2.6:1.2);
-  const dense=densify(pts,6),allowed=p=>{const sx=(W.gy(p[0]+4,p[1])-W.gy(p[0]-4,p[1]))/8,sz=(W.gy(p[0],p[1]+4)-W.gy(p[0],p[1]-4))/8;return Math.hypot(sx,sz)<=.30;};
+  const dense=densify(pts,6),allowed=()=>true;   // the corridor is reserved on any slope: a steep stretch is still the road (spec H1), never a building plot
   for(let i=1;i<dense.length;i++){const a=dense[i-1],b=dense[i],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);if(!len||!allowed(a)||!allowed([(a[0]+b[0])/2,(a[1]+b[1])/2])||!allowed(b))continue;
     W.foot.add((a[0]+b[0])/2,(a[1]+b[1])/2,len/2,half,Math.atan2(-dz,dx),'road');W.foot.addCircle(a[0],a[1],half,'road');}
   if(dense.length&&allowed(dense[dense.length-1]))W.foot.addCircle(dense[dense.length-1][0],dense[dense.length-1][1],half,'road');
