@@ -1,0 +1,51 @@
+{
+ "about": "Shots under the novel excerpts (小说文本/视频摘录候选.md, slots A–E). Names start with the slot. Pairs ending a/b share one camera move: dissolve a into b in the edit instead of letting buildings rise out of the ground. The three Claudius-temple excerpts wait for the staged temple.",
+ "fps": 30, "width": 1920, "height": 1080, "scale": 1,
+ "defaults": {"page": "rome", "state": 0, "season": 2, "tod": 0.35, "weather": "clear", "smog": 0},
+ "shots": [
+  {"name": "x-A-hook-roofs", "seconds": 9, "path": [{"pos": [170, 120, 330], "tgt": [520, 40, -180]}, {"pos": [170, 120, 330], "tgt": [520, 40, -180], "zoom": 0.86, "yaw": -8}],
+   "season": [2, 3, 4, 5, 6], "tod": 0.38},
+  {"name": "x-B1-palatine", "seconds": 7, "path": [{"view": "palW"}, {"view": "palW", "zoom": 0.85, "yaw": 6}], "tod": 0.3},
+
+  {"name": "x-C1-balloon", "seconds": 11, "season": 1, "tod": 0.42,
+   "note": "rests 1.5 s, rises until 6 s, then hangs in the sky: sound off 6-9 s, the crowd roars from 9 s; caption during the rise only",
+   "path": [{"view": "circus", "zoom": 0.7}, {"view": "circus", "zoom": 0.75, "pitch": -6, "lift": 40}], "moveFor": 6.5,
+   "layerY": {"balloon": [[0, -72], [1.5, -72], [6, 0]]}},
+  {"name": "x-C1b-balloon-orbit", "seconds": 20, "season": 1, "tod": 0.64, "sunAz": 250,
+   "note": "baseline for the hero version (docs/making-of/shot-c1-balloon.md): one turn round the Circus in late-afternoon light, the balloon rising as the camera comes round; no crowd, petals or light shafts yet",
+   "path": [{"ground": [11, 648], "lift": 40, "dist": 420, "az": 200, "el": 24}, {"ground": [11, 648], "lift": 95, "dist": 380, "az": 200, "el": 18}], "orbit": 360,
+   "layerY": {"balloon": [[0, -72], [5, -72], [12, 0]]}},
+  {"name": "x-C1h-launch", "seconds": 20, "season": 1, "tod": 0.64, "sunAz": 250, "sky": 0.7,
+   "note": "hero version: the envelope fills on its gantry (0-5 s), the lines go and it rises (6-11 s), hangs in the sky in silence (11-14 s), the stands erupt (14 s on)",
+   "path": [{"ground": [11, 648], "lift": 30, "dist": 360, "az": 210, "el": 20}, {"ground": [11, 648], "lift": 90, "dist": 330, "az": 210, "el": 14}], "orbit": 240,
+   "layerY": {"balloon": [[0, -72], [6, -72], [11, 0]]},
+   "fx": {"rig": 1, "balloonFill": [[0, 0.05], [5, 1]], "crowdCheer": [[14, 0], [14.6, 1]]}},
+  {"name": "x-C1h-crane", "seconds": 16, "season": 1, "tod": 0.64, "sunAz": 250, "sky": 0.7,
+   "note": "from the stands beside the imperial box: the envelope fills, then the camera cranes up with the balloon and looks up at it in the blue",
+   "path": [{"ground": [11, 648], "lift": 18, "dist": 45, "az": 124, "el": -2}, {"ground": [11, 648], "lift": 22, "dist": 45, "az": 124, "el": -2, "at": 0.3},
+            {"ground": [11, 648], "lift": 88, "dist": 50, "az": 122, "el": -40}],
+   "layerY": {"balloon": [[0, -72], [5, -72], [11, 0]]},
+   "fx": {"rig": 1, "balloonFill": [[0, 0.05], [4, 1]], "crowdCheer": [[13, 0], [13.5, 1]]}},
+  {"name": "x-C2-academy", "seconds": 7, "path": [{"view": "academy"}], "push": 0.8, "tod": 0.45, "season": 1},
+  {"name": "x-C3a-academy-54", "seconds": 7, "state": 0, "path": [{"layer": "acad57", "az": 318, "el": 28, "fit": 1.2}], "orbit": 10, "tod": 0.4},
+  {"name": "x-C3b-academy-57", "seconds": 7, "state": 3, "smog": 0.15, "path": [{"layer": "acad57", "az": 318, "el": 28, "fit": 1.2}], "orbit": 10, "tod": 0.4},
+  {"name": "x-C4a-south-54", "seconds": 8, "state": 0, "path": [{"view": "south"}], "orbit": 8, "tod": 0.36},
+  {"name": "x-C4b-south-56", "seconds": 8, "state": 2, "smog": 0.2, "weather": "haze", "path": [{"view": "south"}], "orbit": 8, "tod": 0.36},
+  {"name": "x-C5-pagoda-dusk", "seconds": 8, "state": 3, "smog": 0.35, "weather": "haze", "path": [{"view": "pagoda", "zoom": 0.6, "lift": -40}], "orbit": 12, "tod": [0.66, 0.74]},
+  {"name": "x-C6-sky-yellow", "seconds": 9, "state": 3, "weather": "haze", "path": [{"view": "south", "zoom": 1.5, "pitch": -10}], "smog": [[0, 0.05], [1, 0.05], [8, 0.6]], "tod": 0.5,
+   "note": "the reader's smog barely tints the sky (smog 0 to 1 moves it about 1 level): strengthen it in renderer.js or grade in the edit"},
+  {"name": "x-C7-pleiades", "seconds": 7, "state": 3, "smog": 0.6, "weather": "haze", "tod": 0.93,
+   "path": [{"pos": [140, 95, 300], "tgt": [-500, 160, 1600]}, {"pos": [140, 95, 300], "tgt": [-500, 220, 1600]}]},
+  {"name": "x-C8a-cathedral-frame", "seconds": 7, "state": 5, "hide": ["galbaRuin"], "path": [{"layer": "cathFrame", "az": 40, "el": 22, "fit": 1.3}], "orbit": 10, "tod": 0.42},
+  {"name": "x-C8b-cathedral", "seconds": 7, "state": 6, "path": [{"layer": "cathFrame", "az": 40, "el": 22, "fit": 1.3}], "orbit": 10, "tod": 0.42},
+
+  {"name": "x-D2a-standards", "seconds": 6, "state": 2, "smog": 0.2, "weather": "haze", "path": [{"layer": "furnaceA", "az": 134, "el": 22, "fit": 1.1}], "push": 0.9, "tod": 0.4},
+  {"name": "x-D2b-cloister-night", "seconds": 7, "state": 3, "smog": 0.1, "path": [{"view": "gallery"}], "push": 0.9, "tod": 0.97},
+
+  {"name": "x-E1-musicbox-rain", "seconds": 9, "state": 5, "weather": "rain", "smog": 0.15, "path": [{"view": "palatine"}], "push": 0.85, "season": [2.5, 2.9], "tod": 0.82},
+  {"name": "x-E2-city-rain-night", "seconds": 10, "state": 5, "weather": "rain", "smog": 0.15, "path": [{"view": "birdNight"}], "orbit": 6, "season": 2.9, "tod": 0.93},
+
+  {"name": "x-B2-antium-cliff", "seconds": 8, "page": "antium", "state": 1, "path": [{"view": "antTower", "pitch": 18, "zoom": 0.9}], "orbit": 10, "season": 0, "tod": 0.4},
+  {"name": "x-D1-antium-forge", "seconds": 7, "page": "antium", "state": 1, "path": [{"view": "antPergola"}], "push": 0.85, "tod": 0.92}
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "about": "Construction time-lapses with the staged models (K0 survey and material heaps, K1 footings and low walls, K2 body with timber scaffolding and derricks, K3 full height with half a roof and cold chimneys, K4 finished, K5 finished and smoking). Needs a build with construction-assets.js (code team commit dc867e2 and later): --site <that checkout>. Replaces the a/b dissolves for the south bank.",
+ "fps": 30, "width": 1920, "height": 1080, "scale": 1,
+ "defaults": {"page": "rome", "season": 2, "tod": 0.36, "weather": "haze", "smog": 0.2},
+ "shots": [
+  {"name": "k-furnaceA-wide", "seconds": 13, "state": 2, "path": [{"view": "south"}], "orbit": 10,
+   "stages": {"furnaceA": [[0, 0], [2, 1], [4, 2], [6, 3], [8, 4], [9.5, 5]]}},
+  {"name": "k-furnaceA-close", "seconds": 13, "state": 2, "path": [{"layer": "furnaceA", "az": 134, "el": 24, "fit": 1.5}], "orbit": 14, "push": 0.9,
+   "stages": {"furnaceA": [[0, 0], [2, 1], [4, 2], [6, 3], [8, 4], [9.5, 5]]}},
+  {"name": "k-chem-close", "seconds": 13, "state": 3, "smog": 0.35, "path": [{"ground": [-1130, 2740], "lift": 10, "dist": 260, "az": 120, "el": 32}], "orbit": 14, "push": 0.9,
+   "stages": {"furnaceA": 5, "chem": [[0, 0], [2, 1], [4, 2], [6, 3], [8, 4], [9.5, 5]]}}
+ ]
+}
