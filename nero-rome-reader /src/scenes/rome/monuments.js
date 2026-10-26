@@ -441,7 +441,7 @@ async function buildRome(msg){
   const roadKey=JSON.stringify([MAIN,LATE0]),baked=typeof ROME_ROADS_BAKED!=='undefined'&&!!ROME_ROADS_BAKED&&ROME_ROADS_BAKED.key===roadKey&&!/[?&]reroute/.test(location.search);
   if(!baked&&!/[?&]reroute/.test(location.search))console.warn('road-network.js is stale: routing the main roads live (run node tools/test/bake-roads.mjs)');
   const tR=performance.now(),routed=baked?ROME_ROADS_BAKED.roads.map((P,i)=>[MAIN[i][0],P]):MAIN.map(([w,way])=>[w,routeRoad(W,way,w,RO)]),tG=performance.now();W.roadRouted={key:roadKey,roads:routed.map(r=>r[1])};
-  W.roadBedMoved=gradeRoads(W,routed,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35});W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG)};
+  W.roadBedMoved=gradeRoads(W,routed,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35||Math.hypot(x+560,z-975)<62});   // the river banks; the Aventine ridge of Diana's precinct (placed later, it needs its ground within 6.8 m)W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG)};
   roads(W,[[6,W.palClivus],[6,clCap],...roadHillSplit(W,routed,{w:5,enter:.10,exit:.07,win:15,min:30,gap:40})],gR);   // uphill stretches are ordinary 5 m streets (author, 2026-10-26)
   W.foot.add(AUREA.lent[0],AUREA.lent[1],17,14,0,'open').siteRole='lentulus-house';for(const[x,z]of AUREA.shrines)W.foot.addCircle(x,z,3,'open').siteRole='crossroads-shrine';   // states 0-6, drawn in domus-aurea.js (after the roads: they do not steer the router)
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
