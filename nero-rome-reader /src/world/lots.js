@@ -182,6 +182,12 @@ function residentialCourtGarden(W,g,C,R){
   if(pool){const J=courtyardPoolPolygon(I);if(J){const o=lotOBB(J),F=frame(o.cx,h.max+.14,o.cz,o.rot),hx=Math.max(.65,o.hw*.75),hz=Math.max(.65,o.hd*.75);g.set(2,.42);for(const sd of[-1,1]){box(g,F,0,0,sd*hz,hx+.12,.55,.12,31);box(g,F,sd*hx,0,0,.12,.55,hz+.12,31);}if(W.poolG)W.poolG.poly([F.p(-hx,.4,-hz),F.p(hx,.4,-hz),F.p(hx,.4,hz),F.p(-hx,.4,hz)],[0,1,0]);g.set(6,.48);lathe(g,F,0,.4,0,[[.2,0],[.16,.45],[.4,.6],[.35,.69],[.02,.78]],10);}}
   for(let k=0;k<I.length;k++){const q=lp(I[k],c,.23);if(pool&&Math.hypot(q[0]-c[0],q[1]-c[1])<2.5)continue;W.trees.push([q[0],W.gy(...q)+.15,q[1],k%2?'shrub':'flower',.42,null,2]);}
 }
+// A ring that did not close (a lot was skipped for a road, a monument or the slope) gets no garden: its court stays a plain yard of beaten
+// earth (the ground itself) round a well-head, the way most insula courts were.
+function residentialCourtYard(W,g,C){
+  const I=pInset(C,.6)||C,c=pCen(I);if(!houseGround(W,I))return;
+  const bb=lotOBB(I);if(Math.min(bb.hw,bb.hd)>2.2){const F=frame(c[0],W.gy(...c)+.1,c[1],bb.rot);g.set(2,.45);lathe(g,F,0,0,0,[[.55,0],[.55,.8],[.42,.8],[.42,.1],[0,.1]],10);}
+}
 // Detached horrea are a separate building type. They are never passed through
 // residential mass splitting, never a roof mosaic covering a whole ring block.
 function warehouseBlock(W,g,B,R,margin=0){
@@ -251,10 +257,12 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
           if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}}
       if(court&&!domus&&footTagHit(W,court,'road'))court=null;   // a road crosses this block: its lots on the road were skipped, and the yard between them is no courtyard
       const closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
+      if(court&&!domus&&!closure.closed){let per=0,gap=0;for(let e=0;e<court.length;e++){const a=court[e],b=court[(e+1)%court.length];per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}for(const u of closure.uncovered){const a=court[u.edge],b=court[(u.edge+1)%court.length];gap+=(u.to-u.from)*Math.hypot(b[0]-a[0],b[1]-a[1]);}
+        if(gap>per*.4)court=null;}   // under 60 % of the ring built: no yard and no reservation, the gap-filling pass may build there
       if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
-      else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
+      else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined){if(closure.closed)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));else residentialCourtYard(W,G(c2[0],c2[1],key),court);}}   // spec 6.2: a garden only inside a closed ring; a ring with gaps keeps a plain yard with a well
       if(court&&built.length&&typeof reserveResidentialArea==='function'&&(!domus||estate?.status==='committed')){
-        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:['garden','fountain','columns','paths'],deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1});
+        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
         if(Z.kind==='domus')reserveResidentialArea(W,B,'senatorial-estate');}
       for(const ob of built)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);}}
   const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){G2=groups[e.k]=new THREE.Group();W.scene.add(G2);if(e.k!==''){G2.name=e.k;G2.userData.rise=0;G2.visible=false;(W.preLayers=W.preLayers||{})[e.k]=G2;}}G2.add(m);}
