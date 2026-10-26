@@ -279,11 +279,11 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
      claudSite  [0,6]  the building site round the temple: stone piles, a treadwheel crane, the NE corner of the platform still open masonry
      claudOldTemple [0,5]  the stalled temple: rough podium, column stumps, low cella walls in scaffolding
      claudHall  [6,8]  the old hall roofed in 58 (vol 10: "台基上旧殿，补梁，盖瓦，防渗"): walls brought up, new red tiles; that counts as the temple finished
-     claudWeeds [3,6]  grass in the joints (vol 10: "石料堆在台基旁边，草从缝里长出来")
-     claudWorks [6,6]  AD 58 on the east face: survey stakes and line from the intake down the slope, trial pit, tail race tried with clean water, basin and gallery half built, piles, the wheel set
-     claudDone  [7,8]  dressed faces and the precinct colonnades
-     claudWater [7,8]  the nymphaeum: three receding light-stone tiers, five falls (the wide one narrowed, thin ones beside it, vol 10), the gallery behind the water, pool, tail race, water tower, gauge basin
-     claudMill  [7,8]  machine room and plating room below the pool; the wheel turns only in state 8 (59-68 the machine stands; vol 20 it is restored)
+     claudWeeds [3,5]  grass in the joints (vol 10: "石料堆在台基旁边，草从缝里长出来")
+     claudWorks [-1,-1] (no state: the novel finishes the works within 58, vol 10 to vol 13, so state 6 shows them done; the video team switches this on for the building shots) AD 58 on the east face: survey stakes and line from the intake down the slope, trial pit, tail race tried with clean water, basin and gallery half built, piles, the wheel set
+     claudDone  [6,8]  dressed faces and the precinct colonnades
+     claudWater [6,8]  the nymphaeum: three receding light-stone tiers, five falls (the wide one narrowed, thin ones beside it, vol 10), the gallery behind the water, pool, tail race, water tower, gauge basin
+     claudMill  [6,8]  machine room and plating room below the pool; the wheel turns in 58 (vol 10: the first turn with the machine) and in state 8 (vol 20 restored); 59-68 it stands
      claudLamps [8,8]  vol 20 "水后的灯从一龛添到几龛": three lit niches behind the water, the machine-room window
      claudLamp1        vol 13 "亮的只有这一龛": one lit niche, switched by the paragraph trigger (app.js TRIG / applyGates, event claudLamp)
      The tail race runs on down the slope to the fullery's treading vats (monuments.js), not to drinking water. */
@@ -334,7 +334,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
    const wheelPit=(g)=>{g.set(20,.4);box(g,FE,WH.x,CE.floor,WH.z,.62,.1,WH.r+.5,31);for(const s of[-1,1])wallFE(g,WH.x+s*.85,WH.z-WH.r-.7,WH.x+s*.85,WH.z+WH.r+.7,yHub+.4,.3,22);};
    const wheelMesh=(G,turn)=>{const wg=new GB(1<<13);wheel(wg,WH.r,1,16,ML.x-ML.hw-WH.x);const m=wg.mesh(MAT.city);if(!m)return;
      const piv=new THREE.Object3D(),spin=new THREE.Object3D(),q=P3(WH.x,yHub,WH.z);piv.position.set(q[0],q[1],q[2]);piv.rotation.y=FE.rot+Math.PI/2;spin.add(m);piv.add(spin);G.add(piv);   // wheel axle = FE +x, into the machine room
-     if(turn)W.anim.push(t=>{if(G.visible&&curS===8)spin.rotation.z=t*.9;});};   // 59-68 the wheel stands (curS is the story state, app.js)
+     if(turn)W.anim.push(t=>{if(G.visible&&(curS===6||curS===8))spin.rotation.z=t*.9;});};   // 59-68 the wheel stands (curS is the story state, app.js)
    // tail race: from the wheel pit down the slope; the water never rises (each point no higher than the last) and follows the ground where the ground is lower
    const race=[[WH.x,WH.z+WH.r+.9],...CE.race.slice(1)],ry=[];{let y=-6.5;for(const[x,z]of densify(race,4)){y=Math.min(y,yG(x,z)+.45);ry.push([x,y,z]);}}
    const tailRace=(g,pg,part,rail)=>{for(let i=0;i<ry.length-1;i++){const a=ry[i],b=ry[i+1],dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1,nx=-dz/l,nz=dx/l,E=(p,o,dy)=>P3(p[0]+nx*o,p[1]+dy,p[2]+nz*o);   // E: offset across the race, height above that point's water
