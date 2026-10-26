@@ -47,7 +47,7 @@ vec3 atmo(vec3 col,vec3 wp){
 const U={uTime:{value:0},uNight:{value:0},uSunDir:{value:new THREE.Vector3(.4,.5,.7).normalize()},uSunCol:{value:new THREE.Color(1,.9,.7)},
   uHazeCol:{value:new THREE.Color(.6,.62,.7)},uHaze:{value:new THREE.Vector4(1.6e-4,420,0,.8)},uLit:{value:0},uGlass:{value:.03},
   uWet:{value:0},uBurn:{value:0},uRust:{value:0},uSeason:{value:1},uSkyRefl:{value:new THREE.Color(.5,.6,.75)},
-  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))},uWat:{value:Array.from({length:56},()=>new THREE.Vector4(1e6,0,0,0))},uWatR:{value:new Array(56).fill(0)}};   // uWat: watered ground discs (x,z,r) that stay green all year (palace and domus gardens), see WAT in builders.js
+  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uFarm:{value:null},uFarmX:{value:new THREE.Vector4(0,0,0,0)},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))},uWat:{value:Array.from({length:56},()=>new THREE.Vector4(1e6,0,0,0))},uWatR:{value:new Array(56).fill(0)}};   // uWat: watered ground discs (x,z,r) that stay green all year (palace and domus gardens), see WAT in builders.js
    // uRk: rock-cluster segments (ax,az,bx,bz) for the terrain's rocky scarp   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
 
 function procMat(o){

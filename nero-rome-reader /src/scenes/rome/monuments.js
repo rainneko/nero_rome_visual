@@ -141,6 +141,7 @@ async function buildRome(msg){
   buildGrid(W,R_EXT,Q.name==='low'?320:500,romeH);
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH}]);
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
+  buildFarmland(W);   // the crop map: fields, vineyards, olive groves and their seasons (farmland.js)
   const fpw=(F,x,z,hw,hd,r=0)=>{const q=F.p(x,0,z);W.foot.add(q[0],q[2],hw,hd,F.rot+r);};
   const sqF=(F,x,z,y,rot=0)=>{const q=F.p(x,y,z);let yb=q[1];if(W.gy){for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]]){const h=gy(q[0]+a*4.3,q[2]+b*4.3);if(h<yb-.01&&Math.abs(h-q[1])<3)yb=h;}}romePlace('rome_tholos_fountain',q[0],Math.min(q[1],yb),q[2],F.rot+rot);W.foot.add(q[0],q[2],5.2,5.2,0);};   // tholos fountain on a square (GLB, 8.6 m)
   const poi=(n,l,x,z,h,s0,s1,info,d)=>W.pois.push({n,l,x,z,y:gy(x,z)+h,s0:s0??0,s1:s1??99,info:info||'',d:d||3000});
@@ -739,6 +740,7 @@ async function buildRome(msg){
    for(let i=treeN0;i<W.trees.length;i++){const t=W.trees[i],[rd]=polyDist(t[0],t[2],TIBER);if(rd>RTW+8&&rd<RTW+55&&hash2(t[0]*.17,t[2]*.23)<.6)t[3]='poplar';}
    for(let i=0;i<T.length-1&&nb<2200;i++){const[ax,az]=T[i],[bx,bz]=T[i+1],dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;for(const sd of[-1,1,-2,2]){if(hash2(i*3.1+sd,7.7)>.85)continue;const off=RTW+9+hash2(i,sd*5)*16,x=ax-dz/l*off*Math.sign(sd),z=az+dx/l*off*Math.sign(sd);if(W.foot.hits(x,z,2,2,0,0))continue;const h2=hash2(x*.3,z*.2);W.trees.push([x,gy(x,z),z,h2<.7?'poplar':h2<.85?'plane':'broadD',.9+h2*.5]);nb++;}}}
   W.trees=W.trees.slice(0,treeN0).concat(W.trees.slice(treeN0).filter(t=>!W.streetAt(t[0],t[2])));   // the automatic planting keeps off the streets
+  W.oliveGroveTrees=plantOliveGroves(W,{r:2700,lim:14000*Q.trees});
   flushTrees(W,W.trees);W.trees=[];flushPeople(W,W.people);W.people=[];
   W.views={forum:{n:'罗马广场',pos:[-250,118,-205],tgt:[40,26,40]},senate:{n:'元老院',pos:[150,64,40],tgt:[-45,22,-84]},palatine:{n:'帕拉蒂尼',pos:[520,210,560],tgt:[120,70,290]},
     circus:{n:'大竞技场',pos:[-340,150,990],tgt:[60,30,600]},academy:{n:'学园',pos:[1110,205,-50],tgt:[1360,95,-330]},campus:{n:'战神广场',pos:[-360,230,-380],tgt:[-880,20,-720]},
