@@ -19,11 +19,15 @@ function faceRoadCut(W,B){const ob=lotOBB(B),r=Math.hypot(ob.hw,ob.hd);let best=
       const sd=B.map(p=>p[0]*nx+p[1]*nz-c),st=B.map(p=>p[0]*tx+p[1]*tz-t0),mn=Math.min(...sd),mx=Math.max(...sd);
       if(mn>half||mx<-half||Math.max(...st)<-2||Math.min(...st)>l+2)continue;const cover=Math.min(mx,half)-Math.max(mn,-half);if(!best||cover>best.cover)best={nx,nz,c,half,cover};}}
   if(!best)return null;const h=best.half+1;return[clipHalf(B,best.nx,best.nz,best.c+h,1),clipHalf(B,best.nx,best.nz,best.c-h,-1)].filter(p=>p&&Math.abs(pArea(p))>20);}   // 1 m beyond the corridor: the houses' eaves margin
-// a polygon draped over the ground in triangles about `step` metres across (a fan of whole triangles let the terrain show through on slopes)
-function faceDrape(W,g,P,lift,step=4){const c=pCen(P),y=(x,z)=>W.gy(x,z)+lift;
-  for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],n=Math.max(1,Math.ceil(Math.max(Math.hypot(a[0]-c[0],a[1]-c[1]),Math.hypot(b[0]-c[0],b[1]-c[1]),Math.hypot(b[0]-a[0],b[1]-a[1]))/step)),
-      Q=(u,v)=>{const x=c[0]+(a[0]-c[0])*u+(b[0]-c[0])*v,z=c[1]+(a[1]-c[1])*u+(b[1]-c[1])*v;return[x,y(x,z),z];};
-    for(let r=0;r<n;r++)for(let k=0;k<n-r;k++){const u0=r/n,v0=k/n,d=1/n;g.poly([Q(u0,v0),Q(u0+d,v0),Q(u0,v0+d)],[0,1,0]);if(k<n-r-1)g.poly([Q(u0+d,v0),Q(u0+d,v0+d),Q(u0,v0+d)],[0,1,0]);}}}
+// a polygon laid on the ground: clipped to the coarse terrain triangles (the split W.gy and the mesh use), so every piece is flat on its triangle and
+// the terrain never pokes through (4 m triangles crossed the terrain's folds, and on road cuts the ground showed through the paving)
+function faceDrape(W,g,P,lift){const G=W.grid,xs=P.map(p=>p[0]),zs=P.map(p=>p[1]),cl=(v,n)=>Math.max(0,Math.min(n-1,v)),
+    i0=cl(Math.floor((Math.min(...xs)-G.x0)/G.dx),G.n),i1=cl(Math.floor((Math.max(...xs)-G.x0)/G.dx),G.n),j0=cl(Math.floor((Math.min(...zs)-G.z0)/G.dz),G.n),j1=cl(Math.floor((Math.max(...zs)-G.z0)/G.dz),G.n);
+  const clip=(Q,T)=>{const sg=Math.sign((T[1][0]-T[0][0])*(T[2][1]-T[0][1])-(T[1][1]-T[0][1])*(T[2][0]-T[0][0]));   // Sutherland-Hodgman against the triangle T
+    for(let e=0;e<3&&Q.length>2;e++){const a=T[e],b=T[(e+1)%3],side=p=>sg*((b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0])),R=[];
+      for(let k=0;k<Q.length;k++){const p=Q[k],q=Q[(k+1)%Q.length],sp=side(p),sq=side(q);if(sp>=0)R.push(p);if((sp>=0)!==(sq>=0)){const t=sp/(sp-sq);R.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]);}}Q=R;}return Q;};
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x0=G.x0+i*G.dx,z0=G.z0+j*G.dz,x1=x0+G.dx,z1=z0+G.dz;
+    for(const T of[[[x0,z0],[x1,z0],[x0,z1]],[[x1,z1],[x0,z1],[x1,z0]]]){const Q=clip(P,T);if(Q.length>2&&Math.abs(pArea(Q))>.01)g.poly(Q.map(p=>[p[0],W.gy(p[0],p[1])+lift,p[1]]),[0,1,0]);}}}
 // paving that follows the ground (the warm slabs of squares, palette 11), the piece reserved as open ground so no house or street paint lands on it
 function facePave(W,g,P,role){g.set(11,.42);faceDrape(W,g,P,.1);
   const o=lotOBB(P),f=W.foot.add(o.cx,o.cz,o.hw,o.hd,o.rot,'open');f.poly=P;f.siteRole=role;return f;}
@@ -48,7 +52,7 @@ function faceDoubleTriangle(W,g,B,diag,R){const i0=diag?0:1,A=B[i0],C=B[i0+2],c=
   if(W.foot.hits(...lotOBBArgs(B)))return false;
   facePave(W,g,B,'face-F3');faceStat(W,'F3',B);
   const dx=C[0]-A[0],dz=C[1]-A[1],l=Math.hypot(dx,dz),F=frame(c[0],0,c[1],Math.atan2(-dz,dx));g.set(33,.4);
-  for(let k=0;k<12;k++){const t0=-l/2+l*k/12,t1=t0+l/12;g.poly([F.p(t0,0,-1.3),F.p(t1,0,-1.3),F.p(t1,0,1.3),F.p(t0,0,1.3)].map(p=>[p[0],W.gy(p[0],p[2])+.14,p[2]]),[0,1,0]);}   // the lane
+  faceDrape(W,g,[F.p(-l/2,0,-1.3),F.p(l/2,0,-1.3),F.p(l/2,0,1.3),F.p(-l/2,0,1.3)].map(p=>[p[0],p[2]]),.14);   // the lane
   romePlace('rome_lacus',c[0],W.gy(...c),c[1],F.rot,{inst:true});
   for(const p of[A,C]){const q=lp(p,c,.12);W.trees.push([q[0],W.gy(...q),q[1],'cyp',.95+R()*.2]);}return true;}
 const lotOBBArgs=P=>{const o=lotOBB(P);return[o.cx,o.cz,o.hw+1,o.hd+1,o.rot,0];};

@@ -79,6 +79,24 @@ function gradeRoads(W,list,o){const g=W.grid,n=g.n,N=n+1,tgt=new Float32Array(N*
   const G=W.terrainGeo;if(G&&moved.length){const p=G.attributes.position;for(const k of moved)p.setY(k,g.h[k]);p.needsUpdate=true;G.computeVertexNormals();}
   return moved.length;}
 
+/* Uphill stretches (author, 2026-10-26: "没有那么宽的上山道路"): where a graded main road climbs more than o.enter over a 2*o.win m window it is an
+   ordinary street, o.w m wide (no kerbs, no ruts), until the grade falls below o.exit. Climbs shorter than o.min are left wide, unless they pass 28 %
+   over 6 m (a flight of roadStairs goes there: it is a street with 6 m of street before and after it); flat gaps shorter than o.gap are joined. Each road is cut into pieces; a narrowed piece carries {hill:true,w0} as a third entry, so the street raster can pave it by
+   district (marble, stone or earth). Run after gradeRoads (it reads the graded bed) and before roads() (the narrow pieces reserve a narrow corridor). */
+function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0};
+  for(const R of list){const[w,P]=R;if(w<=HW+.5){out.push(R);continue;}
+    const cum=[0];for(let i=1;i<P.length;i++)cum.push(cum[i-1]+Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]));const L=cum[cum.length-1];
+    const at=s=>{let i=1;while(i<P.length-1&&cum[i]<s)i++;const t=clamp((s-cum[i-1])/Math.max(1e-6,cum[i]-cum[i-1]),0,1);return[lerp(P[i-1][0],P[i][0],t),lerp(P[i-1][1],P[i][1],t)];};
+    const n=Math.max(1,Math.ceil(L/3)),S=[],Y=[];for(let k=0;k<=n;k++){const p=at(L*k/n);S.push(L*k/n);Y.push(W.gy(p[0],p[1]));}
+    const grade=r=>S.map((s,i)=>{let a=i,b=i;while(a>0&&s-S[a-1]<=r)a--;while(b<n&&S[b+1]-s<=r)b++;return Math.abs(Y[b]-Y[a])/Math.max(1,S[b]-S[a]);}),gr=grade(o.win||15),loc=grade(3);
+    let on=false,runs=[];for(let i=0;i<=n;i++){const was=on,stp=loc[i]>.28;on=stp||(on?gr[i]>o.exit:gr[i]>o.enter);if(on&&!was)runs.push([S[i],S[i],false]);if(on){const r=runs[runs.length-1];r[1]=S[i];r[2]=r[2]||stp;}}
+    for(const r of runs)if(r[2]){r[0]=Math.max(0,r[0]-6);r[1]=Math.min(L,r[1]+6);}
+    const M=[];for(const r of runs){const q=M[M.length-1];if(q&&r[0]-q[1]<o.gap){q[1]=Math.max(q[1],r[1]);q[2]=q[2]||r[2];}else M.push(r);}
+    runs=M.filter(r=>r[2]||r[1]-r[0]>=o.min);if(runs.length){if(runs[0][0]<o.gap)runs[0][0]=0;if(L-runs[runs.length-1][1]<o.gap)runs[runs.length-1][1]=L;}
+    const piece=(a,b,ww,hill)=>{if(b-a<1)return;const pts=[at(a)];for(let i=1;i<P.length-1;i++)if(cum[i]>a+.5&&cum[i]<b-.5)pts.push(P[i].slice());pts.push(at(b));out.push(hill?[ww,pts,{hill:true,w0:w}]:[ww,pts]);};
+    let s0=0;for(const[a,b]of runs){piece(s0,a,w,false);piece(a,b,HW,true);st.pieces++;st.metres+=b-a;s0=b;}piece(s0,L,w,false);}
+  st.metres=Math.round(st.metres);W.roadHill=st;return out;}
+
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;
   const G=(x,z)=>{const k=Math.floor(x/cs)+'_'+Math.floor(z/cs);let g=chunks.get(k);if(!g){g=new GB(1<<14);chunks.set(k,g);}return g;};

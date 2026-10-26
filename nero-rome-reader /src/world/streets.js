@@ -3,7 +3,7 @@
    inside dense, built-up, non-vegetated areas (box-filtered footprint density) plus the main-road lines; specks are dropped, edges smoothed.
    Each cell gets a grade: 3 white marble/travertine (forum, precincts, palace hill), 2 grey stone (main roads, better districts), 1 dirt (lanes,
    poor districts, edges). The mask goes to the terrain shader as a texture (coverage, grade, distance to the nearest wall) plus a coarse
-   direction texture (ruts follow the street); steep stone/marble streets get real stairs of their grade; only main roads get raised kerbs. */
+   direction texture (ruts follow the street); steep streets and main roads get real stairs in their district's material; only main roads get raised kerbs. */
 function stChamfer(src,nx,nz){const D=new Float32Array(nx*nz),INF=1e4,a=1,b=1.4142;for(let i=0;i<D.length;i++)D[i]=src[i]?0:INF;
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i;let d=D[k];if(d===0)continue;if(i>0&&D[k-1]+a<d)d=D[k-1]+a;
     if(j>0){const r=k-nx;if(D[r]+a<d)d=D[r]+a;if(i>0&&D[r-1]+b<d)d=D[r-1]+b;if(i<nx-1&&D[r+1]+b<d)d=D[r+1]+b;}D[k]=d;}
@@ -56,16 +56,19 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   {const min=Math.round(260/(cs*cs));stComps(st,nx,nz,c=>{if(c.length<min)for(let a=0;a<c.length;a++)st[c[a]]=0;},true);}
   for(let it=0;it<2;it++){const s2=st.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(solid[k]||wat[k]||veg[k]){s2[k]=0;continue;}
     const n=st[k-1]+st[k+1]+st[k-nx]+st[k+nx]+st[k-nx-1]+st[k-nx+1]+st[k+nx-1]+st[k+nx+1]+st[k];s2[k]=(st[k]||n>=5)?1:0;}st.set(s2);}   // only fills: thin alleys (one cell wide) must survive
-  // main roads: stone inside the city, dirt in the country unless wide; direction field for ruts
+  // main roads: stone inside the city, dirt in the country unless wide; direction field for ruts. An uphill piece (roadHillSplit, {hill:true}) is an
+  // ordinary street paved by its district: marble on the monumental hills and precincts, stone in the city, earth in the country. 【史】Even the climb
+  // out of the Subura had stone steps, "numquam sicco sordida saxa gradu" (Martial 5.22); earth steps are for the lanes of poor quarters (streetStairs).
+  const region=(x,z,ur=o.urban(x,z))=>o.marble(x,z)?3:ur>.45?2:1;
   const road=new Uint8Array(N),NC=4,nxc=Math.ceil(nx/NC),nzc=Math.ceil(nz/NC),ax=new Float32Array(nxc*nzc),az=new Float32Array(nxc*nzc),aw=new Float32Array(nxc*nzc);
-  for(const[w,pts0]of o.roads){const pts=densify(pts0,cs*.8);for(let p=0;p<pts.length-1;p++){const a=pts[p],b=pts[p+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,ur=o.urban(x,z),hw=w*(ur>.45?.5:(w>=9||w===6)?.5:.3);
+  for(const[w,pts0,meta]of o.roads){const hill=!!meta?.hill,pts=densify(pts0,cs*.8);for(let p=0;p<pts.length-1;p++){const a=pts[p],b=pts[p+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,ur=o.urban(x,z),hw=w*(ur>.45?.5:(w>=9||w<=6)?.5:.3),rg=hill?region(x,z,ur):ur>.45||w>=9?2:1;
       const i0=Math.max(0,Math.floor((x-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((x+hw-x0)/cs)),j0=Math.max(0,Math.floor((z-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((z+hw-z0)/cs));
       for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(solid[k]||wat[k])continue;const cx=x0+(i+.5)*cs-x,cz=z0+(j+.5)*cs-z;if(Math.hypot(cx,cz)>hw+cs*.5)continue;
         // A main road runs on its graded bed (gradeRoads): only the grade along it counts, the cross fall belongs to the bank. Steeper than 30 %
-        // along the road it still breaks off (that needs a modelled stair). It crosses gardens and wooded slopes: the road wins there.
+        // along a wide road the paint stops; an uphill piece keeps it (roadStairs models a flight on it, the paint is its apron). It crosses gardens and wooded slopes: the road wins there.
         const rx=x0+(i+.5)*cs,rz=z0+(j+.5)*cs;
-        if(court[k])continue;const sx=(W.gy(rx+4,rz)-W.gy(rx-4,rz))/8,sz=(W.gy(rx,rz+4)-W.gy(rx,rz-4))/8;if(!streetRoadAllowed(Math.abs(sx*tx+sz*tz),false))continue;veg[k]=naturalVeg[k]=0;
-        st[k]=1;road[k]=ur>.45||w>=9?2:1;const kc=Math.floor(j/NC)*nxc+Math.floor(i/NC);ax[kc]+=3*(tx*tx-tz*tz);az[kc]+=3*2*tx*tz;aw[kc]+=3;}}}
+        if(court[k])continue;const sx=(W.gy(rx+4,rz)-W.gy(rx-4,rz))/8,sz=(W.gy(rx,rz+4)-W.gy(rx,rz-4))/8;if(!hill&&!streetRoadAllowed(Math.abs(sx*tx+sz*tz),false))continue;veg[k]=naturalVeg[k]=0;
+        st[k]=1;road[k]=rg;const kc=Math.floor(j/NC)*nxc+Math.floor(i/NC);ax[kc]+=3*(tx*tx-tz*tz);az[kc]+=3*2*tx*tz;aw[kc]+=3;}}}
   const plz=new Uint8Array(N);   // 'plaza' rects (5th entry): paved squares, always grade 3 (warm beige-grey slabs)
   for(const[xa,za,xb,zb,kind]of o.paved||[]){const i0=Math.max(0,Math.floor((xa-x0)/cs)),i1=Math.min(nx-1,Math.floor((xb-x0)/cs)),j0=Math.max(0,Math.floor((za-z0)/cs)),j1=Math.min(nz-1,Math.floor((zb-z0)/cs));   // market squares and the like: an open area with a purpose is paved
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!solid[k]&&!wat[k]&&!naturalVeg[k]&&!court[k]){st[k]=1;road[k]=2;if(kind==='plaza')plz[k]=1;}}}
@@ -102,33 +105,59 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   const T2=new Uint8Array(nxc*nzc*4);for(let k=0;k<nxc*nzc;k++){const l=Math.hypot(ax[k],az[k]),vx=l>1e-4?ax[k]/l:0,vz=l>1e-4?az[k]/l:0;T2[k*4]=Math.round((vx*.5+.5)*255);T2[k*4+1]=Math.round((vz*.5+.5)*255);T2[k*4+2]=Math.min(255,aw[k]*40);T2[k*4+3]=255;}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
-  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,waterAt:o.water,nxc,NC,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
+  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
   W.streetAt=(x,z)=>W.street.at(x,z)>0;
   console.log('streets',nx+'x'+nz,'cs',cs,'dirt',cnt[1],'stone',cnt[2],'marble',cnt[3],Math.round(performance.now()-t0)+' ms');}
-/* stairs: connected steep stone/marble street cells become flights along the slope (dirt never does) */
-function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g=new GB(1<<16);let nSt=0;
-  for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=j*nx+i;if(grd[k]<2||(S.road[k]&&grd[k]<3))continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,dx=(gy(x+cs,z)-gy(x-cs,z))/(2*cs),dz=(gy(x,z+cs)-gy(x,z-cs))/(2*cs);
-    const m2=dx*dx+dz*dz;if(m2>(grd[k]===3?.0121:.0256)){   // marble streets turn to stairs from ~11 %, stone ones from ~16 %
+/* Stairs by district (author, 2026-10-26: 大理石、砖石、泥巴). 3 white marble, cheek walls on both sides with a coping; 2 grey stone treads, brick
+   cheek walls (opus latericium) where the ground falls away; 1 packed earth held by a timber board at each nosing, no cheek walls. ri: the riser. */
+const STAIR_MAT={3:{tread:6,cheek:[6],coping:2,both:true,ri:.16},2:{tread:38,cheek:[9,.6,0,1],ri:.18},1:{tread:27,board:3,ri:.2}};
+// one step in frame F, centred at local z, tread depth td, half width hw, top at yy (the frame's y is 0)
+function stairStep(g,M,F,z,td,hw,yy,s){g.set(M.tread,.4+(s%5)*.05);box(g,F,0,yy-1.3,z,hw,1.3,td/2+.02,31);
+  if(M.board){g.set(M.board,.45+(s%3)*.1);box(g,F,0,yy-.22,z+td/2-.07,hw+.05,.26,.08,31);}}   // the board at the downhill edge holds the earth
+function stairCheek(W,g,M,F,z,len,hw,yy){if(!M.cheek)return;
+  for(const sd of[-1,1]){const q=F.p(sd*(hw+.5),0,z);if(!M.both&&W.gy(q[0],q[2])>=yy-.55)continue;const wh=M.both?.62:.45;g.set(...M.cheek);box(g,F,sd*(hw+.2),yy-1.3,z,.2,1.3+wh,len/2+.02,31);
+    if(M.coping){g.set(M.coping,.5);box(g,F,sd*(hw+.2),yy+wh,z,.3,.1,len/2+.02,31);}}}
+/* stairs: connected steep street cells become flights along the slope, in their district's material (STAIR_MAT, the street grade). Main-road cells are
+   left to roadStairs, and so is anything within 12 m of one of its flights. */
+function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g=new GB(1<<16),RS=W.roadStairs||[];let nSt=0;const nMat={1:0,2:0,3:0};
+  for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=j*nx+i;if(!grd[k]||S.road[k])continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,dx=(gy(x+cs,z)-gy(x-cs,z))/(2*cs),dz=(gy(x,z+cs)-gy(x,z-cs))/(2*cs);
+    const m2=dx*dx+dz*dz;if(m2>(grd[k]===3?.0121:grd[k]===2?.0256:.04)){   // marble streets turn to stairs from ~11 %, stone ones from ~16 %, earth lanes from 20 %
       const kc=Math.floor(j/S.NC)*S.nxc+Math.floor(i/S.NC),l=Math.hypot(S.ax[kc],S.az[kc]);
       // only where the street runs along the slope (street axis within ~30 deg of the gradient; doubled angles): a street across a slope is a terrace, not a climb
       if(l>1e-3&&((dx*dx-dz*dz)*S.ax[kc]+2*dx*dz*S.az[kc])/(m2*l)>.5){steep[k]=1;gxA[k]=dx;gzA[k]=dz;}}}
   const comps=[];stComps(steep,nx,nz,c=>{if(c.length>=7)comps.push(Array.from(c));});comps.sort((a,b)=>b.length-a.length);
-  for(const c of comps.slice(0,140)){let sx=0,sz=0,mx=0,mz=0,mar=0;for(const k of c){sx+=gxA[k];sz+=gzA[k];const i=k%nx,j=(k-i)/nx;mx+=x0+(i+.5)*cs;mz+=z0+(j+.5)*cs;if(grd[k]===3)mar++;}
+  const why={};for(const c of comps.slice(0,400)){let sx=0,sz=0,mx=0,mz=0;const ng=[0,0,0,0];for(const k of c){sx+=gxA[k];sz+=gzA[k];const i=k%nx,j=(k-i)/nx;mx+=x0+(i+.5)*cs;mz+=z0+(j+.5)*cs;ng[grd[k]]++;}
     const l=Math.hypot(sx,sz)||1,dx=-sx/l,dz=-sz/l;mx/=c.length;mz/=c.length;const px=-dz,pz=dx;let t0=1e9,t1=-1e9;const pp=[];
     for(const k of c){const i=k%nx,j=(k-i)/nx,x=x0+(i+.5)*cs-mx,z=z0+(j+.5)*cs-mz,t=x*dx+z*dz;pp.push(x*px+z*pz);t0=Math.min(t0,t);t1=Math.max(t1,t);}
-    pp.sort((a,b)=>a-b);const pc=pp[pp.length>>1],span=pp[Math.floor(pp.length*.9)]-pp[Math.floor(pp.length*.1)],marble=mar>c.length*.5,wd=Math.min(marble?9:7,Math.max(3,span+1.5));if(span>12||t1-t0>42)continue;   // wide or very long patches are street networks on a hillside, not one climb: they stay ramps
-    t0-=cs*.8;t1+=cs*.8;if(t1-t0<5.5)continue;const cx=mx+px*pc,cz=mz+pz*pc,run=t1-t0,ax=cx+dx*t0,az=cz+dz*t0,bx=cx+dx*t1,bz=cz+dz*t1,yt=gy(ax,az),yb=gy(bx,bz),drop=yt-yb;if(drop<1.1||drop>40||!streetStairFootprintAllowed(S,cx,cz,dx,dz,run,wd,cs,true))continue;
-    const ri=marble?.16:.19,n=Math.max(4,Math.round(drop/ri)),rr=drop/n,nL=Math.floor((n-1)/12),ld=Math.min(2.4,run*.12),td=(run-nL*ld)/n,rot=Math.atan2(dx,dz),F=frame(ax,0,az,rot),hw=wd/2;
-    if(td<.25||td>1.5)continue;let z=0;
-    for(let s=0;s<n;s++){const yy=yt-(s+1)*rr;g.set(marble?6:38,.4+(s%5)*.05);box(g,F,0,yy-1.3,z+td/2,hw,1.3,td/2+.02,31&~32);z+=td;
-      if((s+1)%12===0&&s<n-1){g.set(marble?6:38,.4);box(g,F,0,yy-1.3,z+ld/2,hw,1.3,ld/2+.02,31&~32);z+=ld;}}
-    // cheek walls: marble flights on both sides with a coping, stone flights only where the ground falls away
-    let zz=0;for(let s=0;s<n;s++){const yy=yt-(s+1)*rr,len=td+((s+1)%12===0&&s<n-1?ld:0);
-      for(const sd of[-1,1]){const q=F.p(sd*(hw+.5),0,zz+len/2),lo=gy(q[0],q[2])<yy-.55;if(!marble&&!lo)continue;const wh=marble?.62:.45;g.set(marble?6:38,.5);box(g,F,sd*(hw+.2),yy-1.3,zz+len/2,.2,1.3+wh,len/2+.02,31&~32);
-        if(marble){g.set(2,.5);box(g,F,sd*(hw+.2),yy+wh,zz+len/2,.3,.1,len/2+.02,31&~32);}}
-      zz+=len;}
-    (W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:wd,run,marble,drop,n});nSt++;}
-  const m=g.mesh(MAT.city);if(m)W.scene.add(m);W.nStairs=nSt;console.log('street stairs',nSt,'of',comps.length,'steep street patches');}
+    const mat=ng[3]>c.length*.5?3:ng[1]>c.length*.5?1:2,M=STAIR_MAT[mat];
+    pp.sort((a,b)=>a-b);const pc=pp[pp.length>>1],span=pp[Math.floor(pp.length*.9)]-pp[Math.floor(pp.length*.1)],wd=Math.min(mat===3?9:7,Math.max(3,span+1.5));if(span>12||t1-t0>42){why.wide=(why.wide||0)+1;continue;}   // wide or very long patches are street networks on a hillside, not one climb: they stay ramps
+    t0-=cs*.8;t1+=cs*.8;const cx=mx+px*pc,cz=mz+pz*pc,run=t1-t0,ax=cx+dx*t0,az=cz+dz*t0,bx=cx+dx*t1,bz=cz+dz*t1,yt=gy(ax,az),yb=gy(bx,bz),drop=yt-yb;if(t1-t0<5.5||drop<1.1||drop>40){why.short=(why.short||0)+1;continue;}if(!streetStairFootprintAllowed(S,cx,cz,dx,dz,run,wd,cs,true)){why.foot=(why.foot||0)+1;continue;}
+    if(RS.some(r=>Math.hypot(r.x-cx,r.z-cz)<r.len/2+run/2+12)){why.road=(why.road||0)+1;continue;}
+    const n=Math.max(4,Math.round(drop/M.ri)),rr=drop/n,nL=Math.floor((n-1)/12),ld=Math.min(2.4,run*.12),td=(run-nL*ld)/n,rot=Math.atan2(dx,dz),F=frame(ax,0,az,rot),hw=wd/2;
+    if(td<.25||td>1.5){why.tread=(why.tread||0)+1;continue;}let z=0;
+    for(let s=0;s<n;s++){const yy=yt-(s+1)*rr,land=(s+1)%12===0&&s<n-1,len=td+(land?ld:0);stairStep(g,M,F,z+td/2,td,hw,yy,s);
+      if(land){g.set(M.tread,.4);box(g,F,0,yy-1.3,z+td+ld/2,hw,1.3,ld/2+.02,31);}stairCheek(W,g,M,F,z+len/2,len,hw,yy);z+=len;}   // a landing every 12 steps
+    (W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:wd,run,mat,marble:mat===3,drop,n});nSt++;nMat[mat]++;}
+  const m=g.mesh(MAT.city);if(m)W.scene.add(m);W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'of',comps.length,'steep street patches',JSON.stringify(nMat));}
+/* main-road stairs: where a road's graded bed still climbs more than 30 % (gradeRoads caps its cut and fill at 4 m) the paint stops and a flight follows
+   the road, as wide as the road, in its district's material (S.region). A run is where the signed grade over +-2.5 m passes 30 %, grown while it stays
+   above 18 % the same way; same-way runs less than 5 m apart are one flight; a flight needs 1 m of drop and treads of at least 26 cm.
+   o.layerAt(x,z): a story-state group for a flight there (the streets the Golden House takes), or null. */
+function roadStairs(W,list,o={}){const S=W.street,gy=W.gy,g0=new GB(1<<15),gl={},out=W.roadStairs=[],nMat={1:0,2:0,3:0};
+  for(const[w,P]of list){const D=densify(P,1),m=D.length,cum=[0];for(let i=1;i<m;i++)cum.push(cum[i-1]+Math.hypot(D[i][0]-D[i-1][0],D[i][1]-D[i-1][1]));
+    const Y=D.map(p=>gy(p[0],p[1])),gs=D.map((p,i)=>{let a=i,b=i;while(a>0&&cum[i]-cum[a]<2.5)a--;while(b<m-1&&cum[b]-cum[i]<2.5)b++;return(Y[b]-Y[a])/Math.max(.5,cum[b]-cum[a]);});
+    const runs=[];for(let i=0;i<m;i++){if(Math.abs(gs[i])<=.3)continue;const sg=Math.sign(gs[i]);let a=i,b=i;while(a>0&&gs[a-1]*sg>.18)a--;while(b<m-1&&gs[b+1]*sg>.18)b++;
+      const L=runs[runs.length-1];if(L&&L.sg===sg&&cum[a]-cum[L.b]<5)L.b=Math.max(L.b,b);else runs.push({a,b,sg});i=b;}
+    for(const{a,b,sg}of runs){const len=cum[b]-cum[a],drop=Math.abs(Y[b]-Y[a]);if(drop<1||len<2)continue;
+      const mid=D[(a+b)>>1],mat=S.region(mid[0],mid[1]),M=STAIR_MAT[mat];let n=Math.max(3,Math.round(drop/M.ri));if(len/n<.26)n=Math.floor(len/.26);const rr=drop/n;if(n<3||rr>.32)continue;   // steeper than that is a cliff: no flight
+      const td=len/n,yt=Math.max(Y[a],Y[b]),hw=w/2,dir=sg<0?1:-1,lk=o.layerAt&&o.layerAt(mid[0],mid[1]),g=lk?(gl[lk]||(gl[lk]=new GB(1<<12))):g0;
+      const at=u=>{const s=sg<0?cum[a]+u:cum[b]-u;let i=a;while(i<b-1&&cum[i+1]<s)i++;const j=i+1,t=clamp((s-cum[i])/Math.max(1e-6,cum[j]-cum[i]),0,1),tx=(D[j][0]-D[i][0])*dir,tz=(D[j][1]-D[i][1])*dir,l=Math.hypot(tx,tz)||1;
+        return frame(lerp(D[i][0],D[j][0],t),0,lerp(D[i][1],D[j][1],t),Math.atan2(tx/l,tz/l));};   // the frame's +z points downhill along the road
+      // each tread sits on the bed under it (a straight run sank into humps and floated over sags), at least 5 cm below the step above, never below the foot
+      let yp=yt+.05;for(let s=0;s<n;s++){const F=at((s+.5)*td),yy=Math.max(yt-drop,Math.min(yp-.05,gy(F.ox,F.oz)+.04));stairStep(g,M,F,0,td,hw,yy,s);stairCheek(W,g,M,F,0,td,hw,yy);yp=yy;}
+      out.push({x:mid[0],z:mid[1],w,len:+len.toFixed(1),drop:+drop.toFixed(1),n,mat});nMat[mat]++;}}
+  const m=g0.mesh(MAT.city);if(m)W.scene.add(m);for(const k in gl){const mk=gl[k].mesh(MAT.city);if(mk)preLayerGroup(W,k).add(mk);}
+  W.roadStairMat=nMat;console.log('road stairs',out.length,JSON.stringify(nMat));return out;}
 // raised kerbs and sidewalks only along the grey-stone main roads (they stop where the road is dirt or a building stands)
 function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0;   // o.layerAt(x,z): a story-state group key for the kerb there (e.g. the streets the Golden House takes), or null
   for(const[w,pts0]of list){if(w<7)continue;const pts=densify(pts0,2);
