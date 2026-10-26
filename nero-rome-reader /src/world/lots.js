@@ -217,6 +217,9 @@ function cutAway(B,f,m){const c=pCen(B),dx=c[0]-f.cx,dz=c[1]-f.cz;
   if(f.circ){const d=Math.hypot(dx,dz)||1,nx=dx/d,nz=dz/d;return clipHalf(B,nx,nz,f.cx*nx+f.cz*nz+f.hw+m,1);}
   const u=f.c*dx-f.s*dz,v=f.s*dx+f.c*dz,byU=Math.abs(u)/(f.hw||1)>Math.abs(v)/(f.hd||1),sg=Math.sign(byU?u:v)||1,nx=(byU?f.c:f.s)*sg,nz=(byU?-f.s:f.c)*sg;
   return clipHalf(B,nx,nz,f.cx*nx+f.cz*nz+(byU?f.hw:f.hd)+m,1);}
+// A story-state group of houses (W.preLayers[k], switched by the state lists in app.js); every generator that files houses under k shares it
+// (a second genBlocks call used to replace the first one's entry, leaving its houses hidden in every state).
+function preLayerGroup(W,k){const P=W.preLayers||(W.preLayers={});let G=P[k];if(!G){G=new THREE.Group();G.name=k;G.userData.rise=0;G.visible=false;W.scene.add(G);P[k]=G;}return G;}
 // A ring of lots round a court: block B inset by the wing depth dd gives the court; each edge is cut into lots about lw wide.
 function ringLots(B,dd,lw,R){const I=pInset(B,dd);if(!I||pArea(I)<=40)return{court:null,lots:[]};const lots=[];
   for(let e=0;e<B.length;e++){const a=B[e],b=B[(e+1)%B.length],ia=I[e],ib=I[(e+1)%B.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));
@@ -328,7 +331,7 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
         reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,walled:!!closure.walled,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
         if(Z.kind==='domus')reserveResidentialArea(W,EB,'senatorial-estate');}
       for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}}}   // blkLot: the lot's real outline, for lotHits
-  const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){G2=groups[e.k]=new THREE.Group();W.scene.add(G2);if(e.k!==''){G2.name=e.k;G2.userData.rise=0;G2.visible=false;(W.preLayers=W.preLayers||{})[e.k]=G2;}}G2.add(m);}
+  const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){if(e.k!=='')G2=groups[e.k]=preLayerGroup(W,e.k);else{G2=groups[e.k]=new THREE.Group();W.scene.add(G2);}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 
 /* TEST tool: residential embedding under the lowest-ground policy; no raised terraces. */

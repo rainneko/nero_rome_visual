@@ -160,13 +160,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     g.set(14,.5,0,0,1,4,1);lathe(g,CT,0,-2,-len/2,[[nw/2+.3,0],[nw/2+.3,nh+1],[0,nh+1]],8);const t2=g.nv;lathe(g,CT,0,nh,-len/2,[[nw/2+1,0],[0,7]],8,16);retag(g,1,16,t2);});
   for(const[a,b,t]of[[6,6,'建在埃斯奎利诺公仓的废墟上。57冬木骨架，水泥壳，58春封顶，58冬装上玫瑰彩窗。'],[7,7,'玫瑰窗熏黑了。'],[8,99,'玫瑰窗右下角钉过一块木板；后来补上一块新的红玻璃，比旁边的旧玻璃亮一点。']])W.pois.push({n:'阿波罗圣辉大殿',l:'【书中】',x:GALBA[0],z:GALBA[1],y:gy(GALBA[0],GALBA[1])+70,s0:a,s1:b,d:3600,info:t});
   L('valleyTrees',0,(g)=>{for(let i=0;i<70;i++){const x=572+(Zr()-.5)*220,z=200+(Zr()-.5)*170;W.trees.push([x,gy(x,z),z,Zr()<.5?'pine':'broad',.9]);}});
-  L('domusAurea',16,(g,G)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
-    for(let x=-136;x<=136;x+=5)W.cols.cor.push([...F.p(x,0,23),F.rot,9,[1,.95,.85]]);g.set(2,.5);box(g,F,0,9,24,140,1.1,2.2,31);g.set(1,.5);g.poly([F.p(-140,10.1,25.6),F.p(140,10.1,25.6),F.p(140,12.8,20),F.p(-140,12.8,20)],[0,1,0]);g.set(2,.45);box(g,F,0,-6,23,141,6,3.4,31);
-    g.set(24,.86,0,1);lathe(g,F,0,14,0,[[16,0],[16,6],[0,6]],8);g.set(12,.5);lathe(g,F,0,20,0,[[16.5,0],[13,6],[7,10],[0,11]],16);
-    const yl=gy(572,200)+.35,lk=new THREE.Mesh(new THREE.PlaneGeometry(190,140).rotateX(-Math.PI/2),MAT.tiber);lk.position.set(572,yl,200);lk.rotation.y=-30*DEG;lk.receiveShadow=true;G.add(lk);
-    const LF=frame(572,yl,200,-30*DEG);g.set(2,.4);for(const s of[1,-1]){box(g,LF,0,-1,s*71,96,1.6,1.2,31);box(g,LF,s*96,-1,0,1.2,1.6,71,31);}
-    portico(W,g,LF,-100,-78,100,-78,0,6,-6,4,[1,.95,.88]);(g.set(2,.5),box(g,frame(430,gy(430,140),140,0),0,-1,0,6,9,6,31));});
-  W.pois.push({n:'金宫工地',l:'Domus Aurea',x:850,z:-40,y:gy(850,-40)+40,s0:7,s1:7,d:3000,info:'【书中】秘书处和包工头推动的半拉子工程：脚手架，挖了一半的湖，巨像只有底座。【史】64年大火后修建。'});W.pois.push({n:'金宫工地',l:'Domus Aurea',x:850,z:-40,y:gy(850,-40)+40,s0:8,s1:99,d:3000,info:'【书中】工地荒着。'});
+  buildDomusAurea(W,L,gy);   // the Golden House, its streets before the fire and the Transitoria's glazed loggia (domus-aurea.js)
   /* academy growth */
   const AF=W.AF;
   {const inner=(lx,lz)=>(Math.abs(lx-46)<20&&Math.abs(lz+14)<22)||(Math.abs(lx+44)<19&&Math.abs(lz+24)<14)||(Math.abs(lx)<60&&lz>14&&lz<46);
@@ -257,10 +251,6 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
   W.pois.push({n:'尼禄木构圆形剧场',l:'Amphitheatrum Neronis',x:-880,z:-1090,y:gy(-880,-1090)+24,s0:3,s1:99,d:1600,info:'57年尼禄在战神广场用木头搭的圆形剧场，一年建成。'});
   L('macellum',12,(g)=>{const F=frame(890,gy(890,910),910,0);courtBlock(W,g,F,{cx:0,cz:0,w:80,d:64,y0:0,nSt:2,sH:3.8,gH:4.6,cw:56,cd:40,part:0,seed:.62,sty:8,fl:8|2,garden:false});tholos(W,g,{x:F.ox,y:F.oy,z:F.oz,R:9,podH:1.2,colH:7,n:16,roofPart:16});});
   W.pois.push({n:'大市场',l:'Macellum Magnum',x:890,z:910,y:gy(890,910)+24,s0:7,s1:99,d:1600,info:'59年尼禄在西里欧山修的大市场，中央是两层圆亭，印在尼禄的钱币上。'});
-  L('neroLake',10,(g,G)=>{const y=gy(572,215),F=frame(572,y,215,-.35);g.set(21,.35);g.poly([F.p(-88,.08,-58),F.p(88,.08,-58),F.p(88,.08,58),F.p(-88,.08,58)],[0,1,0]);
-    const wm=new THREE.Mesh(new THREE.PlaneGeometry(70,90).rotateX(-Math.PI/2),MAT.tiber),wp=F.p(-40,0,0);wm.position.set(wp[0],y+.2,wp[2]);wm.rotation.y=-.35;G.add(wm);
-    for(const[x,z]of[[40,-30],[60,20],[20,40],[-80,-50]]){g.set(21,.42);lathe(g,F,x,0,z,[[7,0],[4,2.6],[0,3.4]],10);}scaffold(g,F,70,-50,8,0,9,false);scaffold(g,F,-70,52,8,0,9,false);});
-  W.pois.push({n:'尼禄人工湖',l:'Stagnum Neronis',x:572,z:215,y:gy(572,215)+18,s0:7,s1:99,d:1600,info:'【书中】挖了一半的湖。【史】64年大火后金宫的人工湖，湖下原是民居。'});
   const plume=(x0,z0,len,col)=>{const P=densify(TIBER,20);let bi=0,bd=1e9;for(let i=0;i<P.length;i++){const dd=Math.hypot(P[i][0]-x0,P[i][1]-z0);if(dd<bd){bd=dd;bi=i;}}
     const a0=P[bi],b0=P[Math.min(P.length-1,bi+1)],sd=Math.sign((x0-a0[0])*(b0[1]-a0[1])-(z0-a0[1])*(b0[0]-a0[0]))||1,pos=[],uv=[],idx=[];let acc=0,n=0;
     for(let i=bi;i<P.length-1&&acc<len;i++){const a=P[i],b=P[i+1],tx=b[0]-a[0],tz=b[1]-a[1],l=Math.hypot(tx,tz)||1,nx=tz/l,nz=-tx/l,t=acc/len,w=14+t*30,off=sd*(RTW-10-w*.5)*(1-t*.7),cx=a[0]+nx*off,cz=a[1]+nz*off;

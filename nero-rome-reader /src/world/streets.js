@@ -130,17 +130,17 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
     (W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:wd,run,marble,drop,n});nSt++;}
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);W.nStairs=nSt;console.log('street stairs',nSt,'of',comps.length,'steep street patches');}
 // raised kerbs and sidewalks only along the grey-stone main roads (they stop where the road is dirt or a building stands)
-function roadKerbs(W,list){const g=new GB(1<<16),S=W.street;
+function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0;   // o.layerAt(x,z): a story-state group key for the kerb there (e.g. the streets the Golden House takes), or null
   for(const[w,pts0]of list){if(w<7)continue;const pts=densify(pts0,2);
     for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,nx=tz,nz=-tx,mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2;
-      if(S.at(mx,mz)!==2||!streetRoadPointAllowed(S,W,mx,mz))continue;const rich=Math.hypot(mx-17,mz+22)<420,hw=w/2;
+      if(S.at(mx,mz)!==2||!streetRoadPointAllowed(S,W,mx,mz))continue;const rich=Math.hypot(mx-17,mz+22)<420,hw=w/2,lk=o.layerAt&&o.layerAt(mx,mz);g=lk?(gl[lk]||(gl[lk]=new GB(1<<12))):g0;
       for(const sd of[1,-1]){const o0=hw,o1=hw+(rich?1.9:1.3),P=(p,o,y)=>[p[0]+sd*nx*o,y,p[1]+sd*nz*o];let ok=true;for(const t of[0,.5,1]){const px=lerp(a[0],b[0],t),pz=lerp(a[1],b[1],t);if(!streetRoadPointAllowed(S,W,px,pz)||!streetGroundAllowed(S,W,px+sd*nx*o0,pz+sd*nz*o0)||!streetGroundAllowed(S,W,px+sd*nx*o1,pz+sd*nz*o1)){ok=false;break;}}if(!ok)continue;   // curb strip follows the same land and grade limits as its road
         const ya=W.gy(P(a,o0,0)[0],P(a,o0,0)[2]),yb=W.gy(P(b,o0,0)[0],P(b,o0,0)[2]),h=.34;
         g.set(38,.4);g.poly([P(a,o0,ya+h),P(b,o0,yb+h),P(b,o1,yb+h),P(a,o1,ya+h)],[0,1,0]);   // worn grey kerb top, no pale edge strip (from above two light strips read as rails)
         g.set(38,.3);g.poly([P(a,o0,ya-.08),P(b,o0,yb-.08),P(b,o0,yb+h),P(a,o0,ya+h)],[-sd*nx,0,-sd*nz]);}}}
   {// wheel ruts of the main grey streets (phase 5b: no drain line, no continuous rails). Each rut is a 0.25 m wide translucent darkening (about 12 % at the centre, soft edges and ends)
     // laid in irregular runs with gaps, never within 6 m of a junction. Drawn with MAT.cityDecal (alpha), so the paving's stones show through.
-    const gW=new GB(1<<15);let nW=0,ri=0;const JR=6;
+    const gW=new GB(1<<15),glW={};let nW=0,ri=0;const JR=6;
     const segD=(px,pz,A,B)=>{const dx=B[0]-A[0],dz=B[1]-A[1],l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((px-A[0])*dx+(pz-A[1])*dz)/l2));return Math.hypot(px-A[0]-dx*t,pz-A[1]-dz*t);};
     const dense=list.map(([w,p])=>[w,densify(p,10)]);
     const nearJunction=(x,z,self)=>{for(let r=0;r<dense.length;r++){if(r===self)continue;const[w2,q]=dense[r];for(let i=0;i<q.length-1;i++)if(segD(x,z,q[i],q[i+1])<JR+w2*.5)return true;}return false;};
@@ -153,13 +153,13 @@ function roadKerbs(W,list){const g=new GB(1<<16),S=W.street;
           if(s1-s0>=4){const steps=Math.max(2,Math.round((s1-s0)/1.5)),row=[];let ok=true;
             for(let k=0;k<=steps;k++){const sp=s0+(s1-s0)*k/steps,c=at(sp),off=side*(.78+.07*Math.sin(sp*.11+ro))+(.12*Math.sin(sp*.37+side*2));
               const x=c.x+c.nx*off,z=c.z+c.nz*off;if(S.at(x,z)!==2||!streetRoadPointAllowed(S,W,x,z)||!streetRoadPointAllowed(S,W,c.x,c.z)||!streetGroundAllowed(S,W,x+c.nx*.125,z+c.nz*.125)||!streetGroundAllowed(S,W,x-c.nx*.125,z-c.nz*.125)||nearJunction(x,z,ro)){ok=false;break;}row.push({x,z,nx:c.nx,nz:c.nz,t:k/steps});}
-            if(ok){const hw=.125,P=(q,o)=>{const x=q.x+q.nx*o,z=q.z+q.nz*o;return[x,W.gy(x,z)+.17,z];};
+            if(ok){const hw=.125,P=(q,o)=>{const x=q.x+q.nx*o,z=q.z+q.nz*o;return[x,W.gy(x,z)+.17,z];},lk2=o.layerAt&&o.layerAt(row[0].x,row[0].z),gw=lk2?(glW[lk2]||(glW[lk2]=new GB(1<<12))):gW;
               for(let k=0;k<row.length-1;k++){const a=row[k],b=row[k+1],ta=Math.min(1,Math.min(a.t,1-a.t)*(s1-s0)/3),tb=Math.min(1,Math.min(b.t,1-b.t)*(s1-s0)/3),va=.55+.45*Math.min(1,ta),vb=.55+.45*Math.min(1,tb);
-                for(const h of[-1,1]){gW.set(42,.4);gW.poly([P(a,h*hw),P(b,h*hw),P(b,0),P(a,0)],[0,1,0],[[0,va],[0,vb],[1,vb],[1,va]]);}}   // u = 0 at the edges, 1 on the centre line; v = fade at the run ends
+                for(const h of[-1,1]){gw.set(42,.4);gw.poly([P(a,h*hw),P(b,h*hw),P(b,0),P(a,0)],[0,1,0],[[0,va],[0,vb],[1,vb],[1,va]]);}}   // u = 0 at the edges, 1 on the centre line; v = fade at the run ends
               nW++;}}
           s0=s1+2.5+R()*R()*12;ri++;}}}
-    const mw=gW.mesh(MAT.cityDecal,false);if(mw){mw.renderOrder=2;W.scene.add(mw);}W.nRoadWear=nW;}
-  const m=g.mesh(MAT.city,false);if(m)W.scene.add(m);}
+    const mw=gW.mesh(MAT.cityDecal,false);if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=glW[k].mesh(MAT.cityDecal,false);if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
+  const m=g0.mesh(MAT.city,false);if(m)W.scene.add(m);for(const k in gl){const mk=gl[k].mesh(MAT.city,false);if(mk)preLayerGroup(W,k).add(mk);}}
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
    props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed */
 function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple

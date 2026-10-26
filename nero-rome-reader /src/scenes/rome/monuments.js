@@ -202,7 +202,7 @@ async function buildRome(msg){
   palPlace(W,gP);palTerraces(W);palBlocks(W);palBasins(W);palStrips(W);   // palatine.js: hero models (stand-ins until the GLBs load), hill-base terraces, the crowded saddle
   // The speculative freestanding eastern link was removed at the author's request (2026-10-24).
   W.scene.add(gP.mesh(MAT.city));
-  poi('帕拉蒂尼山·尼禄皇宫','Domus Transitoria',195,282,44,0,99,'帕拉蒂尼山上的皇家宫殿区域。东侧塔楼顶层是观景露台（第三卷，看见城东火球的地方）。',2600);
+  poi('帕拉蒂尼山·尼禄东宫','Domus Transitoria',195,282,44,0,5,'帕拉蒂尼山上的皇家宫殿区域。东侧塔楼顶层是观景露台（第三卷，看见城东火球的地方）。',2600);poi('帕拉蒂尼山·过渡宫','Domus Transitoria',195,282,44,6,99,'【书中】58年东塔顶的观景露台装上平板玻璃，夜里亮一盏灯；屋脊的铜件和窗框电镀贴金，城里人叫它“金房子”。64年大火烧裂了玻璃，后来又装上。【史】塔西佗《编年史》15.39：过渡宫连接帕拉蒂尼山和梅塞纳斯花园。',2600);
   poi('提比略宫','Domus Tiberiana',-5,205,30,0,99,'俯瞰罗马广场的旧皇宫，北面是巨大的拱券基座。',1800);
   poi('阿波罗神庙','Aedes Apollinis',95,382,32,0,99,'白色卢那大理石，前面是达那伊得斯柱廊。',1600);
   await msg('建造卡比托利欧山与大竞技场……');
@@ -443,6 +443,7 @@ async function buildRome(msg){
   const tR=performance.now(),routed=baked?ROME_ROADS_BAKED.roads.map((P,i)=>[MAIN[i][0],P]):MAIN.map(([w,way])=>[w,routeRoad(W,way,w,RO)]),tG=performance.now();W.roadRouted={key:roadKey,roads:routed.map(r=>r[1])};
   W.roadBedMoved=gradeRoads(W,routed,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35});W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG)};
   roads(W,[[6,W.palClivus],[6,clCap],...routed],gR);
+  W.foot.add(AUREA.lent[0],AUREA.lent[1],17,14,0,'open').siteRole='lentulus-house';for(const[x,z]of AUREA.shrines)W.foot.addCircle(x,z,3,'open').siteRole='crossroads-shrine';   // states 0-6, drawn in domus-aurea.js (after the roads: they do not steer the router)
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
     const C=frB(-1280,180,90,gy(-1280,180));courtBlock(W,gX,C,{cx:0,cz:0,w:36,d:30,y0:0,nSt:2,sH:3.6,gH:4.4,cw:16,cd:12,part:0,seed:.66,sty:16,fl:8|2,peristyle:false,garden:false});gX.set(3,.4);box(gX,C,0,5,15.3,3,1,.12,31);W.foot.add(-1280,180,19,16,C.rot);
@@ -647,9 +648,9 @@ async function buildRome(msg){
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      ROME.GLB.push({n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
-  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',chunk:600});
+  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_SITE(x,z)?'aureaSite':'',chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,chunk:600});
-  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,chunk:600});
+  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>AUREA_SITE(x,z)?'aureaSite':'',chunk:600});
 
   {const gI=new GB(1<<17),RI=RNG(77);let nI=0,nS=0;const zones=[[-760,-330,-400,190],[-430,-150,90,460],[-330,-160,-330,90],[-665,-515,10,125]];
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
@@ -674,7 +675,7 @@ async function buildRome(msg){
     const rot=-30*DEG+.9*(fbm(x*.0006+11,z*.0006,2)-.5),burn=(x,z)=>Math.hypot(x-250,z-300)<950?1:0;
     if(u>=.5)return{d:.8*(1-gd*.8),mix:{shed:.5,tower:.15,insula:.35},st:[2,4],rot,m:.7,step:7,shops:.7,brick:.35,ppl:.05,burn};
     return{d:Math.min(.5,u*1.2)*(1-gd*.9),mix:{hut:.55,shed:.2,insula:.15,domus:.1},st:[1,3],rot,m:2,step:6,shops:.3,brick:.25,ppl:.03,burn};};
-  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:izone,chunk:700});
+  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)?null:izone(x,z),chunk:700});   // the scattered houses have no story-state groups: none on the Golden House ground
   fillCentralHousing(W);
   await msg('郊野：农庄、佃农棚屋、墓道……');
   {const R=RNG(33),gV=new GB(1<<15),Zv={shops:0,brick:.25},MR=[[[555,890],[900,1500],[1500,2600],[2000,3500]],[[-500,2400],[-440,2950],[-520,3600]],[[-480,-1100],[-720,-2300],[-900,-2800]],[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]],[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]];
@@ -703,7 +704,7 @@ async function buildRome(msg){
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
-   roadKerbs(W,W.roadList);streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});populateStreetLife(W);
+   roadKerbs(W,W.roadList,{layerAt:(x,z)=>AUREA_SITE(x,z)?'aureaSite':null});streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});populateStreetLife(W);
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.
    {const RC=RNG(77),dim={rome_rock_a:[6,4.5,6.5],rome_rock_b:[4.3,3.2,9.5],rome_rock_c:[3,2.2,4.3]};   // [half length along the contour, half depth, height from the cut base (-1.5 m) to the top]
