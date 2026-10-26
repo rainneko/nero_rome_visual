@@ -188,6 +188,27 @@ function residentialCourtYard(W,g,C){
   const I=pInset(C,.6)||C,c=pCen(I);if(!houseGround(W,I))return;
   const bb=lotOBB(I);if(Math.min(bb.hw,bb.hd)>2.2){const F=frame(c[0],W.gy(...c)+.1,c[1],bb.rot);g.set(2,.45);lathe(g,F,0,0,0,[[.55,0],[.55,.8],[.42,.8],[.42,.1],[0,.1]],10);}
 }
+// A lot against W.foot by real outlines: the lot polygon grown by m against each footprint's own outline (a block lot's polygon, a parcel's
+// poly, else its box). skip: a tag to ignore.
+function footBox(f){return[[-f.hw,-f.hd],[f.hw,-f.hd],[f.hw,f.hd],[-f.hw,f.hd]].map(([u,v])=>[f.cx+u*f.c+v*f.s,f.cz-u*f.s+v*f.c]);}
+function lotHits(W,L,m,skip){const F=W.foot,ob=lotOBB(L),r=Math.hypot(ob.hw,ob.hd)+m,cs=F.cell,P=pInset(L,-m)||L;
+  for(let i=Math.floor((ob.cx-r)/cs);i<=Math.floor((ob.cx+r)/cs);i++)for(let j=Math.floor((ob.cz-r)/cs);j<=Math.floor((ob.cz+r)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){
+    if(skip&&f.tag===skip)continue;const dx=f.cx-ob.cx,dz=f.cz-ob.cz;if(dx*dx+dz*dz>(f.r+r)**2)continue;if(residentialOverlap(P,f.blkLot||f.poly||footBox(f)))return true;}
+  return false;}
+// Spec 6.2.3 (U-shaped court): the stretches of the court edge that no house covers get a plastered garden wall, 2.6 m, with a gate in the
+// longest one. All or nothing: a stretch that crosses a footprint or climbs more than 3 m leaves the court a yard. Returns true when walled.
+function courtWalls(W,g,C,uncovered){const segs=[];
+  for(const u of uncovered){const a=C[u.edge],b=C[(u.edge+1)%C.length],A=lp(a,b,u.from),B=lp(a,b,u.to),len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<.05)continue;
+    const rot=Math.atan2(-(B[1]-A[1]),B[0]-A[0]),mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,ha=W.gy(...A),hb=W.gy(...B);
+    if(Math.abs(ha-hb)>3||W.foot.hits(mx,mz,len/2,.3,rot,0))return false;segs.push({A,B,len,rot});}
+  if(!segs.length)return false;const gate=segs.reduce((m,s)=>s.len>m.len?s:m,segs[0]);
+  for(const S of segs){const n=Math.max(1,Math.ceil(S.len/4)),cut=S===gate&&S.len>=5?[.5-1.3/S.len,.5+1.3/S.len]:null;
+    for(let k=0;k<n;k++){let t0=k/n,t1=(k+1)/n;if(cut&&t1>cut[0]&&t0<cut[1]){if(t0<cut[0])t1=cut[0];else if(t1>cut[1])t0=cut[1];else continue;}   // the gate: a 2.6 m opening between two piers
+      const P0=lp(S.A,S.B,t0),P1=lp(S.A,S.B,t1),hx=Math.hypot(P1[0]-P0[0],P1[1]-P0[1])/2,y=Math.min(W.gy(...P0),W.gy(...P1))-.3,F=frame((P0[0]+P1[0])/2,y,(P0[1]+P1[1])/2,S.rot);
+      g.set(2,.42);box(g,F,0,0,0,hx,2.9,.24,31);g.set(2,.55);box(g,F,0,2.9,0,hx+.02,.14,.32,31);}
+    if(cut)for(const t of cut){const q=lp(S.A,S.B,t),F=frame(q[0],W.gy(...q)-.3,q[1],S.rot);g.set(2,.5);box(g,F,0,0,0,.4,3.5,.4,31);}
+    W.foot.add((S.A[0]+S.B[0])/2,(S.A[1]+S.B[1])/2,S.len/2,.3,S.rot);}
+  return true;}
 // Detached horrea are a separate building type. They are never passed through
 // residential mass splitting, never a roof mosaic covering a whole ring block.
 function warehouseBlock(W,g,B,R,margin=0){
@@ -248,23 +269,27 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
           }}
         if(estate.status!=='committed'){const fbLots=lots.concat(court?[court]:[]);court=null;courtPlan=null;const count=estateFallback(W,fbLots,o,R,(x,z,k)=>G(x,z,k),estate);nL+=count;}
       }
-      if(!domus)for(let L of lots){if(pArea(L)<14)continue;let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;
-        // The entire lot envelope, plus roof overhang, must clear every reserved road.
-        // Shrinking the OBB or trimming only one end let the rendered building cross the road.
-        if(W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8))continue;
-        const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
-        const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){built.push(ob);nL++;
-          if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}}
+      const RS=W.ringStats||(W.ringStats={rings:0,closed:0,walled:0,lot:{}}),rs=k=>{if(court&&!domus)RS.lot[k]=(RS.lot[k]||0)+1;};   // audit: how the lots of ring blocks fare
+      if(!domus)for(let L of lots){if(pArea(L)<14){rs('small');continue;}let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz)){rs('lotOK');continue;}
+        // The entire lot outline, plus roof overhang, must clear every reserved road and building. Tested on the real outlines (lotHits):
+        // a corner lot's bounding box reached across the street and refused lots whose houses would not have touched anything.
+        if(lotHits(W,L,mg+.8)){rs(lotHits(W,L,mg+.8,'road')?'hit':'hitRoad');continue;}
+        const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){rs('grp');continue;}
+        const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;ob.L=L;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){const cov=(W.lotLog||[]).slice(l0).reduce((a,l)=>a+Math.abs(pArea(l.L)),0);rs(cov<Math.abs(pArea(L))*.97?'partial':'built');built.push(ob);nL++;
+          if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}else rs('buildFail');}
       if(court&&!domus&&footTagHit(W,court,'road'))court=null;   // a road crosses this block: its lots on the road were skipped, and the yard between them is no courtyard
-      const closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
+      let closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
       if(court&&!domus&&!closure.closed){let per=0,gap=0;for(let e=0;e<court.length;e++){const a=court[e],b=court[(e+1)%court.length];per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}for(const u of closure.uncovered){const a=court[u.edge],b=court[(u.edge+1)%court.length];gap+=(u.to-u.from)*Math.hypot(b[0]-a[0],b[1]-a[1]);}
-        if(gap>per*.4)court=null;}   // under 60 % of the ring built: no yard and no reservation, the gap-filling pass may build there
+        const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';
+        if(gap>per*.4)court=null;   // under 60 % of the ring built: no yard and no reservation, the gap-filling pass may build there
+        else if(key!==null&&key!==undefined&&courtWalls(W,G(c2[0],c2[1],key),court,closure.uncovered))closure={closed:true,uncovered:[],walled:true};}   // spec 6.2.3: the missing stretch of the ring becomes a garden wall with a gate (the U-shaped court)
+      if(court&&!domus){RS.rings++;if(closure.closed)RS.closed++;if(closure.walled)RS.walled++;}
       if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
       else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined){if(closure.closed)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));else residentialCourtYard(W,G(c2[0],c2[1],key),court);}}   // spec 6.2: a garden only inside a closed ring; a ring with gaps keeps a plain yard with a well
       if(court&&built.length&&typeof reserveResidentialArea==='function'&&(!domus||estate?.status==='committed')){
-        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
+        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,walled:!!closure.walled,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
         if(Z.kind==='domus')reserveResidentialArea(W,B,'senatorial-estate');}
-      for(const ob of built)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);}}
+      for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}}}   // blkLot: the lot's real outline, for lotHits
   const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){G2=groups[e.k]=new THREE.Group();W.scene.add(G2);if(e.k!==''){G2.name=e.k;G2.userData.rise=0;G2.visible=false;(W.preLayers=W.preLayers||{})[e.k]=G2;}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 
