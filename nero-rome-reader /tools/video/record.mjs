@@ -74,8 +74,8 @@ function pageApi(){
   settings.labels=false;const rd=document.getElementById('reader');if(rd)rd.classList.add('closed');
   let envTod=-1,envSmog=-1,fps=30;const sunAz0=ENV.sunAz;
   window.__rec={
-    setup(o){fps=o.fps;setPerfMode('fine');if(o.scale&&o.scale!==1)renderer.setPixelRatio(o.scale);resize();
-      __vclock.start();SEAS.lock=TXT.lock=1e15;},
+    setup(o){fps=o.fps;if(typeof setPerfMode==='function')setPerfMode('fine');if(o.scale&&o.scale!==1)renderer.setPixelRatio(o.scale);resize();   // older commits (--site) lack some of these
+      __vclock.start();SEAS.lock=1e15;if(typeof TXT!=='undefined')TXT.lock=1e15;if(typeof LINK!=='undefined')LINK.lock=1e15;},
     views(){const out={};for(const[k,v]of Object.entries(W0.views))out[k]={n:v.n,pg:v.pg||'rome',pos:v.pos,tgt:v.tgt};return out;},
     boxes(){const out={},B=new THREE.Box3(),T=new THREE.Box3();   // instanced columns and trees are left out: r147 boxes them at the origin
       for(const[k,G]of Object.entries(W0.layers)){B.makeEmpty();G.updateMatrixWorld(true);G.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||!o.geometry)return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();T.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);B.union(T);});

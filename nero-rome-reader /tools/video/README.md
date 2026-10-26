@@ -103,4 +103,9 @@ renders 3840×2160.
 `shots/smoke.json` is a 17-second test of every feature. `shots/part1-seasons.json` is the draft of the video's
 opening (four seasons, the districts, Antium, Ostia, night, the city changing from AD 54 to 68); record it after the
 road, square and Claudius-temple fixes are in, so the tour does not show the old bugs. `shots/excerpts.json` holds the
-shots under the novel excerpts (slots A–E in `docs/making-of/video-plan.md`).
+shots under the novel excerpts (slots A–E in `docs/making-of/video-plan.md`). `shots/eras.json` is six fixed cameras for
+the before/after cuts: film it with `--site` on each era of the project (day one `ae65092`, the Opus phase `ec1931e`,
+the GPT phase `ee58915`, the code team's latest) into one folder per era. The recorder skips what older pages lack
+(`setPerfMode`, `TXT`), so commits back to the first one still film. `shots/eras-close.json` does the same for the
+problem spots of the 2026-10-25 audit (houses on the Via Lata, roads into the river, the noble-quarter triangles, the
+scattered Aventine houses, the Subura road under roofs), on the audit's own cameras.
