@@ -204,10 +204,11 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     else{scaffold(g,BF,0,0,40,0,16,false);scaffold(g,BF,82,4,38,0,10,false);scaffold(g,BF,-82,4,38,0,10,false);}};
   L('baths0',8,(g,G)=>baths(g,false,G));L('baths1',16,(g,G)=>baths(g,true,G));
   W.pois.push({n:'大浴场',l:'战神广场边',x:-895,z:-834,y:gy(-895,-834)+40,s0:3,s1:99,d:2400,info:'57年开工，努米底亚黄大理石，58年完工。花费2000–3000万塞斯特斯。'});
-  L('milSchool',10,(g)=>{const F=frB(-500,-1300,180,gy(-500,-1300));courtBlock(W,g,F,{cx:0,cz:-20,w:80,d:50,y0:0,nSt:2,sH:4.2,gH:5,cw:46,cd:22,part:9,seed:.45,sty:0,fl:8|2,peristyle:false,garden:false});
+  L('milSchool',10,(g)=>{const F=frB(-590,-1300,180,gy(-590,-1300));   // west of Via Flaminia, which ran straight along the Campus Martius
+   courtBlock(W,g,F,{cx:0,cz:-20,w:80,d:50,y0:0,nSt:2,sH:4.2,gH:5,cw:46,cd:22,part:9,seed:.45,sty:0,fl:8|2,peristyle:false,garden:false});
     g.set(21,.4);g.poly([F.p(-60,.25,60),F.p(60,.25,60),F.p(60,.25,10),F.p(-60,.25,10)],[0,1,0]);g.set(3,.4);for(let x=-50;x<=50;x+=12)box(g,F,x,0,55,.6,2.2,.15,31);
     for(let i=0;i<40;i++){const q=F.p(-50+(i%10)*10,0,20+Math.floor(i/10)*8);W.people.push([q[0],gy(q[0],q[2])+.2,q[2]]);}});
-  W.pois.push({n:'军校',l:'战神广场北',x:-500,z:-1300,y:gy(-500,-1300)+24,s0:6,s1:99,d:2400,info:'58年开学，首期320人。钢臂弩射穿重盾。'});
+  W.pois.push({n:'军校',l:'战神广场北',x:-590,z:-1300,y:gy(-590,-1300)+24,s0:6,s1:99,d:2400,info:'58年开学，首期320人。钢臂弩射穿重盾。'});
   L('vat3',14,(g)=>{const F=W.vatF;for(const s of[1,-1]){const Fa=F.sub(0,0,s*56,s>0?0:Math.PI);arcade(g,Fa,0,0,0,500,9,36,3,2,{span:.3});arcade(g,Fa,0,9,0,500,8,36,2.6,2,{span:.28});arcade(g,Fa,0,17,0,500,7,36,2.4,2,{span:.26});
     g.set(26,.5);g.poly([F.p(-250,9,s*50),F.p(250,9,s*50),F.p(250,23,s*56),F.p(-250,23,s*56)],[0,1,0]);g.set(2,.4);for(const e of[-250,250])g.poly([F.p(e,0,s*50),F.p(e,0,s*57.5),F.p(e,24,s*57.5),F.p(e,9,s*50)],F.d(Math.sign(e),0,0));}});
   /* rail, steamer, semaphore, telegraph, arc lamps */

@@ -10,7 +10,7 @@ function ringD(x,z){const r=Math.hypot(x-17,z+22);for(let i=0;i<RINGD.length-1;i
 let DM=null;function dmS(k,x,z){if(!DMAP)return-1;if(!DM)DM={D:Uint8Array.from(atob(DMAP.D),c=>c.charCodeAt(0)),V:Uint8Array.from(atob(DMAP.V),c=>c.charCodeAt(0))};const a=DM[k],e=DMAP.ext,n=DMAP.n,fx=(x-e[0])/(e[2]-e[0])*n-.5,fz=(z-e[1])/(e[3]-e[1])*n-.5,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j;let s=0,w=0;
   for(const[di,dj,ww]of[[0,0,(1-u)*(1-v)],[1,0,u*(1-v)],[0,1,(1-u)*v],[1,1,u*v]]){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=n||jj>=n)continue;const val=a[jj*n+ii];if(val===255)continue;s+=val/254*ww;w+=ww;}return w>.3?s/w:-1;}
 const dCity=(x,z)=>{const m=dmS('D',x,z),r=ringD(x,z);return m<0?r:.6*m+.4*r;},vImg=(x,z)=>{const m=dmS('V',x,z);return m<0?0:m;};
-const PADS=[[17,-22,190],[-200,560,150],[0,667,160],[200,780,150],[110,300,140],[-275,10,80],[-200,-210,45],[1350,-330,78],[-1190,2760,270],[-765,3141,170],[-1420,2450,70],[GALBA[0],GALBA[1],135],[-2429,-1134,320],[-1036,-356,170],[-448,22,90],[900,640,130],[850,-40,170],[572,200,130],[-500,-1300,120],[-895,-834,130],[-99,-143,70],[110,-235,80],[-1250,600,175],[-960,-525,75]];
+const PADS=[[17,-22,190],[-200,560,150],[0,667,160],[200,780,150],[110,300,140],[-275,10,80],[-200,-210,45],[1350,-330,78],[-1190,2760,270],[-765,3141,170],[-1420,2450,70],[GALBA[0],GALBA[1],135],[-2429,-1134,320],[-1036,-356,170],[-448,22,90],[900,640,130],[850,-40,170],[572,200,130],[-590,-1300,120],[-895,-834,130],[-99,-143,70],[110,-235,80],[-1250,600,175],[-960,-525,75]];
 const HORTI=[[1450,-380,260],[1950,-80,260],[150,-1250,300],[-300,-2150,360],[-2250,-1050,520],[-1550,1050,330],[1080,780,200]];
 let PADH=null;
 function segD(x,z,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz;let t=((x-ax)*dx+(z-az)*dz)/l2;t=clamp(t,0,1);return Math.hypot(ax+dx*t-x,az+dz*t-z);}
@@ -405,22 +405,43 @@ async function buildRome(msg){
     const F=frame(2545,gy(2545,56),56,Math.atan2(-116,-245)+Math.PI/2);arcade(gM,F,0,-1,0,44,28,2,16,2,{span:.3,attic:9});}
   poi('克劳狄水渠','Aqua Claudia',2650,0,50,0,99,'【史】52年通水，从东边在大门（今马焦雷门）一带进城。',3500);
   W.scene.add(gM.mesh(MAT.city));
-  /* ---- roads ---- */
-  const gR=new GB(1<<15);
-  const clCap=hillRoute(W,[-142,-4],[-212,22],{lim:.14,half:46,step:3});
-  roads(W,[[6,W.palClivus],[6,clCap],[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[520,180],[700,200]]],[7,[[45,40],[-40,250],[-150,480]]],[10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]]],
-    [10,[[-500,560],[-640,1100],[-600,1700],[-500,2400],[-440,2950],[-520,3600]]],[12,[[-200,-280],[-480,-1100],[-720,-2300],[-900,-2800]]],
-    [8,[[-20,-120],[300,-300],[700,-430],[1100,-330],[1600,-500],[2600,-800]]],[9,[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]]],
-    [7,[[150,-200],[500,-600],[900,-1000],[1200,-1300]]],[7,[[100,-500],[500,-1000],[900,-1500]]],[8,[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]],
-    [7,[[-1235,-44],[-1400,-200],[-1650,-450]]],[7,[[-1666,-912],[-2000,-1000],[-2400,-1150]]],[7,[[-1100,2700],[-1400,2200],[-1450,1500],[-1350,1000]]]],gR);
-  /* ---- reserved open land (novel sites, gardens) ---- */
+  /* ---- reserved open land (novel sites, gardens): before the roads, so the router keeps the roads off them ---- */
   W.foot.add(AF.ox,AF.oz,32,50,AF.rot,'open').siteRole='academy-campus';
   // Reserve real future teaching wings separately, not a single empty city block.
   W.academyProtectedPlots=[[46,-14,16,19],[-44,-24,16,10],[20,-52,7,7],[-58,-58,11,8],[60,-62,11,8],[-70,36,11,8],[-42,12,18,9]];
   for(const[x,z,hw,hd]of W.academyProtectedPlots){const q=AF.p(x,0,z);W.foot.add(q[0],q[2],hw,hd,AF.rot,'open').siteRole='academy-future-wing';}
-  for(const[x,z,r]of[[-1190,2760,280],[-765,3141,175],[-1420,2450,80],[GALBA[0],GALBA[1],100],[-500,-1300,120],[1640,-60,120],[195,282,40]])W.foot.addCircle(x,z,r,'open');W.foot.add(-895,-834,184,96,0,'open');
+  for(const[x,z,r]of[[-1190,2760,280],[-765,3141,175],[-1420,2450,80],[195,282,40]])W.foot.addCircle(x,z,r,'open');
+  W.foot.add(1761,140,109,68,0,'open');W.foot.add(1651,-70,63,102,0,'open');W.foot.add(-590,-1320,48,33,0,'open');   // the Galba warehouses/cathedral, the east college, the military school: their real extents (+6-8 m), so Via Labicana and Via Flaminia pass beside themW.foot.add(-895,-834,184,96,0,'open');
   for(const p of densify([[-640,1450],[-560,1900],[-470,2400],[-430,2900],[-470,3300],[-560,3580]],18))W.foot.addCircle(p[0],p[1],7,'road');
   for(const[x,z,r]of[[-480,940,7],[-470,2520,7],[-560,3480,7],[-1460,2380,7],[-660,1430,26],[430,140,10]])W.foot.addCircle(x,z,r,'open');W.foot.add(850,-40,142,26,Math.PI-190*DEG,'open').preAurea=true;
+  /* ---- roads ---- */
+  const gR=new GB(1<<15);
+  const clCap=hillRoute(W,[-142,-4],[-212,22],{lim:.14,half:46,step:3});
+  // main roads: hand-drawn waypoints (bridgeheads, gates, junctions) after the ancient routes; routeRoad keeps the clear, gentle stretches as drawn and
+  // reroutes the rest round monuments, reserved sites, the river and steep ground; gradeRoads then cuts and fills a bed along each of them
+  const LATE0=[[-1280,180,19,16,Math.PI/2],[-898,1490,192,32,-2.219],[-770,1780,42,42,0],[-1250,600,132,100,.15],[-960,-525,64,44,0],[-540,-560,56,21,0],[-430,-780,34,76,0],[930,-280,64,44,0],[1240,-560,33,24,0],[1420,-415,8,8,.3],
+    [150,-1250,66,40,0],[-300,-2150,62,50,0],[-950,-2200,128,98,.15],[-1300,-860,154,46,-.55],[-735,-1240,97,63,.08],[-610,-330,52],[-880,-1090,56],[890,910,50],[-448,22,72]],   // footprints the dictionary pass adds after the roads (fw/foot.add below): the roads keep off them too
+    LATE=LATE0.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)});
+  const RO={free:30,cs:6,lim:.14,max:.3,keep:.2,pull:.2,turn:30,avoid:LATE,wet:(x,z,r)=>polyDist(x,z,TIBER)[0]<RTW+r+4};
+  const MAIN=[[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[428,112],[520,180],[700,200]]],   // Via Sacra over the Velia, north of the Colossus base
+    [7,[[40,45],[-60,120],[-185,200],[-235,330],[-262,470]]],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill)
+    [10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]]],   // Via Appia
+    [10,[[-400,605],[-612,1250],[-600,1700],[-500,2400],[-440,2950],[-520,3600]]],   // Via Ostiensis from the Porta Trigemina (it used to start in the river)
+    [12,[[-215,-372],[-480,-1100],[-720,-2300],[-900,-2800]]],   // Via Lata / Flaminia, from the Capitol's north foot by the tomb of Bibulus
+    [8,[[-20,-120],[300,-300],[700,-430],[1100,-330],[1600,-500],[2600,-800]]],   // Argiletum, Subura, Via Tiburtina
+    [9,[[700,200],[1100,250],[1640,52],[1900,52],[2500,20],[2800,0]]],   // Via Labicana: between the east college and the Galba site, under the Claudia arcade north of its terminal
+    [7,[[260,-278],[500,-600],[900,-1000],[1200,-1300]]],   // Vicus Patricius, branching off the Argiletum in the Subura
+    [7,[[100,-500],[500,-1000],[900,-1500]]],   // Alta Semita / Via Salaria
+    [8,[[-1032,134],[-1043,208],[-1300,300],[-1650,600],[-2400,800]]],   // Via Aurelia: off the Pons Agrippae (deck to its Trastevere end), over the Janiculum
+    [7,[[-1235,-44],[-1285,12],[-1743,-923]]],   // off the bridge at Tiber station 12, along the west bank to the Pons Neronianus (it used to run in the river)
+    [7,[[-1674,-894],[-1743,-923],[-2000,-1000],[-2180,-1230],[-2750,-1240]]],   // Via Cornelia: off the Pons Neronianus, along the north side of Nero's circus (it used to run down its middle)
+    [7,[[-1290,2480],[-1400,2200],[-1450,1500],[-1350,1000],[-1060,820],[-1043,208]]]];   // Via Portuensis: from the south-bank works' gate up the right bank, east of the Naumachia, to the Pons Agrippae
+  // the routes are baked into road-network.js (tools/test/bake-roads.mjs); they are routed live with ?reroute, or when the waypoints or obstacles changed since the bake
+  const roadKey=JSON.stringify([MAIN,LATE0]),baked=typeof ROME_ROADS_BAKED!=='undefined'&&!!ROME_ROADS_BAKED&&ROME_ROADS_BAKED.key===roadKey&&!/[?&]reroute/.test(location.search);
+  if(!baked&&!/[?&]reroute/.test(location.search))console.warn('road-network.js is stale: routing the main roads live (run node tools/test/bake-roads.mjs)');
+  const tR=performance.now(),routed=baked?ROME_ROADS_BAKED.roads.map((P,i)=>[MAIN[i][0],P]):MAIN.map(([w,way])=>[w,routeRoad(W,way,w,RO)]),tG=performance.now();W.roadRouted={key:roadKey,roads:routed.map(r=>r[1])};
+  W.roadBedMoved=gradeRoads(W,routed,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35});W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG)};
+  roads(W,[[6,W.palClivus],[6,clCap],...routed],gR);
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
     const C=frB(-1280,180,90,gy(-1280,180));courtBlock(W,gX,C,{cx:0,cz:0,w:36,d:30,y0:0,nSt:2,sH:3.6,gH:4.4,cw:16,cd:12,part:0,seed:.66,sty:16,fl:8|2,peristyle:false,garden:false});gX.set(3,.4);box(gX,C,0,5,15.3,3,1,.12,31);W.foot.add(-1280,180,19,16,C.rot);

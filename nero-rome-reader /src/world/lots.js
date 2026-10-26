@@ -249,6 +249,7 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
         const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
         const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){built.push(ob);nL++;
           if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}}
+      if(court&&!domus&&footTagHit(W,court,'road'))court=null;   // a road crosses this block: its lots on the road were skipped, and the yard between them is no courtyard
       const closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
       if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
       else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}

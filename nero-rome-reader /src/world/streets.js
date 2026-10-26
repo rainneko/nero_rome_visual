@@ -61,10 +61,10 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   for(const[w,pts0]of o.roads){const pts=densify(pts0,cs*.8);for(let p=0;p<pts.length-1;p++){const a=pts[p],b=pts[p+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,tx=dx/l,tz=dz/l,x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,ur=o.urban(x,z),hw=w*(ur>.45?.5:(w>=9||w===6)?.5:.3);
       const i0=Math.max(0,Math.floor((x-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((x+hw-x0)/cs)),j0=Math.max(0,Math.floor((z-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((z+hw-z0)/cs));
       for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(solid[k]||wat[k])continue;const cx=x0+(i+.5)*cs-x,cz=z0+(j+.5)*cs-z;if(Math.hypot(cx,cz)>hw+cs*.5)continue;
-        // A road raster may not bridge a cliff simply because its hand-authored centreline does.
-        // Keep grades at or below 30%; steeper crossings need a separately modelled stair/bridge.
+        // A main road runs on its graded bed (gradeRoads): only the grade along it counts, the cross fall belongs to the bank. Steeper than 30 %
+        // along the road it still breaks off (that needs a modelled stair). It crosses gardens and wooded slopes: the road wins there.
         const rx=x0+(i+.5)*cs,rz=z0+(j+.5)*cs;
-        if(naturalVeg[k]||court[k])continue;const sx=(W.gy(rx+4,rz)-W.gy(rx-4,rz))/8,sz=(W.gy(rx,rz+4)-W.gy(rx,rz-4))/8;if(!streetRoadAllowed(Math.hypot(sx,sz),false))continue;
+        if(court[k])continue;const sx=(W.gy(rx+4,rz)-W.gy(rx-4,rz))/8,sz=(W.gy(rx,rz+4)-W.gy(rx,rz-4))/8;if(!streetRoadAllowed(Math.abs(sx*tx+sz*tz),false))continue;veg[k]=naturalVeg[k]=0;
         st[k]=1;road[k]=ur>.45||w>=9?2:1;const kc=Math.floor(j/NC)*nxc+Math.floor(i/NC);ax[kc]+=3*(tx*tx-tz*tz);az[kc]+=3*2*tx*tz;aw[kc]+=3;}}}
   const plz=new Uint8Array(N);   // 'plaza' rects (5th entry): paved squares, always grade 3 (warm beige-grey slabs)
   for(const[xa,za,xb,zb,kind]of o.paved||[]){const i0=Math.max(0,Math.floor((xa-x0)/cs)),i1=Math.min(nx-1,Math.floor((xb-x0)/cs)),j0=Math.max(0,Math.floor((za-z0)/cs)),j1=Math.min(nz-1,Math.floor((zb-z0)/cs));   // market squares and the like: an open area with a purpose is paved
@@ -191,3 +191,51 @@ function hillRoute(W,a,b,o){const lim=o.lim||.14,half=o.half||30,step=o.step||3,
     let d=dir();const off=(x-a[0])*px+(z-a[1])*pz;if(n-lastFlip>6&&((off>half&&d[0]*px+d[1]*pz>0)||(off<-half&&d[0]*px+d[1]*pz<0))){s=-s;lastFlip=n;d=dir();P.corners.push(P.length-1);}
     x+=d[0]*step;z+=d[1]*step;P.push([x,z]);}
   P.push(b.slice());return P;}
+
+/* Main-road router (spec 3: the network comes first). A straight stretch between two hand-drawn waypoints is kept when it is clear and its grade stays
+   under o.keep. Otherwise A* on an o.cs lattice (16 directions) finds the way. Blocked: the river (o.wet), buildings and reserved sites already in W.foot,
+   and grades above o.max. Thin linear things (aqueduct arcades, walls) are passable: roads run under them. The cost grows with the grade above 8 %
+   and with the drift from the hand line beyond 40 m. A waypoint may sit inside an obstacle (a forum, a gate): the first and last o.free metres are open; a waypoint on the water is a bridge's middle. */
+function roadFoot(W,x,z,r,thin){const F=W.foot,cs=F.cell;   // anything (not a road) within r of (x,z)? thin: count the thin linear ones too
+  for(let i=Math.floor((x-r)/cs);i<=Math.floor((x+r)/cs);i++)for(let j=Math.floor((z-r)/cs);j<=Math.floor((z+r)/cs);j++){const a=F.map.get(F.key(i,j));if(!a)continue;
+    for(const o of a){if(o.tag==='road'||(!thin&&!o.t&&Math.min(o.hw,o.hd)<=4.2))continue;const dx=x-o.cx,dz=z-o.cz;if(dx*dx+dz*dz>(o.r+r)**2)continue;
+      if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}}
+  return false;}
+function roadNear(L,x,z,r){for(const o of L){const dx=x-o.cx,dz=z-o.cz;if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}return false;}
+function routeRoad(W,way,w,o){const r=w/2+1.5,gy=W.gy,out=[way[0].slice()],free=o.free||30,av=o.avoid||[];   // o.avoid: footprints placed after the roads that the roads must still keep off
+  const clear=(x,z,m)=>!o.wet(x,z,r+m)&&!roadFoot(W,x,z,r+m)&&!roadNear(av,x,z,r+m),fr=new Map(way.map(p=>[p,clear(p[0],p[1],0)?0:free]));   // only a waypoint that is itself blocked gets the open radius
+  const ok=(x,z,A,B,m=0)=>Math.hypot(x-A[0],z-A[1])<fr.get(A)||Math.hypot(x-B[0],z-B[1])<fr.get(B)||clear(x,z,m);
+  const segOK=(a,b,A,B,gmax)=>{const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(2,Math.ceil(L/6)),h=[];
+    for(let k=0;k<=n;k++){const x=lerp(a[0],b[0],k/n),z=lerp(a[1],b[1],k/n);if(!ok(x,z,A,B))return false;h.push(gy(x,z));if(k>=2&&Math.abs(h[k]-h[k-2])/(2*L/n)>gmax)return false;}return true;};
+  for(let s=0;s<way.length-1;s++){const A=way[s],B=way[s+1];
+    if(o.wet(A[0],A[1],0)||o.wet(B[0],B[1],0)||segOK(A,B,A,B,o.keep||.2)){out.push(B.slice());continue;}   // a segment that starts or ends on the water is a bridge deck: kept as drawn
+    let P=null;for(const gmax of[o.max||.3,.5])if((P=roadAStar(W,A,B,o,ok,gmax)))break;
+    if(!P){(W.roadRouteFail||(W.roadRouteFail=[])).push([A,B]);out.push(B.slice());continue;}   // e.g. the Via Sacra across the Forum square: kept as drawn
+    // pull the lattice path straight where the shortcut is clear and no steeper than the stretch it replaces (or o.pull, so the lattice's saw-teeth go)
+    const gr=P.map((p,i)=>i?Math.abs(gy(p[0],p[1])-gy(P[i-1][0],P[i-1][1]))/(Math.hypot(p[0]-P[i-1][0],p[1]-P[i-1][1])||1):0),Q=[P[0]];
+    for(let i=0;i<P.length-1;){let j=Math.min(P.length-1,i+60);for(;j>i+1;j--){let gm=o.lim||.14;for(let k=i+1;k<=j;k++)gm=Math.max(gm,gr[k]);if(segOK(P[i],P[j],A,B,Math.max(gm,o.pull||.2)+.01))break;}Q.push(P[j]);i=j;}
+    // round the corners (a quarter of each leg, at most 18 m) where the rounded cut is clear
+    for(let i=1;i<Q.length;i++){const c=Q[i];if(i===Q.length-1){out.push(c);break;}const p=Q[i-1],nx=Q[i+1],lp=Math.hypot(p[0]-c[0],p[1]-c[1]),ln=Math.hypot(nx[0]-c[0],nx[1]-c[1]),
+        ka=Math.min(.25*lp,18)/lp,kb=Math.min(.25*ln,18)/ln,c1=[lerp(c[0],p[0],ka),lerp(c[1],p[1],ka)],c2=[lerp(c[0],nx[0],kb),lerp(c[1],nx[1],kb)];
+      if(segOK(c1,c2,A,B,.3))out.push(c1,[(c1[0]+2*c[0]+c2[0])/4,(c1[1]+2*c[1]+c2[1])/4],c2);else out.push(c);}}
+  return out;}
+function roadAStar(W,a,b,o,ok,gmax){const cs=o.cs||6,L=Math.hypot(b[0]-a[0],b[1]-a[1]),pad=Math.min(450,Math.max(160,L*.5)),x0=Math.min(a[0],b[0])-pad,z0=Math.min(a[1],b[1])-pad,
+    nx=Math.ceil((Math.max(a[0],b[0])+pad-x0)/cs)+1,nz=Math.ceil((Math.max(a[1],b[1])+pad-z0)/cs)+1,N=nx*nz,H=new Float32Array(N),open=new Uint8Array(N);
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i,x=x0+i*cs,z=z0+j*cs;H[k]=W.gy(x,z);open[k]=ok(x,z,a,b,3)?1:0;}   // 3 m more berth than the final check, so the pulled chords stay clear
+  const node=p=>Math.round((p[1]-z0)/cs)*nx+Math.round((p[0]-x0)/cs),s=node(a),t=node(b);open[s]=open[t]=1;
+  const ux=b[0]-a[0],uz=b[1]-a[1],dev=(x,z)=>{const q=clamp(((x-a[0])*ux+(z-a[1])*uz)/(L*L||1),0,1);return Math.hypot(a[0]+ux*q-x,a[1]+uz*q-z);};
+  // states are (node, direction it was entered by): a turn costs o.turn metres at a hairpin, so switchbacks get real legs instead of 6 m saw-teeth
+  const D=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1],[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]],ND=D.length,S=ND+1,TC=new Float32Array(S*ND),turn=o.turn||0;
+  for(let d=0;d<ND;d++)for(let m=0;m<ND;m++){const[a1,b1]=D[d],[a2,b2]=D[m],th=Math.acos(clamp((a1*a2+b1*b2)/Math.hypot(a1,b1)/Math.hypot(a2,b2),-1,1));TC[d*ND+m]=turn*(th/Math.PI)**1.5;}
+  const g=new Float32Array(N*S).fill(Infinity),from=new Int32Array(N*S).fill(-1),done=new Uint8Array(N*S),hk=[],hf=[];
+  const push=(k,f)=>{let i=hk.length;hk.push(k);hf.push(f);while(i){const p=(i-1)>>1;if(hf[p]<=f)break;hk[i]=hk[p];hf[i]=hf[p];i=p;}hk[i]=k;hf[i]=f;};
+  const pop=()=>{const k=hk[0],lk=hk.pop(),lf=hf.pop();if(hk.length){let i=0;for(;;){let c=2*i+1;if(c>=hk.length)break;if(c+1<hk.length&&hf[c+1]<hf[c])c++;if(hf[c]>=lf)break;hk[i]=hk[c];hf[i]=hf[c];i=c;}hk[i]=lk;hf[i]=lf;}return k;};
+  const s0=s*S+ND;g[s0]=0;push(s0,L);let end=-1;
+  while(hk.length){const st=pop();if(done[st])continue;done[st]=1;const k=(st/S)|0,d=st-k*S;if(k===t){end=st;break;}const i=k%nx,j=(k-i)/nx;
+    for(let m=0;m<ND;m++){const[di,dj]=D[m],ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=nz)continue;const q=jj*nx+ii,qs=q*S+m;if(!open[q]||done[qs])continue;
+      if(Math.abs(di)+Math.abs(dj)===3){const mx=i+di/2,mz=j+dj/2;if(!open[Math.floor(mz)*nx+Math.floor(mx)]||!open[Math.ceil(mz)*nx+Math.ceil(mx)])continue;}   // a knight move may not jump a blocked cell
+      const len=cs*Math.hypot(di,dj),gr=Math.abs(H[q]-H[k])/len;if(gr>gmax)continue;
+      const x=x0+ii*cs,z=z0+jj*cs,dv=Math.max(0,dev(x,z)-40)/(o.drift||250),ng=g[st]+len*(1+(o.kg||80)*Math.max(0,gr-.08)**2)*(1+dv*dv)+(d<ND?TC[d*ND+m]:0);
+      if(ng<g[qs]){g[qs]=ng;from[qs]=st;push(qs,ng+Math.hypot(b[0]-x,b[1]-z));}}}
+  if(end<0)return null;
+  const P=[];for(let st=end;st>=0;st=from[st]){const k=(st/S)|0,i=k%nx;P.push([x0+i*cs,z0+(k-i)/nx*cs]);}P.reverse();P[0]=a.slice();P[P.length-1]=b.slice();return P;}

@@ -4,10 +4,10 @@ class Foot{constructor(cell=64){this.cell=cell;this.map=new Map();this.list=[];}
   key(i,j){return i*92821+j*68917;}
   add(cx,cz,hw,hd,rot=0,tag){const o={cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd),tag},cs=this.cell;this.list.push(o);
     for(let i=Math.floor((cx-o.r)/cs);i<=Math.floor((cx+o.r)/cs);i++)for(let j=Math.floor((cz-o.r)/cs);j<=Math.floor((cz+o.r)/cs);j++){const k=this.key(i,j);let a=this.map.get(k);if(!a){a=[];this.map.set(k,a);}a.push(o);}return o;}
-  addCircle(cx,cz,r,tag){return this.add(cx,cz,r,r,0,tag);}
-  hits(cx,cz,hw,hd,rot,m){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell;
+  addCircle(cx,cz,r,tag){const o=this.add(cx,cz,r,r,0,tag);o.circ=true;return o;}
+  hits(cx,cz,hw,hd,rot,m=0,skip){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell;   // m defaults to 0 (an undefined m made the search radius NaN: every query answered 'free'); skip: a tag to ignore
     for(let i=Math.floor((cx-q.r)/cs);i<=Math.floor((cx+q.r)/cs);i++)for(let j=Math.floor((cz-q.r)/cs);j<=Math.floor((cz+q.r)/cs);j++){const a=this.map.get(this.key(i,j));if(!a)continue;
-      for(const o of a){const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
+      for(const o of a){if(skip&&o.tag===skip)continue;const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
 function obb(a,b){const ax=[[a.c,-a.s],[a.s,a.c],[b.c,-b.s],[b.s,b.c]],dx=b.cx-a.cx,dz=b.cz-a.cz;
   for(const[nx,nz]of ax){const ra=a.hw*Math.abs(a.c*nx-a.s*nz)+a.hd*Math.abs(a.s*nx+a.c*nz),rb=b.hw*Math.abs(b.c*nx-b.s*nz)+b.hd*Math.abs(b.s*nx+b.c*nz);
     if(Math.abs(dx*nx+dz*nz)>ra+rb)return false;}return true;}
@@ -37,7 +37,7 @@ function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float3
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
   const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I.slice(0,q),1));G.computeVertexNormals();
-  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));
+  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);W.terrainGeo=G;W.patchRects=pl.map(p=>p.rect);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));   // gradeRoads moves coarse vertices later and leaves the patches alone
   if(far){const F=new THREE.PlaneGeometry(120000,120000,140,140);F.rotateX(-Math.PI/2);const p=F.attributes.position,FZ=new Float32Array(p.count*4);
     for(let i=0;i<p.count;i++){const x=p.getX(i)+W.farC[0],z=p.getZ(i)+W.farC[1];p.setX(i,x);p.setZ(i,z);const inside=x>g.x0+60&&x<g.x1-60&&z>g.z0+60&&z<g.z1-60;
       p.setY(i,inside?far(x,z)-40:far(x,z)-1);FZ.set([0,0,.8*sstep(5000,9000,Math.hypot(x-W.farC[0],z-W.farC[1]))*(1-sstep(30000,45000,Math.hypot(x,z))),0],i*4);}
@@ -59,6 +59,25 @@ function roads(W,list,g){W.roadList=list;for(const[w,pts]of list){
     W.foot.add((a[0]+b[0])/2,(a[1]+b[1])/2,len/2,half,Math.atan2(-dz,dx),'road');W.foot.addCircle(a[0],a[1],half,'road');}
   if(dense.length&&allowed(dense[dense.length-1]))W.foot.addCircle(dense[dense.length-1][0],dense[dense.length-1][1],half,'road');
 }}
+
+/* Road beds (spec 4.3): each main road gets a longitudinal profile, the mean of the tightest upper and lower envelopes of the ground at grade o.lim, kept
+   within o.cap of the ground. Coarse terrain vertices inside the bed (half width + 2.5 m) take the profile height; outside it they blend back over a bank
+   about as wide as the cut or fill (3-12 m). Left alone: vertices of the finer patches, those where o.keep(x,z) (the river banks and bridgeheads) and those
+   within 3 m of anything already in W.foot, so monuments placed before the roads keep their ground. Returns the number of vertices moved. */
+function gradeRoads(W,list,o){const g=W.grid,n=g.n,N=n+1,tgt=new Float32Array(N*N),wt=new Float32Array(N*N),lim=o.lim||.15,cap=o.cap||4;
+  for(const[w,pts]of list){const D=densify(pts,4),m=D.length,G=D.map(p=>W.gy(p[0],p[1])),U=G.slice(),L=G.slice(),hw=w/2+2.5,reach=hw+14,sp=i=>Math.hypot(D[i][0]-D[i-1][0],D[i][1]-D[i-1][1]);
+    for(let i=1;i<m;i++){U[i]=Math.max(U[i],U[i-1]-lim*sp(i));L[i]=Math.min(L[i],L[i-1]+lim*sp(i));}
+    for(let i=m-2;i>=0;i--){U[i]=Math.max(U[i],U[i+1]-lim*sp(i+1));L[i]=Math.min(L[i],L[i+1]+lim*sp(i+1));}
+    const P=G.map((h,i)=>clamp((U[i]+L[i])/2,h-cap,h+cap));
+    for(let i=0;i<m-1;i++){const a=D[i],b=D[i+1],dx=b[0]-a[0],dz=b[1]-a[1],l2=dx*dx+dz*dz||1,
+        i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-reach-g.x0)/g.dx)),i1=Math.min(n,Math.ceil((Math.max(a[0],b[0])+reach-g.x0)/g.dx)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-reach-g.z0)/g.dz)),j1=Math.min(n,Math.ceil((Math.max(a[1],b[1])+reach-g.z0)/g.dz));
+      for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){const x=g.x0+ii*g.dx,z=g.z0+jj*g.dz,t=clamp(((x-a[0])*dx+(z-a[1])*dz)/l2,0,1),d=Math.hypot(a[0]+dx*t-x,a[1]+dz*t-z);if(d>reach)continue;
+        const k=jj*N+ii,y=lerp(P[i],P[i+1],t),bank=clamp(Math.abs(y-g.h[k])*1.2,3,12),wv=d<=hw?1:1-sstep(hw,hw+bank,d);if(wv>wt[k]){wt[k]=wv;tgt[k]=y;}}}}
+  const inPatch=(x,z)=>(W.patchRects||[]).some(r=>x>=r[0]-g.dx&&x<=r[2]+g.dx&&z>=r[1]-g.dz&&z<=r[3]+g.dz),moved=[];
+  for(let k=0;k<N*N;k++){if(wt[k]<=0)continue;const ii=k%N,jj=(k-ii)/N,x=g.x0+ii*g.dx,z=g.z0+jj*g.dz;if(inPatch(x,z)||(o.keep&&o.keep(x,z))||roadFoot(W,x,z,3,true))continue;
+    const h=lerp(g.h[k],tgt[k],wt[k]);if(Math.abs(h-g.h[k])<.05)continue;g.h[k]=h;moved.push(k);}
+  const G=W.terrainGeo;if(G&&moved.length){const p=G.attributes.position;for(const k of moved)p.setY(k,g.h[k]);p.needsUpdate=true;G.computeVertexNormals();}
+  return moved.length;}
 
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;

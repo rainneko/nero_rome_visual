@@ -260,9 +260,9 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(W.people.length>9000){const k=9000/W.people.length;W.people=W.people.filter(()=>Math.random()<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
   list.forEach((p,i)=>{M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(i,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(i,c);});
-  m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);return m;}
+  m.castShadow=false;m.receiveShadow=true;m.frustumCulled=false;(parent||W.scene).add(m);return m;}   // r147 culls an InstancedMesh by one figure's bounds at the origin: a crowd far from the origin vanished
 
 /* ---------- monument generators (into GB g) ---------- */
 function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand

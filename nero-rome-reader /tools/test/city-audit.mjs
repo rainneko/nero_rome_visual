@@ -14,8 +14,9 @@ const a=await page.evaluate(()=>{const W=W0,R=v=>Math.round(v),seg=(p,q,w,tag)=>
  for(const p of W.nobleParcels||[])homes.push({P:p.polygon,src:'noble'});for(const w of W.warehouseLog||[])homes.push({P:w.polygon,src:'warehouse'});
  const onRoad=[];for(const h of homes){const o=lotOBB(h.P),rad=Math.hypot(o.hw,o.hd);for(const r of roads){if(Math.hypot(o.cx-r.cx,o.cz-r.cz)>rad+Math.hypot(r.hw,r.hd))continue;if(nobleOverlap(h.P,r)){onRoad.push({x:R(o.cx),z:R(o.cz),src:h.src,road:r.tag+(r.ri>=0?r.ri:'')});break;}}}
  const bySrc=onRoad.reduce((m,v)=>(m[v.src]=(m[v.src]||0)+1,m),{});
- // H2: main road centre lines inside the Tiber channel (bank margin 4 m plus half the road)
- const wet=[];W.roadList.forEach(([w,P],i)=>{let n=0,first=null;for(const p of densify(P,5))if(polyDist(p[0],p[1],TIBER)[0]<RTW+4+w/2){n++;first=first||p.map(R);}if(n)wet.push({road:i,metres:n*5,from:first});});
+ // H2: main road centre lines inside the Tiber channel (bank margin 4 m plus half the road); a segment with an end on the water is a bridge deck, not a road in the river
+ const wet=[];W.roadList.forEach(([w,P],i)=>{let n=0,first=null;for(let k=1;k<P.length;k++){const a=P[k-1],b=P[k];if(polyDist(a[0],a[1],TIBER)[0]<RTW||polyDist(b[0],b[1],TIBER)[0]<RTW)continue;
+   for(const p of densify([a,b],5))if(polyDist(p[0],p[1],TIBER)[0]<RTW+4+w/2){n++;first=first||p.map(R);}}if(n)wet.push({road:i,metres:n*5,from:first});});
  // H3: residential courts that got a garden without being closed
  const res=W.residentialReservations||[],openGardens=res.filter(r=>r.closed===false&&r.deckBuilt).length,courts=res.filter(r=>r.role==='residential-courtyard').length;
  // H4: old courtyard estates (genBlocks domus) committed / attempted
