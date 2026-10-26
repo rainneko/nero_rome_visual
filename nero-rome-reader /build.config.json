@@ -15,6 +15,7 @@
     "src/scenes/rome/street-life.js",
     "src/scenes/rome/farmland.js",
     "src/scenes/rome/domus-aurea.js",
+    "src/scenes/rome/faces.js",
     "src/scenes/rome/road-network.js",
     "src/scenes/rome/monuments.js",
     "src/scenes/rome/palrock.js",

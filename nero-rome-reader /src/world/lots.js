@@ -276,10 +276,14 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
   const nd=(i,j)=>N[(i-i0)*NJ+(j-j0)];
   for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
     const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
-    let polys=[Qd];if(R()<Z.tri)polys=R()<.5?[[Qd[0],Qd[1],Qd[2]],[Qd[0],Qd[2],Qd[3]]]:[[Qd[0],Qd[1],Qd[3]],[Qd[1],Qd[2],Qd[3]]];
-    for(const P0 of polys){const B=pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
+    let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
+      if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],''),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
+    for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
+      // a block a main road crosses is cut along the road's corridor; each piece is judged on its own (faces.js): a whole block (F5) goes on below, the rest become squares
+      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(const P of pieces){const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
+          if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],''),P,f,R,Z.kind);else faceStat(W,'F0');}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
-      const ring=Z.kind==='domus'||Z.kind==='ware'||B.length===3||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;
+      const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring
       if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),rl=ringLots(B,dd,lw,R);
         if(rl.court){court=rl.court;lots=rl.lots;}
         else lots.push(B);}

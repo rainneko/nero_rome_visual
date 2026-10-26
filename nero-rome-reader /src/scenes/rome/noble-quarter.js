@@ -182,7 +182,9 @@ function buildNobleQuarter(W){
   for(let i=0;i<12;i++)for(let j=0;j<8;j++){
     const Q=[node(i,j),node(i+1,j),node(i+1,j+1),node(i,j+1)],C=pCen(Q);if(nobleQuarterAt(...C)!=='core')continue;
     const widths=[streetWidth(0,j),streetWidth(1,i+1),streetWidth(0,j+1),streetWidth(1,i)],B=nobleOffset(Q,widths.map(w=>w/2));if(!B)continue;
-    const triangular=hash2(i+29,j+3)<.25;
+    let triangular=hash2(i+29,j+3)<.25;
+    if(triangular){triangular=false;   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3)
+      if(!AUREA_SITE(...C)&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-C[0],p[1]-C[1])<160)&&!blocked(B)&&faceDoubleTriangle(W,g,B,true,R)){(W.faceF3||(W.faceF3=[])).push(C);for(let e=0;e<4;e++)roads.push({a:Q[e],b:Q[(e+1)%4],width:widths[e]});continue;}}
     const raw=triangular?[nobleOffset([B[0],B[1],B[2]],[0,0,1.1]),nobleOffset([B[0],B[2],B[3]],[1.1,0,0])].filter(Boolean):[B];
     for(let t=0;t<raw.length;t++){
       const shape=raw[t],id=`${i}:${j}:${t}`,count=triangular?4:(widths.some(w=>w>=5.4)&&hash2(i+9,j+42)<.6?4:(hash2(i+7,j+71)<.65?6:4)),candidates=nobleParcels(shape,count,R),built=[];
