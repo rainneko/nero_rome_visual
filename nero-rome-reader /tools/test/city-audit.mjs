@@ -22,7 +22,7 @@ const a=await page.evaluate(()=>{const W=W0,R=v=>Math.round(v),seg=(p,q,w,tag)=>
  // H4: old courtyard estates (genBlocks domus) committed / attempted
  const E=W.estatePlanStats||{attempted:0,committed:0};
  const RS=W.ringStats||{rings:0,closed:0,walled:0,lot:{}};
- return{rings:{courts:RS.rings,closed:RS.closed,walled:RS.walled,rate:RS.rings?+(RS.closed/RS.rings).toFixed(3):null,lots:RS.lot},H1:onRoad.length,H1bySource:bySrc,H1sample:onRoad.slice(0,25),H2:wet,H3:openGardens,courts,H4:{attempted:E.attempted,committed:E.committed,reasons:E.reasons,fallbackHomes:E.fallbackHomes},
+ return{rings:{courts:RS.rings,closed:RS.closed,walled:RS.walled,rate:RS.rings?+(RS.closed/RS.rings).toFixed(3):null,lots:RS.lot},H1:onRoad.length,H1bySource:bySrc,H1sample:onRoad.slice(0,25),H2:wet,H3:openGardens,courts,H4:{attempted:E.attempted,committed:E.committed,rate:E.attempted?+(E.committed/E.attempted).toFixed(3):null,steepTerraced:E.steep||0,tooSmall:E.tooSmall||0,reasons:E.reasons,fallbackHomes:E.fallbackHomes},
    noble:{blocks:(W.nobleBlocks||[]).length,partial:(W.nobleBlocks||[]).filter(b=>b.parcels<b.target).length,triangular:(W.nobleBlocks||[]).filter(b=>b.triangular).length}};});
 fs.writeFileSync('shots/city-audit.json',JSON.stringify({a,errors},null,1));
 console.log(JSON.stringify({rings:a.rings,H1:a.H1,H1bySource:a.H1bySource,H2:a.H2,H3:a.H3,courts:a.courts,H4:a.H4,noble:a.noble,errors},null,1));
