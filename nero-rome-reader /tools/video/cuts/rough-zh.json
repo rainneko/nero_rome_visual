@@ -1,12 +1,12 @@
 {
- "about": "First rough cut of the Chinese version from the footage filmed so far (test footage: the city still changes before the final shoot). Novel captions are the screen versions in 小说文本/视频摘录候选.md, verbatim; 人心难算 is chapter 32 (《门缝》), the author's choice over chapter 35's 人难算. The BL notice is a small note in the corner while novel lines are on screen, worded by the author: the city and the project are not concerned. Era labels are working labels. No narration, cards for the development part or sound yet.",
+ "about": "First rough cut of the Chinese version from the footage filmed so far (test footage: the city still changes before the final shoot). Novel captions are the screen versions in 小说文本/视频摘录候选.md, verbatim; 人心难算 is chapter 32 (《门缝》), the author's choice over chapter 35's 人难算. The BL notice is a small note in the corner while novel lines are on screen, worded by the author: the city and the project are not concerned. Era labels are working labels. Sound is a temporary bed from tools/video/sounds.mjs: light chimes under the opening, the pagoda's bells, and the music-box Canon with stand-in rain at the end (the plan keeps the Canon for the ending). No narration or cards for the development part yet.",
  "out": "~/NeroRome-video/cuts/rough-zh.mp4",
  "root": "~/NeroRome-video/footage",
  "width": 1920,
  "height": 1080,
  "fps": 30,
  "clips": [
-  {"file": "excerpts/x-A-hook-roofs.mp4", "dur": 9, "text": ["我脑子里的罗马，比眼前这个罗马晚。"], "textAt": [1.5, 8], "note": "小说内容含BL元素", "noteAt": [1.5, 8.5]},
+  {"file": "excerpts/x-A-hook-roofs.mp4", "dur": 9, "text": ["我脑子里的罗马，比眼前这个罗马晚。"], "textAt": [1.5, 8], "note": "小说内容含BL元素", "noteAt": [1.5, 8.5], "sound": [{"file": "chimes-light.wav", "at": 0, "dur": 22, "fadeIn": 1, "fadeOut": 3}]},
   {"file": "eras/now/e-palatine.mp4", "dur": 6, "fade": 1.5},
   {"file": "eras/now/e-circus.mp4", "dur": 6, "fade": 1.5},
   {"file": "eras/now/e-forum.mp4", "dur": 6, "fade": 1.5},
@@ -15,7 +15,7 @@
   {"file": "excerpts/x-C1h-crane.mp4", "dur": 11, "fade": 1, "text": ["球升起来。十米，二十米，五十米，越过看台顶上，停在蓝天里。"], "textAt": [5, 10.5]},
   {"file": "excerpts/x-C1h-launch.mp4", "in": 12, "dur": 8, "fade": 0.8},
   {"file": "construction/k-furnaceA-close.mp4", "dur": 12, "fade": 1, "text": ["三座高耸的红砖烟囱拔地而起，", "喷吐着铅灰色的厚云"], "textAt": [7, 11.5]},
-  {"file": "excerpts/x-C5-pagoda-dusk.mp4", "dur": 8, "fade": 1, "text": ["檐角下的铜铃就会轻轻晃动起来。", "听着就像有人在极遥远的地方低声说话。"], "textAt": [1, 7.5]},
+  {"file": "excerpts/x-C5-pagoda-dusk.mp4", "dur": 8, "fade": 1, "text": ["檐角下的铜铃就会轻轻晃动起来。", "听着就像有人在极遥远的地方低声说话。"], "textAt": [1, 7.5], "sound": [{"file": "chimes-full.wav", "at": 0.5, "dur": 8, "gain": 3, "fadeOut": 1.5}]},
   {"file": "excerpts/x-C7-pleiades.mp4", "dur": 7, "fade": 1, "text": ["“那七颗挤在一起的星星，", "现在看不见了。”"], "textAt": [1.5, 6.5]},
   {"file": "eras/day1/e-overview.mp4", "dur": 6, "fade": 1.5, "text": ["第一天"]},
   {"file": "eras/now/e-overview.mp4", "dur": 6, "fade": 2, "text": ["现在"]},
@@ -28,7 +28,7 @@
   {"file": "eras-close/gpt/c-subura.mp4", "dur": 5, "fade": 1.2, "text": ["苏布拉 · GPT 阶段"]},
   {"file": "eras-close/now/c-subura.mp4", "dur": 5.5, "fade": 1.2, "text": ["现在"]},
   {"file": "excerpts/x-D2b-cloister-night.mp4", "dur": 6, "fade": 1.2, "text": ["人心难算。"], "textAt": [1.5, 5.5]},
-  {"file": "excerpts/x-E1-musicbox-rain.mp4", "dur": 9, "fade": 1.5, "text": ["可它是纯钢和黄铜做的，", "不会老，也不会忘词。"], "textAt": [1.5, 8.5]},
+  {"file": "excerpts/x-E1-musicbox-rain.mp4", "dur": 9, "fade": 1.5, "text": ["可它是纯钢和黄铜做的，", "不会老，也不会忘词。"], "textAt": [1.5, 8.5], "sound": [{"file": "musicbox-canon.wav", "at": 0.5, "dur": 17, "fadeOut": 4}, {"file": "rain-standin.wav", "at": 0, "dur": 17.5, "gain": -6, "fadeIn": 2, "fadeOut": 4}]},
   {"file": "excerpts/x-E2-city-rain-night.mp4", "dur": 10, "fade": 1.5, "text": ["我睁着眼睛，在淅淅沥沥的雨声里听了很久。"], "textAt": [2, 9]}
  ]
 }

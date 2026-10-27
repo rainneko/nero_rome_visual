@@ -119,7 +119,8 @@ scattered Aventine houses, the Subura road under roofs), on the audit's own came
 ## Rough cuts
 
 `cut.mjs` assembles a cut from a timeline: clips and title cards in order, dissolves between them, captions burned in
-(Hiragino Sans GB, so Chinese works). It is silent; sound goes in the editor.
+(Hiragino Sans GB, so Chinese works), sound mixed and brought to -14 LUFS integrated (Bilibili and YouTube's level)
+with a -1 dBTP limiter.
 
 ```bash
 node tools/video/cut.mjs tools/video/cuts/rough-zh.json
@@ -139,6 +140,14 @@ node tools/video/cut.mjs tools/video/cuts/rough-zh.json
 * `text`: caption lines at the bottom, shown over `textAt` [from, to] within the piece.
 * `note`: one small line in the bottom-right corner over `noteAt` (default: the whole piece). The Chinese cut carries
   the BL notice this way while novel lines are on screen.
+* `sound` on a clip: `[{"file": "chimes-full.wav", "at": 0.5, "dur": 8, "gain": 3, "fadeIn": 1, "fadeOut": 1.5}]`, timed
+  from the clip's start, so sounds move with their clip when the edit changes. Timeline-level `audio` takes the same
+  fields with `at` from the start of the cut (music that runs across clips). `in`: start inside the file; `loop`:
+  repeat it; `gain` in dB. Files are under `sound` (default `~/NeroRome-video/sound`).
+
+`sounds.mjs` renders the reader's own synthesized sounds there with the same voices as `pluck()` in `src/ui/app.js`:
+the music-box Canon the reader played before music upload, the wind chimes at three tiers, and `rain-standin.wav`
+(filtered noise; the reader has no rain, so this waits for a chosen recording).
 
 `cuts/rough-zh.json` is the first Chinese rough cut from the test footage; novel captions are the copy director's
 screen versions, verbatim.
