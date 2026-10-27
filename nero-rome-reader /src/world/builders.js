@@ -330,7 +330,7 @@ function bigBase(g,F,x,z,y,w,d,h,o={}){g.set(2,.5);box(g,F,x,y,z,w/2+.9,.3,d/2+.
 // a row of cypresses between two local points (y from the ground); trees go in W.trees (the instanced tree pass)
 function cypRow(W,F,ax,az,bx,bz,step,gyF,sc=1){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<=n;i++){const q=F.p(ax+(bx-ax)*i/n,0,az+(bz-az)*i/n);W.trees.push([q[0],gyF(q[0],q[2]),q[2],'cyp',sc*(.92+.16*((i*37)%7)/7)]);}}
 // temple: front faces +z of the frame
-function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:o.podH||3,stairs:o.stairs!==false});   // every temple, for the links to the streets (temple-links.js)
+function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:o.podH||3,stairs:o.stairs!==false,name:o.name});   // every temple, for the links to the streets (temple-links.js)
   const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
   const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1);
   g.set(6,o.seed||.3);let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}box(g,F,0,-fd,0,W2,fd+ph,L2,31);

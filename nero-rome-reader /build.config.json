@@ -7,6 +7,7 @@
     "src/world/lots.js",
     "src/world/residential-policy.js",
     "src/world/streets.js",
+    "src/world/temple-links.js",
     "src/scenes/rome/noble-quarter.js",
     "src/scenes/rome/academy-housing.js",
     "src/scenes/rome/scenic-estates.js",

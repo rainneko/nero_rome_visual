@@ -7,7 +7,8 @@
 const REVIEW=/[?&]review/.test(location.search);
 const REV_LAYERS=[['ground','地形'],['water','水面'],['streets','街道地面'],['houses','房子'],['squares','小广场'],['stairs','台阶'],['roadDetail','路面细节'],
   ['models','模型'],['columns','柱子'],['trees','树'],['people','人'],['story','故事图层'],['far','城外'],['other','纪念建筑及其他']];
-const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff']];
+const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['temples','神庙通路','#3de0e0']];
+const REV_TL={linked:'#3de0e0',stair:'#ffe14a',raised:'#9a9a9a',none:'#ff4040'};
 const REV_FACE={F0:'#9a9a9a',F1:'#59e08a',F2:'#3fd0e0',F3:'#5b8cff',F4:'#ff7ac8',blocked:'#ff4040'};
 const REV_WHAT={tree:'大树祭坛',compitum:'路口神龛',lacus:'水池',temple:'小庙',fountain:'喷泉',garden:'小园林',lane:'双三角'};
 const REV_ZONE={dense:'#ff5a5a',mid:'#ffb347',domus:'#7be07b',ware:'#c99a5b'};
@@ -71,7 +72,15 @@ const REV_BUILD={
       for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=K[j*nx+i];if(!k)continue;seen[k]=1;const c=new THREE.Color(REV_ZONE[k]||'#e05cff'),x=ext[0]+i*D,z=ext[1]+j*D,e=1.5;
         if(kd(i-1,j)!==k)revDrape(a,C,[[x+e,z],[x+e,z+D]],false,D,1,c);if(kd(i+1,j)!==k)revDrape(a,C,[[x+D-e,z],[x+D-e,z+D]],false,D,1,c);
         if(kd(i,j-1)!==k)revDrape(a,C,[[x,z+e],[x+D,z+e]],false,D,1,c);if(kd(i,j+1)!==k)revDrape(a,C,[[x,z+D-e],[x+D,z+D-e]],false,D,1,c);}}
-    return{obj:revLineObj(a,C,0,.9),note:Object.keys(seen).map(k=>`<i style="color:${REV_ZONE[k]||'#e05cff'}">■</i>${k}`).join(' ')};}};
+    return{obj:revLineObj(a,C,0,.9),note:Object.keys(seen).map(k=>`<i style="color:${REV_ZONE[k]||'#e05cff'}">■</i>${k}`).join(' ')};},
+  // the temples' ways down to the streets (temple-links.js): every hill stair at its tread height (the new ones yellow), a square round each temple
+  // in the colour of its status, a line to where its walk met a street or a stair; red with a cross: no way found
+  temples(){const W=W0,a=[],C=[],cl=k=>new THREE.Color(REV_TL[k]),seg=(x0,y0,z0,x1,y1,z1,c)=>{a.push(x0,y0,z0,x1,y1,z1);C.push(c.r,c.g,c.b,c.r,c.g,c.b);};
+    for(const h of W.hillStairs||[]){const Y=hillStairHeights(W,h.R,h.top),c=h.temple?cl('stair'):new THREE.Color('#ffffff');for(let i=1;i<h.R.length;i++)seg(h.R[i-1][0],Y[i-1]+1,h.R[i-1][1],h.R[i][0],Y[i]+1,h.R[i][1],c);}
+    for(const e of W.templeLinks||[]){const c=cl(e.status),y=e.y+2,r=7,p=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let i=0;i<4;i++){const A=p[i],B=p[(i+1)%4];seg(e.x+A[0]*r,y,e.z+A[1]*r,e.x+B[0]*r,y,e.z+B[1]*r,c);}
+      if(e.status==='none'){seg(e.x-r,y,e.z-r,e.x+r,y,e.z+r,c);seg(e.x-r,y,e.z+r,e.x+r,y,e.z-r,c);}
+      if(e.at)seg(e.x,y,e.z,e.at[0],W.gy(e.at[0],e.at[1])+1,e.at[1],c);}
+    const s=W.templeLinkStats||{};return{obj:revLineObj(a,C,0,1),note:`通 ${s.linked||0} · 新台阶 ${s.stair||0} · 建筑上 ${s.raised||0} · 未通 ${s.none||0}`};}};
 function revLines(){for(const[k]of REV_LINES){const want=!!REV.lines[k];let L=REV.objs[k];
     if(want&&!L){const t0=performance.now();L=REV.objs[k]=REV_BUILD[k]();L.ms=Math.round(performance.now()-t0);REV.scene.add(L.obj);}
     if(L)L.obj.visible=want;}}
