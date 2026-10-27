@@ -12,13 +12,14 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const argv=process.argv.slice(2),flag=k=>argv.includes('--'+k),opt=k=>{const i=argv.indexOf('--'+k);return i>=0?argv[i+1]:null;};
 const listFile=argv.find((a,i)=>!a.startsWith('--')&&!['--only','--out','--site'].includes(argv[i-1]));
 const outDir=path.resolve(opt('out')||path.join(os.homedir(),'NeroRome-video/footage'));
+{const v=path.join(os.homedir(),'NeroRome-video');try{if(fs.lstatSync(v).isSymbolicLink()&&!fs.existsSync(v)){console.error(`${v} points to ${fs.readlinkSync(v)}, which is not there: plug in the drive.`);process.exit(1);}}catch(e){}}   // the folder may be a link to an external drive
 const site=opt('site')?path.resolve(opt('site')):root;   // --site: another checkout to film (an older commit, another branch), built with build:test
 const page0=path.join(site,'dist/test.html');   // test.html = index.html with three.js from node_modules; without ?test it runs at full quality
 if(!fs.existsSync(page0)){console.error('Build first: npm run build:test'+(opt('site')?' in '+site:''));process.exit(1);}
 const ffmpeg=spawnSync('ffmpeg',['-version']).status===0;
 // x264 in BT.709 and tagged so: by default ffmpeg writes BT.601 untagged, which players read as 709 (colours shift).
 // JPEG frames are BT.601 YCbCr, so they go through RGB first.
-const x264=w=>['-vf','format=rgb24,scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p',
+const x264=(w,pre='')=>['-vf',pre+'format=rgb24,scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p',
   '-c:v','libx264','-preset','slow','-crf',w>2000?'18':'16','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-color_range','tv','-movflags','+faststart'];
 // Without ffmpeg, macOS encodes with AVFoundation: tools/video/encode.m, compiled once into the user cache.
 function macEncoder(){if(process.platform!=='darwin')return null;const src=path.join(root,'tools/video/encode.m'),bin=path.join(os.homedir(),'Library/Caches/nero-rome-video/encode');
@@ -83,10 +84,11 @@ function pageApi(){
     async shot(s){if(s.page&&s.page!==PAGE){if(s.page==='antium'&&typeof antLoadModels==='function'){antLoadModels();const t0=Date.now();while(!window.__antReady&&Date.now()-t0<120000)await new Promise(r=>setTimeout(r,500));}PAGE=s.page;pagesUI();}
       clock.elapsedTime=s.clock||0;clock.oldTime=performance.now();   // every shot starts at the same animation time, so a re-render matches frame for frame
       setState(s.state??0,{instant:true});todT=null;camT=null;for(const k in W0.layers){W0.layers[k].position.y=0;delete W0.layers[k].userData.r0;for(const c of W0.layers[k].children)if(c.userData.y0!=null)c.position.y=c.userData.y0;}
-      for(const k of s.hide||[])if(W0.layers[k])W0.layers[k].visible=false;for(const k of s.show||[])if(W0.layers[k])W0.layers[k].visible=true;
       if(s.weather)ENV.weather=s.weather;if(typeof s.smog==='number')ENV.smog=s.smog;envTod=-1;envSmog=-1;
       ENV.sunAz=s.sunAz??sunAz0;W0.fx={};   // the reader keeps the sun in the east-north-east at every hour; afternoon shots set it in the west
-      if(typeof consApply==='function'){applyGates();const t0=Date.now();while(CONS.load&&CONS.load<3&&Date.now()-t0<60000)await new Promise(r=>setTimeout(r,200));}},   // construction stage models (construction-assets.js)
+      if(typeof consApply==='function'){applyGates();const t0=Date.now();while(CONS.load&&CONS.load<3&&Date.now()-t0<60000)await new Promise(r=>setTimeout(r,200));}
+      await new Promise(r=>setTimeout(r,0));   // setState runs applyGates on a timeout; let it go first
+      for(const k of s.hide||[])if(W0.layers[k])W0.layers[k].visible=false;for(const k of s.show||[])if(W0.layers[k])W0.layers[k].visible=true;},   // after the reader's own gates, which would switch paragraph-triggered layers (claudLamp1) back off
     ground(pts){return pts.map(p=>W0.gy(p[0],p[1]));},
     event(e){if(e.state!=null){setState(e.state,{instant:!e.rise});camT=null;if(e.ownTod)todT=null;}if(e.weather)ENV.weather=e.weather;if(e.smog!=null)ENV.smog=e.smog;},   // without a tod track the state's own light change plays
     frame(f){if(f.season!=null){const v=((f.season%4)+4)%4;SEAS.t=SEAS.v=v;U.uSeason.value=v;}
@@ -103,8 +105,8 @@ function pageApi(){
 
 /* ---------- output ---------- */
 function freeBytes(dir){try{const s=fs.statfsSync(dir);return s.bavail*s.bsize;}catch(e){return Infinity;}}
-function writer(name,w,h,fps){const base=path.join(outDir,name);
-  if(ffmpeg&&!flag('keep-frames')){const p=spawn('ffmpeg',['-y','-loglevel','error','-f','image2pipe','-framerate',String(fps),'-i','-',...x264(w),base+'.mp4'],{stdio:['pipe','inherit','inherit']});
+function writer(name,w,h,fps,blur=1){const base=path.join(outDir,name);   // blur: sub-frames averaged into each frame (ffmpeg only)
+  if(ffmpeg&&!flag('keep-frames')){const p=spawn('ffmpeg',['-y','-loglevel','error','-f','image2pipe','-framerate',String(fps*blur),'-i','-',...x264(w,blur>1?`tmix=frames=${blur},framestep=${blur},`:''),base+'.mp4'],{stdio:['pipe','inherit','inherit']});
     const done=new Promise((ok,bad)=>p.on('close',c=>c===0?ok(base+'.mp4'):bad(new Error('ffmpeg exited '+c))));
     return{put:buf=>new Promise(ok=>p.stdin.write(buf)?ok():p.stdin.once('drain',ok)),end:()=>{p.stdin.end();return done;}};}
   if(avf&&!flag('keep-frames')){const p=spawn(avf,[base+'.mp4',String(fps),'--stdin'],{stdio:['pipe','ignore','inherit']}),len=Buffer.alloc(4);   // frames as 4-byte length + image
@@ -133,7 +135,7 @@ try{
   if(flag('list-views')||!listFile){for(const[k,v]of Object.entries(scene.views))console.log(k.padEnd(14),(v.pg||'').padEnd(7),v.n||'','pos',JSON.stringify(v.pos),'tgt',JSON.stringify(v.tgt));process.exit(0);}
 
   {const G=shots.flatMap(s=>(s.path||[]).filter(k=>k.ground)),h=await page.evaluate(p=>__rec.ground(p),G.map(k=>k.ground));G.forEach((k,i)=>k._gy=h[i]);}
-  for(const s of shots){const dur=s.seconds||6,fps=L.fps,frames=flag('stills')?(s.stills??3):Math.max(1,Math.round(dur*fps)),cam=camPath(s,scene),season=track(s.season,dur),tod=track(s.tod,dur),
+  for(const s of shots){const dur=s.seconds||6,fps=L.fps,B=flag('stills')||!ffmpeg||flag('keep-frames')?1:Math.max(1,Math.round(s.blur||1)),SH=B>1?(s.shutter??.5):0,frames=flag('stills')?(s.stills??3):Math.max(1,Math.round(dur*fps))*B,cam=camPath(s,scene),season=track(s.season,dur),tod=track(s.tod,dur),
       smog=track(typeof s.smog==='number'?null:s.smog,dur),layerY=Object.entries(s.layerY||{}).map(([k,v])=>[k,track(v,dur)]),stages=Object.entries(s.stages||{}).map(([k,v])=>[k,steps(v)]),
       fx=Object.entries(s.fx||{}).map(([k,v])=>[k,track(v,dur)]),sky=track(s.sky,dur);
     const w=Math.round(L.width*L.scale),h=Math.round(L.height*L.scale),need=frames*w*h*(flag('png')?1.6:.35);
@@ -142,16 +144,16 @@ try{
     const events=(s.events||[]).slice().sort((a,b)=>a.t-b.t);let ev=0;
     const at=t=>({...cam(Math.min(1,t/(s.moveFor||dur))),season:season(t),tod:tod(t),smog:smog(t),layerY:Object.fromEntries(layerY.map(([k,f])=>[k,f(t)])),stages:Object.fromEntries(stages.map(([k,f])=>[k,f(t)])),fx:Object.fromEntries(fx.map(([k,f])=>[k,f(t)])),sky:sky(t)});   // moveFor: the camera arrives then and holds
     for(let k=0;k<(s.warmup??8);k++)await page.evaluate(f=>__rec.frame(f),{...at(0),dt:0});   // shaders, shadow maps and textures settle before frame 0
-    const out=flag('stills')?null:writer(s.name,w,h,fps),T=Date.now();let tPrev=0;
-    for(let i=0;i<frames;i++){const t=flag('stills')?(frames>1?dur*i/(frames-1):0):i/fps;
+    const out=flag('stills')?null:writer(s.name,w,h,fps,B),T=Date.now();let tPrev=0;
+    for(let i=0;i<frames;i++){const t=flag('stills')?(frames>1?dur*i/(frames-1):0):(Math.floor(i/B)+i%B*SH/B)/fps;   // sub-frames span the shutter, not the whole frame interval
       while(ev<events.length&&events[ev].t<=t)await page.evaluate(e=>__rec.event(e),{...events[ev++],ownTod:s.tod!=null});
       if(flag('stills')&&t>tPrev){for(let k=0;k<Math.ceil((t-tPrev)*4);k++)await page.evaluate(f=>__rec.frame(f),{...at(t),dt:250});}   // stills still let rising layers and flights finish
-      const ran=await page.evaluate(f=>__rec.frame(f),{...at(t),dt:flag('stills')?0:undefined});if(!ran)throw new Error('render loop stopped');tPrev=t;
+      const ran=await page.evaluate(f=>__rec.frame(f),{...at(t),dt:flag('stills')?0:i?1000*(t-tPrev):1000/(fps*B)});if(!ran)throw new Error('render loop stopped');tPrev=t;
       const buf=await page.screenshot({type:flag('png')?'png':'jpeg',quality:flag('png')?undefined:95,optimizeForSpeed:true});
       if(out)await out.put(buf);else fs.writeFileSync(path.join(outDir,frames===1?`${s.name}.jpg`:frames===3?`${s.name}_${['start','mid','end'][i]}.jpg`:`${s.name}_${i}.jpg`),buf);
       if(i%30===29)process.stdout.write(`\r${s.name}: ${i+1}/${frames} frames, ${((Date.now()-T)/(i+1)/1000).toFixed(2)} s/frame`);}
     const where=out?await out.end():outDir;
-    fs.writeFileSync(path.join(outDir,s.name+'.json'),JSON.stringify({shot:s,fps,frames,width:w,height:h,keys:[0,.25,.5,.75,1].map(u=>({u,...cam(u)}))},null,1));
-    console.log(`\r${s.name}: ${frames} frames in ${Math.round((Date.now()-T)/1000)} s -> ${where}`);}
+    fs.writeFileSync(path.join(outDir,s.name+'.json'),JSON.stringify({shot:s,fps,frames:frames/B,blur:B,width:w,height:h,keys:[0,.25,.5,.75,1].map(u=>({u,...cam(u)}))},null,1));
+    console.log(`\r${s.name}: ${frames/B} frames${B>1?` (${B} sub-frames each)`:''} in ${Math.round((Date.now()-T)/1000)} s -> ${where}`);}
   if(errors.length)console.warn('page errors:',errors.join(' | '));
 }finally{await browser.close();}

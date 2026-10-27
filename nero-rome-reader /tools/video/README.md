@@ -12,6 +12,8 @@ npm run video -- tools/video/shots/smoke.json
 ```
 
 Footage goes to `~/NeroRome-video/footage/` (outside the repository; `--out DIR` to change it).
+On the author's Mac `~/NeroRome-video` is a link to `/Volumes/BackupPlus/nero_video` (the internal disk is small);
+the recorder and `cut.mjs` stop with a message when the drive is not plugged in.
 Each shot becomes `<name>.mp4`; frames are piped to the encoder, nothing is stored:
 
 * with `ffmpeg` on the PATH: x264, CRF 16 (18 at 4K), converted to BT.709 and tagged so. ffmpeg's defaults
@@ -77,6 +79,9 @@ renders 3840×2160.
   `moveFor`: seconds the camera move takes; after that it holds still (the balloon shot rises for 6.5 s, then holds
   through 3 s of silence). Use it instead of repeating a keyframe: the Catmull-Rom curve overshoots between two
   near-identical keys.
+* `blur`: motion blur for fast moves; each frame averages this many sub-frames (4 is enough; it costs that many times
+  the render time). `shutter` (default 0.5, a film camera's 180°) is the share of the frame interval they span: at 1
+  a fast orbit smears into ghost copies. Needs ffmpeg; ignored with `--stills` and `--keep-frames`.
 * `season` (0 spring, 1 summer, 2 autumn, 3 winter; fractions blend) and `tod` (time of day 0–1; 0.25 morning,
   0.5 noon, 0.75 dusk, 0.9 night): a number, a list spread evenly over the shot, or `[[seconds, value], …]`.
 * `state`: story state 0–8 at the start (`STATES` in `src/ui/app.js`). `events`: `{"t": seconds, "state": n, "rise": true}`
@@ -91,7 +96,8 @@ renders 3840×2160.
   crowd stands and jumps). `shots/excerpts.json` `x-C1h-*` use all three.
 * `smog` (0–1, the yellow industrial haze): a number, or a track like `season`, e.g. `[[0, 0.05], [8, 0.6]]`.
 * `layerY`: per-layer height tracks in metres, e.g. `{"balloon": [[0, -72], [1.5, -72], [6, 0]]}` lifts the balloon
-  out of the arena. `hide` / `show`: lists of layers (`--list-layers`) to switch off or on for the shot.
+  out of the arena. `hide` / `show`: lists of layers (`--list-layers`) to switch off or on for the shot. They are applied after the
+  reader's own story gates, so a layer the reader switches by paragraph (`claudLamp1`, the one lit niche) can be shown too.
 * `stages`: construction stages for buildings that have them (`src/scenes/rome/construction.js`: `furnaceA`, `chem`),
   stepping, not blending: `{"furnaceA": [[0, 0], [2, 1], [4, 2], [6, 3], [8, 4], [9.5, 5]]}`. K0 survey and heaps, K1
   footings, K2 scaffolding, K3 full height with cold chimneys, K4 finished, K5 smoking; each step cross-fades the
@@ -109,3 +115,30 @@ the GPT phase `ee58915`, the code team's latest) into one folder per era. The re
 (`setPerfMode`, `TXT`), so commits back to the first one still film. `shots/eras-close.json` does the same for the
 problem spots of the 2026-10-25 audit (houses on the Via Lata, roads into the river, the noble-quarter triangles, the
 scattered Aventine houses, the Subura road under roofs), on the audit's own cameras.
+
+## Rough cuts
+
+`cut.mjs` assembles a cut from a timeline: clips and title cards in order, dissolves between them, captions burned in
+(Hiragino Sans GB, so Chinese works). It is silent; sound goes in the editor.
+
+```bash
+node tools/video/cut.mjs tools/video/cuts/rough-zh.json
+```
+
+```json
+{"out": "~/NeroRome-video/cuts/rough-zh.mp4", "root": "~/NeroRome-video/footage",
+ "clips": [
+  {"file": "excerpts/x-A-hook-roofs.mp4", "dur": 9, "text": ["我脑子里的罗马，比眼前这个罗马晚。"], "textAt": [1.5, 8],
+   "note": "小说内容含BL元素", "noteAt": [1.5, 8.5]},
+  {"card": ["第一天"], "dur": 3, "fade": 0.6},
+  {"file": "excerpts/x-C1h-launch.mp4", "in": 12, "dur": 8, "fade": 0.8}]}
+```
+
+* `file` (under `root`), `in` and `dur` in seconds; or `card`: lines on black.
+* `fade`: dissolve into this piece, in seconds (0 or missing is a cut).
+* `text`: caption lines at the bottom, shown over `textAt` [from, to] within the piece.
+* `note`: one small line in the bottom-right corner over `noteAt` (default: the whole piece). The Chinese cut carries
+  the BL notice this way while novel lines are on screen.
+
+`cuts/rough-zh.json` is the first Chinese rough cut from the test footage; novel captions are the copy director's
+screen versions, verbatim.
