@@ -178,6 +178,17 @@ void wallS(inout PS S,vec3 N,float P,float aa){
   if(sb0>-.5&&sb0<nb0-.5){vec2 qs=vec2(u-(sb0+.5)*bay0,v-1.2);float hS=.4;float inS=step(abs(qs.x),hS)*step(0.,qs.y)*clamp(step(qs.y,.95)+step(length(vec2(qs.x,qs.y-.95)),hS),0.,1.);float fmS=step(abs(qs.x),hS+.1)*step(-.1,qs.y)*clamp(step(qs.y,.95)+step(length(vec2(qs.x,qs.y-.95)),hS+.1),0.,1.);
    alb=mix(alb,vec3(.86,.8,.68),fmS*dfar);alb=mix(alb,vec3(.1,.2,.48),inS*dfar);float fgS=clamp(step(abs(qs.x),.09)*step(.15,qs.y)*step(qs.y,.7)+step(length(qs-vec2(0.,.82)),.1),0.,1.);alb=mix(alb,vec3(.92,.72,.32),fgS*inS*dfar);alb=mix(alb,vec3(.6,.15,.1),step(abs(qs.y-.18),.04)*step(abs(qs.x),hS-.06)*inS*dfar);}}
  if((bNiche>.5||bMed>.5)&&nSt>1.5&&v>gH&&v<gH+sH){float bw3=3.+fract(seed*5.1);float by3=L/max(1.,floor(L/bw3+.3));float kb=floor(u/by3+.5);vec2 q2=vec2(u-kb*by3,v-(gH+sH*.48));if(bNiche>.5&&abs(mod(kb,3.)-1.)<.5&&kb>.5){float inA=clamp(step(abs(q2.x),.42)*step(-.72,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.42)),0.,1.);float fr2=clamp(step(abs(q2.x),.52)*step(-.82,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.52)),0.,1.);float fig=clamp(step(abs(q2.x),.1)*step(-.6,q2.y)*step(q2.y,.12)+step(length(q2-vec2(0.,.24)),.09),0.,1.);alb=mix(alb,vec3(.88,.84,.74),fr2*dfar);alb=mix(alb,vec3(.1,.2,.48),inA*dfar);alb=mix(alb,vec3(.92,.72,.32),fig*inA*dfar);}if(bMed>.5&&abs(mod(kb,3.)-2.)<.5){float dd=length(q2);float rays=step(.5,fract(atan(q2.y,q2.x)*2.546));alb=mix(alb,vec3(.9,.86,.76),step(dd,.44)*dfar);alb=mix(alb,vec3(.86,.66,.28),clamp(step(.36,dd)*step(dd,.44)+step(.08,dd)*step(dd,.3)*rays,0.,1.)*dfar);}}
+ // weathering: every building has an age from its seed. Old paint fades and chalks, rising damp darkens the foot (.5-1 m, ragged top, a pale salt line),
+ // the eaves leave run-off streaks down the top storey, and old plaster falls off in patches that show the brick (facades.md: 60 % poor, 25 % mid, 5 % rich)
+ float age=fract(seed*23.71+.37*fract(seed*3.3));age=age*age*(3.-2.*age);
+ {float lum=dot(alb,vec3(.3,.59,.11));alb=mix(alb,mix(vec3(lum),alb,.7)*vec3(1.03,1.,.94)+.02,age*.55);alb*=1.-.1*age*smoothstep(.4,.7,big);}
+ if(v>0.&&v<1.4){float dh=.45+.5*age+.35*(fbm2(vec2(u*.45,seed*9.))-.5);float dm=1.-smoothstep(dh-.06,dh+.06,v);float tide=(1.-smoothstep(0.,.05+aa,abs(v-dh-.03)))*dfar;
+  alb=mix(alb,alb*vec3(.7,.72,.67),dm*(.5+.25*age+.25*uWet));alb=mix(alb,vec3(.86,.84,.78),tide*.22*(.4+age));}
+ {float dE=topV-v;if(dE>0.&&dE<5.){float fe=fbm2(vec2(u*1.7+seed*17.,dE*.25+seed*3.));alb*=1.-.26*smoothstep(.42,.7,fe)*(1.-smoothstep(.2,1.6+2.4*age,dE))*(.35+.75*age);}}
+ if(P<.5&&v>.2&&v<topV&&age>.6){float pn=fbm2(vec2(u,v)*.7+seed*19.)+.1*(1.-smoothstep(.2,1.2,min(u,L-u)))+.1*(1.-smoothstep(.5,2.5,v));float thr=1.18-.4*age;
+  float pm=smoothstep(thr,thr+.02+aa*2.,pn);float rim=smoothstep(thr-.015,thr,pn)*(1.-pm);
+  if(pm+rim>.001){float row=floor(v/.072);float mo=1.-smoothstep(.0,.004+aa,abs(fract(v/.072)-.5)*.072-.02);vec3 bc=vec3(.47,.22,.13)*(.78+.38*h12(vec2(floor(u/.3+fract(row*.5)),row)+seed));
+   alb=mix(alb,alb*.85,rim);alb=mix(alb,mix(mix(bc,vec3(.6,.55,.46),mo*.8),vec3(.5,.28,.18),smoothstep(.012,.035,aa)),pm);}}
  S.alb=alb;S.rough=.92-uWet*.4;
  if(bBlank>.5||v>topV||si>=nSt)return;
  bool inwardTown=mod(floor(fl/262144.),2.)>.5; // Elite courtyard-house profile, scoped to this district.
@@ -214,6 +225,8 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  if(kind>1.5&&kind<2.5&&!residential&&(bArc>.5||bGAr>.5)){float pil=1.-smoothstep(.0,aa+.02,abs(abs(bu)-bay*.5)-.28);S.alb=mix(S.alb,S.alb*1.08,pil);}
  if(kind>-.5&&kind<.5&&ar>.5&&P<.5&&fract(seed*5.7)<.4){float er=clamp(openM(q+vec2(0.,.06),hw+.12,oh+.18,ar,aa)-openM(q,hw+.03,oh+.03,ar,aa),0.,1.);S.alb=mix(S.alb,vec3(.6,.2,.13),er*.9);}
  if(kind>.5&&kind<1.5&&P<.5&&fract(seed*8.1)<.25){float pn=step(abs(q.x),.62)*step(oh+.2,q.y)*step(q.y,oh+.72);float ink=step(.5,fract(q.x*5.))*step(abs(q.y-oh-.46),.08);S.alb=mix(S.alb,mix(vec3(.85,.8,.7),vec3(.55,.12,.08),ink),pn*.95);}
+ if(kind<.5){float sy=-q.y-.14;if(sy>0.){float fib=vn2(vec2(q.x*7.+seed*40.,sy*.9+seed*7.));   // rain washes the sill dirt down the wall: streaks under each window, longer on older houses
+  S.alb*=1.-.3*(1.-smoothstep(.6,1.05,abs(q.x)/(hw+.1)))*(1.-smoothstep(.15,.7+.6*age,sy))*(.35+.85*smoothstep(.3,.75,fib))*(.45+.7*age);}}
  if(ins<.01||uDbg.w>1.5)return;
  vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4);vec3 Up=vec3(0.,1.,0.);vec3 V=normalize(vWP-cameraPosition);
  float vt=dot(V,T),vu=dot(V,Up),vnn=min(dot(V,N),-.06);float t=dep/(-vnn);vec2 qb=q+vec2(vt,vu)*t;

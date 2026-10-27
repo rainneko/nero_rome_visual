@@ -9,7 +9,7 @@ vec3 farmCol(int t,float fh,vec2 p,float s,vec3 gr,vec3 stw,float fine){
  if(t==1){vec3 c=s4(vec3(.12,.22,.06),fh<.6?vec3(.62,.5,.22):vec3(.66,.58,.4),soil*(.8+.25*fur),mix(soil,vec3(.13,.2,.06),.55+.2*fur),s)*(.92+.16*n1);   // grain: green in spring, gold or stubble in summer, ploughed in autumn, shoots in winter
   return mix(c,vec3(.6,.05,.03),step(.93,vn2(p*1.3+fh*17.))*bl*fine*.8);}   // poppies in the spring corn
  if(t==2){float r=abs(fract(rw/2.2)-.5),aR=fwidth(rw/2.2),row=mix(.4,smoothstep(.2+aR,.2-aR,r),fine);   // vines on stakes, rows 2.2 m apart: leaf in spring, deep green in summer, yellow after the vintage, bare in winter
-  return mix(s4(gr,stw,soil*.95,mix(soil,gr,.5),s),s4(vec3(.2,.3,.08),vec3(.12,.2,.06),vec3(.45,.3,.09),vec3(.22,.16,.11),s),row)*(.9+.2*n1);}
+  return mix(s4(gr,stw,soil*.95,mix(soil,gr,.5),s),s4(vec3(.19,.23,.09),vec3(.12,.2,.06),vec3(.45,.3,.09),vec3(.22,.16,.11),s),row)*(.9+.2*n1);}
  if(t==3){vec2 q=p/9.;q.x+=mod(floor(q.y),2.)*.5;float cr=mix(.42,smoothstep(.36,.3,length(fract(q)-.5)),fine)*smoothstep(2600.,2800.,length(p-vec2(150.,250.)));   // olive grove: silver-green crowns in a quincunx over grass, painted only beyond the planted groves (plantOliveGroves, 2.7 km)
   return mix(s4(gr,stw*.95,mix(stw,gr,.5),gr,s),vec3(.19,.21,.14)*(.85+.3*n2),cr*.85);}
  if(t==4){vec3 c=s4(vec3(.16,.31,.07),vec3(.56,.48,.26),vec3(.13,.22,.07),vec3(.1,.19,.06),s)*(.9+.2*n1);   // hay meadow: flowers in spring, mown in summer (windrows), green again after the rains
@@ -34,12 +34,20 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
  vec3 gS=sS<2.?mix(gSp,gAu,sS*.5):sS<3.?mix(gAu,gWi,sS-2.):mix(gWi,gSp,sS-3.);
  vec3 gr=gS*mix(.82,1.18,fbm2(p*.008))*(.93+.14*vn2(p*.4));
  vec3 stw=vec3(.54,.42,.16)*mix(.85,1.15,fbm2(p*.0035+7.))*(.94+.12*vn2(p*.5));
+ float mT=vn2(p*.9),fineM=1.-smoothstep(.3,1.2,fwidth(p.x)),bareM;
+ {   // meadow, not lawn: less saturated, yellow-green drifts, last year's hay and bare earth by noise, slope and aspect (south faces, N.z>0 with z south, dry first), tufts up close.
+     // gr is also the wild grass between vines, olives and roses (farmCol), so the fields get the same patches
+  float mP=fbm2(p*.018+vec2(5.,9.)),mQ=fbm2(p*.07+vec2(13.,2.)),south=smoothstep(0.,.22,N.z),stp=smoothstep(.08,.3,sl);
+  gr=mix(vec3(dot(gr,W3)),gr,.78);gr=mix(gr,gr*vec3(1.45,1.08,.72),smoothstep(.42,.68,mP+.18*south)*.8);
+  gr=mix(gr,mix(stw,vec3(.36,.3,.17),.35)*(.85+.3*mT),smoothstep(.55,.72,.55*mQ+.45*mP+.22*south+.12*stp+(mT-.5)*.25*fineM)*.75);
+  bareM=smoothstep(.6,.78,.5*mQ+.3*fbm2(p*.2+7.)+.45*stp+.1*south);}
  vec3 c=mix(gr,stw,dryA*(.9+.1*fbm2(p*.004+3.)));
+ c=mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),bareM*.85);c*=.9+.2*mix(.5,.6*mT+.4*vn2(p*3.1),fineM)*mix(1.,.94+.12*vn2(p*3.1+5.),1.-smoothstep(.08,.3,fwidth(p.x)));   // tufts up close
  {float lc=dot(c,W3);float wW=0.;for(int i=0;i<56;i++){vec4 w=uWat[i];if(w.z>0.){if(w.w>0.){float cr=cos(uWatR[i]),sr=sin(uWatR[i]);vec2 dd=p-w.xy,l=vec2(dd.x*cr-dd.y*sr,dd.x*sr+dd.y*cr),q=abs(l)-w.zw;float sd=length(max(q,0.))+min(max(q.x,q.y),0.);   // garden rectangle: solid inside, a soft noisy edge about 5 m wide outside
    wW=max(wW,1.-smoothstep(0.,5.,sd+(fbm2(p*.03+w.xy)-.5)*7.+(vn2(p*.3)-.5)*3.));}
   else{float d=length(p-w.xy);wW=max(wW,1.-smoothstep(w.z*.6,w.z,d+(fbm2(p*.03+w.xy)-.5)*w.z*.5));}}}
   vec3 wSp=vec3(.058,.19,.04),wAu=vec3(.05,.171,.036),wWi=vec3(.042,.141,.034);vec3 wc=sS<1.?wSp:sS<2.?mix(wSp,wAu,sS-1.):sS<3.?mix(wAu,wWi,sS-2.):mix(wWi,wSp,sS-3.);
-  wcG=wc*(.88+.24*fbm2(p*.03));wmG=wW;}
+  wcG=wc*(.88+.24*fbm2(p*.03));wcG=mix(vec3(dot(wcG,W3)),wcG,.72);wcG=mix(wcG,wcG*vec3(1.35,1.06,.75),smoothstep(.5,.75,fbm2(p*.05+21.))*.7);wcG*=.9+.2*vn2(p*.9);wmG=wW;}   // watered gardens stay green, but not one even lawn
 #define SDS(p,a,b) length((p)-(a)-((b)-(a))*clamp(dot((p)-(a),(b)-(a))/dot((b)-(a),(b)-(a)),0.,1.))
  vec3 htG=vec3(0.),fcG=vec3(0.);float hwG=0.,fmG=0.;
  float fBl=sS<1.4?1.-smoothstep(.55,1.3,sS):sS<3.5?0.:smoothstep(3.5,4.,sS);   // wild flowers: spring only
@@ -59,7 +67,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
 
  vec3 cGr=c;{vec3 gn=gS/max(dot(gS,W3),.01);vec3 hc=htG/max(dot(htG,W3),.01);cGr=c*mix(vec3(1.),clamp(hc/gn,vec3(.7),vec3(1.4)),.6*(1.-dryA));}   // hill grass: the season colour with a slight hue of its own (applied over the town ground below)
  c=mix(c,mix(vec3(.4,.29,.17),vec3(.32,.23,.135),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*(1.-vZ.y)*1.);   // town ground: open earth between the streets
- c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y+wmG,0.,1.)*.95);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
+ c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y*.55+wmG,0.,1.)*.95);   // the horti (vZ.y) are tree gardens, not lawns: their meadow shows throughc=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
  vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);if(vZ.z>.85)chs=.1;float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
  float rw=dot(p,dr)/3.3;float aaF=fwidth(rw);float vine=smoothstep(.24+aaF,.24-aaF,abs(fract(rw)-.5));vec3 soil=vec3(.4,.32,.2)*(.85+.2*fbm2(p*.05)),vc=vec3(.19,.2,.1)*(.8+.3*fbm2(p*.2));
  vec3 fc=chs<.42?mix(soil,vc,mix(vine,.45,smoothstep(.15,.5,aaF))):chs<.62?mix(vec3(.5,.43,.22),vec3(.42,.39,.18),fbm2(p*.03)):chs<.82?mix(vec3(.19,.23,.1),vec3(.27,.27,.12),fbm2(p*.04)):mix(vec3(.3,.29,.14),vec3(.44,.38,.22),fbm2(p*.02));
@@ -67,7 +75,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
  {vec2 fq0=(p-uFarmX.xy)/uFarmX.zw;if(uFarmX.z>0.&&fq0.x>0.&&fq0.y>0.&&fq0.x<1.&&fq0.y<1.){   // the crop map (farmland.js) replaces the random patchwork in Rome
   vec4 ft=texture2D(uFarm,fq0+((vec2(fbm2(p*.06),fbm2(p*.06+4.1))-.5)*16.+(vec2(vn2(p*.45),vn2(p*.45+2.7))-.5)*5.)/uFarmX.zw);int crop=int(ft.r*255.+.5);if(vZ.z>.85)crop=2;   // ragged field edges; the Aventine vineyard stays a vineyard
   float fine=1.-smoothstep(.4,1.6,fwidth(p.x));fc=farmCol(crop,ft.g,p,sS,gr,stw,fine);fc=mix(fc,fc*vec3(.62,.72,.55),ft.b*(.5+.4*fbm2(p*.3))*.6);}}   // a hedge or path where two fields meet
- c=mix(c,fc,vZ.z*.92);
+ c=mix(c,mix(vec3(dot(fc,W3)),fc,.82),vZ.z*.92);
  c=mix(c,vec3(.7,.62,.45)*(.9+.15*vn2(p*.5)),vZ.w);
  float pal=(1.-smoothstep(230.,380.,length(p-vec2(100.,300.))))*(1.-uDbg.x);   // the Palatine: pale limestone with moss on the ledges (rock_and_base brief)
  // (the dark-green slope band that used to sit here was the soft smear in front of the Jupiter temple; steep cells are now the rocky scarp below)
