@@ -147,8 +147,13 @@ void roofS(inout PS S,vec3 N,float gilt,float aa){vec2 uv=vA.xy;float seed=floor
  float tilt=cov*clamp(xr/r,-1.,1.)*.95+(1.-cov)*(-sign(xr)*.2);float st=(1.-smoothstep(0.,.2,yr))*.4;
  vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4);vec3 B=normalize(cross(T,N));float fcx=1.-smoothstep(pt*.25,pt*.62,aa),fry=1.-smoothstep(cs*.25,cs*.62,aa);float sw=sin(uv.x/pt*6.2832),stp=.5+.5*cos(uv.x/pt*6.2832),crs=smoothstep(0.,.3,yr);S.nw=normalize(N+(T*tilt-B*st)*det+(T*sw*.32*fcx-B*(1.-crs)*.22*fry)*(1.-det));S.useN=1.;
  vec3 c=base*(.8+.34*th);float frs=smoothstep(2.3,3.,uSeason)*(1.-smoothstep(3.,3.7,uSeason));c=mix(c,vec3(.86,.88,.92),frs*.56*smoothstep(.35,.9,N.y));c*=mix(1.,.7,(1.-cov)*.55*det);c*=mix(.74,1.,smoothstep(0.,.22,yr)*det+(1.-det));
- if(gilt<.5){float li=smoothstep(.7,.9,fbm2(uv*.8+seed*5.));c=mix(c,vec3(.4,.38,.3),li*.3);}
- c*=.9+.2*fbm2(vec2(uv.x*.05,uv.y*.08)+seed*3.);vec3 cf=base*(.84+.26*th)*mix(.78,1.08,stp*fcx+(1.-fcx)*.6)*mix(.82,1.,crs*fry+(1.-fry)*.62);cf*=.86+.28*vn2(uv*vec2(.45,.55)+seed*7.);if(gilt<.5){float li2=smoothstep(.72,.9,fbm2(uv*.6+seed*5.));cf=mix(cf,vec3(.42,.4,.32),li2*.25);}S.alb=mix(cf,c,det);
+ // weathering: each roof has an age (as wallS). Old tiles grey and darken, lichen spreads, rain and soot leave streaks down the slope,
+ // and old roofs carry a few bright replaced tiles. Gilt roofs stay clean.
+ float age=gilt>.5?0.:fract(seed*23.71+.37*fract(seed*3.3));age=age*age*(3.-2.*age);float rsk=1.-.2*smoothstep(.45,.75,fbm2(vec2(uv.x*.7,uv.y*.06)+seed*11.))*(.35+.65*age);
+ if(gilt<.5){float li=smoothstep(.7-.14*age,.9-.1*age,fbm2(uv*.8+seed*5.));c=mix(c,vec3(.4,.38,.3),li*(.3+.2*age));}
+ c=mix(c,mix(vec3(dot(c,vec3(.3,.59,.11))),c,.72)*.88,age*.6)*rsk;c=mix(c,base*(1.08+.12*th),step(.975-.05*age,h12(vec2(col,row)+seed*31.))*step(.3,age)*.85);
+ c*=.9+.2*fbm2(vec2(uv.x*.05,uv.y*.08)+seed*3.);vec3 cf=base*(.84+.26*th)*mix(.78,1.08,stp*fcx+(1.-fcx)*.6)*mix(.82,1.,crs*fry+(1.-fry)*.62);cf*=.86+.28*vn2(uv*vec2(.45,.55)+seed*7.);if(gilt<.5){float li2=smoothstep(.72-.14*age,.9-.1*age,fbm2(uv*.6+seed*5.));cf=mix(cf,vec3(.42,.4,.32),li2*(.25+.2*age));}
+ cf=mix(cf,mix(vec3(dot(cf,vec3(.3,.59,.11))),cf,.72)*.88,age*.6)*rsk;S.alb=mix(cf,c,det);
  S.rough=gilt>.5?.3:.74-uWet*.45;S.metal=gilt>.5?1.:0.;S.ao=mix(1.,.82,(1.-cov)*det);}
 void wallS(inout PS S,vec3 N,float P,float aa){
  float u=vA.x,v=vA.y,L=max(vA.z,.5),sH=max(vA.w,2.4);float seed=floor(vB.x*4096.+.5)/4096.,sty=floor(vB.z+.5),fl=floor(vB.w+.5);float nSt=max(floor(vC.x+.5),1.),gH=max(vC.y,2.5),litB=vC.w;
@@ -296,7 +301,8 @@ else if(P<19.5){S.alb=vec3(.05);S.emit=vec3(5.,1.6,.4)*(.7+.3*sin(uTime*6.+vWP.x
 else if(P<20.5){S.alb=vec3(.035,.033,.03)*(.8+.4*vn2(uv*2.));S.rough=.95;}
 else if(P<21.5){S.alb=vec3(.3,.24,.16)*(.75+.4*fbm2(uv*1.5));S.rough=.95;}
 else if(P<22.5){S.alb=stoneC(uv,seed,vec3(.61,.52,.37),1.4,.62,aa);S.rough=.9;}
-else if(P<23.5){S.alb=vec3(.08,.13,.045)*(.7+.5*fbm2(vWP.xz*.25))+vec3(.3,.2,.25)*step(.92,vn2(vWP.xz*3.))*.3;S.rough=.95;}
+else if(P<23.5){vec2 pz=vWP.xz;vec3 g=vec3(.08,.13,.045)*(.7+.5*fbm2(pz*.25));g=mix(vec3(dot(g,vec3(.3,.59,.11))),g,.8);   // a garden, not a lawn: yellow-green patches and a few worn bare spots
+  g=mix(g,g*vec3(1.4,1.1,.75),smoothstep(.45,.72,fbm2(pz*.09+7.))*.7);g=mix(g,vec3(.22,.17,.1)*(.85+.3*vn2(pz*2.)),smoothstep(.66,.8,fbm2(pz*.4+3.))*.55);S.alb=g+vec3(.3,.2,.25)*step(.92,vn2(pz*3.))*.3;S.rough=.95;}
 else if(P<25.5){S.alb=vec3(.45,.25,.21)*(.85+.25*vn2(uv*20.));S.rough=.4;}
 else if(P<26.5){S.alb=vec3(.69,.615,.49)*mix(.7,1.,step(.45,fract(uv.y/.8)))*(.9+.15*fbm2(uv*.5));S.rough=.85;}
 else if(P<27.5){S.alb=vec3(.66,.55,.38)*(.85+.2*fbm2(vWP.xz*.3));S.rough=.95;}

@@ -19,7 +19,9 @@ vec3 farmCol(int t,float fh,vec2 p,float s,vec3 gr,vec3 stw,float fine){
  if(t==8){vec3 v=s4(vec3(.12,.27,.06),vec3(.1,.22,.05),vec3(.14,.22,.06),vec3(.08,.17,.05),s),v2=v*vec3(1.2,.9,1.3);   // market garden: narrow irrigated beds, green all year
   return mix(soil*.9,mix(v,v2,step(.5,fract(rw/9.))),mix(.65,step(.35,fract(rw/1.6)),fine))*(.9+.2*n2);}
  if(t==9){float bush=mix(.5,smoothstep(.32,.24,abs(fract(rw/1.8)-.5)),fine)*(.6+.4*n2);   // rose beds for garlands: in flower in late spring
-  vec3 b=mix(vec3(.07,.13,.05),fh<.5?vec3(.62,.12,.16):vec3(.75,.42,.5),bl*step(.45,vn2(p*2.3)));return mix(s4(gr,stw,soil,mix(soil,gr,.4),s),b,bush);}
+  vec2 rq=p*3.3,ri=floor(rq),rl=fract(rq)-.5-(vec2(h12(ri+1.7),h12(ri+8.3))-.5)*.5;float fd=1.-smoothstep(.05,.2,fwidth(p.x));   // single blooms (~6 cm) on 30 cm jittered cells; an even tint where they would shimmer (they were 0.4 m blobs: camouflage)
+  float fl=mix(.12,(1.-smoothstep(.16,.26,length(rl)))*step(.45,h12(ri+4.1)),fd)*(.5+.5*smoothstep(.3,.6,n2));
+  vec3 b=mix(vec3(.07,.13,.05)*(.85+.3*n2),fh<.5?vec3(.62,.12,.16):vec3(.75,.42,.5),bl*fl);return mix(s4(gr,stw,soil,mix(soil,gr,.4),s),b,bush);}
  vec3 c=s4(mix(vec3(.2,.26,.08),vec3(.36,.3,.16),.4*n1),stw*.92,soil*(.85+.2*fur),mix(soil,gr,.45),s);   // fallow: weeds in spring, dry in summer, ploughed in autumn
  return mix(c,vec3(.6,.05,.03),step(.95,vn2(p*1.2+fh*5.))*bl*fine*.7);}
 `;
@@ -39,7 +41,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
      // gr is also the wild grass between vines, olives and roses (farmCol), so the fields get the same patches
   float mP=fbm2(p*.018+vec2(5.,9.)),mQ=fbm2(p*.07+vec2(13.,2.)),south=smoothstep(0.,.22,N.z),stp=smoothstep(.08,.3,sl);
   gr=mix(vec3(dot(gr,W3)),gr,.78);gr=mix(gr,gr*vec3(1.45,1.08,.72),smoothstep(.42,.68,mP+.18*south)*.8);
-  gr=mix(gr,mix(stw,vec3(.36,.3,.17),.35)*(.85+.3*mT),smoothstep(.55,.72,.55*mQ+.45*mP+.22*south+.12*stp+(mT-.5)*.25*fineM)*.75);
+  gr=mix(gr,mix(stw,vec3(.36,.3,.17),.35)*(.85+.3*mT),smoothstep(.52,.8,.55*mQ+.45*mP+.22*south+.12*stp+(mT-.5)*.12*fineM)*.75);
   bareM=smoothstep(.6,.78,.5*mQ+.3*fbm2(p*.2+7.)+.45*stp+.1*south);}
  vec3 c=mix(gr,stw,dryA*(.9+.1*fbm2(p*.004+3.)));
  c=mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),bareM*.85);c*=.9+.2*mix(.5,.6*mT+.4*vn2(p*3.1),fineM)*mix(1.,.94+.12*vn2(p*3.1+5.),1.-smoothstep(.08,.3,fwidth(p.x)));   // tufts up close
@@ -97,8 +99,11 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
    float mini=smoothstep(.8,2.6,fwidth(q.x)*uStN.x);float cov=mix(smoothstep(.26,.5,t.r),t.r,mini);
    if(cov>.004){
     float gc=t.g*255.;float wM=clamp((gc-128.)/64.,0.,1.),wD=clamp((128.-gc)/64.,0.,1.),wS=1.-max(wM,wD);float dw=t.b*8.;cov*=1.-smoothstep(.16,.26,sl)*(1.-wD);   // no stone/marble paving painted on steep faces (the pale wedge over the Capitol slope was marble street colour on a cut face; real stairs are geometry)
-    vec4 ta=texture2D(uStA,q0);vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);float across=dot(vWP.xz,nv),along=dot(vWP.xz,tv);
-    float trk=smoothstep(.22,.06,abs(fract((across+vn2(vec2(along*.05,3.))*1.4)/1.45)-.5)*1.45)*smoothstep(.3,.7,vn2(vec2(along*.1,across*.3)))*clamp(ta.b*4.,0.,1.);
+    // dirt ruts: one pair of wheel tracks 1.45 m apart, measured from the street centre of this coarse cell (uStA alpha, streets.js), wandering slowly.
+    // (measured from the world origin, any bend of the direction field turned the ruts into rings)
+    vec2 cC=uStX.zw/uStN*4.,cI=floor((vWP.xz-uStX.xy)/cC);vec4 ta=texture2D(uStA,(cI+.5)/ceil(uStN/4.));vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);
+    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),across=dot(dC,nv)-(ta.a*2.-1.)*8.+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
+    float trk=(1.-smoothstep(.05,.16+aR,abs(abs(across)-.72)))*mix(1.,.4,smoothstep(.05,.3,aR))*smoothstep(.3,.65,vn2(vec2(along*.07,3.7)))*clamp(texture2D(uStA,q0).b*4.,0.,1.);   // strength filtered, so it fades out at squares instead of stopping at a cell edge
     vec2 rp=vec2(vWP.x*.866+vWP.z*.5,-vWP.x*.5+vWP.z*.866);
     vec3 cM=vec3(.55,.49,.395),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
     if(wM>.01){float sl=3.4,sw=1.7,row=floor(rp.y/sw),u=rp.x+mod(row,2.)*sl*.5,id=floor(u/sl),jx=abs(fract(u/sl+.5)-.5)*sl,jy=abs(fract(rp.y/sw+.5)-.5)*sw,aa=fwidth(rp.x)*1.5+.01,jn=1.-smoothstep(.02,.02+aa,min(jx,jy)),hh=h12(vec2(id,row)+3.1);

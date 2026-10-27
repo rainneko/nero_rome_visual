@@ -102,7 +102,13 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   // grade of cells without a street is the nearest street's (so filtering at the edge does not mix in zero)
   const gg=new Float32Array(N);for(let k=0;k<N;k++)gg[k]=grd[k];for(let it=0;it<3;it++){const g2=gg.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(gg[k]>0)continue;const v=gg[k-1]||gg[k+1]||gg[k-nx]||gg[k+nx];if(v)g2[k]=v;}gg.set(g2);}
   for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);T1[k*4+3]=255;}
-  const T2=new Uint8Array(nxc*nzc*4);for(let k=0;k<nxc*nzc;k++){const l=Math.hypot(ax[k],az[k]),vx=l>1e-4?ax[k]/l:0,vz=l>1e-4?az[k]/l:0;T2[k*4]=Math.round((vx*.5+.5)*255);T2[k*4+1]=Math.round((vz*.5+.5)*255);T2[k*4+2]=Math.min(255,aw[k]*40);T2[k*4+3]=255;}
+  // T2 alpha: where the street centre lies across each coarse cell, measured from the cell centre along the shader's own (quantized) normal, so the
+  // dirt ruts run along the street and not in rings around the world origin. dN^4 weights put a two-cell street's centre between its cells.
+  // Blue (rut strength) is 0 on squares wider than 14 m.
+  const T2=new Uint8Array(nxc*nzc*4);for(let k=0;k<nxc*nzc;k++){const l=Math.hypot(ax[k],az[k]),vx=l>1e-4?ax[k]/l:0,vz=l>1e-4?az[k]/l:0;T2[k*4]=Math.round((vx*.5+.5)*255);T2[k*4+1]=Math.round((vz*.5+.5)*255);
+    const ic=k%nxc,jc=(k-ic)/nxc,th=.5*Math.atan2(T2[k*4+1]/255*2-1,T2[k*4]/255*2-1),nvx=-Math.sin(th),nvz=Math.cos(th),tcx=x0+(ic+.5)*NC*cs,tcz=z0+(jc+.5)*NC*cs;let sw=0,sa=0,mx=0;
+    for(let j=jc*NC-1;j<=jc*NC+NC;j++)for(let i=ic*NC-1;i<=ic*NC+NC;i++){if(i<0||j<0||i>=nx||j>=nz)continue;const kk=K(i,j);if(!st[kk])continue;const d=dN[kk],w=d*d*d*d;if(d>mx)mx=d;sw+=w;sa+=w*((x0+(i+.5)*cs-tcx)*nvx+(z0+(j+.5)*cs-tcz)*nvz);}
+    const off=sw>0?sa/sw:0;T2[k*4+2]=mx*cs>7?0:Math.min(255,aw[k]*40);T2[k*4+3]=Math.round(Math.max(0,Math.min(255,(off/8*.5+.5)*255)));}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
   W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
