@@ -100,7 +100,7 @@ function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0};
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;
   const G=(x,z)=>{const k=Math.floor(x/cs)+'_'+Math.floor(z/cs);let g=chunks.get(k);if(!g){g=new GB(1<<14);chunks.set(k,g);}return g;};
-  for(let gz=o.ext[1];gz<o.ext[3];gz+=o.sp)for(let gx=o.ext[0];gx<o.ext[2];gx+=o.sp){
+  for(let gz=o.ext[1];gz<o.ext[3];gz+=o.sp)for(let gx=o.ext[0];gx<o.ext[2];gx+=o.sp){const R=RNG(hash2(Math.round(gx)*13+(o.seed||7),Math.round(gz)*7+31)*4294967296);   // dice keyed to the grid cell: a change elsewhere does not reshuffle this house
     const x=gx+(R()-.5)*o.sp*.95,z=gz+(R()-.5)*o.sp*.95,Z=o.zone(x,z);if(!Z||R()>Z.d*Q.dens)continue;
     const r=R();let typ='insula';{let acc=0;for(const k in Z.mix){acc+=Z.mix[k];if(r<acc){typ=k;break;}}}
     let w,d,nSt;

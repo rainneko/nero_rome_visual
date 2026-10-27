@@ -12,7 +12,8 @@ function fillCentralHousing(W){const R=RNG(641024),g=new GB(1<<18),late=new GB(1
   // before repairing rejected boundary parcels so the fallback cannot seal a through route.
   for(const r of W.nobleRoads||[]){const C=lp(r.a,r.b,.5);if(nobleQuarterAt(...C)!=='core')continue;const dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],l=Math.hypot(dx,dz);W.foot.add(C[0],C[1],l/2,r.width/2,Math.atan2(-dz,dx),'road');}
   for(const[step,w,d]of[[23,19,16],[15,12,10],[10,8.4,8.2]]){let added=0;
-    for(let u=-850;u<1780;u+=step)for(let v=-1400;v<1400;v+=step){const[x,z]=world(u+(hash2(u,v)-.5)*1.4,v+(hash2(v,u)-.5)*1.4);if(!housingCore(x,z))continue;
+    for(let u=-850;u<1780;u+=step)for(let v=-1400;v<1400;v+=step){const R=RNG(hash2(u*31+step,v*17+977)*4294967296);   // dice keyed to the candidate: a change elsewhere does not reshuffle this house
+      const[x,z]=world(u+(hash2(u,v)-.5)*1.4,v+(hash2(v,u)-.5)*1.4);if(!housingCore(x,z))continue;
       const D=dCity(x,z);if(D<.36)continue; // Never turn low-density outskirts into a city grid.
       if(palFilled(x,z))continue;
       // Keep small public lanes through each repaired patch; old major roads are Foot obstacles.

@@ -7,7 +7,7 @@
 const REVIEW=/[?&]review/.test(location.search);
 const REV_LAYERS=[['ground','地形'],['water','水面'],['streets','街道地面'],['houses','房子'],['squares','小广场'],['stairs','台阶'],['roadDetail','路面细节'],
   ['models','模型'],['columns','柱子'],['trees','树'],['people','人'],['story','故事图层'],['far','城外'],['other','纪念建筑及其他']];
-const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['temples','神庙通路','#3de0e0']];
+const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['temples','神庙通路','#3de0e0']];
 const REV_TL={linked:'#3de0e0',stair:'#ffe14a',raised:'#9a9a9a',none:'#ff4040'};
 const REV_FACE={F0:'#9a9a9a',F1:'#59e08a',F2:'#3fd0e0',F3:'#5b8cff',F4:'#ff7ac8',blocked:'#ff4040'};
 const REV_WHAT={tree:'大树祭坛',compitum:'路口神龛',lacus:'水池',temple:'小庙',fountain:'喷泉',garden:'小园林',lane:'双三角'};
@@ -54,6 +54,9 @@ const REV_BUILD={
   lots(){const W=W0,a=[];let n=0;const add=P=>{if(P&&P.length>2){revDrape(a,null,P,true,6,.35);n++;}};
     for(const l of W.lotLog||[])add(l.L);for(const e of W.residentialEnvelopes||[])add(e.polygon);for(const p of W.nobleParcels||[])add(p.polygon);for(const w of W.warehouseLog||[])add(w.polygon);
     return{obj:revLineObj(a,null,'#58a8ff',.75),note:revFmt(n)+' 块'};},
+  // the lanes genBlocks cuts through the blocks outside the Subura (W.laneLog: P0-P1 across the mouth, P1-P2 along the lane)
+  lanes(){const a=[];let m=0;for(const P of W0.laneLog||[]){revDrape(a,null,P,true,4,.5);m+=Math.hypot(P[2][0]-P[1][0],P[2][1]-P[1][1]);}
+    return{obj:revLineObj(a,null,'#ff5a7a',.95),note:revFmt((W0.laneLog||[]).length)+' 条 · '+(m/1e3).toFixed(1)+' km'};},
   faces(){const W=W0,a=[],C=[],cnt={};for(const e of W.faceLog||[]){if(!e.P)continue;cnt[e.kind]=(cnt[e.kind]||0)+1;revDrape(a,C,e.P,true,4,.7,new THREE.Color(REV_FACE[e.kind]||'#ffffff'));}
     return{obj:revLineObj(a,C,0,1),note:Object.keys(cnt).sort().map(k=>`${k==='blocked'?'被占':k} ${cnt[k]}`).join(' · ')};},
   // per 10 m cell: the street centre the ruts follow (streets.js T2: doubled-angle direction, centre offset along the normal, rut strength)
