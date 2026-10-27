@@ -617,6 +617,15 @@ async function buildRome(msg){
    poi('百级台阶','Centum Gradus',-181,54,10,0,99,'从卡比托利欧山圣域走下去的大理石台阶。',800);poi('卡库斯台阶','Scalae Caci',-67,462,10,0,99,'帕拉蒂尼山西南角最古老的上山路，通到罗慕路斯草屋。',800);}
   const inPalZ=(x,z)=>segD(x,z,0,280,230,320)<205||segD(x,z,-262,40,-205,-225)<135,inPal=inPalZ,CAMPN=(x,z)=>x>-1150&&x<-420&&z>-1750&&z<-950,VAL=(x,z)=>Math.hypot(x-572,z-200)<150;
   const hz=(s,k)=>((Math.sin(s*12.9898+k*78.233)*43758.5453)%1+1)%1;   // per-building hash from the lot seed (no extra R() draws: the city layout stays as it was)
+  /* The height limit: the Subura keeps its tall insulae; everywhere else there are 70 % fewer houses of six storeys, 40 % fewer of five and
+     20 % fewer of four, and half that in a 200 m band around the Subura. A cut house loses one storey, so each rate below also takes in the houses
+     that come down from the storey above, and the cuts a slope refuses (set on the measured counts, layout of 74d6cc7). A cut that leaves a house too low for its
+     slope is not made. Called once a house is placed, keyed to its place: no dice drawn, the layout stays. W.storeyStats counts before/after.
+     【史】Augustus limited new buildings to 70 feet (Strabo 5.3.7); the tallest insulae stood in the crowded valleys like the Subura. */
+  const SUB_BOX=[200,1050,-950,-120];   // the Subura of bzone below
+  W.storeyCut=(x,z,n,fits)=>{const d=Math.hypot(Math.max(SUB_BOX[0]-x,0,x-SUB_BOX[1]),Math.max(SUB_BOX[2]-z,0,z-SUB_BOX[3])),zn=d===0?'subura':d<200?'band':'city',
+      q=zn==='city'?{6:.7,5:.58,4:.8}:zn==='band'?{6:.35,5:.48,4:.85}:null,S=(W.storeyStats||(W.storeyStats={}))[zn]||(W.storeyStats[zn]={before:{},after:{}});
+    const k=q&&q[n]&&hash2(Math.round(x*4)+9311,Math.round(z*4))<q[n]&&fits(n-1)?n-1:n;S.before[n]=(S.before[n]||0)+1;S.after[k]=(S.after[k]||0)+1;return k;};
   const fxb=(sd,t)=>{let f=0;if(t==='rich'){if(hz(sd,1)<.25)f|=16384;if(hz(sd,2)<.08)f|=32768;if(hz(sd,3)<.4)f|=65536;}else if(t==='mid'){if(hz(sd,1)<.15)f|=16384;if(hz(sd,2)<.08)f|=32768;if(hz(sd,3)<.2)f|=65536;if(hz(sd,4)<.2)f|=131072;}return f;};   // facades.md phase 4 table
   const lotP={dense:R=>{const r=R();const p={part:9,up:r<.35?30:r<.88?0:9,seed:R(),sty:3+8*(R()<.6?2:1),flUp:16|(R()<.3?32:0),nSt:4+Math.floor(R()*4),gH:3.6,sH:2.9,pitch:(15+R()*9)*DEG,lit:.4+R()*.6,flat:R()<.18,awn:.35,balc:.35};p.shr=hz(p.seed,2)<.08;if(p.up===p.part&&p.shr)p.fl=32768;return p;},
     mid:R=>{let fl=2;if(R()<.75)fl|=8;if(R()<.5)fl|=16;if(R()<.45)fl|=32;if(R()<.5)fl|=64;if(R()<.2)fl|=1024;if(R()<.15)fl|=2048;if(R()<.4)fl|=8192;if(R()<.15)fl|=4;if(R()<.3)fl|=128;const p={part:R()<.38?9:0,seed:R(),sty:Math.floor(R()*8)+8*(R()<.62?1:2),fl,nSt:3+Math.floor(R()*3),gH:4.2,sH:3.15,pitch:(17+R()*8)*DEG,lit:.4+R()*.6,flat:R()<.12,awn:.3,balc:.3,loggia:R()<.12};p.fl|=fxb(p.seed,'mid');p.loggiaA=hz(p.seed,5)<.1;return p;},
@@ -646,7 +655,7 @@ async function buildRome(msg){
    for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
-     ROME.GLB.push({n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
+     ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
    W.nInsulaGLB=nIn;}
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_SITE(x,z)?'aureaSite':'',chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,chunk:600});
@@ -656,7 +665,7 @@ async function buildRome(msg){
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
      const w=7+RI()*4.5,d=8+RI()*4.5,rot=(RI()<.5?0:Math.PI/2)+(RI()-.5)*.25;if(W.foot.hits(px,pz,w/2+.7,d/2+.7,rot,0))continue;const B=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=B.p(...[p[0],0,p[1]]);return[q[0],q[2]];}),ground=houseGround(W,P),y=ground.min+.15;if(ground.max-ground.min>4)continue;
      if(!residentialSiteAllowed(W,P))continue;
-     const n=3+Math.floor(RI()*3),top=3.9+(n-1)*2.9,F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16,nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());
+     const n=W.storeyCut(px,pz,3+Math.floor(RI()*3),()=>true),top=3.9+(n-1)*2.9,F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16,nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());
      if(RI()<.3){gI.set(3,.42);box(gI,F,0,3.7,d/2+.45,w/2-.4,.16,.45,31);box(gI,F,0,3.9,d/2+.86,w/2-.4,.9,.04,31);}W.foot.add(px,pz,w/2+.5,d/2+.5,rot);nI++;}
    for(const[cx,cz]of[[-485,-60],[-520,-10],[-455,-70],[-540,30],[-360,300],[-330,260],[-300,330]])for(let k=0;k<6;k++){const px=cx+(RI()-.5)*30,pz=cz+(RI()-.5)*30,rot=RI()*Math.PI;if(W.foot.hits(px,pz,1.8,1.3,rot,0))continue;const F=frame(px,gy(px,pz),pz,rot);
      gI.set(3,.4);for(const[sx,sz]of[[-1.5,-1],[1.5,-1],[-1.5,1],[1.5,1]])box(gI,F,sx,0,sz,.06,2.3,.06,31);box(gI,F,0,.8,0,1.4,.1,.8,31);gI.set(8,RI());gI.poly([F.p(-1.7,2.5,-1.2),F.p(1.7,2.5,-1.2),F.p(1.7,2.1,1.3),F.p(-1.7,2.1,1.3)],[0,1,0]);W.foot.add(px,pz,1.8,1.4,rot);nS++;}

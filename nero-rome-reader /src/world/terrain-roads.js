@@ -119,6 +119,7 @@ function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;le
     if(res){const q=houseGround(W,poly,2.5);if(!q)continue;y0=q.min;y1=q.max;}else for(const[lx,lz]of[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd],[0,0]]){const y=W.gy(x+lx*c+lz*s,z-lx*s+lz*c);y0=Math.min(y0,y);y1=Math.max(y1,y);}
     const baseH=typ==='slum'?3.5:gH,storeyH=typ==='slum'?2.85:sH,slopeLimit=nSt>=3?baseH+(nSt-3)*storeyH-.65:nSt===2?baseH-.65:1.5;
     if(res?y1-y0>slopeLimit:y1-y0>Z.step)continue;
+    if(W.storeyCut&&(typ==='insula'||typ==='tower'))nSt=W.storeyCut(x,z,nSt,k=>!(y1-y0>gH+(k-3)*sH-.65));   // the scene's height limit (Rome: monuments.js)
     W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z),typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH,sH);n++;
     if(Z.ppl&&R()<Z.ppl){for(let k=0;k<3;k++){const a=R()*TAU,rr=Math.max(hw,hd)+3;W.people.push([x+Math.cos(a)*rr,W.gy(x+Math.cos(a)*rr,z+Math.sin(a)*rr),z+Math.sin(a)*rr]);}}}
   const grp=layTag(new THREE.Group(),'houses');for(const g of chunks.values()){const m=g.mesh(MAT.city);if(m)grp.add(m);}W.scene.add(grp);W.cityGroup=grp;return n;}

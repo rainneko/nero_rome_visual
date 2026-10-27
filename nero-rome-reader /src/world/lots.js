@@ -113,14 +113,17 @@ function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.h
   for(let i=Math.floor((o.cx-rad)/cs);i<=Math.floor((o.cx+rad)/cs);i++)for(let j=Math.floor((o.cz-rad)/cs);j<=Math.floor((o.cz+rad)/cs);j++)for(const f of W.foot.map.get(W.foot.key(i,j))||[]){if(f.tag!=='road'||seen.has(f))continue;seen.add(f);
     if(typeof nobleOverlap==='function'?nobleOverlap(P,f):obb({...o,c:Math.cos(o.rot),s:Math.sin(o.rot)},f))return false;}return true;
 }
-function lotBuild0(W,g,L,o,R,smk){if(o.up===30&&o.nSt>4)o=Object.assign({},o,{up:0});   // timber frame only on houses of <= 4 storeys (facades.md); taller ones are plain plaster
+// a house of n storeys stands on this ground: its roof clears the uphill side, and the slope is no more than its lower storeys can take in
+function lotFits(L,o,ground,n){const H=ground.min+.15+o.gH+(n-1)*o.sH,roofRise=L.length===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
+  return!(ground.max>H+roofRise)&&!(ground.max-ground.min>lotSlopeLimit(n||1,o.gH,o.sH,Math.abs(pArea(L))));}
+function lotBuild0(W,g,L,o,R,smk){
   if(typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,L))return false;
   const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!houseRoadClear(W,eave))return false;
-  const ground=houseGround(W,L);if(!ground)return false;const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
-  const roofRise=n===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
-  if(groundMax>H+roofRise)return false;
-  const lotArea=Math.abs(pArea(L)),slopeLimit=lotSlopeLimit(o.nSt||1,gH,sH,lotArea);
-  if(groundMax-groundMin>slopeLimit)return false;
+  const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
+  if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
+    if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
+  if(o.up===30&&o.nSt>4)o=Object.assign({},o,{up:0});   // timber frame only on houses of <= 4 storeys (facades.md); taller ones are plain plaster
+  const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
   const yB=groundMin-.25;
   houseShell(W,g,IDF,L,yB,H,floorY,o);
   const sl=groundMax-groundMin;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,groundMin,groundMax,embeddedRise:sl,terrace:false,storeys:o.nSt,gH,sH,elite:!!(o.fl&262144)});
