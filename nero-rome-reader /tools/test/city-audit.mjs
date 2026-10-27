@@ -1,8 +1,9 @@
 // Whole-city audit for briefs/rome/city-generation-spec.md section 8 (H1-H4). Needs `npm run build:test`.
 // Usage: node tools/test/city-audit.mjs [--assert]   -> prints the counts, writes shots/city-audit.json; --assert fails on any H1-H3 hit or H4 < 50 %.
+// Open dist/city-audit.html?review (or dist/index.html?review served over http) for the layer panel and the generator lines (src/ui/review.js).
 import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import puppeteer from 'puppeteer';
 const root=process.cwd(),strict=process.argv.includes('--assert');fs.mkdirSync('shots',{recursive:true});
-const src=fs.readFileSync('dist/test.html','utf8');fs.writeFileSync('dist/city-audit.html',src.replace('window.__ready=true;loop();','window.__ready=true;'));
+const src=fs.readFileSync('dist/test.html','utf8');fs.writeFileSync('dist/city-audit.html',src.replace('window.__ready=true;loop();','window.__ready=true;if(REVIEW)loop();'));   // city-audit.html?review draws, with the review panel
 const browser=await puppeteer.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files']});const errors=[];
 try{const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('file://'+path.join(root,'dist/city-audit.html'),{timeout:0});
 await page.waitForFunction(()=>window.__ready||window.__err,{timeout:300000,polling:2000});

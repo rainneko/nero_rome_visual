@@ -93,7 +93,7 @@ function buildScenicEstates(W) {
     acad.push([q[0]-1350,q[2]+330,[w,d],af.rot]);
   }
   const acadCount=attemptSite('academy', [1350,-330], acad,4);
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='rome_scenic_courtyard_estates';W.scene.add(mesh);}
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='rome_scenic_courtyard_estates';W.scene.add(mesh);}
   // Emit the Greek columns together with the city's other pending column instances.
   flushColumns(W);
   W.scenicEstates=placed;

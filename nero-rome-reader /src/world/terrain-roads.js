@@ -30,24 +30,24 @@ function buildPatch(W,sp,hfn,zoneFn){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=x0+i*dx,z=z0+j*dz;P[k*3]=x;P[k*3+1]=H[k];P[k*3+2]=z;Z.set(zoneFn(x,z,H[k]),k*4);}
   const I=new Uint32Array(nx*nz*6);let q=0;for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*NX+i,b=a+1,c=a+NX,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I,1));G.computeVertexNormals();
-  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);
+  const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);
   const pt=W.patch={x0,z0,dx,dz,nx,nz,h:H,x1:x0+nx*dx,z1:z0+nz*dz};
   W.gy=(x,z)=>{const p=pt;if(x<p.x0||x>=p.x1||z<p.z0||z>=p.z1)return gy0(x,z);const fx=(x-p.x0)/p.dx,fz=(z-p.z0)/p.dz,i=Math.min(p.nx-1,Math.floor(fx)),j=Math.min(p.nz-1,Math.floor(fz)),u=fx-i,v=fz-j,N=p.nx+1,a=p.h[j*N+i],b=p.h[j*N+i+1],c=p.h[(j+1)*N+i],d=p.h[(j+1)*N+i+1];return(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);};}
 function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float32Array(N*N*3),Z=new Float32Array(N*N*4);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
   const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I.slice(0,q),1));G.computeVertexNormals();
-  const m=new THREE.Mesh(G,MAT.terrain);m.receiveShadow=true;m.castShadow=false;W.scene.add(m);W.terrainGeo=G;W.patchRects=pl.map(p=>p.rect);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));   // gradeRoads moves coarse vertices later and leaves the patches alone
+  const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);W.terrainGeo=G;W.patchRects=pl.map(p=>p.rect);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));   // gradeRoads moves coarse vertices later and leaves the patches alone
   if(far){const F=new THREE.PlaneGeometry(120000,120000,140,140);F.rotateX(-Math.PI/2);const p=F.attributes.position,FZ=new Float32Array(p.count*4);
     for(let i=0;i<p.count;i++){const x=p.getX(i)+W.farC[0],z=p.getZ(i)+W.farC[1];p.setX(i,x);p.setZ(i,z);const inside=x>g.x0+60&&x<g.x1-60&&z>g.z0+60&&z<g.z1-60;
       p.setY(i,inside?far(x,z)-40:far(x,z)-1);FZ.set([0,0,.8*sstep(5000,9000,Math.hypot(x-W.farC[0],z-W.farC[1]))*(1-sstep(30000,45000,Math.hypot(x,z))),0],i*4);}
-    F.setAttribute('aZ',new THREE.BufferAttribute(FZ,4));F.computeVertexNormals();const fm=new THREE.Mesh(F,MAT.terrain);fm.receiveShadow=false;W.scene.add(fm);}}
+    F.setAttribute('aZ',new THREE.BufferAttribute(FZ,4));F.computeVertexNormals();const fm=layTag(new THREE.Mesh(F,MAT.terrain),'ground');fm.receiveShadow=false;W.scene.add(fm);}}
 function riverMesh(W,pts,half,y,mat){const P=[],I=[];let k=0;
   for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let tx=b[0]-a[0],tz=b[1]-a[1];const l=Math.hypot(tx,tz);tx/=l;tz/=l;
     const hw=typeof half==='function'?half(i):half;P.push(pts[i][0]-tz*hw,y,pts[i][1]+tx*hw,pts[i][0]+tz*hw,y,pts[i][1]-tx*hw);
     if(i>0){I.push(k-2,k,k-1,k-1,k,k+1);}k+=2;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.setIndex(I);G.computeVertexNormals();
-  const nn=G.attributes.normal;for(let i=0;i<nn.count;i++)nn.setXYZ(i,0,1,0);const m=new THREE.Mesh(G,mat);m.receiveShadow=true;W.scene.add(m);return m;}
+  const nn=G.attributes.normal;for(let i=0;i<nn.count;i++)nn.setXYZ(i,0,1,0);const m=layTag(new THREE.Mesh(G,mat),'water');m.receiveShadow=true;W.scene.add(m);return m;}
 function densify(pts,step){const out=[];for(let i=0;i<pts.length-1;i++){const[a,b]=[pts[i],pts[i+1]];const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));
   for(let k=0;k<n;k++)out.push([lerp(a[0],b[0],k/n),lerp(a[1],b[1],k/n)]);}out.push(pts[pts.length-1]);return out;}
 /* main roads: only their corridors are reserved here (no buildings, no trees); the surface, grade and kerbs come from the street raster (streets.js) */
@@ -121,7 +121,7 @@ function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;le
     if(res?y1-y0>slopeLimit:y1-y0>Z.step)continue;
     W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z),typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH,sH);n++;
     if(Z.ppl&&R()<Z.ppl){for(let k=0;k<3;k++){const a=R()*TAU,rr=Math.max(hw,hd)+3;W.people.push([x+Math.cos(a)*rr,W.gy(x+Math.cos(a)*rr,z+Math.sin(a)*rr),z+Math.sin(a)*rr]);}}}
-  const grp=new THREE.Group();for(const g of chunks.values()){const m=g.mesh(MAT.city);if(m)grp.add(m);}W.scene.add(grp);W.cityGroup=grp;return n;}
+  const grp=layTag(new THREE.Group(),'houses');for(const g of chunks.values()){const m=g.mesh(MAT.city);if(m)grp.add(m);}W.scene.add(grp);W.cityGroup=grp;return n;}
 function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R()*.45){
   const PF=frame(x,0,z,rot),PP=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=PF.p(q[0],0,q[1]);return[p[0],p[2]];});if(typ!=='ware'&&typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,PP))return;
 

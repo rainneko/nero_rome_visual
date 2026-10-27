@@ -268,8 +268,9 @@ function estateFallback(W,lots,o,R,addLot,record){let placed=0;const floors={};c
   if(small&&key!==null&&key!==undefined&&(!o.lotOK||o.lotOK(ob.cx,ob.cz))&&!W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,(o.margin||0)+.8)&&houseRoadClear(W,P)){const p={part:R()<.5?0:9,seed:R(),sty:R()<.5?0:3,fl:2|16,nSt:2+Math.floor(R()*2),gH:3.8,sH:2.9,pitch:.36+R()*.09,lit:1,flat:false,noSplit:true,noDecor:true};if(typeof nobleQuarterAt==='function'&&nobleQuarterAt(ob.cx,ob.cz)==='core')p.nSt=3;if(lotBuild(W,addLot(ob.cx,ob.cz,key),P,p,R,null)){W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);placed++;const rows=(W.lotLog||[]).slice(-1),n=rows[0]?.storeys||p.nSt;floors[n]=(floors[n]||0)+1;return;}}
   const halves=splitResidentialPolygon(P);if(halves.length===2){put(halves[0],depth+1);put(halves[1],depth+1);}};for(const L of lots){const inset=pInset(L,.4);if(inset&&Math.abs(pArea(inset))>14)put(inset);}
   record.fallbackHomes=placed;record.fallbackFloors=floors;const S=estatePlanStats(W);S.fallbackHomes+=placed;for(const k of Object.keys(floors))S.fallbackFloors[k]=(S.fallbackFloors[k]||0)+floors[k];return placed;}
-function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.dens),sx=o.sx,sz=o.sz,th=o.rot,c=Math.cos(th),s=Math.sin(th),E=o.ext,chunks=new Map(),cs=o.chunk||600,smk=[];let nL=0;
-  const G=(x,z,k)=>{const key=k+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};
+function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:o.ext});   // kept for the review panel's zone edges
+  const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.dens),sx=o.sx,sz=o.sz,th=o.rot,c=Math.cos(th),s=Math.sin(th),E=o.ext,chunks=new Map(),cs=o.chunk||600,smk=[];let nL=0;
+  const G=(x,z,k,lay='houses')=>{const key=k+'|'+lay+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,lay,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};   // lay: the squares get their own chunks so the review panel can show them apart
   let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,z]of[[E[0],E[1]],[E[2],E[1]],[E[2],E[3]],[E[0],E[3]]]){const u=x*c-z*s,v=x*s+z*c;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v);}
   const i0=Math.floor(u0/sx)-1,i1=Math.ceil(u1/sx)+1,j0=Math.floor(v0/sz)-1,j1=Math.ceil(v1/sz)+1,NJ=j1-j0+1,N=[];
   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){let u=i*sx+(hash2(i,j*7+1)-.5)*sx*.26,v=j*sz+(hash2(i*3+5,j)-.5)*sz*.26;const wu=34*(fbm(u*.0015+3,v*.0015,3)-.5)*2,wv=34*(fbm(u*.0015,v*.0015+9,3)-.5)*2;u+=wu;v+=wv;N.push([u*c+v*s,-u*s+v*c]);}
@@ -277,11 +278,11 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
   for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
     const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
     let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
-      if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],''),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
+      if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
     for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
       // a block a main road crosses is cut along the road's corridor; each piece is judged on its own (faces.js): a whole block (F5) goes on below, the rest become squares
       if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(const P of pieces){const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
-          if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],''),P,f,R,Z.kind);else faceStat(W,'F0');}continue;}}
+          if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],'','squares'),P,f,R,Z.kind);else faceStat(W,'F0',P);}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
       const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring
       if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),rl=ringLots(B,dd,lw,R);
@@ -335,7 +336,7 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
         reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,walled:!!closure.walled,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
         if(Z.kind==='domus')reserveResidentialArea(W,EB,'senatorial-estate');}
       for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}}}   // blkLot: the lot's real outline, for lotHits
-  const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){if(e.k!=='')G2=groups[e.k]=preLayerGroup(W,e.k);else{G2=groups[e.k]=new THREE.Group();W.scene.add(G2);}}G2.add(m);}
+  const groups={};for(const e of chunks.values()){const m=layTag(e.g.mesh(MAT.city),e.lay);if(!m)continue;let G2=groups[e.k];if(!G2){if(e.k!=='')G2=groups[e.k]=preLayerGroup(W,e.k);else{G2=groups[e.k]=new THREE.Group();W.scene.add(G2);}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 
 /* TEST tool: residential embedding under the lowest-ground policy; no raised terraces. */

@@ -27,7 +27,7 @@ function fillCentralHousing(W){const R=RNG(641024),g=new GB(1<<18),late=new GB(1
         if(!lotBuild(W,G,P,profile,R,null))continue;rec={polygon:P,x,z,y:ground.min+.15,groundMin:ground.min,groundMax:ground.max,storeys:ns};}
       const ob=lotOBB(P),f=W.foot.add(ob.cx,ob.cz,ob.hw+.25,ob.hd+.25,ob.rot);f.poly=P;rec.early=early;records.push(rec);stats.total++;added++;if(early)stats.early++;if(ground.max-ground.min>1)stats.sloped++;stats.floors[rec.storeys]=(stats.floors[rec.storeys]||0)+1;
     }stats.byPass.push({size:[w,d],added});}
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='central_housing_repairs';W.scene.add(mesh);}const m=late.mesh(MAT.city);
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='central_housing_repairs';W.scene.add(mesh);}const m=layTag(late.mesh(MAT.city),'houses');
   if(m){const G=new THREE.Group();G.name='preAureaHomes';G.userData.rise=0;G.visible=false;G.add(m);W.scene.add(G);(W.preLayers||(W.preLayers={})).preAureaHomes=G;}
   W.housingGapStats=stats;W.housingGapHomes=records;
 }

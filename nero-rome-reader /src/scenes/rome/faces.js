@@ -11,7 +11,7 @@ function faceInfo(P){let A=Math.abs(pArea(P)),per=0,Lmax=0,iL=0;const n=P.length
   const corners=ang.filter(a=>a<170).length;return{A,n:corners,minAng:Math.min(...ang),rho:2*A/(per||1),Lmax,iL,ang};}
 function faceClass(P){const f=faceInfo(P);
   f.kind=f.A<80||f.rho<3?'F0':f.n===3&&f.A<300?'F1':f.n===3&&f.A<1200?'F2':f.n>=4&&f.A<2500&&(f.minAng<55||f.rho<10)?'F4':f.n===3?'F2':'F5';return f;}
-function faceStat(W,k,P){const S=W.faceStats||(W.faceStats={});S[k]=(S[k]||0)+1;if(P)(W.faceLog||(W.faceLog=[])).push({kind:k,c:pCen(P).map(Math.round),area:Math.round(Math.abs(pArea(P)))});}
+function faceStat(W,k,P){const S=W.faceStats||(W.faceStats={});S[k]=(S[k]||0)+1;if(P)(W.faceLog||(W.faceLog=[])).push({kind:k,c:pCen(P).map(Math.round),area:Math.round(Math.abs(pArea(P))),P});}
 // the block cut by the widest main road strip that crosses it: the pieces on either side of the road's reserved corridor, or null
 function faceRoadCut(W,B){const ob=lotOBB(B),r=Math.hypot(ob.hw,ob.hd);let best=null;
   for(const[w,P]of W.roadList||[]){const half=w/2+(w>=7?2.6:1.2);for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];if(segD(ob.cx,ob.cz,a[0],a[1],b[0],b[1])>r+half)continue;
@@ -37,7 +37,7 @@ const faceInterior=(P,k)=>{const c=pCen(P);return P.map(p=>lp(p,c,k));};
 // What stands there is drawn from the piece's own place (a hash of its centre), not from the block loop's shared dice R: any edit upstream
 // shifted R and swapped a square's big tree for a basin. R is still drawn as the old code drew it, so the houses after the piece keep their dice.
 const FACE_SALT=2283;   // keeps the squares in the promo shots as they were (the big tree and altar at -353,-792, the shrine and garden by -331,-729, the fountains by 183,-623) and 72 of the 106 others
-function facePlace(W,g,P,f,R,kind){const c=pCen(P),y=W.gy(...c);if(lotHits(W,P,.5,'road')){faceStat(W,'blocked');return 0;}   // something already stands on it (a monument, an earlier house)
+function facePlace(W,g,P,f,R,kind){const c=pCen(P),y=W.gy(...c);if(lotHits(W,P,.5,'road')){faceStat(W,'blocked',P);return 0;}   // something already stands on it (a monument, an earlier house)
   const a=P[f.iL],b=P[(f.iL+1)%P.length],rot=Math.atan2(-(b[1]-a[1]),b[0]-a[0]),mid=lp(a,b,.5);   // the longest side: the road the piece fronts
   facePave(W,g,P,'face-'+f.kind);faceStat(W,f.kind,P);const e=W.faceLog[W.faceLog.length-1];
   const r0=R();for(let k=f.kind==='F1'?+(r0<.4):f.kind==='F2'?1:kind==='dense'||r0<.5?0:2*P.length;k>0;k--)R();
@@ -55,7 +55,7 @@ function facePlace(W,g,P,f,R,kind){const c=pCen(P),y=W.gy(...c);if(lotHits(W,P,.
 // F3: a block cut by a diagonal lane, both triangles one square: the lane in grey stone, a basin at its middle, a cypress in each sharp corner
 function faceDoubleTriangle(W,g,B,diag,R){const i0=diag?0:1,A=B[i0],C=B[i0+2],c=lp(A,C,.5),h=houseGround(W,B);if(!h||h.max-h.min>2.5)return false;
   if(W.foot.hits(...lotOBBArgs(B)))return false;
-  facePave(W,g,B,'face-F3');faceStat(W,'F3',B);
+  facePave(W,g,B,'face-F3');faceStat(W,'F3',B);W.faceLog[W.faceLog.length-1].what='lane';
   const dx=C[0]-A[0],dz=C[1]-A[1],l=Math.hypot(dx,dz),F=frame(c[0],0,c[1],Math.atan2(-dz,dx));g.set(33,.4);
   faceDrape(W,g,[F.p(-l/2,0,-1.3),F.p(l/2,0,-1.3),F.p(l/2,0,1.3),F.p(-l/2,0,1.3)].map(p=>[p[0],p[2]]),.14);   // the lane
   romePlace('rome_lacus',c[0],W.gy(...c),c[1],F.rot,{inst:true});

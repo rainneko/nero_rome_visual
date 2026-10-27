@@ -29,6 +29,7 @@
     "src/scenes/antium/harbour.js",
     "src/scenes/antium/main.js",
     "src/ui/book.js",
+    "src/ui/review.js",
     "src/ui/app.js",
     "src/ui/empire.js"
   ],

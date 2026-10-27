@@ -203,14 +203,14 @@ function buildNobleQuarter(W){
   for(const r of roads){const dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],len=Math.hypot(dx,dz);if(!len)continue;
     W.foot.add((r.a[0]+r.b[0])/2,(r.a[1]+r.b[1])/2,len/2,r.width/2,Math.atan2(-dz,dx),'road');}
   W.nobleProcedural=plots.filter(p=>!p.asset);W.nobleParcels=plots;W.nobleBlocks=blocks;W.nobleRoads=roads;W.nobleHomes=homes;
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='noble_dense_courtyard_blocks';W.scene.add(mesh);}const mA=gA.mesh(MAT.city);if(mA)preLayerGroup(W,'aureaSite').add(mA);
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='noble_dense_courtyard_blocks';W.scene.add(mesh);}const mA=layTag(gA.mesh(MAT.city),'houses');if(mA)preLayerGroup(W,'aureaSite').add(mA);
   for(const P of plots){const ob=lotOBB(P.polygon),f=W.foot.add(ob.cx,ob.cz,ob.hw+.8,ob.hd+.8,ob.rot);f.poly=nobleOffset(P.polygon,P.polygon.map(()=>-.7))||P.polygon;f.nobleHome=true;}
   // Exact terrain-following paving preserves narrow lanes below the 2.5m city raster resolution.
   const pg=new GB(1<<15),pgA=new GB(1<<12),seen=new Set();for(const r of roads){const ka=r.a.map(x=>x.toFixed(2)).join(','),kb=r.b.map(x=>x.toFixed(2)).join(','),key=[ka,kb].sort().join('|');if(seen.has(key))continue;seen.add(key);
     const dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],l=Math.hypot(dx,dz),nx=-dz/l,nz=dx/l,N=Math.ceil(l/2.5);
     for(let k=0;k<N;k++){const a=lp(r.a,r.b,k/N),b=lp(r.a,r.b,(k+1)/N),c=lp(a,b,.5);if(nobleQuarterAt(...c)!=='core'||fixed.some(f=>Math.abs(f.c*(c[0]-f.cx)-f.s*(c[1]-f.cz))<f.hw+.2&&Math.abs(f.s*(c[0]-f.cx)+f.c*(c[1]-f.cz))<f.hd+.2&&f.tag!=='road'))continue;
       const P=[[-1,a],[1,a],[1,b],[-1,b]].map(([s,p])=>[p[0]+nx*r.width/2*s,p[1]+nz*r.width/2*s]),gp=AUREA_SITE(...c)?pgA:pg;gp.set(r.width>4?10:33,.4);gp.poly(P.map(p=>[p[0],W.gy(...p)+.16,p[1]]),[0,1,0]);}}
-  const pm=pg.mesh(MAT.city,false);if(pm){pm.name='noble_main_streets_and_lanes';W.scene.add(pm);}const pA=pgA.mesh(MAT.city,false);if(pA)preLayerGroup(W,'aureaSite').add(pA);
+  const pm=layTag(pg.mesh(MAT.city,false),'roadDetail');if(pm){pm.name='noble_main_streets_and_lanes';W.scene.add(pm);}const pA=layTag(pgA.mesh(MAT.city,false),'roadDetail');if(pA)preLayerGroup(W,'aureaSite').add(pA);
   W.pois.push({n:'卡里奈·庭院街宅',l:'Carinae',x:680,z:-40,y:W.gy(680,-40)+25,s0:0,s1:99,d:1000,sub:true,
     info:'【史】卡里奈有显贵住宅。此处用贴邻宅院、曲折街巷和三／四层混合体量作设计推演；层数、户数和道路宽度不是考古测绘结论。'});
 }

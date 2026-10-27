@@ -71,7 +71,7 @@ function buildAcademyHousing(W){
     homes.push(rec);placed.push(rect(u,v,34,32,0));mediumCourts++;
   }
 
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='academy_senatorial_street_groups';W.scene.add(mesh);}
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='academy_senatorial_street_groups';W.scene.add(mesh);}
   // Flush shared courtyard columns once after all houses have been emitted.
   flushColumns(W);
   W.academyHomes=homes;

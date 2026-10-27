@@ -111,7 +111,7 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     const off=sw>0?sa/sw:0;T2[k*4+2]=mx*cs>7?0:Math.min(255,aw[k]*40);T2[k*4+3]=Math.round(Math.max(0,Math.min(255,(off/8*.5+.5)*255)));}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
-  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
+  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,cen:T2,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
   W.streetAt=(x,z)=>W.street.at(x,z)>0;
   console.log('streets',nx+'x'+nz,'cs',cs,'dirt',cnt[1],'stone',cnt[2],'marble',cnt[3],Math.round(performance.now()-t0)+' ms');}
 /* Stairs by district (author, 2026-10-26: 大理石、砖石、泥巴). 3 white marble, cheek walls on both sides with a coping; 2 grey stone treads, brick
@@ -170,7 +170,7 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
     for(let q=0;q<k;q++){const ta=fit.ta+q*seg,ax=ox+dx*ta,az=oz+dz*ta,bx=ax+dx*seg,bz=az+dz*seg,n=flight(M,ax,az,dx,dz,seg,hw,gy(bx,bz));
       if(n){(W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:hw*2,run:seg,mat,marble:mat===3,drop:gy(ax,az)-gy(bx,bz),n});nSt++;nMat[mat]++;built++;}}
     if(!built)no('slope');}
-  const m=g.mesh(MAT.city);if(m){m.name='streetStairs';W.scene.add(m);}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
+  const m=layTag(g.mesh(MAT.city),'stairs');if(m){m.name='streetStairs';W.scene.add(m);}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
 /* main-road stairs: where a road's graded bed still climbs more than 30 % (gradeRoads caps its cut and fill at 4 m) the paint stops and a flight follows
    the road, as wide as the road, in its district's material (S.region). A run is where the signed grade over +-2.5 m passes 30 %, grown while it stays
    above 18 % the same way; same-way runs less than 5 m apart are one flight; a flight needs 1 m of drop and treads of at least 26 cm.
@@ -188,7 +188,7 @@ function roadStairs(W,list,o={}){const S=W.street,gy=W.gy,g0=new GB(1<<15),gl={}
       // each tread sits on the bed under it (a straight run sank into humps and floated over sags), at least 5 cm below the step above, never below the foot
       let yp=yt+.05;for(let s=0;s<n;s++){const F=at((s+.5)*td),yy=Math.max(yt-drop,Math.min(yp-.05,gy(F.ox,F.oz)+.04));stairStep(g,M,F,0,td,hw,yy,s);stairCheek(W,g,M,F,0,td,hw,yy);yp=yy;}
       out.push({x:mid[0],z:mid[1],w,len:+len.toFixed(1),drop:+drop.toFixed(1),n,mat});nMat[mat]++;}}
-  const m=g0.mesh(MAT.city);if(m)W.scene.add(m);for(const k in gl){const mk=gl[k].mesh(MAT.city);if(mk)preLayerGroup(W,k).add(mk);}
+  const m=layTag(g0.mesh(MAT.city),'stairs');if(m)W.scene.add(m);for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city),'stairs');if(mk)preLayerGroup(W,k).add(mk);}
   W.roadStairMat=nMat;console.log('road stairs',out.length,JSON.stringify(nMat));return out;}
 // raised kerbs and sidewalks only along the grey-stone main roads (they stop where the road is dirt or a building stands)
 function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0;   // o.layerAt(x,z): a story-state group key for the kerb there (e.g. the streets the Golden House takes), or null
@@ -219,8 +219,8 @@ function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0
                 for(const h of[-1,1]){gw.set(42,.4);gw.poly([P(a,h*hw),P(b,h*hw),P(b,0),P(a,0)],[0,1,0],[[0,va],[0,vb],[1,vb],[1,va]]);}}   // u = 0 at the edges, 1 on the centre line; v = fade at the run ends
               nW++;}}
           s0=s1+2.5+R()*R()*12;ri++;}}}
-    const mw=gW.mesh(MAT.cityDecal,false);if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=glW[k].mesh(MAT.cityDecal,false);if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
-  const m=g0.mesh(MAT.city,false);if(m)W.scene.add(m);for(const k in gl){const mk=gl[k].mesh(MAT.city,false);if(mk)preLayerGroup(W,k).add(mk);}}
+    const mw=layTag(gW.mesh(MAT.cityDecal,false),'roadDetail');if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=layTag(glW[k].mesh(MAT.cityDecal,false),'roadDetail');if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
+  const m=layTag(g0.mesh(MAT.city,false),'roadDetail');if(m)W.scene.add(m);for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city,false),'roadDetail');if(mk)preLayerGroup(W,k).add(mk);}}
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
    props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed */
 function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
