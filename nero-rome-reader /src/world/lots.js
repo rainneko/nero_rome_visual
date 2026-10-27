@@ -224,9 +224,17 @@ function cutAway(B,f,m){const c=pCen(B),dx=c[0]-f.cx,dz=c[1]-f.cz;
 // (a second genBlocks call used to replace the first one's entry, leaving its houses hidden in every state).
 function preLayerGroup(W,k){const P=W.preLayers||(W.preLayers={});let G=P[k];if(!G){G=new THREE.Group();G.name=k;G.userData.rise=0;G.visible=false;W.scene.add(G);P[k]=G;}return G;}
 // A ring of lots round a court: block B inset by the wing depth dd gives the court; each edge is cut into lots about lw wide.
-function ringLots(B,dd,lw,R){const I=pInset(B,dd);if(!I||pArea(I)<=40)return{court:null,lots:[]};const lots=[];
-  for(let e=0;e<B.length;e++){const a=B[e],b=B[(e+1)%B.length],ia=I[e],ib=I[(e+1)%B.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));
-    let t0=0;for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(a,b,t0),lp(a,b,t1),lp(ia,ib,t1),lp(ia,ib,t0)]);t0=t1;}}
+// the lot boundary in T (lot breaks along a side, 0..1) nearest the middle; a side of one lot gets a break at .5
+const laneBreak=T=>{if(T.length===2)T.splice(1,0,.5);let kb=1;for(let k=2;k<T.length-1;k++)if(Math.abs(T[k]-.5)<Math.abs(T[kb]-.5))kb=k;return kb;};
+// lane (optional, {w, laneP, gaps}): the two longest sides are cut through to the court at the lot break nearest their middle, so the ring is two
+// halves with a lane between them; the lanes go to lane.laneP, their mouths on the court's sides to lane.gaps (genBlocks keeps them out of the walls)
+function ringLots(B,dd,lw,R,lane){const I=pInset(B,dd);if(!I||pArea(I)<=40)return{court:null,lots:[]};const lots=[],n=B.length,
+    eL=e=>Math.hypot(B[(e+1)%n][0]-B[e][0],B[(e+1)%n][1]-B[e][1]),cut=lane?[...Array(n).keys()].sort((p,q)=>eL(q)-eL(p)).slice(0,2):[];
+  for(let e=0;e<n;e++){const a=B[e],b=B[(e+1)%n],ia=I[e],ib=I[(e+1)%n],len=eL(e),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R())))),T=[0];
+    for(let k=1;k<=nl;k++)T.push(k===nl?1:(k+(R()-.5)*.5)/nl);   // the same dice in the same order as before the lanes
+    const li=Math.hypot(ib[0]-ia[0],ib[1]-ia[1]),kb=cut.includes(e)&&li>=lane.w+8?laneBreak(T):-1,eo=kb>0?lane.w/2/len:0,ei=kb>0?lane.w/2/li:0;
+    for(let k=1;k<T.length;k++){const t0=T[k-1]+(k-1===kb?eo:0),t1=T[k]-(k===kb?eo:0),u0=T[k-1]+(k-1===kb?ei:0),u1=T[k]-(k===kb?ei:0);lots.push([lp(a,b,t0),lp(a,b,t1),lp(ia,ib,u1),lp(ia,ib,u0)]);}
+    if(kb>0){const tb=T[kb];lane.laneP.push([lp(a,b,tb-eo),lp(a,b,tb+eo),lp(ia,ib,tb+ei),lp(ia,ib,tb-ei)]);lane.gaps.push({edge:e,from:tb-ei,to:tb+ei});}}
   return{court:I,lots};}
 // Keep the part of polygon P on one side of the line p.n = c (sign +1: p.n >= c).
 function clipHalf(P,nx,nz,c,sign){const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],da=sign*(a[0]*nx+a[1]*nz-c),db=sign*(b[0]*nx+b[1]*nz-c);if(da>=0)out.push(a);if((da>=0)!==(db>=0))out.push(lp(a,b,da/(da-db)));}return out.length>=3?out:null;}
@@ -278,7 +286,8 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
   const i0=Math.floor(u0/sx)-1,i1=Math.ceil(u1/sx)+1,j0=Math.floor(v0/sz)-1,j1=Math.ceil(v1/sz)+1,NJ=j1-j0+1,N=[];
   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){let u=i*sx+(hash2(i,j*7+1)-.5)*sx*.26,v=j*sz+(hash2(i*3+5,j)-.5)*sz*.26;const wu=34*(fbm(u*.0015+3,v*.0015,3)-.5)*2,wv=34*(fbm(u*.0015,v*.0015+9,3)-.5)*2;u+=wu;v+=wv;N.push([u*c+v*s,-u*s+v*c]);}
   const nd=(i,j)=>N[(i-i0)*NJ+(j-j0)];
-  for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
+  // each block draws from its own dice, keyed to its place in the grid: a change in one block (a lane, a rule) no longer reshuffles every house after it
+  for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const R=RNG(hash2(i*7919+(o.seed||11)*65537,j*104729+911)*4294967296);let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
     const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
     let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
       if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
@@ -288,12 +297,20 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
           if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],'','squares'),P,f,R,Z.kind);else faceStat(W,'F0',P);}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
       const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring
-      if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),rl=ringLots(B,dd,lw,R);
+      // lanes (o.lanes, the author's rule: outside the Subura no block is one closed mass of houses): a ring is cut through to its court on both
+      // long sides; a row block gets a cross lane at the lot break nearest its middle, and a deep one (>= 26 m) mostly also a lane between its two
+      // back-to-back rows. 2.6-3.4 m wide, keyed to the block (no dice drawn). Reserved as road after the lots are built (laneP, W.laneLog).
+      const lanes=!!o.lanes&&(Z.kind==='mid'||Z.kind==='dense')&&o.lanes(cc[0],cc[1]),laneW=2.6+.8*hash2(i*7919+(o.seed||11),j*104729+3),laneP=[],gaps=[];
+      if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),rl=ringLots(B,dd,lw,R,lanes?{w:laneW,laneP,gaps}:null);
         if(rl.court){court=rl.court;lots=rl.lots;}
-        else lots.push(B);}
+        else{lots.push(B);laneP.length=0;}}
       else{let A=B[0],Bq=B[1],C=B[2],D=B[3];if(Math.hypot(Bq[0]-A[0],Bq[1]-A[1])+Math.hypot(D[0]-C[0],D[1]-C[1])<Math.hypot(C[0]-Bq[0],C[1]-Bq[1])+Math.hypot(A[0]-D[0],A[1]-D[1])){const t=A;A=Bq;Bq=C;C=D;D=t;}
-        const M1=lp(D,A,.5),M2=lp(Bq,C,.5),len=Math.hypot(Bq[0]-A[0],Bq[1]-A[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));let t0=0;
-        for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(A,Bq,t0),lp(A,Bq,t1),lp(M1,M2,t1),lp(M1,M2,t0)]);lots.push([lp(D,C,t1),lp(D,C,t0),lp(M1,M2,t0),lp(M1,M2,t1)]);t0=t1;}}
+        const len=Math.hypot(Bq[0]-A[0],Bq[1]-A[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R())))),T=[0];for(let k=1;k<=nl;k++)T.push(k===nl?1:(k+(R()-.5)*.5)/nl);
+        const dep=(Math.hypot(D[0]-A[0],D[1]-A[1])+Math.hypot(C[0]-Bq[0],C[1]-Bq[1]))/2,dl=lanes&&dep>=26&&hash2(j*31+(o.seed||11),i*17+5)<.65?laneW/2/dep:0,   // the back lane, as a fraction of the depth from the middle
+          N1a=lp(D,A,.5+dl),N1b=lp(C,Bq,.5+dl),N2a=lp(D,A,.5-dl),N2b=lp(C,Bq,.5-dl),kb=lanes&&len>=34?laneBreak(T):-1,ec=kb>0?laneW/2/len:0;
+        for(let k=1;k<T.length;k++){const t0=T[k-1]+(k-1===kb?ec:0),t1=T[k]-(k===kb?ec:0);lots.push([lp(A,Bq,t0),lp(A,Bq,t1),lp(N1a,N1b,t1),lp(N1a,N1b,t0)]);lots.push([lp(D,C,t1),lp(D,C,t0),lp(N2a,N2b,t0),lp(N2a,N2b,t1)]);}
+        if(kb>0){const tb=T[kb];laneP.push([lp(A,Bq,tb-ec),lp(A,Bq,tb+ec),lp(D,C,tb+ec),lp(D,C,tb-ec)]);}
+        if(dl>0)laneP.push([N1a,N2a,N2b,N1b]);}   // every lane: P0-P1 across its mouth, P1-P2 along it
       const blockLotStart=W.lotLog?.length||0;
       let courtPlan=court&&Z.kind==='domus'&&typeof courtyardDeckPlan==='function'?courtyardDeckPlan(W,court,ESTATE_TERRACE):null;
       if(o.whole&&Z.kind!=='domus'&&lots.some(L=>{const ob=lotOBB(L);return W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8);}))continue;
@@ -328,6 +345,7 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
           if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}else rs('buildFail');}
       if(court&&!domus&&footTagHit(W,court,'road'))court=null;   // a road crosses this block: its lots on the road were skipped, and the yard between them is no courtyard
       let closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
+      if(court&&gaps.length&&!closure.closed){const left=closure.uncovered.filter(u=>!gaps.some(g=>g.edge===u.edge&&u.from>=g.from-.03&&u.to<=g.to+.03));closure={closed:!left.length,uncovered:left,lanes:gaps};}   // a lane's mouth is an opening, not a gap to wall up
       if(court&&!domus&&!closure.closed){let per=0,gap=0;for(let e=0;e<court.length;e++){const a=court[e],b=court[(e+1)%court.length];per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}for(const u of closure.uncovered){const a=court[u.edge],b=court[(u.edge+1)%court.length];gap+=(u.to-u.from)*Math.hypot(b[0]-a[0],b[1]-a[1]);}
         const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';
         if(gap>per*.4)court=null;   // under 60 % of the ring built: no yard and no reservation, the gap-filling pass may build there
@@ -338,7 +356,8 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
       if(court&&built.length&&typeof reserveResidentialArea==='function'&&(!domus||estate?.status==='committed')){
         reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,walled:!!closure.walled,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
         if(Z.kind==='domus')reserveResidentialArea(W,EB,'senatorial-estate');}
-      for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}}}   // blkLot: the lot's real outline, for lotHits
+      for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}   // blkLot: the lot's real outline, for lotHits
+      if(built.length)for(const P of laneP){const ob=lotOBB(P);W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,'road').lane=true;(W.laneLog||(W.laneLog=[])).push(P);}}}
   const groups={};for(const e of chunks.values()){const m=layTag(e.g.mesh(MAT.city),e.lay);if(!m)continue;let G2=groups[e.k];if(!G2){if(e.k!=='')G2=groups[e.k]=preLayerGroup(W,e.k);else{G2=groups[e.k]=new THREE.Group();W.scene.add(G2);}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 

@@ -6,6 +6,8 @@
 * Classic scripts and globals, no modules, three.js r147. Keep `build.config.json` order.
 * Review mode: `?review` on index.html (over http), test.html or city-audit.html. Layer switches with counts and the generator's lines
   (`src/ui/review.js`); tag new meshes with `layTag(mesh, layer)` where they are made, or they count as "other".
+* City dice are keyed to place: each block in `genBlocks`, each `genCity` cell and each `fillCentralHousing` candidate has its own RNG.
+  Keep it that way (no shared stream across blocks), so a change in one place does not reshuffle the houses everywhere else.
 * Main roads are routed from the waypoints in `monuments.js` (`MAIN`) and baked into `src/scenes/rome/road-network.js`.
   After changing `MAIN`, `LATE` or a monument near a road: `npm run build:test && npm run bake:roads`, then build again.
 * 1 unit = 1 m, x east, z south. Antium at (-70000, 0), Ostia at (-70000, -80000).

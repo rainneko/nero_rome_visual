@@ -80,6 +80,10 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   // The 10 m coarse water lattice is only a broad phase. Recheck every
   // accepted street cell against the actual shoreline before assigning grades.
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=K(i,j);if(st[k]&&!wat[k]&&o.water(x0+(i+.5)*cs,z0+(j+.5)*cs))wat[k]=1;if(solid[k]||wat[k]||court[k]){st[k]=0;road[k]=0;}}
+  // lanes cut through the blocks (genBlocks o.lanes, W.laneLog): a street along each, also where the bounding boxes of slanted lots reach over it
+  for(const P of o.lanes||[]){const a=lp(P[0],P[1],.5),b=lp(P[3],P[2],.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,hw=Math.hypot(P[1][0]-P[0][0],P[1][1]-P[0][1])/2+.5,
+      i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((Math.max(a[0],b[0])+hw-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((Math.max(a[1],b[1])+hw-z0)/cs));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j),rx=x0+(i+.5)*cs-a[0],rz=z0+(j+.5)*cs-a[1],t=(rx*dx+rz*dz)/l;if(t<0||t>l||Math.abs(rx*dz-rz*dx)/l>hw||wat[k]||court[k])continue;st[k]=1;solid[k]=0;}}
 
   // width of each street (distance to the nearest non-street, local maximum) -> alleys narrower than ~3 m are dirt
   const nonSt=new Uint8Array(N);for(let k=0;k<N;k++)nonSt[k]=st[k]?0:1;const dN=stChamfer(nonSt,nx,nz),wid=new Float32Array(N);
