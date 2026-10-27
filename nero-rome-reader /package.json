@@ -10,7 +10,8 @@
     "check": "node tools/pal_rock.mjs && node tools/build.mjs && node tools/check.mjs",
     "serve": "npx --yes http-server dist -p 8080 -c-1",
     "test:boot": "node tools/test/boot.mjs",
-    "test:shot": "node tools/test/shot.mjs"
+    "test:shot": "node tools/test/shot.mjs",
+    "bake:roads": "node tools/test/bake-roads.mjs"
   },
   "devDependencies": {
     "three": "0.147.0",

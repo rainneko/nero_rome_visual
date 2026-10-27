@@ -67,3 +67,10 @@ Squares (not houses): tholos fountain GLB, honorific column (2 m pedestal + plai
 * Wooden balconies carry 3-4 beam ends with diagonal brackets and a fascia board at the slab edge.
 * Open loggia (arcade or colonnade): dark flat recess (part 39, ~sRGB 45/38/34) for back wall, returns and soffit; stone parapet with coping across the openings.
 * The black stipple near windows was a float32 interpolation jitter of the `seed` attribute fed into `h12`; the shader now rounds `seed` to 1/4096 per fragment.
+
+## Weathering (2026-10-27)
+Implemented in `wallS` from a per-building age (hash of the seed), not from the tier, which the shader does not know:
+faded and chalky paint on old houses; rising damp .5-1 m with a ragged top and a pale salt line (darker in rain);
+run-off streaks under the eaves and under every window sill; plaster loss showing brick on about 40 % of plaster houses,
+mostly at corners and near the ground. Doors, shutters, grilles, stone frames and shop signs will come from the trim sheet
+(`briefs/rome/facade-trim-sheet.md`).

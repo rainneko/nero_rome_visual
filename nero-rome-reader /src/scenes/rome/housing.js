@@ -20,14 +20,14 @@ function fillCentralHousing(W){const R=RNG(641024),g=new GB(1<<18),late=new GB(1
       const F=frame(x,0,z,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(q[0],0,q[1]);return[p[0],p[2]];});
       if(P.some(p=>!housingCore(...p))||!housingFree(W,P))continue;
       const ground=houseGround(W,P);if(!ground||ground.max-ground.min>6)continue;
-      const elite=nobleQuarterAt(x,z)==='core',early=Math.hypot(x-572,z-200)<155||deferred.some(f=>nobleOverlap(P,f));
+      const elite=nobleQuarterAt(x,z)==='core',early=Math.hypot(x-572,z-200)<155||AUREA_SITE(x,z)||deferred.some(f=>nobleOverlap(P,f));
       const G=early?late:g;let rec;
       if(elite&&!early&&pArea(P)>260){rec=nobleCourtHouse(W,G,P,R,'repair');if(!rec)continue;rec.meshTag='central_housing_repairs';W.nobleParcels.push(rec);W.nobleProcedural.push(rec);stats.noble++;}
       else{const ns=elite?(R()<.82?3:4):3+Math.floor(R()*3),seed=R(),profile={part:elite?0:R()<.28?9:0,seed,sty:elite?0:3+(R()<.4?8:0),fl:(elite?262144:0)|2|16,nSt:ns,gH:3.8,sH:2.9,pitch:20*DEG,lit:.7,flat:false,noSplit:true,noDecor:early,awn:early?0:.08,balc:early?0:.08};
         if(!lotBuild(W,G,P,profile,R,null))continue;rec={polygon:P,x,z,y:ground.min+.15,groundMin:ground.min,groundMax:ground.max,storeys:ns};}
       const ob=lotOBB(P),f=W.foot.add(ob.cx,ob.cz,ob.hw+.25,ob.hd+.25,ob.rot);f.poly=P;rec.early=early;records.push(rec);stats.total++;added++;if(early)stats.early++;if(ground.max-ground.min>1)stats.sloped++;stats.floors[rec.storeys]=(stats.floors[rec.storeys]||0)+1;
     }stats.byPass.push({size:[w,d],added});}
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='central_housing_repairs';W.scene.add(mesh);}const m=late.mesh(MAT.city);
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='central_housing_repairs';W.scene.add(mesh);}const m=layTag(late.mesh(MAT.city),'houses');
   if(m){const G=new THREE.Group();G.name='preAureaHomes';G.userData.rise=0;G.visible=false;G.add(m);W.scene.add(G);(W.preLayers||(W.preLayers={})).preAureaHomes=G;}
   W.housingGapStats=stats;W.housingGapHomes=records;
 }

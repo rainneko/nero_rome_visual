@@ -51,6 +51,6 @@ function fillPocketSquares(W){
     W.foot.add(x,z,hw,hd,angle,'pocket-square');
     placed.push({x,z,y,size:[hw*2,hd*2],type:kind,slope:hi-lo});
   }
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='central_pocket_square_features';W.scene.add(mesh);}
+  const mesh=layTag(g.mesh(MAT.city),'squares');if(mesh){mesh.name='central_pocket_square_features';W.scene.add(mesh);}
   W.pocketSquares=placed;
 }

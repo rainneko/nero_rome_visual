@@ -19,7 +19,7 @@ function buildAcademyHousing(W){
   const seenFree=P=>placed.every(Q=>!overlap(P,Q));
   const localRoad=(a,b,width=4)=>{
     const A=world(...a),B=world(...b),dx=B[0]-A[0],dz=B[1]-A[1],len=Math.hypot(dx,dz),rot=Math.atan2(-dz,dx),mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2;
-    if(W.foot.hits(mx,mz,len/2,width/2,rot))return false;
+    if(W.foot.hits(mx,mz,len/2,width/2,rot,0,'road'))return false;   // a lane may cross other roads, not buildings
     W.foot.add(mx,mz,len/2,width/2,rot,'road');
     const nx=-dz/len,nz=dx/len,P=[[A[0]+nx*width/2,A[1]+nz*width/2],[B[0]+nx*width/2,B[1]+nz*width/2],[B[0]-nx*width/2,B[1]-nz*width/2],[A[0]-nx*width/2,A[1]-nz*width/2]];
     g.set(10,.38);g.poly(P.map(p=>[p[0],W.gy(p[0],p[1])+.13,p[1]]),[0,1,0]);return true;
@@ -71,7 +71,7 @@ function buildAcademyHousing(W){
     homes.push(rec);placed.push(rect(u,v,34,32,0));mediumCourts++;
   }
 
-  const mesh=g.mesh(MAT.city);if(mesh){mesh.name='academy_senatorial_street_groups';W.scene.add(mesh);}
+  const mesh=layTag(g.mesh(MAT.city),'houses');if(mesh){mesh.name='academy_senatorial_street_groups';W.scene.add(mesh);}
   // Flush shared courtyard columns once after all houses have been emitted.
   flushColumns(W);
   W.academyHomes=homes;

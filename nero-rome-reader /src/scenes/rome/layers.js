@@ -160,13 +160,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     g.set(14,.5,0,0,1,4,1);lathe(g,CT,0,-2,-len/2,[[nw/2+.3,0],[nw/2+.3,nh+1],[0,nh+1]],8);const t2=g.nv;lathe(g,CT,0,nh,-len/2,[[nw/2+1,0],[0,7]],8,16);retag(g,1,16,t2);});
   for(const[a,b,t]of[[6,6,'建在埃斯奎利诺公仓的废墟上。57冬木骨架，水泥壳，58春封顶，58冬装上玫瑰彩窗。'],[7,7,'玫瑰窗熏黑了。'],[8,99,'玫瑰窗右下角钉过一块木板；后来补上一块新的红玻璃，比旁边的旧玻璃亮一点。']])W.pois.push({n:'阿波罗圣辉大殿',l:'【书中】',x:GALBA[0],z:GALBA[1],y:gy(GALBA[0],GALBA[1])+70,s0:a,s1:b,d:3600,info:t});
   L('valleyTrees',0,(g)=>{for(let i=0;i<70;i++){const x=572+(Zr()-.5)*220,z=200+(Zr()-.5)*170;W.trees.push([x,gy(x,z),z,Zr()<.5?'pine':'broad',.9]);}});
-  L('domusAurea',16,(g,G)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
-    for(let x=-136;x<=136;x+=5)W.cols.cor.push([...F.p(x,0,23),F.rot,9,[1,.95,.85]]);g.set(2,.5);box(g,F,0,9,24,140,1.1,2.2,31);g.set(1,.5);g.poly([F.p(-140,10.1,25.6),F.p(140,10.1,25.6),F.p(140,12.8,20),F.p(-140,12.8,20)],[0,1,0]);g.set(2,.45);box(g,F,0,-6,23,141,6,3.4,31);
-    g.set(24,.86,0,1);lathe(g,F,0,14,0,[[16,0],[16,6],[0,6]],8);g.set(12,.5);lathe(g,F,0,20,0,[[16.5,0],[13,6],[7,10],[0,11]],16);
-    const yl=gy(572,200)+.35,lk=new THREE.Mesh(new THREE.PlaneGeometry(190,140).rotateX(-Math.PI/2),MAT.tiber);lk.position.set(572,yl,200);lk.rotation.y=-30*DEG;lk.receiveShadow=true;G.add(lk);
-    const LF=frame(572,yl,200,-30*DEG);g.set(2,.4);for(const s of[1,-1]){box(g,LF,0,-1,s*71,96,1.6,1.2,31);box(g,LF,s*96,-1,0,1.2,1.6,71,31);}
-    portico(W,g,LF,-100,-78,100,-78,0,6,-6,4,[1,.95,.88]);(g.set(2,.5),box(g,frame(430,gy(430,140),140,0),0,-1,0,6,9,6,31));});
-  W.pois.push({n:'金宫工地',l:'Domus Aurea',x:850,z:-40,y:gy(850,-40)+40,s0:7,s1:7,d:3000,info:'【书中】秘书处和包工头推动的半拉子工程：脚手架，挖了一半的湖，巨像只有底座。【史】64年大火后修建。'});W.pois.push({n:'金宫工地',l:'Domus Aurea',x:850,z:-40,y:gy(850,-40)+40,s0:8,s1:99,d:3000,info:'【书中】工地荒着。'});
+  buildDomusAurea(W,L,gy);   // the Golden House, its streets before the fire and the Transitoria's glazed loggia (domus-aurea.js)
   /* academy growth */
   const AF=W.AF;
   {const inner=(lx,lz)=>(Math.abs(lx-46)<20&&Math.abs(lz+14)<22)||(Math.abs(lx+44)<19&&Math.abs(lz+24)<14)||(Math.abs(lx)<60&&lz>14&&lz<46);
@@ -204,10 +198,11 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     else{scaffold(g,BF,0,0,40,0,16,false);scaffold(g,BF,82,4,38,0,10,false);scaffold(g,BF,-82,4,38,0,10,false);}};
   L('baths0',8,(g,G)=>baths(g,false,G));L('baths1',16,(g,G)=>baths(g,true,G));
   W.pois.push({n:'大浴场',l:'战神广场边',x:-895,z:-834,y:gy(-895,-834)+40,s0:3,s1:99,d:2400,info:'57年开工，努米底亚黄大理石，58年完工。花费2000–3000万塞斯特斯。'});
-  L('milSchool',10,(g)=>{const F=frB(-500,-1300,180,gy(-500,-1300));courtBlock(W,g,F,{cx:0,cz:-20,w:80,d:50,y0:0,nSt:2,sH:4.2,gH:5,cw:46,cd:22,part:9,seed:.45,sty:0,fl:8|2,peristyle:false,garden:false});
+  L('milSchool',10,(g)=>{const F=frB(-590,-1300,180,gy(-590,-1300));   // west of Via Flaminia, which ran straight along the Campus Martius
+   courtBlock(W,g,F,{cx:0,cz:-20,w:80,d:50,y0:0,nSt:2,sH:4.2,gH:5,cw:46,cd:22,part:9,seed:.45,sty:0,fl:8|2,peristyle:false,garden:false});
     g.set(21,.4);g.poly([F.p(-60,.25,60),F.p(60,.25,60),F.p(60,.25,10),F.p(-60,.25,10)],[0,1,0]);g.set(3,.4);for(let x=-50;x<=50;x+=12)box(g,F,x,0,55,.6,2.2,.15,31);
     for(let i=0;i<40;i++){const q=F.p(-50+(i%10)*10,0,20+Math.floor(i/10)*8);W.people.push([q[0],gy(q[0],q[2])+.2,q[2]]);}});
-  W.pois.push({n:'军校',l:'战神广场北',x:-500,z:-1300,y:gy(-500,-1300)+24,s0:6,s1:99,d:2400,info:'58年开学，首期320人。钢臂弩射穿重盾。'});
+  W.pois.push({n:'军校',l:'战神广场北',x:-590,z:-1300,y:gy(-590,-1300)+24,s0:6,s1:99,d:2400,info:'58年开学，首期320人。钢臂弩射穿重盾。'});
   L('vat3',14,(g)=>{const F=W.vatF;for(const s of[1,-1]){const Fa=F.sub(0,0,s*56,s>0?0:Math.PI);arcade(g,Fa,0,0,0,500,9,36,3,2,{span:.3});arcade(g,Fa,0,9,0,500,8,36,2.6,2,{span:.28});arcade(g,Fa,0,17,0,500,7,36,2.4,2,{span:.26});
     g.set(26,.5);g.poly([F.p(-250,9,s*50),F.p(250,9,s*50),F.p(250,23,s*56),F.p(-250,23,s*56)],[0,1,0]);g.set(2,.4);for(const e of[-250,250])g.poly([F.p(e,0,s*50),F.p(e,0,s*57.5),F.p(e,24,s*57.5),F.p(e,9,s*50)],F.d(Math.sign(e),0,0));}});
   /* rail, steamer, semaphore, telegraph, arc lamps */
@@ -256,10 +251,6 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
   W.pois.push({n:'尼禄木构圆形剧场',l:'Amphitheatrum Neronis',x:-880,z:-1090,y:gy(-880,-1090)+24,s0:3,s1:99,d:1600,info:'57年尼禄在战神广场用木头搭的圆形剧场，一年建成。'});
   L('macellum',12,(g)=>{const F=frame(890,gy(890,910),910,0);courtBlock(W,g,F,{cx:0,cz:0,w:80,d:64,y0:0,nSt:2,sH:3.8,gH:4.6,cw:56,cd:40,part:0,seed:.62,sty:8,fl:8|2,garden:false});tholos(W,g,{x:F.ox,y:F.oy,z:F.oz,R:9,podH:1.2,colH:7,n:16,roofPart:16});});
   W.pois.push({n:'大市场',l:'Macellum Magnum',x:890,z:910,y:gy(890,910)+24,s0:7,s1:99,d:1600,info:'59年尼禄在西里欧山修的大市场，中央是两层圆亭，印在尼禄的钱币上。'});
-  L('neroLake',10,(g,G)=>{const y=gy(572,215),F=frame(572,y,215,-.35);g.set(21,.35);g.poly([F.p(-88,.08,-58),F.p(88,.08,-58),F.p(88,.08,58),F.p(-88,.08,58)],[0,1,0]);
-    const wm=new THREE.Mesh(new THREE.PlaneGeometry(70,90).rotateX(-Math.PI/2),MAT.tiber),wp=F.p(-40,0,0);wm.position.set(wp[0],y+.2,wp[2]);wm.rotation.y=-.35;G.add(wm);
-    for(const[x,z]of[[40,-30],[60,20],[20,40],[-80,-50]]){g.set(21,.42);lathe(g,F,x,0,z,[[7,0],[4,2.6],[0,3.4]],10);}scaffold(g,F,70,-50,8,0,9,false);scaffold(g,F,-70,52,8,0,9,false);});
-  W.pois.push({n:'尼禄人工湖',l:'Stagnum Neronis',x:572,z:215,y:gy(572,215)+18,s0:7,s1:99,d:1600,info:'【书中】挖了一半的湖。【史】64年大火后金宫的人工湖，湖下原是民居。'});
   const plume=(x0,z0,len,col)=>{const P=densify(TIBER,20);let bi=0,bd=1e9;for(let i=0;i<P.length;i++){const dd=Math.hypot(P[i][0]-x0,P[i][1]-z0);if(dd<bd){bd=dd;bi=i;}}
     const a0=P[bi],b0=P[Math.min(P.length-1,bi+1)],sd=Math.sign((x0-a0[0])*(b0[1]-a0[1])-(z0-a0[1])*(b0[0]-a0[0]))||1,pos=[],uv=[],idx=[];let acc=0,n=0;
     for(let i=bi;i<P.length-1&&acc<len;i++){const a=P[i],b=P[i+1],tx=b[0]-a[0],tz=b[1]-a[1],l=Math.hypot(tx,tz)||1,nx=tz/l,nz=-tx/l,t=acc/len,w=14+t*30,off=sd*(RTW-10-w*.5)*(1-t*.7),cx=a[0]+nx*off,cz=a[1]+nz*off;
@@ -274,13 +265,137 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     for(let x=-165;x<=165;x+=15)for(let z=-80;z<=80;z+=16){if(Math.abs(x)<9||Math.abs(z)<9)continue;const q=BF.p(x,0,z);W.trees.push([q[0],gy(q[0],q[2]),q[2],(x/15+z/16)%3===0?'cyp':'pine',.9]);}
     portico(W,g,BF,-60,-88,60,-88,0,6,-5,3.4,[1,.96,.9]);});
   W.pois.push({n:'阿格里帕花园',l:'Horti Agrippae',x:-895,z:-834,y:gy(-895,-834)+16,s0:0,s1:2,d:1600,info:'后来尼禄大浴场的地基，在此之前是阿格里帕留给市民的花园。'});
-  L('nymphNero',12,(g,G)=>{const F=frame(900,gy(900,640),640,0),pg=new GB(1024);g.set(9,.45);lathe(g,F,96,-1,-70,[[6,0],[6,13],[6.6,13],[6.6,14],[0,15.5]],14);
-    pg.poly([F.p(92,.35,-73),F.p(-90,.35,-73),F.p(-90,.35,-67),F.p(92,.35,-67)],[0,1,0]);g.set(2,.42);box(g,F,1,0,-74,91,.7,.5,31);box(g,F,1,0,-66,91,.7,.5,31);
-    const NF=F.sub(-92,0,0,-Math.PI/2);arcade(g,NF,0,0,0,150,12,15,3,24,{span:.34,attic:2.5});g.set(24,.6);box(g,NF,0,0,-2.6,75,14.5,1,31);
-    pg.poly([NF.p(-72,.4,2),NF.p(72,.4,2),NF.p(72,.4,12),NF.p(-72,.4,12)],[0,1,0]);g.set(2,.45);box(g,NF,0,-.5,12.4,73,1.3,.4,31);box(g,NF,-73,-.5,7,.4,1.3,5.4,31);box(g,NF,73,-.5,7,.4,1.3,5.4,31);
-    g.set(15,.5);for(let k=0;k<15;k++){const x=-70+k*10;g.poly([NF.p(x-1.5,.5,1.7),NF.p(x+1.5,.5,1.7),NF.p(x+1.5,9.5,1.7),NF.p(x-1.5,9.5,1.7)],NF.d(0,0,1));}
-    for(let k=-3;k<=3;k++)statue(g,NF,k*20,14.6,0,2.4,k===0);G.add(pg.mesh(MAT.pool,false));});
-  W.pois.push({n:'尼禄水景墙',l:'Nymphaeum Neronis',x:806,z:640,y:gy(900,640)+22,s0:7,s1:99,d:1400,info:'尼禄拱渠把水引到克劳狄神庙平台后方的蓄水塔，再沿平台流到西侧，从这面拱龛墙上跌落，正对帕拉蒂尼山和山谷。'});
+  /* Claudius precinct on the Caelian (novel vols 9-13 and 20; 小说文本/发电房建设线_阶段与核算.md). The platform, its west arcade and the east water-works site (W.claudEast) are in monuments.js.
+     claudSite  [0,6]  the building site round the temple: stone piles, a treadwheel crane, the NE corner of the platform still open masonry
+     claudOldTemple [0,5]  the stalled temple: rough podium, column stumps, low cella walls in scaffolding
+     claudHall  [6,8]  the old hall roofed in 58 (vol 10: "台基上旧殿，补梁，盖瓦，防渗"): walls brought up, new red tiles; that counts as the temple finished
+     claudWeeds [3,5]  grass in the joints (vol 10: "石料堆在台基旁边，草从缝里长出来")
+     claudWorks [-1,-1] (no state: the novel finishes the works within 58, vol 10 to vol 13, so state 6 shows them done; the video team switches this on for the building shots) AD 58 on the east face: survey stakes and line from the intake down the slope, trial pit, tail race tried with clean water, basin and gallery half built, piles, the wheel set
+     claudDone  [6,8]  dressed faces and the precinct colonnades
+     claudWater [6,8]  the nymphaeum: three receding light-stone tiers, five falls (the wide one narrowed, thin ones beside it, vol 10), the gallery behind the water, pool, tail race, water tower, gauge basin
+     claudMill  [6,8]  machine room and plating room below the pool; the wheel turns in 58 (vol 10: the first turn with the machine) and in state 8 (vol 20 restored); 59-68 it stands
+     claudLamps [8,8]  vol 20 "水后的灯从一龛添到几龛": three lit niches behind the water, the machine-room window
+     claudLamp1        vol 13 "亮的只有这一龛": one lit niche, switched by the paragraph trigger (app.js TRIG / applyGates, event claudLamp)
+     The tail race runs on down the slope to the fullery's treading vats (monuments.js), not to drinking water. */
+  {const F=W.claudF,CE=W.claudEast,FE=CE.FE,TF=F.sub(0,0,0,Math.PI/2),R=RNG(5401),gP=p=>gy(p[0],p[2]),yG=(x,z)=>gP(FE.p(x,0,z))-F.oy;   // yG: ground under an FE point, from the platform top
+   // straight member between two world points: n = width direction (made normal to the axis), thickness along axis x n
+   const prism=(g,A,B,n,w,h)=>{const d=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],l=Math.hypot(...d)||1;for(let i=0;i<3;i++)d[i]/=l;const k=n[0]*d[0]+n[1]*d[1]+n[2]*d[2],u0=[n[0]-k*d[0],n[1]-k*d[1],n[2]-k*d[2]],ul=Math.hypot(...u0)||1,u=u0.map(v=>v/ul),
+       b=[d[1]*u[2]-d[2]*u[1],d[2]*u[0]-d[0]*u[2],d[0]*u[1]-d[1]*u[0]],c=(P,su,sb)=>[0,1,2].map(i=>P[i]+u[i]*w/2*su+b[i]*h/2*sb);
+     g.poly([c(A,1,-1),c(B,1,-1),c(B,1,1),c(A,1,1)],u);g.poly([c(A,-1,1),c(B,-1,1),c(B,-1,-1),c(A,-1,-1)],u.map(v=>-v));
+     g.poly([c(A,1,1),c(B,1,1),c(B,-1,1),c(A,-1,1)],b);g.poly([c(A,-1,-1),c(B,-1,-1),c(B,1,-1),c(A,1,-1)],b.map(v=>-v));
+     g.poly([c(A,-1,-1),c(A,1,-1),c(A,1,1),c(A,-1,1)],d.map(v=>-v));g.poly([c(B,-1,-1),c(B,-1,1),c(B,1,1),c(B,1,-1)],d);};
+   // water wheel in the x-y plane of an identity frame, axle along +z: two iron-shod rims, buckets, spokes, iron axle
+   const wheel=(g,r,wd,n,axle)=>{const P=(a,rr,z)=>[Math.cos(a)*rr,Math.sin(a)*rr,z];g.set(3,.42);
+     for(let i=0;i<n;i++){const a0=i/n*TAU,a1=(i+1)/n*TAU;for(const z of[-wd/2,wd/2])prism(g,P(a0,r,z),P(a1,r,z),[0,0,1],.16,.28);prism(g,P(a0,r-.17,-wd/2),P(a0,r-.17,wd/2),[Math.cos(a0+.5),Math.sin(a0+.5),0],.05,.45);}
+     for(let i=0;i<8;i++){const a=i/8*TAU;for(const z of[-wd/2,wd/2])prism(g,P(a,.3,z),P(a,r-.14,z),[0,0,1],.11,.11);}g.set(18,.5);prism(g,[0,0,-wd/2-.5],[0,0,wd/2+axle],[0,1,0],.28,.28);};
+   const pole=(g,F2,x,z,y0,h)=>{g.set(32,.45);box(g,F2,x,y0,z,.11,h,.11,31);};
+   const P3=(x,y,z)=>FE.p(x,y,z);
+   // falling water: translucent sheets with streaks running down (the pool material is opaque and shades as a level surface); a lamp behind still shows through
+   const fallMesh=(quads)=>{const pos=[],uv=[],idx=[];quads.forEach(([a,b,c,d,w,h],i)=>{pos.push(...a,...b,...c,...d);uv.push(0,0,w,0,w,h,0,h);const k=i*4;idx.push(k,k+1,k+2,k,k+2,k+3);});
+     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);
+     const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{uTime:U.uTime,uNight:U.uNight},
+       vertexShader:'varying vec2 vU;void main(){vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+       fragmentShader:'varying vec2 vU;uniform float uTime,uNight;float h(float x){return fract(sin(x*127.1)*43758.5);}void main(){float c=floor(vU.x*6.);float s=fract(vU.y*.9+uTime*(1.1+h(c)*.9)+h(c+3.));float k=smoothstep(0.,.45,s)*smoothstep(1.,.55,s);vec3 col=mix(vec3(.5,.64,.68),vec3(.9,.95,.97),k*.75)*(1.-uNight*.75);gl_FragColor=vec4(col,.34+.34*k);}'});
+     const mesh=new THREE.Mesh(geo,m);mesh.renderOrder=2;return mesh;};
+   const vq=(arr,x0,x1,z,y0,y1)=>arr.push([P3(x0,y0,z),P3(x1,y0,z),P3(x1,y1,z),P3(x0,y1,z),x1-x0,(y1-y0)/2]);   // a vertical sheet across FE x at depth z
+   const wstrip=(pg,a,b,hw,dy=0)=>{const dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1,nx=-dz/l*hw,nz=dx/l*hw;pg.poly([[a[0]+nx,a[1]+dy,a[2]+nz],[b[0]+nx,b[1]+dy,b[2]+nz],[b[0]-nx,b[1]+dy,b[2]-nz],[a[0]-nx,a[1]+dy,a[2]-nz]],[0,1,0]);};   // water on a sloping channel between world points
+   // a wall along FE (x0,z0)-(x1,z1) up to `top`, its foot 1.5 m below the lowest ground under it (built up from the slope, never dug)
+   const wallFE=(g,x0,z0,x1,z1,top,th,part,seed=.45)=>{const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,z1-z0)/4)),rot=Math.atan2(-(z1-z0),x1-x0);g.set(part,seed);
+     for(let i=0;i<n;i++){const ax=lerp(x0,x1,i/n),az=lerp(z0,z1,i/n),bx=lerp(x0,x1,(i+1)/n),bz=lerp(z0,z1,(i+1)/n),lo=Math.min(yG(ax,az),yG(bx,bz),yG((ax+bx)/2,(az+bz)/2))-1.5;if(top-lo<.05)continue;
+       box(g,FE.sub((ax+bx)/2,0,(az+bz)/2,rot),0,lo,0,Math.hypot(bx-ax,bz-az)/2+th/2,top-lo,th/2,31);}};
+   const stumps=(g,lo,hi)=>{const R2=RNG(5402),m=1.26,ic=(30-2*m)/7;g.set(6,.3);for(let c=0;c<8;c++)for(const z of[20.9,20.9-ic]){const h=lo+(hi-lo)*R2();lathe(g,TF,-15+m+c*ic,4,z,[[.7,0],[.7,h],[0,h]],10);}   // the same stumps in every state
+     for(let z=20.9-2*ic;z>-20.9;z-=ic)for(const x of[-15+m,15-m])if(R2()<.75){const h=lo+(hi-lo)*R2();lathe(g,TF,x,4,z,[[.7,0],[.7,h],[0,h]],10);}};
+   const podium=(g)=>{g.set(22,.45);box(g,TF,0,-1.5,0,15,5.5,22,31);g.set(6,.3);box(g,TF,0,-1.5,14,15.1,5,8.1,31);};   // rough podium core; the marble facing has reached only its front third
+   const NX=[36,40,44,48,52],NW=[1.1,1.1,2.2,1.1,1.1],PO=CE.pool,WH=CE.wheel,ML=CE.mill,PL=CE.plate,yHub=CE.floor+WH.r+.35,yTop=yHub+WH.r;
+   L('claudOldTemple',0,(g)=>{podium(g);stumps(g,.9,5.5);g.set(22,.42);for(const[x,z,hx,hz,h]of[[-9.6,-4,.6,13,4.2],[9.6,-4,.6,13,2.6],[0,-17,9.6,.6,3.4],[-6,9,3.6,.6,5.2]])box(g,TF,x,4,z,hx,h,hz,31);   // cella walls of uneven height, the door wall barely begun
+     for(const x of[-11,11])for(let z=-18;z<=10;z+=7)pole(g,TF,x,z,4,9);g.set(32,.4);for(const y of[7,10])for(const x of[-11,11])box(g,TF,x,y,-4,.08,.08,14,31);});   // scaffold poles and ledgers along the cella
+   L('claudHall',0,(g)=>{podium(g);stumps(g,.9,5.5);const top=14.5;g.set(22,.44);for(const[x,z,hx,hz]of[[-9.6,-4,.6,13.6],[9.6,-4,.6,13.6],[0,-17,9.6,.6],[-6.6,9,3,.6],[6.6,9,3,.6]])box(g,TF,x,4,z,hx,top-4,hz,31);box(g,TF,0,10.2,9,3.6,top-10.2,.6,31);   // walls brought up; the door left open below the lintel
+     g.set(7,.3);g.poly([TF.p(-3.6,4.05,9.62),TF.p(3.6,4.05,9.62),TF.p(3.6,10.15,9.62),TF.p(-3.6,10.15,9.62)],TF.d(0,0,1));
+     roof(g,TF,'gableZ',0,-4,20.4,27.4,top,20*DEG,.8,.207,{part:22,seed:.44,nSt:1,gH:top-4,sH:4,floorY:4});});   // new red tiles over the old hall (seed .207: the reddest roof colour)
+   L('claudSite',0,(g)=>{substructFaces(W,g,F,0,0,90,100,F.oy,{unf:{N:{x0:60,x1:90},E:{x0:-100,x1:-70}}});
+     for(let k=0;k<11;k++){const q=F.p(-60+R()*120,0,(R()<.5?-1:1)*(34+R()*40)),S=frame(q[0],F.oy,q[2],R()*TAU),n=2+Math.floor(R()*4);g.set(2,.35+R()*.15);   // stone piles: squared blocks and column drums
+       for(let i=0;i<n;i++){const ox=(i%2)*1.5-.75,oz=Math.floor(i/2)*1.1;if(R()<.35)lathe(g,S,ox,0,oz,[[.7,0],[.7,.9],[0,.9]],10);else box(g,S,ox,0,oz,.7,.75,.5,31);}if(n>3)box(g,S,0,.75,.5,.7,.75,.5,31);}
+     {const q=F.p(30,0,30),C=frame(q[0],F.oy,q[2],.4),B=C.p(0,15,-6),J=C.p(0,9,-13);g.set(32,.42);   // treadwheel crane: three raking legs, a jib, the walking wheel at its foot
+      prism(g,C.p(0,0,0),B,[1,0,0],.35,.35);prism(g,C.p(3,0,-1),B,[1,0,0],.3,.3);prism(g,C.p(-3,0,-1),B,[1,0,0],.3,.3);prism(g,B,J,[1,0,0],.25,.25);g.set(3,.4);prism(g,J,C.p(0,1.2,-13),[1,0,0],.04,.04);
+      g.set(3,.38);for(let i=0;i<16;i++){const a0=i/16*TAU,a1=(i+1)/16*TAU,P=(a,s)=>C.p(s*.9,2.6+Math.sin(a)*2.5,2.4+Math.cos(a)*2.5);prism(g,P(a0,1),P(a1,1),[0,1,0],.12,.18);prism(g,P(a0,-1),P(a1,-1),[0,1,0],.12,.18);prism(g,P(a0,-1),P(a0,1),[0,1,0],.06,.12);}}});
+   L('claudWeeds',0,(g)=>{g.set(23,.5);for(let k=0;k<26;k++){const x=-82+R()*164,z=-92+R()*184;if(Math.abs(x)<18&&Math.abs(z)<26)continue;const S=F.sub(x,0,z,R()*TAU),a=2+R()*6,b=1.2+R()*3;g.poly([S.p(-a,.06,-b),S.p(a,.06,-b),S.p(a*.7,.06,b),S.p(-a*.8,.06,b*.8)],[0,1,0]);}
+     for(let k=0;k<9;k++){const q=F.p(-80+R()*160,0,-90+R()*180);W.trees.push([q[0],F.oy+.05,q[2],'shrub',.5+R()*.4,null,2]);}});
+   // shared pieces of the east works
+   const wheelPit=(g)=>{g.set(20,.4);box(g,FE,WH.x,CE.floor,WH.z,.62,.1,WH.r+.5,31);for(const s of[-1,1])wallFE(g,WH.x+s*.85,WH.z-WH.r-.7,WH.x+s*.85,WH.z+WH.r+.7,yHub+.4,.3,22);};
+   const wheelMesh=(G,turn)=>{const wg=new GB(1<<13);wheel(wg,WH.r,1,16,ML.x-ML.hw-WH.x);const m=wg.mesh(MAT.city);if(!m)return;
+     const piv=new THREE.Object3D(),spin=new THREE.Object3D(),q=P3(WH.x,yHub,WH.z);piv.position.set(q[0],q[1],q[2]);piv.rotation.y=FE.rot+Math.PI/2;spin.add(m);piv.add(spin);G.add(piv);   // wheel axle = FE +x, into the machine room
+     if(turn)W.anim.push(t=>{if(G.visible&&(curS===6||curS===8))spin.rotation.z=t*.9;});};   // 59-68 the wheel stands (curS is the story state, app.js)
+   // tail race: from the wheel pit down the slope; the water never rises (each point no higher than the last) and follows the ground where the ground is lower
+   const race=[[WH.x,WH.z+WH.r+.9],...CE.race.slice(1)],ry=[];{let y=-6.5;for(const[x,z]of densify(race,4)){y=Math.min(y,yG(x,z)+.45);ry.push([x,y,z]);}}
+   const tailRace=(g,pg,part,rail)=>{for(let i=0;i<ry.length-1;i++){const a=ry[i],b=ry[i+1],dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1,nx=-dz/l,nz=dx/l,E=(p,o,dy)=>P3(p[0]+nx*o,p[1]+dy,p[2]+nz*o);   // E: offset across the race, height above that point's water
+       g.set(part,.42);for(const s of[-1,1]){const lo=Math.min(yG(a[0]+nx*s*1.2,a[2]+nz*s*1.2),yG(b[0]+nx*s*1.2,b[2]+nz*s*1.2))-.6;prism(g,E(a,s*1.05,.15),E(b,s*1.05,.15),[0,1,0],.3,.6);
+         g.poly([E(a,s*1.2,-.15),E(b,s*1.2,-.15),E(b,s*1.2,lo-b[1]),E(a,s*1.2,lo-a[1])],FE.d(s*nx,0,s*nz));}
+       g.set(21,.42);g.poly([E(a,-.9,-.35),E(b,-.9,-.35),E(b,.9,-.35),E(a,.9,-.35)],[0,1,0]);if(pg)pg.poly([E(a,-.9,0),E(b,-.9,0),E(b,.9,0),E(a,.9,0)],[0,1,0]);
+       if(rail&&i%2===0){g.set(3,.4);const p=E(a,1.2,.45);box(g,frame(p[0],p[1],p[2],0),0,0,0,.06,.95,.06,31);prism(g,E(a,1.2,1.35),E(b,1.2,1.35),[0,1,0],.07,.07);}}};
+   const basin=(g,top)=>{wallFE(g,PO.x0,PO.z1,PO.x1,PO.z1,top,.6,2);wallFE(g,PO.x0,PO.z0,PO.x0,PO.z1,top,.6,2);wallFE(g,PO.x1,PO.z0,PO.x1,PO.z1,top,.6,2);};
+   const stakes=(g)=>{const line=[[CE.tower.x,CE.tower.z],[CE.tower.x,2],[PO.x1+2,8],...race],pts=densify(line,8);let prev=null;   // vol 10: "我们从接水的地方一直量到坡下"
+     for(const[x,z]of pts){const y=Math.max(yG(x,z),z<0?0:-99);pole(g,FE,x,z,y,1.5);g.set(25,.5);box(g,FE,x,y+1.45,z,.12,.15,.12,31);const top=P3(x,y+1.4,z);if(prev){g.set(3,.3);prism(g,prev,top,[0,1,0],.025,.025);}prev=top;}};
+   L('claudWorks',0,(g,G)=>{const pg=new GB(1024);stakes(g);
+     basin(g,PO.rim-2.2);g.set(2,.42);for(let i=0;i<=5;i++){const x=CE.fx0+i*(CE.fx1-CE.fx0)/5;wallFE(g,x-.4,CE.zA,x+.4,CE.zA,CE.yF+2.2,.8,2);}   // basin walls and the gallery piers half up
+     for(let x=CE.fx0-1;x<=CE.fx1+1;x+=3){const y=yG(x,CE.zA+1.2);pole(g,FE,x,CE.zA+1.2,y,CE.yC+1-y);}g.set(32,.4);for(const y of[0,2.4,4.8])box(g,FE,(CE.fx0+CE.fx1)/2,y,CE.zA+1.2,(CE.fx1-CE.fx0)/2+1,.08,.08,31);
+     g.set(21,.45);box(g,FE,WH.x,yG(WH.x,WH.z)-.4,WH.z,1.6,.5,WH.r+1.2,31);   // the trial pit outside, not under the arches
+     g.set(3,.35);for(let x=ML.x-ML.hw;x<=ML.x+ML.hw+.01;x+=2.5)for(let z=ML.z-ML.hd;z<=ML.z+ML.hd+.01;z+=2.5){const y=yG(x,z);if(CE.floor-y>.2)box(g,FE,x,y-.5,z,.15,CE.floor-y+.8,.15,31);}   // piles, driven once the tail water drained
+     wheelPit(g);wheelMesh(G,false);tailRace(g,pg,22,false);G.add(pg.mesh(MAT.pool,false));   // the tail race tried with clean water
+     for(const x of[-11.2,11.2])for(let z=-18;z<=10;z+=4.7)pole(g,TF,x,z,4,12.4);g.set(32,.4);for(const y of[8,12])for(const x of[-11.2,11.2])box(g,TF,x,y,-4,.08,.08,14.2,31);});   // scaffold for the new roof beams and tiles on the old hall
+   L('claudDone',6,(g)=>{substructFaces(W,g,F,0,0,90,100,F.oy,{});for(const[ax,az,bx,bz]of[[-80,-90,80,-90],[80,90,-80,90]])portico(W,g,F,ax,az,bx,bz,0,7,-6,4,[1,.97,.9]);});
+   L('claudWater',0,(g,G)=>{const pg=new GB(4096),falls=[],mx=(CE.fx0+CE.fx1)/2,hx=(CE.fx1-CE.fx0)/2;
+     // three receding tiers of light stone: the gallery (front at zA), the middle tier (zB) and the crest (zC) with the water channel on top
+     g.set(2,.46);box(g,FE,mx,CE.yF,CE.zBack/2,hx,CE.yB-CE.yF,CE.zBack/2,31);   // infill against the old face
+     g.set(6,.42);box(g,FE,mx,CE.yF-.35,(CE.zBack+CE.zA)/2,hx+.5,.35,(CE.zA-CE.zBack)/2+.4,31);   // gallery floor
+     arcade(g,FE,mx,CE.yF,CE.zA,CE.fx1-CE.fx0,CE.yA-CE.yF,5,.8,6,{span:.36,attic:.45,pilasters:false,cornice:false});g.set(2,.5);box(g,FE,mx+2,CE.yF,CE.zBack+.45,3,.45,.3,31);   // vol 13: "这里可以放一张凳子" - the bench behind the waterg.set(6,.44);box(g,FE,CE.fx1,CE.yF,(CE.zBack+CE.zA)/2,.4,CE.yA-CE.yF,(CE.zA-CE.zBack)/2,31);   // arcade; the north end closed, the south end the way in
+     g.set(6,.4);box(g,FE,mx,CE.yA,(CE.zBack+CE.zA)/2+.2,hx+.4,.5,(CE.zA-CE.zBack)/2+.6,31);box(g,FE,mx,CE.yA+.5,(CE.zBack+CE.zB)/2,hx,CE.yB-CE.yA-.5,(CE.zB-CE.zBack)/2,31);box(g,FE,mx,CE.yB,CE.zC/2,hx,CE.yC-CE.yB,CE.zC/2,31);
+     g.set(2,.5);for(const z of[CE.zC-.15,.15])box(g,FE,mx,CE.yC,z,hx,.3,.15,31);   // the channel kerbs on the crest
+     pg.poly([P3(CE.fx0,CE.yC+.18,.3),P3(CE.fx1,CE.yC+.18,.3),P3(CE.fx1,CE.yC+.18,CE.zC-.3),P3(CE.fx0,CE.yC+.18,CE.zC-.3)],[0,1,0]);
+     NX.forEach((x,i)=>{const w=NW[i]/2;g.set(7,.3);for(const[z,y0,y1]of[[CE.zC+.02,CE.yB+.25,CE.yC-.2],[CE.zB+.02,CE.yA+.75,CE.yB-.15],[CE.zBack+.02,CE.yF+.3,CE.yA-.4]])g.poly([P3(x-w-.4,y0,z),P3(x+w+.4,y0,z),P3(x+w+.4,y1,z),P3(x-w-.4,y1,z)],FE.d(0,0,1));   // niche recesses
+       for(const[z,y0,y1]of[[CE.zC+.06,CE.yB+.05,CE.yC+.18],[CE.zB+.06,CE.yA+.55,CE.yB+.05],[CE.zA+.45,PO.y,CE.yA+.55]])vq(falls,x-w,x+w,z,y0,y1);   // the falls: down the crest, the middle tier, and as a curtain before the gallery
+       for(const[z0,z1,y]of[[CE.zC,CE.zB,CE.yB+.06],[CE.zB,CE.zA+.45,CE.yA+.56]])pg.poly([P3(x-w,y,z0),P3(x+w,y,z0),P3(x+w,y,z1),P3(x-w,y,z1)],[0,1,0]);});
+     basin(g,PO.rim);g.set(20,.4);box(g,FE,(PO.x0+PO.x1)/2,PO.y-1.4,(PO.z0+PO.z1)/2,(PO.x1-PO.x0)/2,.2,(PO.z1-PO.z0)/2,31);pg.poly([P3(PO.x0+.3,PO.y,PO.z0+.4),P3(PO.x1-.3,PO.y,PO.z0+.4),P3(PO.x1-.3,PO.y,PO.z1-.3),P3(PO.x0+.3,PO.y,PO.z1-.3)],[0,1,0]);
+     g.set(3,.4);for(let x=PO.x0+1;x<=PO.x1-1;x+=2.4){box(g,FE,x,PO.rim,PO.z1,.05,1,.05,31);}box(g,FE,(PO.x0+PO.x1)/2,PO.rim+.95,PO.z1,(PO.x1-PO.x0)/2-1,.06,.06,31);   // railing on the pool edge
+     {g.set(2,.45);const lx=CE.fx0-9.5,lo=Math.min(yG(lx,2.8),-1)-1;box(g,FE,lx,lo,2.8,2,-lo,2.8,31);for(let k=0;k<4;k++){const x=CE.fx0-6.9+k*1.4,y=CE.yF*(k+1)/4,b=Math.min(yG(x,3.5),y)-1;box(g,FE,x,b,3.5,.75,y-b,2,31);}}   // landing at the platform edge, steps down into the gallery (Nero's way in)
+     {const T=CE.tower,G2=CE.gauge;rectWalls(g,FE,T.x,T.z,4,4,-.6,6.2,0,{part:9,seed:.4,sty:0,fl:1,nSt:1,gH:6.2,sH:3,lit:.2});g.set(2,.45);box(g,FE,T.x,6.2,T.z,2.3,.35,2.3,31);pg.poly([P3(T.x-1.7,6.4,T.z-1.7),P3(T.x+1.7,6.4,T.z-1.7),P3(T.x+1.7,6.4,T.z+1.7),P3(T.x-1.7,6.4,T.z+1.7)],[0,1,0]);   // water tower: the branch from the Claudia distribution rises here
+      g.set(18,.5);prism(g,P3(T.x,5.8,T.z+2),P3(T.x,CE.yC+.3,.4),[1,0,0],.25,.25);   // lead pipe to the crest channel
+      g.set(2,.45);for(const[dx,dz,hx,hz]of[[0,-1.2,1.6,.15],[0,1.2,1.6,.15],[-1.6,0,.15,1.2],[1.6,0,.15,1.2]])box(g,FE,G2.x+dx,0,G2.z+dz,hx,.7,hz,31);pg.poly([P3(G2.x-1.45,.55,G2.z-1.05),P3(G2.x+1.45,.55,G2.z-1.05),P3(G2.x+1.45,.55,G2.z+1.05),P3(G2.x-1.45,.55,G2.z+1.05)],[0,1,0]);g.set(18,.6);box(g,FE,G2.x+1.2,0,G2.z,.05,1.6,.05,31);}   // gauge basin (取水池) with a bronze measuring rod
+     {const top=[CE.tower.x+2,.9,-3.5],bend=[WH.x,.6,-1.2],end=[WH.x,yTop+.45,WH.z-.9];g.set(2,.42);prism(g,P3(...top),P3(...bend),[0,1,0],1,.45);prism(g,P3(...bend),P3(...end),[0,1,0],1,.45);   // mill leat: along the platform top, then over the edge onto the wheel (the other branch of the same water)
+      for(let k=1;k<4;k++){const t=k/4,x=lerp(bend[0],end[0],t),z=lerp(bend[2],end[2],t),y=lerp(bend[1],end[1],t),b=yG(x,z);if(z>0&&y-b>1)box(g,FE,x,b,z,.35,y-b-.25,.35,31);}
+      wstrip(pg,P3(...top),P3(...bend),.35,.25);wstrip(pg,P3(...bend),P3(...end),.35,.25);}
+     {const a=P3(PO.x1-.5,PO.y-.1,9),b=P3(race[0][0]-1,-6.3,race[0][1]+.3);g.set(2,.42);prism(g,a,b,[0,1,0],.8,.3);wstrip(pg,a,b,.3,.18);}   // the pool spills into the tail race
+     tailRace(g,pg,2,true);G.add(pg.mesh(MAT.pool,false));G.add(fallMesh(falls));
+     W.views.claudiusE={n:'克劳狄神殿·东面水景',pos:P3(80,24,48),tgt:P3(48,-2,6)};});
+   L('claudMill',0,(g,G)=>{const fl=CE.floor,base=(o)=>Math.min(...[[-o.hw,-o.hd],[o.hw,-o.hd],[-o.hw,o.hd],[o.hw,o.hd],[0,0]].map(([dx,dz])=>yG(o.x+dx,o.z+dz)))-1;
+     rectWalls(g,FE,ML.x,ML.z,ML.hw*2,ML.hd*2,base(ML),fl+ML.h,fl,{part:9,seed:.42,sty:0,fl:1,nSt:1,gH:ML.h,sH:3,lit:.2});roof(g,FE,'gable',ML.x,ML.z,ML.hw*2+.8,ML.hd*2+.8,fl+ML.h,24*DEG,.4,.38,{part:9,seed:.42,nSt:1,gH:ML.h,sH:3,floorY:fl});   // machine room ("下到机房")
+     rectWalls(g,FE,PL.x,PL.z,PL.hw*2,PL.hd*2,base(PL),fl+PL.h,fl,{part:0,seed:.3,sty:0,fl:1,nSt:1,gH:PL.h,sH:3,lit:.2});roof(g,FE,'gable',PL.x,PL.z,PL.hw*2+.6,PL.hd*2+.6,fl+PL.h,22*DEG,.35,.42,{part:0,seed:.3,nSt:1,gH:PL.h,sH:3,floorY:fl});   // the plating room next door ("另一间装镀槽的屋子")
+     {const sx=(PO.x1+WH.x-.85)/2;g.set(2,.42);for(let k=0;k<12;k++){const z=1+k*.95,y=fl*(k+1)/12,b=Math.min(yG(sx,z),y)-1;box(g,FE,sx,b,z,.9,y-b,.5,31);}const b=Math.min(yG(sx,12.9),fl)-1;box(g,FE,sx,b,12.9,.9,fl-b,.9,31);}   // "下到机房": a stair from the platform edge between the pool and the wheel pit, then a landing to the door
+     wheelPit(g);wheelMesh(G,true);});
+   const lamp=(G,xs)=>{for(const x of xs){const m=new THREE.Mesh(new THREE.PlaneGeometry(NW[NX.indexOf(x)]+.6,CE.yA-CE.yF-.9),lampMat(.95,.97,1,26)),q=P3(x,(CE.yF+CE.yA)/2-.05,CE.zBack+.05);m.position.set(q[0],q[1],q[2]);m.rotation.y=FE.rot;G.add(m);}};   // carbon arcs behind glass in dry niches; their light comes through the thin fall
+   L('claudLamps',0,(g,G)=>{lamp(G,NX.slice(1,4));const win=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.4),lampMat(1,.7,.36,10)),wq=P3(ML.x+1.5,CE.floor+2.4,ML.z+ML.hd+.06);win.position.set(wq[0],wq[1],wq[2]);win.rotation.y=FE.rot;G.add(win);});
+   L('claudLamp1',0,(g,G)=>{lamp(G,[NX[2]]);});
+   {const q=P3(PL.x,0,PL.z);W.pois.push({n:'镀房',l:'Claudius · 机房与镀房',x:q[0],z:q[2],y:F.oy+CE.floor+9,s0:7,s1:99,d:700,sub:true,info:'【书中】第13卷：“下到机房，水轮和轴都藏在隔墙后面，地上干着。铜线绕过烧好的陶制托件，到了另一间装镀槽的屋子。”'});}
+   }
+  /* Piso's house on the Aventine (vol 9): standing until 58, burnt the night of the fire, a ruin afterwards:
+     "墙塌了一半，屋顶没了，满地都是烧黑的木头。中庭的大理石地砖还在，被火烤得发黄，有几块裂了。" pisoFire is the night itself (paragraph trigger, app.js). */
+  if(W.pisoSite){const P=W.pisoSite,S=frame(P.x,P.y,P.z,P.rot),w=P.hw*2-3,d=P.hd*2-3,R=RNG(9058),cw=w*.5,cd=d*.46,gyS=(x,z)=>{const q=S.p(x,0,z);return gy(q[0],q[2])-P.y;};
+   L('pisoHouse',0,(g,G)=>{const pool=new GB(512),keep=W.poolG;W.poolG=pool;emitBuilding(W,g,'domus',P.x,P.z,P.rot,w,d,2,P.y,P.y+2.5,R,{shops:0,brick:.2});W.poolG=keep;const m=pool.mesh(MAT.pool,false);if(m)G.add(m);});
+   L('pisoRuin',0,(g)=>{const fl=.15;
+     // outer walls broken into 3 m pieces: a third stands to the eaves, the rest is down to a metre or two
+     for(const[ax,az,bx,bz]of[[-w/2,-d/2,w/2,-d/2],[w/2,-d/2,w/2,d/2],[w/2,d/2,-w/2,d/2],[-w/2,d/2,-w/2,-d/2],[-cw/2,-cd/2,cw/2,-cd/2],[cw/2,-cd/2,cw/2,cd/2],[cw/2,cd/2,-cw/2,cd/2],[-cw/2,cd/2,-cw/2,-cd/2]]){const L2=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L2/3)),rot=Math.atan2(-(bz-az),bx-ax);
+       for(let i=0;i<n;i++){const t=(i+.5)/n,x=lerp(ax,bx,t),z=lerp(az,bz,t),h=R()<.34?6+R()*2.5:.6+R()*1.8,lo=Math.min(gyS(x,z),fl)-1;g.set(9,.36+R()*.06);box(g,S.sub(x,0,z,rot),0,lo,0,L2/n/2+.02,fl+h-lo,.32,31);
+         if(h>4){g.set(20,.4);box(g,S.sub(x,0,z,rot),0,fl+h-1.4,0,L2/n/2+.03,1.4,.34,31);}}}   // soot on the standing tops
+     g.set(27,.5);box(g,S,0,fl-.2,0,cw/2-.4,.25,cd/2-.4,31);g.set(20,.4);for(let k=0;k<6;k++){const x=(R()-.5)*(cw-3),z=(R()-.5)*(cd-3),r=R()*Math.PI;box(g,S.sub(x,0,z,r),0,fl+.06,0,1.2+R()*2,.02,.04,31);}   // the court's marble floor, scorched yellow, cracked
+     g.set(21,.4);for(const[x0,x1,z0,z1]of[[-w/2,w/2,-d/2,-cd/2],[-w/2,w/2,cd/2,d/2],[-w/2,-cw/2,-cd/2,cd/2],[cw/2,w/2,-cd/2,cd/2]])g.poly([S.p(x0+.4,fl+.08,z0+.4),S.p(x1-.4,fl+.08,z0+.4),S.p(x1-.4,fl+.08,z1-.4),S.p(x0+.4,fl+.08,z1-.4)],[0,1,0]);   // ash where the rooms were
+     g.set(20,.35);for(let k=0;k<22;k++){const ring=R()<.5,x=ring?(R()<.5?-1:1)*(cw/2+R()*(w-cw)/2):(R()-.5)*w,z=ring?(R()-.5)*d:(R()<.5?-1:1)*(cd/2+R()*(d-cd)/2);box(g,S.sub(x,0,z,R()*Math.PI),0,fl+.05,0,1.5+R()*2.2,.16,.14,31);}   // fallen roof beams, burnt black
+     g.set(22,.4);for(let k=0;k<9;k++){const x=(R()-.5)*w*.9,z=(R()-.5)*d*.9;if(Math.abs(x)<cw/2-1&&Math.abs(z)<cd/2-1)continue;box(g,S.sub(x,0,z,R()*TAU),0,fl,0,.8+R(),.35+R()*.5,.6+R()*.8,31);}   // rubble heaps
+     g.set(6,.3);for(let i=0;i<=4;i++){const t=i/4-.5;for(const[px,pz]of[[t*(cw-3),cd/2-1.6],[t*(cw-3),-cd/2+1.6],[cw/2-1.6,t*(cd-3)],[-cw/2+1.6,t*(cd-3)]]){const h=R()<.4?3.8:.5+R()*2;lathe(g,S,px,fl,pz,[[.24,0],[.22,h],[0,h]],8);}}});   // the peristyle columns, some broken
+   L('pisoSmoke',0,(g,G)=>{G.add(smokeSys([[-6,4,2],[5,5,-3],[0,3,6],[9,4,4]].map(([x,y,z])=>{const q=S.p(x,y,z);return q;}),{col:[.22,.2,.19],rise:38,size:9,rate:.03,alpha:.3,per:14,drift:[5,0,2]}));});   // still smoking in 58
+   L('pisoFire',0,(g,G)=>{const fm=lampMat(1,.42,.1,30);for(const[x,z]of[[-w/2+2,-d/2+2],[w/2-2,-d/2+2],[w/2-2,d/2-2],[-w/2+2,d/2-2],[0,0]]){const c=new THREE.Mesh(new THREE.ConeGeometry(2.2,7+R()*3,7),fm),q=S.p(x,8,z);c.position.set(q[0],q[1],q[2]);G.add(c);}   // "火是从四个角同时烧起来的"
+     emitBuilding(W,g,'domus',P.x,P.z,P.rot,w,d,2,P.y,P.y+2.5,R,{shops:0,brick:.2,burn:()=>1});G.add(smokeSys([[-8,9,0],[8,9,0],[0,10,6],[0,10,-6]].map(([x,y,z])=>S.p(x,y,z)),{col:[.3,.25,.22],rise:60,size:14,rate:.05,alpha:.45,per:18,emit:.6,drift:[6,0,3]}));});
+   W.pois.push({n:'皮索家宅',l:'Domus Pisonum',x:P.x,z:P.z,y:P.y+14,s0:0,s1:5,d:900,info:'【史】卡尔普尔尼乌斯·皮索家是罗马的老贵族；历史上盖乌斯·皮索是65年反尼禄阴谋的领导者。'});
+   W.pois.push({n:'皮索家宅废墟',l:'Domus Pisonum',x:P.x,z:P.z,y:P.y+12,s0:6,s1:99,d:900,info:'【书中】第9卷：“那天夜里，城南阿文提诺山上，皮索家的宅子着火了。”“墙塌了一半，屋顶没了，满地都是烧黑的木头。中庭的大理石地砖还在，被火烤得发黄，有几块裂了。”'});
+   W.views.piso={n:'皮索家宅',pos:[P.x+70,P.y+48,P.z+55],tgt:[P.x,P.y+3,P.z]};}
   L('arcNero',14,(g)=>{const F=frame(-247,gy(-247,74),74,0);arcade(g,F,0,-1,0,13,12,1,5.5,2,{span:.38,attic:4});statue(g,F,0,15.2,0,3.4,true);for(const sd of[-1,1])statue(g,F,sd*4.6,15.2,0,2.4,true);});
   W.pois.push({n:'尼禄凯旋门',l:'Arcus Neronis',x:-247,z:74,y:gy(-247,74)+20,s0:6,s1:99,d:1100,info:'【史】58年元老院为科尔布罗在亚美尼亚的胜利给尼禄立的凯旋门，在卡比托利欧山上，顶上是驷马战车。'});
   L('campusRefuge',4,(g)=>{const F=frame(-1000,gy(-1000,-990),-990,.1);for(let r=0;r<8;r++)for(let c=0;c<12;c++){const x=-66+c*12,z=-42+r*12;rectWalls(g,F,x,z,8,5,-.5,2.6,0,{part:3,seed:.3+((r*7+c)%5)*.05,sty:0,fl:1,nSt:1,gH:2.6,sH:2.6,lit:.3});const t0=g.nv;roof(g,F,'gable',x,z,8.6,5.6,2.6,24*DEG,.2,.4,{part:3,seed:.35,nSt:1,gH:2.6,sH:2.6,floorY:0});retag(g,1,3,t0);}});

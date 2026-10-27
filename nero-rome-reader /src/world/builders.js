@@ -1,5 +1,31 @@
 /* ---------- other materials ---------- */
-MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];',env:.4,fSurf:`
+// farmland colours (farmland.js): crop t, field hash fh, season s (0 spring, 1 summer, 2 autumn, 3 winter), the wild grass and straw of the
+// same place; fine: 1 near, 0 where a pixel spans metres (rows and specks fade out instead of shimmering)
+const GL_FARM=`
+vec3 s4(vec3 sp,vec3 su,vec3 au,vec3 wi,float s){return s<1.?mix(sp,su,s):s<2.?mix(su,au,s-1.):s<3.?mix(au,wi,s-2.):mix(wi,sp,s-3.);}
+vec3 farmCol(int t,float fh,vec2 p,float s,vec3 gr,vec3 stw,float fine){
+ float n1=fbm2(p*.04+fh*31.),n2=vn2(p*.6),ang=fh*3.1416,rw=dot(p,vec2(cos(ang),sin(ang))),bl=1.-smoothstep(0.,.8,s>3.5?0.:s);   // bl: spring bloom
+ vec3 soil=vec3(.38,.29,.18)*(.85+.25*n1);float fur=mix(.5,.5+.5*sin(rw*2.4),fine);
+ if(t==1){vec3 c=s4(vec3(.12,.22,.06),fh<.6?vec3(.62,.5,.22):vec3(.66,.58,.4),soil*(.8+.25*fur),mix(soil,vec3(.13,.2,.06),.55+.2*fur),s)*(.92+.16*n1);   // grain: green in spring, gold or stubble in summer, ploughed in autumn, shoots in winter
+  return mix(c,vec3(.6,.05,.03),step(.93,vn2(p*1.3+fh*17.))*bl*fine*.8);}   // poppies in the spring corn
+ if(t==2){float r=abs(fract(rw/2.2)-.5),aR=fwidth(rw/2.2),row=mix(.4,smoothstep(.2+aR,.2-aR,r),fine);   // vines on stakes, rows 2.2 m apart: leaf in spring, deep green in summer, yellow after the vintage, bare in winter
+  return mix(s4(gr,stw,soil*.95,mix(soil,gr,.5),s),s4(vec3(.19,.23,.09),vec3(.12,.2,.06),vec3(.45,.3,.09),vec3(.22,.16,.11),s),row)*(.9+.2*n1);}
+ if(t==3){vec2 q=p/9.;q.x+=mod(floor(q.y),2.)*.5;float cr=mix(.42,smoothstep(.36,.3,length(fract(q)-.5)),fine)*smoothstep(2600.,2800.,length(p-vec2(150.,250.)));   // olive grove: silver-green crowns in a quincunx over grass, painted only beyond the planted groves (plantOliveGroves, 2.7 km)
+  return mix(s4(gr,stw*.95,mix(stw,gr,.5),gr,s),vec3(.19,.21,.14)*(.85+.3*n2),cr*.85);}
+ if(t==4){vec3 c=s4(vec3(.16,.31,.07),vec3(.56,.48,.26),vec3(.13,.22,.07),vec3(.1,.19,.06),s)*(.9+.2*n1);   // hay meadow: flowers in spring, mown in summer (windrows), green again after the rains
+  c=mix(c,fh<.5?vec3(.85,.78,.35):vec3(.85,.85,.8),step(.9,vn2(p*1.7+fh*9.))*bl*fine*.6);return mix(c,vec3(.68,.6,.36),step(.5,s)*(1.-step(1.5,s))*smoothstep(.45,.4,abs(fract(rw/6.)-.5))*fine*.5);}
+ if(t==5)return s4(mix(vec3(.12,.24,.07),vec3(.7,.72,.66),step(.94,vn2(p*1.9))*fine*.6),vec3(.36,.29,.15),soil,mix(soil,vec3(.12,.2,.07),.5),s)*(.85+.15*fur);   // beans and lentils: white flowers in spring, dry in summer
+ if(t==6)return s4(mix(vec3(.14,.24,.08),vec3(.42,.52,.78),step(.55,vn2(p*2.1+fh*7.))*mix(.35,1.,fine)*.7),vec3(.5,.41,.24),soil,mix(soil,vec3(.12,.21,.07),.45),s)*(.92+.16*n2);   // flax: green flecked with its small pale-blue flowers in spring, pulled and golden-brown in summer
+ if(t==8){vec3 v=s4(vec3(.12,.27,.06),vec3(.1,.22,.05),vec3(.14,.22,.06),vec3(.08,.17,.05),s),v2=v*vec3(1.2,.9,1.3);   // market garden: narrow irrigated beds, green all year
+  return mix(soil*.9,mix(v,v2,step(.5,fract(rw/9.))),mix(.65,step(.35,fract(rw/1.6)),fine))*(.9+.2*n2);}
+ if(t==9){float bush=mix(.5,smoothstep(.32,.24,abs(fract(rw/1.8)-.5)),fine)*(.6+.4*n2);   // rose beds for garlands: in flower in late spring
+  vec2 rq=p*3.3,ri=floor(rq),rl=fract(rq)-.5-(vec2(h12(ri+1.7),h12(ri+8.3))-.5)*.5;float fd=1.-smoothstep(.05,.2,fwidth(p.x));   // single blooms (~6 cm) on 30 cm jittered cells; an even tint where they would shimmer (they were 0.4 m blobs: camouflage)
+  float fl=mix(.12,(1.-smoothstep(.16,.26,length(rl)))*step(.45,h12(ri+4.1)),fd)*(.5+.5*smoothstep(.3,.6,n2));
+  vec3 b=mix(vec3(.07,.13,.05)*(.85+.3*n2),fh<.5?vec3(.62,.12,.16):vec3(.75,.42,.5),bl*fl);return mix(s4(gr,stw,soil,mix(soil,gr,.4),s),b,bush);}
+ vec3 c=s4(mix(vec3(.2,.26,.08),vec3(.36,.3,.16),.4*n1),stw*.92,soil*(.85+.2*fur),mix(soil,gr,.45),s);   // fallow: weeds in spring, dry in summer, ploughed in autumn
+ return mix(c,vec3(.6,.05,.03),step(.95,vn2(p*1.2+fh*5.))*bl*fine*.7);}
+`;
+MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];uniform sampler2D uFarm;uniform vec4 uFarmX;uniform float uAurea;'+GL_FARM,env:.4,fSurf:`
  vec3 N=normalize(vWN);float sl=1.-clamp(N.y,0.,1.);vec2 p=vWP.xz;
  vec3 grass=mix(vec3(.07,.11,.035),vec3(.16,.19,.06),fbm2(p*.008));vec3 dry=vec3(.34,.29,.17);vec3 wcG=vec3(0.);float wmG=0.;
 
@@ -10,12 +36,20 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
  vec3 gS=sS<2.?mix(gSp,gAu,sS*.5):sS<3.?mix(gAu,gWi,sS-2.):mix(gWi,gSp,sS-3.);
  vec3 gr=gS*mix(.82,1.18,fbm2(p*.008))*(.93+.14*vn2(p*.4));
  vec3 stw=vec3(.54,.42,.16)*mix(.85,1.15,fbm2(p*.0035+7.))*(.94+.12*vn2(p*.5));
+ float mT=vn2(p*.9),fineM=1.-smoothstep(.3,1.2,fwidth(p.x)),bareM;
+ {   // meadow, not lawn: less saturated, yellow-green drifts, last year's hay and bare earth by noise, slope and aspect (south faces, N.z>0 with z south, dry first), tufts up close.
+     // gr is also the wild grass between vines, olives and roses (farmCol), so the fields get the same patches
+  float mP=fbm2(p*.018+vec2(5.,9.)),mQ=fbm2(p*.07+vec2(13.,2.)),south=smoothstep(0.,.22,N.z),stp=smoothstep(.08,.3,sl);
+  gr=mix(vec3(dot(gr,W3)),gr,.78);gr=mix(gr,gr*vec3(1.45,1.08,.72),smoothstep(.42,.68,mP+.18*south)*.8);
+  gr=mix(gr,mix(stw,vec3(.36,.3,.17),.35)*(.85+.3*mT),smoothstep(.52,.8,.55*mQ+.45*mP+.22*south+.12*stp+(mT-.5)*.12*fineM)*.75);
+  bareM=smoothstep(.6,.78,.5*mQ+.3*fbm2(p*.2+7.)+.45*stp+.1*south);}
  vec3 c=mix(gr,stw,dryA*(.9+.1*fbm2(p*.004+3.)));
+ c=mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),bareM*.85);c*=.9+.2*mix(.5,.6*mT+.4*vn2(p*3.1),fineM)*mix(1.,.94+.12*vn2(p*3.1+5.),1.-smoothstep(.08,.3,fwidth(p.x)));   // tufts up close
  {float lc=dot(c,W3);float wW=0.;for(int i=0;i<56;i++){vec4 w=uWat[i];if(w.z>0.){if(w.w>0.){float cr=cos(uWatR[i]),sr=sin(uWatR[i]);vec2 dd=p-w.xy,l=vec2(dd.x*cr-dd.y*sr,dd.x*sr+dd.y*cr),q=abs(l)-w.zw;float sd=length(max(q,0.))+min(max(q.x,q.y),0.);   // garden rectangle: solid inside, a soft noisy edge about 5 m wide outside
    wW=max(wW,1.-smoothstep(0.,5.,sd+(fbm2(p*.03+w.xy)-.5)*7.+(vn2(p*.3)-.5)*3.));}
   else{float d=length(p-w.xy);wW=max(wW,1.-smoothstep(w.z*.6,w.z,d+(fbm2(p*.03+w.xy)-.5)*w.z*.5));}}}
   vec3 wSp=vec3(.058,.19,.04),wAu=vec3(.05,.171,.036),wWi=vec3(.042,.141,.034);vec3 wc=sS<1.?wSp:sS<2.?mix(wSp,wAu,sS-1.):sS<3.?mix(wAu,wWi,sS-2.):mix(wWi,wSp,sS-3.);
-  wcG=wc*(.88+.24*fbm2(p*.03));wmG=wW;}
+  wcG=wc*(.88+.24*fbm2(p*.03));wcG=mix(vec3(dot(wcG,W3)),wcG,.72);wcG=mix(wcG,wcG*vec3(1.35,1.06,.75),smoothstep(.5,.75,fbm2(p*.05+21.))*.7);wcG*=.9+.2*vn2(p*.9);wmG=wW;}   // watered gardens stay green, but not one even lawn
 #define SDS(p,a,b) length((p)-(a)-((b)-(a))*clamp(dot((p)-(a),(b)-(a))/dot((b)-(a),(b)-(a)),0.,1.))
  vec3 htG=vec3(0.),fcG=vec3(0.);float hwG=0.,fmG=0.;
  float fBl=sS<1.4?1.-smoothstep(.55,1.3,sS):sS<3.5?0.:smoothstep(3.5,4.,sS);   // wild flowers: spring only
@@ -35,11 +69,15 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
 
  vec3 cGr=c;{vec3 gn=gS/max(dot(gS,W3),.01);vec3 hc=htG/max(dot(htG,W3),.01);cGr=c*mix(vec3(1.),clamp(hc/gn,vec3(.7),vec3(1.4)),.6*(1.-dryA));}   // hill grass: the season colour with a slight hue of its own (applied over the town ground below)
  c=mix(c,mix(vec3(.4,.29,.17),vec3(.32,.23,.135),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*(1.-vZ.y)*1.);   // town ground: open earth between the streets
- c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y+wmG,0.,1.)*.95);c=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
+ c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y*.55+wmG,0.,1.)*.95);   // the horti (vZ.y) are tree gardens, not lawns: their meadow shows throughc=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
  vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);if(vZ.z>.85)chs=.1;float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
  float rw=dot(p,dr)/3.3;float aaF=fwidth(rw);float vine=smoothstep(.24+aaF,.24-aaF,abs(fract(rw)-.5));vec3 soil=vec3(.4,.32,.2)*(.85+.2*fbm2(p*.05)),vc=vec3(.19,.2,.1)*(.8+.3*fbm2(p*.2));
  vec3 fc=chs<.42?mix(soil,vc,mix(vine,.45,smoothstep(.15,.5,aaF))):chs<.62?mix(vec3(.5,.43,.22),vec3(.42,.39,.18),fbm2(p*.03)):chs<.82?mix(vec3(.19,.23,.1),vec3(.27,.27,.12),fbm2(p*.04)):mix(vec3(.3,.29,.14),vec3(.44,.38,.22),fbm2(p*.02));
- float edge=1.-smoothstep(0.,.018+fwidth(qq.x)*1.5,min(min(fq.x,1.-fq.x),min(fq.y,1.-fq.y)));fc=mix(fc,vec3(.07,.1,.04),edge*.85);c=mix(c,fc,vZ.z*.92);
+ float edge=1.-smoothstep(0.,.018+fwidth(qq.x)*1.5,min(min(fq.x,1.-fq.x),min(fq.y,1.-fq.y)));fc=mix(fc,vec3(.07,.1,.04),edge*.85);
+ {vec2 fq0=(p-uFarmX.xy)/uFarmX.zw;if(uFarmX.z>0.&&fq0.x>0.&&fq0.y>0.&&fq0.x<1.&&fq0.y<1.){   // the crop map (farmland.js) replaces the random patchwork in Rome
+  vec4 ft=texture2D(uFarm,fq0+((vec2(fbm2(p*.06),fbm2(p*.06+4.1))-.5)*16.+(vec2(vn2(p*.45),vn2(p*.45+2.7))-.5)*5.)/uFarmX.zw);int crop=int(ft.r*255.+.5);if(vZ.z>.85)crop=2;   // ragged field edges; the Aventine vineyard stays a vineyard
+  float fine=1.-smoothstep(.4,1.6,fwidth(p.x));fc=farmCol(crop,ft.g,p,sS,gr,stw,fine);fc=mix(fc,fc*vec3(.62,.72,.55),ft.b*(.5+.4*fbm2(p*.3))*.6);}}   // a hedge or path where two fields meet
+ c=mix(c,mix(vec3(dot(fc,W3)),fc,.82),vZ.z*.92);
  c=mix(c,vec3(.7,.62,.45)*(.9+.15*vn2(p*.5)),vZ.w);
  float pal=(1.-smoothstep(230.,380.,length(p-vec2(100.,300.))))*(1.-uDbg.x);   // the Palatine: pale limestone with moss on the ledges (rock_and_base brief)
  // (the dark-green slope band that used to sit here was the soft smear in front of the Jupiter temple; steep cells are now the rocky scarp below)
@@ -61,8 +99,11 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
    float mini=smoothstep(.8,2.6,fwidth(q.x)*uStN.x);float cov=mix(smoothstep(.26,.5,t.r),t.r,mini);
    if(cov>.004){
     float gc=t.g*255.;float wM=clamp((gc-128.)/64.,0.,1.),wD=clamp((128.-gc)/64.,0.,1.),wS=1.-max(wM,wD);float dw=t.b*8.;cov*=1.-smoothstep(.16,.26,sl)*(1.-wD);   // no stone/marble paving painted on steep faces (the pale wedge over the Capitol slope was marble street colour on a cut face; real stairs are geometry)
-    vec4 ta=texture2D(uStA,q0);vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);float across=dot(vWP.xz,nv),along=dot(vWP.xz,tv);
-    float trk=smoothstep(.22,.06,abs(fract((across+vn2(vec2(along*.05,3.))*1.4)/1.45)-.5)*1.45)*smoothstep(.3,.7,vn2(vec2(along*.1,across*.3)))*clamp(ta.b*4.,0.,1.);
+    // dirt ruts: one pair of wheel tracks 1.45 m apart, measured from the street centre of this coarse cell (uStA alpha, streets.js), wandering slowly.
+    // (measured from the world origin, any bend of the direction field turned the ruts into rings)
+    vec2 cC=uStX.zw/uStN*4.,cI=floor((vWP.xz-uStX.xy)/cC);vec4 ta=texture2D(uStA,(cI+.5)/ceil(uStN/4.));vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);
+    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),across=dot(dC,nv)-(ta.a*2.-1.)*8.+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
+    float trk=(1.-smoothstep(.05,.16+aR,abs(abs(across)-.72)))*mix(1.,.4,smoothstep(.05,.3,aR))*smoothstep(.3,.65,vn2(vec2(along*.07,3.7)))*clamp(texture2D(uStA,q0).b*4.,0.,1.);   // strength filtered, so it fades out at squares instead of stopping at a cell edge
     vec2 rp=vec2(vWP.x*.866+vWP.z*.5,-vWP.x*.5+vWP.z*.866);
     vec3 cM=vec3(.55,.49,.395),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
     if(wM>.01){float sl=3.4,sw=1.7,row=floor(rp.y/sw),u=rp.x+mod(row,2.)*sl*.5,id=floor(u/sl),jx=abs(fract(u/sl+.5)-.5)*sl,jy=abs(fract(rp.y/sw+.5)-.5)*sw,aa=fwidth(rp.x)*1.5+.01,jn=1.-smoothstep(.02,.02+aa,min(jx,jy)),hh=h12(vec2(id,row)+3.1);
@@ -78,6 +119,9 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     vec3 stC=cM*wM+cS*wS+cD*wD;stR=.52*wM+.72*wS+.95*wD;
     float ed=smoothstep(.0,.3,cov)*(1.-smoothstep(.55,.95,cov));stC=mix(stC,cD*.92,ed*.55*(1.-wD));
     c=mix(c,stC,cov);}}}
+ if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
+  float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),1.-smoothstep(32.,40.,length(p-vec2(330.,160.)))));
+  mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
 MAT.road=MAT.city;
@@ -214,7 +258,7 @@ function flushColumns(W){for(const k in W.cols){const L=W.cols[k];if(!L.length)c
   const m=new THREE.InstancedMesh(COLGEO[k],MAT.city,L.length);const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),col=new THREE.Color();
   L.forEach((c,i)=>{q.setFromAxisAngle(new THREE.Vector3(0,1,0),c[3]||0);S.set(c[4],c[4],c[4]);Pp.set(c[0],c[1],c[2]);M.compose(Pp,q,S);m.setMatrixAt(i,M);
     col.setRGB(...(c[5]||[1,1,1]));m.setColorAt(i,col);});
-  m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);W.cols[k]=[];}}
+  layTag(m,'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);W.cols[k]=[];}}
 
 /* ---------- trees (instanced) ---------- */
 function treeGeo(type){const P=[],N=[],F=[],I=[];let base=0;
@@ -239,7 +283,8 @@ const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
-function flushTrees(W,list,parent){if(W.trees.length>60000*Q.trees){const k=60000*Q.trees/W.trees.length;W.trees=W.trees.filter(()=>Math.random()<k);}W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
+function flushTrees(W,list,parent){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
+  W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
   for(const k in by){const L=by[k];if(!L.length)continue;const kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
     const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,L.length);
@@ -252,7 +297,7 @@ function flushTrees(W,list,parent){if(W.trees.length>60000*Q.trees){const k=6000
       m.setColorAt(i,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
-    m.castShadow=true;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out;}
+    layTag(m,'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out;}
 // watered ground (palace and domus gardens): discs the terrain shader keeps green all year (uWat)
 const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.uWat.value[this.n++].set(x,z,r,hd);}}};   // circle (x,z,r) or rectangle (x,z,half-width,half-depth,rot as in Foot)
 
@@ -260,9 +305,9 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(W.people.length>9000){const k=9000/W.people.length;W.people=W.people.filter(()=>Math.random()<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
   list.forEach((p,i)=>{M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(i,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(i,c);});
-  m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);return m;}
+  layTag(m,'people');m.castShadow=false;m.receiveShadow=true;m.frustumCulled=false;(parent||W.scene).add(m);return m;}   // r147 culls an InstancedMesh by one figure's bounds at the origin: a crowd far from the origin vanished
 
 /* ---------- monument generators (into GB g) ---------- */
 function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand

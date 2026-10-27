@@ -182,6 +182,65 @@ function residentialCourtGarden(W,g,C,R){
   if(pool){const J=courtyardPoolPolygon(I);if(J){const o=lotOBB(J),F=frame(o.cx,h.max+.14,o.cz,o.rot),hx=Math.max(.65,o.hw*.75),hz=Math.max(.65,o.hd*.75);g.set(2,.42);for(const sd of[-1,1]){box(g,F,0,0,sd*hz,hx+.12,.55,.12,31);box(g,F,sd*hx,0,0,.12,.55,hz+.12,31);}if(W.poolG)W.poolG.poly([F.p(-hx,.4,-hz),F.p(hx,.4,-hz),F.p(hx,.4,hz),F.p(-hx,.4,hz)],[0,1,0]);g.set(6,.48);lathe(g,F,0,.4,0,[[.2,0],[.16,.45],[.4,.6],[.35,.69],[.02,.78]],10);}}
   for(let k=0;k<I.length;k++){const q=lp(I[k],c,.23);if(pool&&Math.hypot(q[0]-c[0],q[1]-c[1])<2.5)continue;W.trees.push([q[0],W.gy(...q)+.15,q[1],k%2?'shrub':'flower',.42,null,2]);}
 }
+// A ring that did not close (a lot was skipped for a road, a monument or the slope) gets no garden: its court stays a plain yard of beaten
+// earth (the ground itself) round a well-head, the way most insula courts were.
+function residentialCourtYard(W,g,C){
+  const I=pInset(C,.6)||C,c=pCen(I);if(!houseGround(W,I))return;
+  const bb=lotOBB(I);if(Math.min(bb.hw,bb.hd)>2.2){const F=frame(c[0],W.gy(...c)+.1,c[1],bb.rot);g.set(2,.45);lathe(g,F,0,0,0,[[.55,0],[.55,.8],[.42,.8],[.42,.1],[0,.1]],10);}
+}
+// A lot against W.foot by real outlines: the lot polygon grown by m against each footprint's own outline (a block lot's polygon, a parcel's
+// poly, else its box). skip: a tag to ignore.
+function footBox(f){return[[-f.hw,-f.hd],[f.hw,-f.hd],[f.hw,f.hd],[-f.hw,f.hd]].map(([u,v])=>[f.cx+u*f.c+v*f.s,f.cz-u*f.s+v*f.c]);}
+function lotHitWhat(W,L,m){const F=W.foot,ob=lotOBB(L),r=Math.hypot(ob.hw,ob.hd)+m,cs=F.cell,P=pInset(L,-m)||L;   // the first footprint lotHits would stop at (for the audit)
+  for(let i=Math.floor((ob.cx-r)/cs);i<=Math.floor((ob.cx+r)/cs);i++)for(let j=Math.floor((ob.cz-r)/cs);j<=Math.floor((ob.cz+r)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){const dx=f.cx-ob.cx,dz=f.cz-ob.cz;if(dx*dx+dz*dz>(f.r+r)**2)continue;if(residentialOverlap(P,f.blkLot||f.poly||footBox(f)))return f;}
+  return null;}
+function lotHits(W,L,m,skip){const F=W.foot,ob=lotOBB(L),r=Math.hypot(ob.hw,ob.hd)+m,cs=F.cell,P=pInset(L,-m)||L;
+  for(let i=Math.floor((ob.cx-r)/cs);i<=Math.floor((ob.cx+r)/cs);i++)for(let j=Math.floor((ob.cz-r)/cs);j<=Math.floor((ob.cz+r)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){
+    if(skip&&f.tag===skip)continue;const dx=f.cx-ob.cx,dz=f.cz-ob.cz;if(dx*dx+dz*dz>(f.r+r)**2)continue;if(residentialOverlap(P,f.blkLot||f.poly||footBox(f)))return true;}
+  return false;}
+// Spec 6.2.3 (U-shaped court): the stretches of the court edge that no house covers get a plastered garden wall, 2.6 m, with a gate in the
+// longest one. All or nothing: a stretch that crosses a footprint or climbs more than 3 m leaves the court a yard. Returns true when walled.
+function courtWalls(W,g,C,uncovered){const segs=[];
+  for(const u of uncovered){const a=C[u.edge],b=C[(u.edge+1)%C.length],A=lp(a,b,u.from),B=lp(a,b,u.to),len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<.05)continue;
+    const rot=Math.atan2(-(B[1]-A[1]),B[0]-A[0]),mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,ha=W.gy(...A),hb=W.gy(...B);
+    if(Math.abs(ha-hb)>3||W.foot.hits(mx,mz,len/2,.3,rot,0))return false;segs.push({A,B,len,rot});}
+  if(!segs.length)return false;const gate=segs.reduce((m,s)=>s.len>m.len?s:m,segs[0]);
+  for(const S of segs){const n=Math.max(1,Math.ceil(S.len/4)),cut=S===gate&&S.len>=5?[.5-1.3/S.len,.5+1.3/S.len]:null;
+    for(let k=0;k<n;k++){let t0=k/n,t1=(k+1)/n;if(cut&&t1>cut[0]&&t0<cut[1]){if(t0<cut[0])t1=cut[0];else if(t1>cut[1])t0=cut[1];else continue;}   // the gate: a 2.6 m opening between two piers
+      const P0=lp(S.A,S.B,t0),P1=lp(S.A,S.B,t1),hx=Math.hypot(P1[0]-P0[0],P1[1]-P0[1])/2,y=Math.min(W.gy(...P0),W.gy(...P1))-.3,F=frame((P0[0]+P1[0])/2,y,(P0[1]+P1[1])/2,S.rot);
+      g.set(2,.42);box(g,F,0,0,0,hx,2.9,.24,31);g.set(2,.55);box(g,F,0,2.9,0,hx+.02,.14,.32,31);}
+    if(cut)for(const t of cut){const q=lp(S.A,S.B,t),F=frame(q[0],W.gy(...q)-.3,q[1],S.rot);g.set(2,.5);box(g,F,0,0,0,.4,3.5,.4,31);}
+    W.foot.add((S.A[0]+S.B[0])/2,(S.A[1]+S.B[1])/2,S.len/2,.3,S.rot);}
+  return true;}
+// Clip block B to the far side of footprint f's nearest face (grown by m): the part of the block that keeps clear of it.
+function cutAway(B,f,m){const c=pCen(B),dx=c[0]-f.cx,dz=c[1]-f.cz;
+  if(f.circ){const d=Math.hypot(dx,dz)||1,nx=dx/d,nz=dz/d;return clipHalf(B,nx,nz,f.cx*nx+f.cz*nz+f.hw+m,1);}
+  const u=f.c*dx-f.s*dz,v=f.s*dx+f.c*dz,byU=Math.abs(u)/(f.hw||1)>Math.abs(v)/(f.hd||1),sg=Math.sign(byU?u:v)||1,nx=(byU?f.c:f.s)*sg,nz=(byU?-f.s:f.c)*sg;
+  return clipHalf(B,nx,nz,f.cx*nx+f.cz*nz+(byU?f.hw:f.hd)+m,1);}
+// A story-state group of houses (W.preLayers[k], switched by the state lists in app.js); every generator that files houses under k shares it
+// (a second genBlocks call used to replace the first one's entry, leaving its houses hidden in every state).
+function preLayerGroup(W,k){const P=W.preLayers||(W.preLayers={});let G=P[k];if(!G){G=new THREE.Group();G.name=k;G.userData.rise=0;G.visible=false;W.scene.add(G);P[k]=G;}return G;}
+// A ring of lots round a court: block B inset by the wing depth dd gives the court; each edge is cut into lots about lw wide.
+function ringLots(B,dd,lw,R){const I=pInset(B,dd);if(!I||pArea(I)<=40)return{court:null,lots:[]};const lots=[];
+  for(let e=0;e<B.length;e++){const a=B[e],b=B[(e+1)%B.length],ia=I[e],ib=I[(e+1)%B.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));
+    let t0=0;for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(a,b,t0),lp(a,b,t1),lp(ia,ib,t1),lp(ia,ib,t0)]);t0=t1;}}
+  return{court:I,lots};}
+// Keep the part of polygon P on one side of the line p.n = c (sign +1: p.n >= c).
+function clipHalf(P,nx,nz,c,sign){const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],da=sign*(a[0]*nx+a[1]*nz-c),db=sign*(b[0]*nx+b[1]*nz-c);if(da>=0)out.push(a);if((da>=0)!==(db>=0))out.push(lp(a,b,da/(da-db)));}return out.length>=3?out:null;}
+// Spec F6: a block too steep for one courtyard house, even on a terrace platform, is cut along the contours into terrace strips at least
+// 10 m deep with a 2.4 m stepped lane between them; each strip is a row of houses fronting downhill. Never one big house, never scattered huts.
+function terraceStrips(W,B,Z,o,R,addLot,mg){const ob=lotOBB(B),r=Math.hypot(ob.hw,ob.hd);let n=0,mx=0,mz=0,mh=0;const pts=[];
+  for(let x=ob.cx-r;x<=ob.cx+r;x+=5)for(let z=ob.cz-r;z<=ob.cz+r;z+=5)if(nobleInside(x,z,B)){const h=W.gy(x,z);pts.push([x,z,h]);mx+=x;mz+=z;mh+=h;n++;}
+  if(n<6)return 0;mx/=n;mz/=n;mh/=n;let xx=0,zz=0,xz=0,xh=0,zh=0;for(const[x,z,h]of pts){const dx=x-mx,dz=z-mz,dh=h-mh;xx+=dx*dx;zz+=dz*dz;xz+=dx*dz;xh+=dx*dh;zh+=dz*dh;}
+  const det=xx*zz-xz*xz||1,a=(xh*zz-zh*xz)/det,b=(zh*xx-xh*xz)/det,gl=Math.hypot(a,b)||1,gx=a/gl,gz=b/gl,tx=-gz,tz=gx;   // least-squares plane: (gx,gz) points uphill
+  const s=B.map(p=>p[0]*gx+p[1]*gz),s0=Math.min(...s),s1=Math.max(...s),depth=s1-s0,k=Math.max(1,Math.min(Math.floor(depth/10),Math.ceil(gl*depth/3)));let placed=0;
+  for(let i=0;i<k;i++){let S=clipHalf(B,gx,gz,s0+depth*i/k,1);S=S&&clipHalf(S,gx,gz,s0+depth*(i+1)/k,-1);const I=S&&pInset(S,1.2);if(!I||Math.abs(pArea(I))<40)continue;
+    const u=I.map(p=>p[0]*tx+p[1]*tz),u0=Math.min(...u),u1=Math.max(...u),m=Math.max(1,Math.round((u1-u0)/(Z.lotW*1.2)));
+    for(let j=0;j<m;j++){let L=clipHalf(I,tx,tz,u0+(u1-u0)*j/m,1);L=L&&clipHalf(L,tx,tz,u0+(u1-u0)*(j+1)/m,-1);if(!L||Math.abs(pArea(L))<14)continue;
+      let f0=0,best=1e9;for(let e=0;e<L.length;e++){const p=L[e],q=L[(e+1)%L.length],d=((p[0]+q[0])*gx+(p[1]+q[1])*gz)/2;if(d<best){best=d;f0=e;}}L=L.slice(f0).concat(L.slice(0,f0));   // the downhill edge first: the house fronts the lane below
+      const lob=lotOBB(L);if(o.lotOK&&!o.lotOK(lob.cx,lob.cz))continue;if(lotHits(W,L,mg+.8))continue;const key=o.grp?o.grp(lob.cx,lob.cz):'';if(key===null||key===undefined)continue;
+      const p=Z.lot(R);p.burn=0;if(lotBuild(W,addLot(lob.cx,lob.cz,key),L,p,R,null)){const f=W.foot.add(lob.cx,lob.cz,lob.hw,lob.hd,lob.rot);f.blkLot=L;placed++;}}}
+  return placed;}
 // Detached horrea are a separate building type. They are never passed through
 // residential mass splitting, never a roof mosaic covering a whole ring block.
 function warehouseBlock(W,g,B,R,margin=0){
@@ -204,36 +263,50 @@ function estateChildWorld(W){const C=Object.assign({},W,{cols:{},trees:[],people
 function estateMergeWorld(W,C){for(const k of Object.keys(C.cols||{})){const a=W.cols[k]||(W.cols[k]=[]),b=C.cols[k];for(let i=0;i<b.length;i+=8192)a.push(...b.slice(i,i+8192));}for(const k of['trees','people','lotLog','houseGalleryLog','balcLog'])if(C[k]?.length)(W[k]||(W[k]=[])).push(...C[k]);if(C.poolG?.nv)estateAppendGB(W.poolG||(W.poolG=new GB()),C.poolG);}
 function estatePlanStats(W){return W.estatePlanStats||(W.estatePlanStats={attempted:0,committed:0,fallback:0,fallbackHomes:0,fallbackFloors:{},reasons:{},transactions:[]});}
 function estateReject(W,reason,record){const S=estatePlanStats(W);S.fallback++;S.reasons[reason]=(S.reasons[reason]||0)+1;record.status='fallback';record.reason=reason;}
-function estatePlanReason(W,B,C,lots,o,mg,deck){const h=houseGround(W,B);if(!h)return'invalid-block-ground';if(h.max-h.min>2.001)return'block-relief-over-2m';if(!deck)return'court-exposure-over-1.8m';const block=lotOBB(B);if(W.foot.hits(block.cx,block.cz,block.hw,block.hd,block.rot,mg+.8))return'block-foot-conflict';if(!lots.length)return'incomplete-perimeter';const expected=Math.abs(pArea(B))-Math.abs(pArea(C)),covered=lots.reduce((a,L)=>a+Math.abs(pArea(L)),0);if(expected<=0||Math.abs(covered-expected)>Math.max(2,expected*.015))return'incomplete-perimeter';for(const L of lots){if(pArea(L)<14)return'incomplete-wing-lot';const ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))return'lot-policy';if(W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8))return'reserved-road-or-foot';if(!houseRoadClear(W,L))return'road-collision';}return null;}
+function estatePlanReason(W,B,C,lots,o,mg,deck){const h=houseGround(W,B);if(!h)return'invalid-block-ground';if(h.max-h.min>ESTATE_TERRACE.relief)return'block-relief-over-6m';if(!deck)return'court-exposure-over-6m';if(lotHits(W,B,mg+.8))return'block-foot-conflict';if(!lots.length)return'incomplete-perimeter';const expected=Math.abs(pArea(B))-Math.abs(pArea(C)),covered=lots.reduce((a,L)=>a+Math.abs(pArea(L)),0);if(expected<=0||Math.abs(covered-expected)>Math.max(2,expected*.015))return'incomplete-perimeter';for(const L of lots){if(pArea(L)<14)return'incomplete-wing-lot';const ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))return'lot-policy';if(lotHits(W,L,mg+.8))return'reserved-road-or-foot';if(!houseRoadClear(W,L))return'road-collision';}return null;}
 function estateFallback(W,lots,o,R,addLot,record){let placed=0;const floors={};const put=(P,depth=0)=>{if(pArea(P)<14||depth>8)return;const ob=lotOBB(P),key=o.grp?o.grp(ob.cx,ob.cz):'',small=ob.hw*2<=12.01&&ob.hd*2<=11.01&&Math.abs(pArea(P))<=110;
   if(small&&key!==null&&key!==undefined&&(!o.lotOK||o.lotOK(ob.cx,ob.cz))&&!W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,(o.margin||0)+.8)&&houseRoadClear(W,P)){const p={part:R()<.5?0:9,seed:R(),sty:R()<.5?0:3,fl:2|16,nSt:2+Math.floor(R()*2),gH:3.8,sH:2.9,pitch:.36+R()*.09,lit:1,flat:false,noSplit:true,noDecor:true};if(typeof nobleQuarterAt==='function'&&nobleQuarterAt(ob.cx,ob.cz)==='core')p.nSt=3;if(lotBuild(W,addLot(ob.cx,ob.cz,key),P,p,R,null)){W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);placed++;const rows=(W.lotLog||[]).slice(-1),n=rows[0]?.storeys||p.nSt;floors[n]=(floors[n]||0)+1;return;}}
   const halves=splitResidentialPolygon(P);if(halves.length===2){put(halves[0],depth+1);put(halves[1],depth+1);}};for(const L of lots){const inset=pInset(L,.4);if(inset&&Math.abs(pArea(inset))>14)put(inset);}
   record.fallbackHomes=placed;record.fallbackFloors=floors;const S=estatePlanStats(W);S.fallbackHomes+=placed;for(const k of Object.keys(floors))S.fallbackFloors[k]=(S.fallbackFloors[k]||0)+floors[k];return placed;}
-function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.dens),sx=o.sx,sz=o.sz,th=o.rot,c=Math.cos(th),s=Math.sin(th),E=o.ext,chunks=new Map(),cs=o.chunk||600,smk=[];let nL=0;
-  const G=(x,z,k)=>{const key=k+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};
+function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:o.ext});   // kept for the review panel's zone edges
+  const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.dens),sx=o.sx,sz=o.sz,th=o.rot,c=Math.cos(th),s=Math.sin(th),E=o.ext,chunks=new Map(),cs=o.chunk||600,smk=[];let nL=0;
+  const G=(x,z,k,lay='houses')=>{const key=k+'|'+lay+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,lay,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};   // lay: the squares get their own chunks so the review panel can show them apart
   let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,z]of[[E[0],E[1]],[E[2],E[1]],[E[2],E[3]],[E[0],E[3]]]){const u=x*c-z*s,v=x*s+z*c;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v);}
   const i0=Math.floor(u0/sx)-1,i1=Math.ceil(u1/sx)+1,j0=Math.floor(v0/sz)-1,j1=Math.ceil(v1/sz)+1,NJ=j1-j0+1,N=[];
   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){let u=i*sx+(hash2(i,j*7+1)-.5)*sx*.26,v=j*sz+(hash2(i*3+5,j)-.5)*sz*.26;const wu=34*(fbm(u*.0015+3,v*.0015,3)-.5)*2,wv=34*(fbm(u*.0015,v*.0015+9,3)-.5)*2;u+=wu;v+=wv;N.push([u*c+v*s,-u*s+v*c]);}
   const nd=(i,j)=>N[(i-i0)*NJ+(j-j0)];
   for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
     const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
-    let polys=[Qd];if(R()<Z.tri)polys=R()<.5?[[Qd[0],Qd[1],Qd[2]],[Qd[0],Qd[2],Qd[3]]]:[[Qd[0],Qd[1],Qd[3]],[Qd[1],Qd[2],Qd[3]]];
-    for(const P0 of polys){const B=pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
+    let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
+      if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
+    for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
+      // a block a main road crosses is cut along the road's corridor; each piece is judged on its own (faces.js): a whole block (F5) goes on below, the rest become squares
+      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(const P of pieces){const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
+          if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],'','squares'),P,f,R,Z.kind);else faceStat(W,'F0',P);}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
-      const ring=Z.kind==='domus'||Z.kind==='ware'||B.length===3||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;
-      if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),I=pInset(B,dd);
-        if(I&&pArea(I)>40){court=I;for(let e=0;e<B.length;e++){const a=B[e],b=B[(e+1)%B.length],ia=I[e],ib=I[(e+1)%B.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));
-          let t0=0;for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(a,b,t0),lp(a,b,t1),lp(ia,ib,t1),lp(ia,ib,t0)]);t0=t1;}}}
+      const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring
+      if(ring){const dd=Z.kind==='domus'?8.5+R()*2:Z.kind==='ware'?14:Z.depth*(.85+.3*R()),rl=ringLots(B,dd,lw,R);
+        if(rl.court){court=rl.court;lots=rl.lots;}
         else lots.push(B);}
       else{let A=B[0],Bq=B[1],C=B[2],D=B[3];if(Math.hypot(Bq[0]-A[0],Bq[1]-A[1])+Math.hypot(D[0]-C[0],D[1]-C[1])<Math.hypot(C[0]-Bq[0],C[1]-Bq[1])+Math.hypot(A[0]-D[0],A[1]-D[1])){const t=A;A=Bq;Bq=C;C=D;D=t;}
         const M1=lp(D,A,.5),M2=lp(Bq,C,.5),len=Math.hypot(Bq[0]-A[0],Bq[1]-A[1]),nl=Math.max(1,Math.round(len/(lw*(.8+.4*R()))));let t0=0;
         for(let k=1;k<=nl;k++){const t1=k===nl?1:(k+(R()-.5)*.5)/nl;lots.push([lp(A,Bq,t0),lp(A,Bq,t1),lp(M1,M2,t1),lp(M1,M2,t0)]);lots.push([lp(D,C,t1),lp(D,C,t0),lp(M1,M2,t0),lp(M1,M2,t1)]);t0=t1;}}
       const blockLotStart=W.lotLog?.length||0;
-      let courtPlan=court&&Z.kind==='domus'&&typeof courtyardDeckPlan==='function'?courtyardDeckPlan(W,court):null;
+      let courtPlan=court&&Z.kind==='domus'&&typeof courtyardDeckPlan==='function'?courtyardDeckPlan(W,court,ESTATE_TERRACE):null;
       if(o.whole&&Z.kind!=='domus'&&lots.some(L=>{const ob=lotOBB(L);return W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8);}))continue;
-      const domus=Z.kind==='domus',estate=domus?{block:B.map(p=>p.slice()),court:court&&court.map(p=>p.slice()),wings:lots.length}:null;
+      let EB=B;const domus=Z.kind==='domus',estate=domus?{block:B.map(p=>p.slice()),court:court&&court.map(p=>p.slice()),wings:lots.length}:null;
+      if(domus&&!court){const S=estatePlanStats(W);S.tooSmall=(S.tooSmall||0)+1;nL+=estateFallback(W,lots,o,R,(x,z,k)=>G(x,z,k),{});continue;}   // no court fits inside the wings: no courtyard house is possible here (not counted as an attempt)
+      if(domus){const hb=houseGround(W,B);if(hb&&hb.max-hb.min>ESTATE_TERRACE.relief){const S=estatePlanStats(W);S.steep=(S.steep||0)+1;(S.steepAt||(S.steepAt=[])).push(pCen(B).map(Math.round));nL+=terraceStrips(W,B,Z,o,R,(x,z,k)=>G(x,z,k),mg);continue;}}   // spec F6: too steep for a courtyard house even on a terrace platform
       if(domus){const S=estatePlanStats(W);S.attempted++;S.transactions.push(estate);const h=houseGround(W,B);estate.relief=h?h.max-h.min:null;estate.maxExposure=courtPlan?courtPlan.maxExposure:null;
         {let reason=estatePlanReason(W,B,court,lots,o,mg,courtPlan);
+          // spec 6.2.3 within the same block, when the whole block collides or its court is too exposed: first cut away what it hits (the block is
+          // clipped along that road's or building's face, the larger part keeps the estate; up to three times), then try it set back 3 or 6 m from
+          // the street. The estate stays at least 28 m across; what is cut off stays open garden.
+          const tryBlock=B2=>{const o2=B2&&lotOBB(B2);if(!o2||Math.min(o2.hw,o2.hd)*2<28)return null;const rl=ringLots(B2,9.5,lw,R);if(!rl.court)return null;const cp=courtyardDeckPlan(W,rl.court,ESTATE_TERRACE);return{B2,rl,cp,r:estatePlanReason(W,B2,rl.court,rl.lots,o,mg,cp)};};
+          const take=t=>{EB=t.B2;court=t.rl.court;lots=t.rl.lots;courtPlan=t.cp;estate.block=EB.map(p=>p.slice());estate.court=court.map(p=>p.slice());};
+          let cur=B;for(let it=0;it<3&&(reason==='block-foot-conflict'||reason==='reserved-road-or-foot');it++){const f=lotHitWhat(W,cur,mg+.8);if(!f)break;const t=tryBlock(cutAway(cur,f,mg+1.8));if(!t)break;estate.cut=(estate.cut||0)+1;cur=t.B2;reason=t.r;if(!reason)take(t);}
+          for(const back of[3,6]){if(!['block-foot-conflict','court-exposure-over-6m','reserved-road-or-foot','incomplete-perimeter'].includes(reason))break;const t=tryBlock(pInset(cur,back));if(!t)break;estate.setback=back;reason=t.r;if(!reason)take(t);}
+          if(reason==='block-foot-conflict'){const f=lotHitWhat(W,B,mg+.8);estate.hit=!f?'?':f.tag==='road'?(f.nobleRoad?'nobleRoad':'road'):f.tag?f.tag+':'+(f.siteRole||''):f.blkLot?'blockLot':f.poly?(f.nobleHome?'noble':f.academyHome?'academy':'parcel'):f.warehouse?'warehouse':f.t?'temple':f.r>40?'monument':'small';estate.hitAt=[Math.round(f?.cx||0),Math.round(f?.cz||0),Math.round(f?.hw||0),Math.round(f?.hd||0)];}
           if(reason)estateReject(W,reason,estate);else{
             const child=estateChildWorld(W),stages=new Map(),stageSmoke=[],stageR=RNG(Math.floor(R()*0xffffffff)||1);let ok=true;
             for(let wi=0;wi<lots.length;wi++){const L=lots[wi],ob=lotOBB(L),key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){ok=false;reason='layer-rejected';estate.failedWing=wi;break;}let st=stages.get(key);if(!st){st={g:new GB(1<<14),cx:ob.cx,cz:ob.cz,key};stages.set(key,st);}const p=Z.lot(stageR);p.minRoofY=courtPlan.y+3.9;p.burn=0;const logStart=child.lotLog.length,builtWing=lotBuild(child,st.g,L,p,stageR,key===''?stageSmoke:null),covered=child.lotLog.slice(logStart).reduce((a,l)=>a+Math.abs(pArea(l.L)),0),wingArea=Math.abs(pArea(L));if(!builtWing||Math.abs(covered-wingArea)>Math.max(1.5,wingArea*.015)){ok=false;reason='wing-build-incomplete';estate.failedWing=wi;estate.failedWingArea=wingArea;estate.builtWingArea=covered;break;}}
@@ -242,21 +315,28 @@ function genBlocks(W,o){const R=RNG(o.seed||11),mg=o.margin||0,dq=Math.max(.3,Q.
           }}
         if(estate.status!=='committed'){const fbLots=lots.concat(court?[court]:[]);court=null;courtPlan=null;const count=estateFallback(W,fbLots,o,R,(x,z,k)=>G(x,z,k),estate);nL+=count;}
       }
-      if(!domus)for(let L of lots){if(pArea(L)<14)continue;let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;
-        // The entire lot envelope, plus roof overhang, must clear every reserved road.
-        // Shrinking the OBB or trimming only one end let the rendered building cross the road.
-        if(W.foot.hits(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,mg+.8))continue;
-        const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
-        const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){built.push(ob);nL++;
-          if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}}
-      const closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
-      if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
-      else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));}
+      const RS=W.ringStats||(W.ringStats={rings:0,closed:0,walled:0,lot:{}}),rs=k=>{if(court&&!domus)RS.lot[k]=(RS.lot[k]||0)+1;};   // audit: how the lots of ring blocks fare
+      if(!domus)for(let L of lots){if(pArea(L)<14){rs('small');continue;}let ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz)){rs('lotOK');continue;}
+        // The entire lot outline, plus roof overhang, must clear every reserved road and building. Tested on the real outlines (lotHits):
+        // a corner lot's bounding box reached across the street and refused lots whose houses would not have touched anything.
+        if(lotHits(W,L,mg+.8)){rs(lotHits(W,L,mg+.8,'road')?'hit':'hitRoad');continue;}
+        const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){rs('grp');continue;}
+        const p=Z.lot(R);if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;ob.L=L;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){const cov=(W.lotLog||[]).slice(l0).reduce((a,l)=>a+Math.abs(pArea(l.L)),0);rs(cov<Math.abs(pArea(L))*.97?'partial':'built');built.push(ob);nL++;
+          if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],b=L[1],m=lp(a,b,.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}else rs('buildFail');}
+      if(court&&!domus&&footTagHit(W,court,'road'))court=null;   // a road crosses this block: its lots on the road were skipped, and the yard between them is no courtyard
+      let closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(blockLotStart)):{closed:false,uncovered:[]};
+      if(court&&!domus&&!closure.closed){let per=0,gap=0;for(let e=0;e<court.length;e++){const a=court[e],b=court[(e+1)%court.length];per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}for(const u of closure.uncovered){const a=court[u.edge],b=court[(u.edge+1)%court.length];gap+=(u.to-u.from)*Math.hypot(b[0]-a[0],b[1]-a[1]);}
+        const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';
+        if(gap>per*.4)court=null;   // under 60 % of the ring built: no yard and no reservation, the gap-filling pass may build there
+        else if(key!==null&&key!==undefined&&courtWalls(W,G(c2[0],c2[1],key),court,closure.uncovered))closure={closed:true,uncovered:[],walled:true};}   // spec 6.2.3: the missing stretch of the ring becomes a garden wall with a gate (the U-shaped court)
+      if(court&&!domus){RS.rings++;if(closure.closed)RS.closed++;if(closure.walled)RS.walled++;}
+      if(court&&domus&&estate?.status==='committed'&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court),courtPlan);}
+      else if(court&&!domus&&built.length>1&&Z.court){const c2=pCen(court),key=o.grp?o.grp(c2[0],c2[1]):'';if(key!==null&&key!==undefined){if(closure.closed)Z.court(W,G(c2[0],c2[1],key),court,R,pArea(court));else residentialCourtYard(W,G(c2[0],c2[1],key),court);}}   // spec 6.2: a garden only inside a closed ring; a ring with gaps keeps a plain yard with a well
       if(court&&built.length&&typeof reserveResidentialArea==='function'&&(!domus||estate?.status==='committed')){
-        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:['garden','fountain','columns','paths'],deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1});
-        if(Z.kind==='domus')reserveResidentialArea(W,B,'senatorial-estate');}
-      for(const ob of built)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);}}
-  const groups={};for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(!m)continue;let G2=groups[e.k];if(!G2){G2=groups[e.k]=new THREE.Group();W.scene.add(G2);if(e.k!==''){G2.name=e.k;G2.userData.rise=0;G2.visible=false;(W.preLayers=W.preLayers||{})[e.k]=G2;}}G2.add(m);}
+        reserveResidentialArea(W,court,Z.kind==='domus'?'senatorial-garden':'residential-courtyard',{closed:closure.closed,uncovered:closure.uncovered,allowed:closure.closed||domus?['garden','fountain','columns','paths']:['paths'],yard:!closure.closed&&!domus,walled:!!closure.walled,deckY:courtPlan&&courtPlan.y,minEave:courtPlan?Math.min(...(W.lotLog||[]).slice(blockLotStart).map(l=>l.floorY+l.gH+(l.storeys-1)*l.sH)):null,deckBuilt:built.length>1&&(closure.closed||domus)});
+        if(Z.kind==='domus')reserveResidentialArea(W,EB,'senatorial-estate');}
+      for(const ob of built){const f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot);if(ob.L)f.blkLot=ob.L;}}}   // blkLot: the lot's real outline, for lotHits
+  const groups={};for(const e of chunks.values()){const m=layTag(e.g.mesh(MAT.city),e.lay);if(!m)continue;let G2=groups[e.k];if(!G2){if(e.k!=='')G2=groups[e.k]=preLayerGroup(W,e.k);else{G2=groups[e.k]=new THREE.Group();W.scene.add(G2);}}G2.add(m);}
   if(smk.length)W.scene.add(smokeSys(smk.slice(0,280),{col:[.86,.84,.8],rise:24,size:3,rate:.06,alpha:.3,per:8,drift:[4,0,2]}));return nL;}
 
 /* TEST tool: residential embedding under the lowest-ground policy; no raised terraces. */

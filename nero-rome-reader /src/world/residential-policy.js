@@ -6,6 +6,9 @@ function residentialSolidFits(P){const b=residentialBounds(P);return b.length<=R
 function residentialOverlap(P,Q){
   for(const A of[P,Q])for(let i=0;i<A.length;i++){const a=A[i],b=A[(i+1)%A.length],nx=b[1]-a[1],nz=a[0]-b[0],u=P.map(p=>p[0]*nx+p[1]*nz),v=Q.map(p=>p[0]*nx+p[1]*nz);if(Math.max(...u)<=Math.min(...v)+.001||Math.max(...v)<=Math.min(...u)+.001)return false;}return true;
 }
+function footTagHit(W,P,tag){const o=residentialBounds(P),q={cx:o.cx,cz:o.cz,hw:o.hw,hd:o.hd,c:Math.cos(o.rot),s:Math.sin(o.rot),r:Math.hypot(o.hw,o.hd)},F=W.foot,cs=F.cell;   // does polygon P overlap a footprint tagged tag?
+  for(let i=Math.floor((q.cx-q.r)/cs);i<=Math.floor((q.cx+q.r)/cs);i++)for(let j=Math.floor((q.cz-q.r)/cs);j<=Math.floor((q.cz+q.r)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){if(f.tag!==tag)continue;const dx=f.cx-q.cx,dz=f.cz-q.cz;if(dx*dx+dz*dz<=(f.r+q.r)**2&&obb(f,q))return true;}
+  return false;}
 function reserveResidentialArea(W,P,role,extra={}){if(!P||P.length<3)return;const o=residentialBounds(P),rec={polygon:P.map(p=>p.slice()),role,cx:o.cx,cz:o.cz,r:Math.hypot(o.hw,o.hd),afterLot:W.lotLog?.length||0,...extra};
   (W.residentialReservations||(W.residentialReservations=[])).push(rec);
   const f=W.foot.add(o.cx,o.cz,o.hw,o.hd,o.rot,'open');f.poly=P;f.siteRole=role;f.reservation=rec;return rec;
@@ -26,7 +29,11 @@ function splitResidentialPolygon(P){
   const b=lotOBB(P),axis=b.hw>=b.hd?[b.ux,b.uz]:[-b.uz,b.ux],v=P.map(p=>p[0]*axis[0]+p[1]*axis[1]),mid=(Math.min(...v)+Math.max(...v))/2;
   const cut=sign=>{const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],va=(a[0]*axis[0]+a[1]*axis[1]-mid)*sign,vb=(b[0]*axis[0]+b[1]*axis[1]-mid)*sign;if(va<=0)out.push(a);if(va*vb<0)out.push(lp(a,b,va/(va-vb)));}return out;};return[cut(1),cut(-1)].filter(P=>P.length>=3&&Math.abs(pArea(P))>20);
 }
-function courtyardDeckPlan(W,C){const h=houseGround(W,C);if(!h)return null;const y=h.max+.16,exposure=y-h.min;if(h.max-h.min>2.001||exposure>1.8+.001)return null;return{y,bottom:h.min-.2,relief:h.max-h.min,maxExposure:exposure};}
+// A courtyard deck lies just above the court's highest ground. Ordinary courts allow 2 m of fall and 1.8 m of exposed deck; an old courtyard estate
+// (spec 6.2.4) may stand on a terrace platform: up to 6 m of fall, the deck carried on a substructure inside the ring of wings, the downhill wings
+// a storey or two taller below it, the way hillside houses on the Palatine were built.
+const COURT_DECK={relief:2.001,exposure:1.8},ESTATE_TERRACE={relief:6,exposure:6.2};
+function courtyardDeckPlan(W,C,lim=COURT_DECK){const h=houseGround(W,C);if(!h)return null;const y=h.max+.16,exposure=y-h.min;if(h.max-h.min>lim.relief||exposure>lim.exposure+.001)return null;return{y,bottom:h.min-.2,relief:h.max-h.min,maxExposure:exposure};}
 function courtyardDeck(W,g,C,plan){plan=plan||courtyardDeckPlan(W,C);if(!plan)return null;
   g.set(22,.45);for(let i=0;i<C.length;i++){const a=C[i],b=C[(i+1)%C.length],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));for(let j=0;j<n;j++){const p=lp(a,b,j/n),q=lp(a,b,(j+1)/n),lo=Math.min(W.gy(...p),W.gy(...q))-.2;wall(g,IDF,...p,...q,lo,plan.y,lo,3);}}
   g.set(11,.4);g.poly(C.map(p=>[p[0],plan.y,p[1]]),[0,1,0]);return plan.y;

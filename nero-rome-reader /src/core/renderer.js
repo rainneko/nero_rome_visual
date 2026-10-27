@@ -5,6 +5,8 @@ const clamp=(x,a,b)=>x<a?a:x>b?b:x, lerp=(a,b,t)=>a+(b-a)*t;
 const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
 const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 function RNG(seed){let s=seed>>>0||1;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+// what a mesh is, for the review panel (?review, src/ui/review.js): ground, houses, squares, trees ...
+function layTag(o,k){if(o)o.userData.lay=k;return o;}
 function hash2(x,y){let h=(Math.imul(x|0,374761393)^Math.imul(y|0,668265263))>>>0;h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296;}
 function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
   const a=hash2(xi,yi),b=hash2(xi+1,yi),c=hash2(xi,yi+1),d=hash2(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
@@ -47,7 +49,7 @@ vec3 atmo(vec3 col,vec3 wp){
 const U={uTime:{value:0},uNight:{value:0},uSunDir:{value:new THREE.Vector3(.4,.5,.7).normalize()},uSunCol:{value:new THREE.Color(1,.9,.7)},
   uHazeCol:{value:new THREE.Color(.6,.62,.7)},uHaze:{value:new THREE.Vector4(1.6e-4,420,0,.8)},uLit:{value:0},uGlass:{value:.03},
   uWet:{value:0},uBurn:{value:0},uRust:{value:0},uSeason:{value:1},uSkyRefl:{value:new THREE.Color(.5,.6,.75)},
-  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))},uWat:{value:Array.from({length:56},()=>new THREE.Vector4(1e6,0,0,0))},uWatR:{value:new Array(56).fill(0)}};   // uWat: watered ground discs (x,z,r) that stay green all year (palace and domus gardens), see WAT in builders.js
+  uDbg:{value:new THREE.Vector4(0,0,0,0)},uSt:{value:null},uStA:{value:null},uFarm:{value:null},uFarmX:{value:new THREE.Vector4(0,0,0,0)},uAurea:{value:0},uStX:{value:new THREE.Vector4(0,0,0,0)},uStN:{value:new THREE.Vector2(1,1)},uRk:{value:Array.from({length:16},()=>new THREE.Vector4(1e6,0,1e6,100))},uWat:{value:Array.from({length:56},()=>new THREE.Vector4(1e6,0,0,0))},uWatR:{value:new Array(56).fill(0)}};   // uWat: watered ground discs (x,z,r) that stay green all year (palace and domus gardens), see WAT in builders.js
    // uRk: rock-cluster segments (ax,az,bx,bz) for the terrain's rocky scarp   // street raster (streets.js): mask+grade+wall distance, coarse direction, extent, size
 
 function procMat(o){

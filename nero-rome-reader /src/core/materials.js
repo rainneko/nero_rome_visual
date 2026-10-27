@@ -147,8 +147,13 @@ void roofS(inout PS S,vec3 N,float gilt,float aa){vec2 uv=vA.xy;float seed=floor
  float tilt=cov*clamp(xr/r,-1.,1.)*.95+(1.-cov)*(-sign(xr)*.2);float st=(1.-smoothstep(0.,.2,yr))*.4;
  vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4);vec3 B=normalize(cross(T,N));float fcx=1.-smoothstep(pt*.25,pt*.62,aa),fry=1.-smoothstep(cs*.25,cs*.62,aa);float sw=sin(uv.x/pt*6.2832),stp=.5+.5*cos(uv.x/pt*6.2832),crs=smoothstep(0.,.3,yr);S.nw=normalize(N+(T*tilt-B*st)*det+(T*sw*.32*fcx-B*(1.-crs)*.22*fry)*(1.-det));S.useN=1.;
  vec3 c=base*(.8+.34*th);float frs=smoothstep(2.3,3.,uSeason)*(1.-smoothstep(3.,3.7,uSeason));c=mix(c,vec3(.86,.88,.92),frs*.56*smoothstep(.35,.9,N.y));c*=mix(1.,.7,(1.-cov)*.55*det);c*=mix(.74,1.,smoothstep(0.,.22,yr)*det+(1.-det));
- if(gilt<.5){float li=smoothstep(.7,.9,fbm2(uv*.8+seed*5.));c=mix(c,vec3(.4,.38,.3),li*.3);}
- c*=.9+.2*fbm2(vec2(uv.x*.05,uv.y*.08)+seed*3.);vec3 cf=base*(.84+.26*th)*mix(.78,1.08,stp*fcx+(1.-fcx)*.6)*mix(.82,1.,crs*fry+(1.-fry)*.62);cf*=.86+.28*vn2(uv*vec2(.45,.55)+seed*7.);if(gilt<.5){float li2=smoothstep(.72,.9,fbm2(uv*.6+seed*5.));cf=mix(cf,vec3(.42,.4,.32),li2*.25);}S.alb=mix(cf,c,det);
+ // weathering: each roof has an age (as wallS). Old tiles grey and darken, lichen spreads, rain and soot leave streaks down the slope,
+ // and old roofs carry a few bright replaced tiles. Gilt roofs stay clean.
+ float age=gilt>.5?0.:fract(seed*23.71+.37*fract(seed*3.3));age=age*age*(3.-2.*age);float rsk=1.-.2*smoothstep(.45,.75,fbm2(vec2(uv.x*.7,uv.y*.06)+seed*11.))*(.35+.65*age);
+ if(gilt<.5){float li=smoothstep(.7-.14*age,.9-.1*age,fbm2(uv*.8+seed*5.));c=mix(c,vec3(.4,.38,.3),li*(.3+.2*age));}
+ c=mix(c,mix(vec3(dot(c,vec3(.3,.59,.11))),c,.72)*.88,age*.6)*rsk;c=mix(c,base*(1.08+.12*th),step(.975-.05*age,h12(vec2(col,row)+seed*31.))*step(.3,age)*.85);
+ c*=.9+.2*fbm2(vec2(uv.x*.05,uv.y*.08)+seed*3.);vec3 cf=base*(.84+.26*th)*mix(.78,1.08,stp*fcx+(1.-fcx)*.6)*mix(.82,1.,crs*fry+(1.-fry)*.62);cf*=.86+.28*vn2(uv*vec2(.45,.55)+seed*7.);if(gilt<.5){float li2=smoothstep(.72-.14*age,.9-.1*age,fbm2(uv*.6+seed*5.));cf=mix(cf,vec3(.42,.4,.32),li2*(.25+.2*age));}
+ cf=mix(cf,mix(vec3(dot(cf,vec3(.3,.59,.11))),cf,.72)*.88,age*.6)*rsk;S.alb=mix(cf,c,det);
  S.rough=gilt>.5?.3:.74-uWet*.45;S.metal=gilt>.5?1.:0.;S.ao=mix(1.,.82,(1.-cov)*det);}
 void wallS(inout PS S,vec3 N,float P,float aa){
  float u=vA.x,v=vA.y,L=max(vA.z,.5),sH=max(vA.w,2.4);float seed=floor(vB.x*4096.+.5)/4096.,sty=floor(vB.z+.5),fl=floor(vB.w+.5);float nSt=max(floor(vC.x+.5),1.),gH=max(vC.y,2.5),litB=vC.w;
@@ -178,6 +183,17 @@ void wallS(inout PS S,vec3 N,float P,float aa){
   if(sb0>-.5&&sb0<nb0-.5){vec2 qs=vec2(u-(sb0+.5)*bay0,v-1.2);float hS=.4;float inS=step(abs(qs.x),hS)*step(0.,qs.y)*clamp(step(qs.y,.95)+step(length(vec2(qs.x,qs.y-.95)),hS),0.,1.);float fmS=step(abs(qs.x),hS+.1)*step(-.1,qs.y)*clamp(step(qs.y,.95)+step(length(vec2(qs.x,qs.y-.95)),hS+.1),0.,1.);
    alb=mix(alb,vec3(.86,.8,.68),fmS*dfar);alb=mix(alb,vec3(.1,.2,.48),inS*dfar);float fgS=clamp(step(abs(qs.x),.09)*step(.15,qs.y)*step(qs.y,.7)+step(length(qs-vec2(0.,.82)),.1),0.,1.);alb=mix(alb,vec3(.92,.72,.32),fgS*inS*dfar);alb=mix(alb,vec3(.6,.15,.1),step(abs(qs.y-.18),.04)*step(abs(qs.x),hS-.06)*inS*dfar);}}
  if((bNiche>.5||bMed>.5)&&nSt>1.5&&v>gH&&v<gH+sH){float bw3=3.+fract(seed*5.1);float by3=L/max(1.,floor(L/bw3+.3));float kb=floor(u/by3+.5);vec2 q2=vec2(u-kb*by3,v-(gH+sH*.48));if(bNiche>.5&&abs(mod(kb,3.)-1.)<.5&&kb>.5){float inA=clamp(step(abs(q2.x),.42)*step(-.72,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.42)),0.,1.);float fr2=clamp(step(abs(q2.x),.52)*step(-.82,q2.y)*(step(q2.y,.26)+step(length(vec2(q2.x,q2.y-.26)),.52)),0.,1.);float fig=clamp(step(abs(q2.x),.1)*step(-.6,q2.y)*step(q2.y,.12)+step(length(q2-vec2(0.,.24)),.09),0.,1.);alb=mix(alb,vec3(.88,.84,.74),fr2*dfar);alb=mix(alb,vec3(.1,.2,.48),inA*dfar);alb=mix(alb,vec3(.92,.72,.32),fig*inA*dfar);}if(bMed>.5&&abs(mod(kb,3.)-2.)<.5){float dd=length(q2);float rays=step(.5,fract(atan(q2.y,q2.x)*2.546));alb=mix(alb,vec3(.9,.86,.76),step(dd,.44)*dfar);alb=mix(alb,vec3(.86,.66,.28),clamp(step(.36,dd)*step(dd,.44)+step(.08,dd)*step(dd,.3)*rays,0.,1.)*dfar);}}
+ // weathering: every building has an age from its seed. Old paint fades and chalks, rising damp darkens the foot (.5-1 m, ragged top, a pale salt line),
+ // the eaves leave run-off streaks down the top storey, and old plaster falls off in patches that show the brick (facades.md: 60 % poor, 25 % mid, 5 % rich)
+ float age=fract(seed*23.71+.37*fract(seed*3.3));age=age*age*(3.-2.*age);
+ {float lum=dot(alb,vec3(.3,.59,.11));alb=mix(alb,mix(vec3(lum),alb,.7)*vec3(1.03,1.,.94)+.02,age*.55);alb*=1.-.1*age*smoothstep(.4,.7,big);}
+ if(v>0.&&v<1.4){float dh=.45+.5*age+.35*(fbm2(vec2(u*.45,seed*9.))-.5);float dm=1.-smoothstep(dh-.06,dh+.06,v);float tide=(1.-smoothstep(0.,.05+aa,abs(v-dh-.03)))*dfar;
+  alb=mix(alb,alb*vec3(.7,.72,.67),dm*(.5+.25*age+.25*uWet));alb=mix(alb,vec3(.86,.84,.78),tide*.22*(.4+age));}
+ {float dE=topV-v;if(dE>0.&&dE<5.){float fe=fbm2(vec2(u*1.7+seed*17.,dE*.25+seed*3.));alb*=1.-.26*smoothstep(.42,.7,fe)*(1.-smoothstep(.2,1.6+2.4*age,dE))*(.35+.75*age);}}
+ if(P<.5&&v>.2&&v<topV&&age>.6){float pn=fbm2(vec2(u,v)*.7+seed*19.)+.1*(1.-smoothstep(.2,1.2,min(u,L-u)))+.1*(1.-smoothstep(.5,2.5,v));float thr=1.18-.4*age;
+  float pm=smoothstep(thr,thr+.02+aa*2.,pn);float rim=smoothstep(thr-.015,thr,pn)*(1.-pm);
+  if(pm+rim>.001){float row=floor(v/.072);float mo=1.-smoothstep(.0,.004+aa,abs(fract(v/.072)-.5)*.072-.02);vec3 bc=vec3(.47,.22,.13)*(.78+.38*h12(vec2(floor(u/.3+fract(row*.5)),row)+seed));
+   alb=mix(alb,alb*.85,rim);alb=mix(alb,mix(mix(bc,vec3(.6,.55,.46),mo*.8),vec3(.5,.28,.18),smoothstep(.012,.035,aa)),pm);}}
  S.alb=alb;S.rough=.92-uWet*.4;
  if(bBlank>.5||v>topV||si>=nSt)return;
  bool inwardTown=mod(floor(fl/262144.),2.)>.5; // Elite courtyard-house profile, scoped to this district.
@@ -214,6 +230,8 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  if(kind>1.5&&kind<2.5&&!residential&&(bArc>.5||bGAr>.5)){float pil=1.-smoothstep(.0,aa+.02,abs(abs(bu)-bay*.5)-.28);S.alb=mix(S.alb,S.alb*1.08,pil);}
  if(kind>-.5&&kind<.5&&ar>.5&&P<.5&&fract(seed*5.7)<.4){float er=clamp(openM(q+vec2(0.,.06),hw+.12,oh+.18,ar,aa)-openM(q,hw+.03,oh+.03,ar,aa),0.,1.);S.alb=mix(S.alb,vec3(.6,.2,.13),er*.9);}
  if(kind>.5&&kind<1.5&&P<.5&&fract(seed*8.1)<.25){float pn=step(abs(q.x),.62)*step(oh+.2,q.y)*step(q.y,oh+.72);float ink=step(.5,fract(q.x*5.))*step(abs(q.y-oh-.46),.08);S.alb=mix(S.alb,mix(vec3(.85,.8,.7),vec3(.55,.12,.08),ink),pn*.95);}
+ if(kind<.5){float sy=-q.y-.14;if(sy>0.){float fib=vn2(vec2(q.x*7.+seed*40.,sy*.9+seed*7.));   // rain washes the sill dirt down the wall: streaks under each window, longer on older houses
+  S.alb*=1.-.3*(1.-smoothstep(.6,1.05,abs(q.x)/(hw+.1)))*(1.-smoothstep(.15,.7+.6*age,sy))*(.35+.85*smoothstep(.3,.75,fib))*(.45+.7*age);}}
  if(ins<.01||uDbg.w>1.5)return;
  vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4);vec3 Up=vec3(0.,1.,0.);vec3 V=normalize(vWP-cameraPosition);
  float vt=dot(V,T),vu=dot(V,Up),vnn=min(dot(V,N),-.06);float t=dep/(-vnn);vec2 qb=q+vec2(vt,vu)*t;
@@ -283,7 +301,8 @@ else if(P<19.5){S.alb=vec3(.05);S.emit=vec3(5.,1.6,.4)*(.7+.3*sin(uTime*6.+vWP.x
 else if(P<20.5){S.alb=vec3(.035,.033,.03)*(.8+.4*vn2(uv*2.));S.rough=.95;}
 else if(P<21.5){S.alb=vec3(.3,.24,.16)*(.75+.4*fbm2(uv*1.5));S.rough=.95;}
 else if(P<22.5){S.alb=stoneC(uv,seed,vec3(.61,.52,.37),1.4,.62,aa);S.rough=.9;}
-else if(P<23.5){S.alb=vec3(.08,.13,.045)*(.7+.5*fbm2(vWP.xz*.25))+vec3(.3,.2,.25)*step(.92,vn2(vWP.xz*3.))*.3;S.rough=.95;}
+else if(P<23.5){vec2 pz=vWP.xz;vec3 g=vec3(.08,.13,.045)*(.7+.5*fbm2(pz*.25));g=mix(vec3(dot(g,vec3(.3,.59,.11))),g,.8);   // a garden, not a lawn: yellow-green patches and a few worn bare spots
+  g=mix(g,g*vec3(1.4,1.1,.75),smoothstep(.45,.72,fbm2(pz*.09+7.))*.7);g=mix(g,vec3(.22,.17,.1)*(.85+.3*vn2(pz*2.)),smoothstep(.66,.8,fbm2(pz*.4+3.))*.55);S.alb=g+vec3(.3,.2,.25)*step(.92,vn2(pz*3.))*.3;S.rough=.95;}
 else if(P<25.5){S.alb=vec3(.45,.25,.21)*(.85+.25*vn2(uv*20.));S.rough=.4;}
 else if(P<26.5){S.alb=vec3(.69,.615,.49)*mix(.7,1.,step(.45,fract(uv.y/.8)))*(.9+.15*fbm2(uv*.5));S.rough=.85;}
 else if(P<27.5){S.alb=vec3(.66,.55,.38)*(.85+.2*fbm2(vWP.xz*.3));S.rough=.95;}

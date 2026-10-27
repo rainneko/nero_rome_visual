@@ -1,5 +1,7 @@
 # 街道重做 与 神殿太白 · Streets redesign and the too-white temples
 
+> 2026-10-25：第 1 节（街道）以 `city-generation-spec.md` 为准；第 2 节（神殿太白）仍然有效。
+
 ## 1. Streets (the author is very unhappy with them)
 What is wrong now (shots/z_aven.png is the clearest): streets are flat lavender-grey strips of constant width, dead
 straight, crossing at right angles, outlined by thin white lines (the kerbs), and they run across big empty grey squares.
