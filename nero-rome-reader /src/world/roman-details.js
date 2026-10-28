@@ -30,7 +30,7 @@ function rdGround(P,s,sty,fl,gH,L){
   return{shop:true,nb,bay,hw:Math.min(bay*.38,1.5),oh:Math.min(gH-.6,2.6),ar:rdS(s,4.1)>=.55?1:0};}
 // a row of terracotta antefixes standing on the eave line a→b (world [x,z] at height y), facing cross(up, a→b)
 function rdAntefixes(g,a,b,y,seed,bn=0){const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(l<.6)return;
-  const ux=dx/l,uz=dz/l,nx=uz*.03,nz=-ux*.03,n=Math.floor(l/.48);g.set(4,seed,0,0,1,4,bn,1);
+  const ux=dx/l,uz=dz/l,nx=uz*.03,nz=-ux*.03,n=Math.floor(l/.56);g.set(4,seed,0,0,1,4,bn,1);
   for(let k=1;k<n;k++){const t=k*l/n,cx=a[0]+ux*t+nx,cz=a[1]+uz*t+nz;g.poly([[cx-ux*.1,y-.04,cz-uz*.1],[cx+ux*.1,y-.04,cz+uz*.1],[cx,y+.2,cz]],[nx,0,nz]);}}
 // a tiled pent roof along x0..x1 of wall frame F (local -z is out): against the wall at y1, d deep, falling by drop;
 // a dark underside and fascia, timber beam ends with diagonal struts back to the wall, antefixes along the eave
@@ -53,21 +53,20 @@ function romanFrontRelief(W,g,L,o,floorY,H,plan,awning){
   if(G){const y0=floorY-.35,yTop=floorY+(G.ar?G.oh-G.hw:G.oh),pz=-.08;
     const edges=[0];for(let i=0;i<G.nb;i++)edges.push((i+.5)*G.bay-G.hw,(i+.5)*G.bay+G.hw);edges.push(len);
     for(let k=0;k<edges.length;k+=2){const x0=edges[k],x1=edges[k+1];if(x1-x0<.12)continue;
-      g.set(9,.07,0,1,1,gH,bn,1);wall(g,F,x0,pz,x1,pz,y0,yTop,floorY,sH);
-      if(k>0)g.poly([F.p(x0,y0,0),F.p(x0,y0,pz),F.p(x0,yTop,pz),F.p(x0,yTop,0)],F.d(-1,0,0));
-      if(k<edges.length-2)g.poly([F.p(x1,y0,pz),F.p(x1,y0,0),F.p(x1,yTop,0),F.p(x1,yTop,pz)],F.d(1,0,0));
-      if(G.ar){sp(2);box(g,F,(x0+x1)/2,yTop-.02,-.05,(x1-x0)/2+.06,.2,.08,4|16|32);}}   // travertine impost block at the springing
+      g.set(9,.07,0,1,1,gH,bn,1);wall(g,F,x0,pz,x1,pz,y0,yTop,floorY,sH);   // front face only: the 8 cm returns barely show
+      if(G.ar){sp(2);box(g,F,(x0+x1)/2,yTop-.02,-.05,(x1-x0)/2+.06,.2,.08,4|32);}}   // travertine impost block at the springing
     for(let i=0;i<G.nb;i++){const c=(i+.5)*G.bay;
-      if(!G.ar){sp(3);box(g,F,c,floorY+G.oh,-.06,G.hw+.2,.22,.08,4|16|32);}   // timber lintel over a square shop opening
-      if(G.shop&&hp(i+11)<.5){const w=Math.min(1.25,G.hw*1.05),x=c-G.hw+.04+w/2;sp(2);box(g,F,x,floorY-.1,-.12,w/2,1.02,.3,4|16|2|8);}}}   // masonry counter in the opening
+      if(!G.ar){sp(3);box(g,F,c,floorY+G.oh,-.06,G.hw+.2,.22,.08,4|32);}   // timber lintel over a square shop opening
+      if(G.shop&&hp(i+11)<.5){const w=Math.min(1.25,G.hw*1.05),x=c-G.hw+.04+w/2;sp(2);box(g,F,x,floorY-.1,-.12,w/2,1.02,.3,4|16);}}}   // masonry counter in the opening
   // a tiled pent roof over the shops on timber beams and struts, its eave edged with antefixes (Ostia, Herculaneum);
   // decorLot then leaves this front alone. Not over a cloth awning, not into a road.
   if(G&&G.shop&&!awning&&nSt>=2&&len>=6&&hp(5)<.6&&roadDecorationClear(W,L,1.4)){
     const d=1.25,y1=floorY+gH+.12,x0=.12,x1=len-.12;(W.rdCanopy||(W.rdCanopy=new WeakSet())).add(L);(W.rdLog||(W.rdLog=[])).push({x:A[0]+dx/2,z:A[1]+dz/2,y:floorY,nx:dz/len,nz:-dx/len,ux:dx/len,uz:dz/len,len});
     rdPentRoof(g,F,x0,x1,y1,d,.42,o.seed,bn);}
-  // upper storeys: stone sill, timber lintel on square windows, open wooden shutters on some houses
+  // first upper floor (the largest windows): stone sill, timber lintel on square windows, open wooden shutters on some
+  // houses. Higher floors keep the painted sill, which holds the triangle budget (+1.2M for the city)
   const uP=two?o.up:o.part,uSty=two?3:(o.sty||0),uFl=two?(o.flUp||16):(o.fl||0),shut=!(uFl&16)&&hp(3)<.4;
-  for(let si=1;si<nSt;si++){if(gap.has(si))continue;
+  for(let si=1;si<Math.min(nSt,2);si++){if(gap.has(si))continue;
     const w=rdUpperWin(uP,s,uSty,uFl,nSt,gH,sH,len,si);if(!w)continue;const yb=floorY+gH+(si-1)*sH+w.sill;
     for(let i=0;i<w.nb;i++){const c=(i+.5)*w.bay;
       sp(2);box(g,F,c,yb-.14,-.05,w.hw+.14,.14,.07,4|16);

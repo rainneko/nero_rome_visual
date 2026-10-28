@@ -21,13 +21,14 @@ The shader paints openings on one flat quad, so the houses read as flat boxes. T
 procedural house now carries geometry sized exactly like the painted openings (same seed, sty, flags and wall length;
 fl bit 524288 makes every upper bay of that wall a window). No dice are drawn; per-house choices are `hash2` of the place.
 Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Herculaneum street links in `SOURCES.md`.
-* Upper windows: a travertine sill on every window; a timber lintel and, on about 40 % of houses without painted
-  shutters, a pair of open wooden shutters on the square ones.
+* First upper floor (the largest windows): a travertine sill on every window; a timber lintel and, on about 40 % of
+  houses without painted shutters, a pair of open wooden shutters on the square ones. Higher floors keep the painted
+  sill: the relief is held to about +1.2M triangles for the city (+1.04M measured, houses 6.14M → 7.17M).
 * Shops (ground type 2) and arcades (type 1): projecting brick piers between the openings, a travertine impost at the
   arch springing, a timber lintel over square shop openings, a masonry counter in about half the shops.
 * About 60 % of shop fronts: a tiled pent roof on timber beams and diagonal struts, 1.25 m deep, its eave edged with
   antefixes; never over a cloth awning or into a road. decorLot then leaves that front alone.
-* Pitched roofs: a dark timber soffit under the street eave and a row of terracotta antefixes (about every 0.48 m).
+* Pitched roofs: a dark timber soffit under the street eave and a row of terracotta antefixes (about every 0.56 m).
   Flat roofs: a stone cornice. A moulded string course where the house has its painted first-floor band.
 * Brick colour: R:G:B about 1 : .6 : .4, sampled from the unlit Ostia and Domus Aurea scans.
 
