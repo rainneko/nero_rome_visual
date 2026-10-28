@@ -64,6 +64,12 @@
       "dir": "assets/models/antium"
     },
     {
+      "file": "aurea-assets.js",
+      "var": "AUREA_GLB",
+      "cb": "aureaAssetsLoaded",
+      "dir": "assets/models/aurea"
+    },
+    {
       "file": "rome-assets.js",
       "var": "ROME_GLB",
       "cb": "romeAssetsLoaded",

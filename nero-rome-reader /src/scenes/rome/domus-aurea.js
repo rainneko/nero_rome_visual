@@ -11,6 +11,14 @@ const AUREA={vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[3
 function AUREA_SITE(x,z){return Math.hypot(x-572,z-200)<150||(x>380&&x<520&&z>20&&z<200)||(x>450&&x<1000&&z>-20&&z<120)||Math.hypot(x-AUREA.dine[0],z-AUREA.dine[1])<38;}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
+// dist/aurea-assets.js sets window.AUREA_GLB={coenatio: base64 GLB} and calls aureaAssetsLoaded(); the hall goes into its layer G at frame F, S (the stand-in) hides
+function aureaLoad(G,F,S){AUREA.glb=1;
+  const go=()=>{const D=window.AUREA_GLB;if(!D||!D.coenatio)return;
+    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D.coenatio),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name='coenatioGLB';
+      o.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});o.position.set(F.ox,F.oy,F.oz);o.rotation.y=F.rot;G.add(o);S.visible=false;
+      AUREA.spin=o.getObjectByName('ROTATING_CEILING');},e=>console.warn('coenatio glb',e));};
+  if(window.AUREA_GLB){go();return;}window.aureaAssetsLoaded=go;const s=document.createElement('script');s.src='aurea-assets.js';
+  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural dining hall stays');document.head.appendChild(s);}
 function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   const lakeRing=(m,n=56,u0=0,u1=1)=>{const c=Math.cos(LK.rot),s=Math.sin(LK.rot),P=[];for(let i=0;i<=n;i++){const a=(u0+(u1-u0)*i/n)*TAU,u=Math.cos(a)*(LK.rx+m),v=Math.sin(a)*(LK.rz+m);P.push([LK.x+c*u+s*v,LK.z-s*u+c*v]);}return P;};
   const yw=gy(LK.x,LK.z)+.25;
@@ -97,11 +105,23 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     {const F=frame(680,gy(680,140),140,0);g.set(3,.5);box(g,F,0,0,0,2.2,1,1,31);for(let i=0;i<14;i++)W.people.push([680-3-i*1.6,gy(677-i*1.6,146),146]);}   // the hearing table under the colonnade and its queue
     const R=RNG(68);for(let i=0;i<160;i++){const x=470+R()*270,z=150+R()*170;if(aureaInLake(x,z,-4)){if(aureaInLake(x,z,-14))continue;}else if(aureaInLake(x,z,6)||aureaNearRoute(x,z,9))continue;W.people.push([x,gy(x,z),z]);}});   // on the grass, under the trees, children in the shallows
 
-  /* ---- the round dining hall on the Palatine's north-east corner (standing from 64; 【史】a round structure found there in 2009) ---- */
-  L('coenatio',0,(g)=>{const[x,z]=AUREA.dine;let yt=-1e9,yb=1e9;for(let a=0;a<TAU;a+=TAU/12)for(const r of[0,10,17]){const h=gy(x+Math.cos(a)*r,z+Math.sin(a)*r);yt=Math.max(yt,h);yb=Math.min(yb,h);}
-    const F=frame(x,yt+.5,z,0);g.set(2,.45);lathe(g,F,0,yb-yt-1,0,[[17.5,0],[17.5,yt-yb+1],[0,yt-yb+1]],24);
-    g.set(24,.86);lathe(g,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g.set(2,.55);lathe(g,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);   // drum and a concrete dome open at the top
-    for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);});
+  /* ---- the round dining hall on the Palatine's north-east corner (standing from 64; 【史】a round structure found there in 2009) ----
+     The hall is K5 (finished) of the six-stage model closed on 2026-10-28 (renders/domus-aurea/coenatio-phase2-fixed-20261028): assets/models/aurea/coenatio.glb,
+     in dist/aurea-assets.js, loaded the first time this layer shows; the procedural drum stands in until then, or for good without the file.
+     The floor is just above the ground under the drum, so the back (uphill, towards the Golden House) is at grade; the door faces down the slope on
+     the Palatine's grid (+z = SSW), and its stair lands on a round terrace that steps down to the hollow (two tiers, buttresses where the drop is tall). */
+  L('coenatio',0,(g,G)=>{const[x,z]=AUREA.dine;let yt=-1e9;for(let a=0;a<TAU;a+=TAU/16)for(const r of[0,10,18])yt=Math.max(yt,gy(x+Math.cos(a)*r,z+Math.sin(a)*r));
+    const F=frame(x,yt+.3,z,-30*DEG),T=-2.4,at=(r,a)=>{const q=F.p(Math.cos(a)*r,0,Math.sin(a)*r);return gy(q[0],q[2])-F.oy;},seg=(r,a)=>F.sub(Math.cos(a)*r,0,Math.sin(a)*r,Math.atan2(-Math.cos(a),-Math.sin(a)));   // seg: local x along the ring, +z outwards
+    const R1=24.8,R2=27.3,yL=T-4;let yb=1e9;for(let a=0;a<TAU;a+=TAU/32)yb=Math.min(yb,at(R2+1,a));
+    g.set(2,.42);lathe(g,F,0,0,0,[[R2+.08*(yL-yb+1.5),yb-1.5],[R2,yL],[R1,yL],[R1,T]],48);g.set(11,.32);lathe(g,F,0,0,0,[[R1,T],[0,T]],48);   // terrace of grey ashlar: battered lower tier, ledge, upper tier, paving
+    g.set(14,.5);lathe(g,F,0,0,0,[[R2+.25,yL-.35],[R2+.25,yL+.05],[R1,yL+.05]],48);lathe(g,F,0,0,0,[[R1+.25,T-.35],[R1+.25,T+.05],[R1-.35,T+.05]],48);   // copings
+    for(let i=0;i<48;i++){const a=(i+.5)/48*TAU;if(at(R1+1,a)<T-.8){g.set(14,.48);box(g,seg(R1-.05,a),0,T,0,R1*Math.PI/48+.03,.95,.22,31);}}   // parapet where the terrace stands above the slope
+    for(let i=0;i<32;i++){const a=(i+.5)/32*TAU,y0=at(R2+1.5,a)-1;if(y0<yL-3){g.set(2,.4);box(g,seg(R2+.9,a),0,y0,0,.75,yL-.45-y0,.9,31);}}   // buttresses where the lower tier is tall (their foot is inside the batter)
+    for(let k=0;k<8;k++){const a=(160+30*k)*DEG,q=F.p(Math.cos(a)*22.6,0,Math.sin(a)*22.6);W.trees.push([q[0],Math.max(F.oy+T,gy(q[0],q[2])),q[2],'cyp',.9+.2*hash2(k,77)]);}   // cypresses round the terrace, clear of the stair (the door is at 90°)
+    const S=new THREE.Group();S.name='coenatioStand';G.add(S);const g2=new GB(1<<13);flushColumns(W);W.colGroup=S;   // the stand-in: drum, dome open at the top, 16 columns
+    g2.set(2,.45);lathe(g2,F,0,0,0,[[17.5,T],[17.5,0],[0,0]],24);g2.set(24,.86);lathe(g2,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g2.set(2,.55);lathe(g2,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);
+    for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
+    W.anim.push(t=>{if(!G.visible)return;if(!AUREA.glb)aureaLoad(G,F,S);if(AUREA.spin)AUREA.spin.rotation.y=t*.03;});});   // the starry timber ceiling turns under the fixed dome (about 3½ minutes a turn)
 
   /* ---- the Oppian halls (the inner court, the octagon): half-built in 59-68, finished later; the old placeholder wing ---- */
   const halls=(g,scaff)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});if(scaff)for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);

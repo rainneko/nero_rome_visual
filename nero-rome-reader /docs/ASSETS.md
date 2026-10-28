@@ -30,3 +30,12 @@ the model cannot load.
 
 ## Rome generators
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
+
+## Golden House: the round dining hall (2026-10-28)
+`assets/models/aurea/coenatio.glb` is `models/reader/K5-core.glb` (the finished hall, 24,872 triangles, 18 PNG textures, 2.5 MB) of the
+six-stage model closed on 2026-10-28: `renders/domus-aurea/coenatio-phase2-fixed-20261028/` in the main checkout, generator
+`tools/models/construction/coenatio_phase2/model.py`, review `docs/reviews/coenatio-codex-closeout-20261028.md`. Copy it as it is:
+`tools/glbopt.mjs` drops textures and UVs, so the build bundles it unshrunk into `dist/aurea-assets.js` (`lazy`, no `optimize`).
+`domus-aurea.js` loads that file the first time the `coenatio` layer shows (states 7–8) and keeps the procedural drum until then.
+Floor y = 0 at the model origin, door on +Z (the Palatine grid's SSW, down the slope); the node `ROTATING_CEILING` turns.
+K0–K4 (the building of it) are not in the reader: the stages are not tied to any chapter in `book.txt`.
