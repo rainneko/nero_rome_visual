@@ -113,6 +113,8 @@ Keep this file current: every promise made to the author goes here until it is d
 * 🔶 外立面剩余（第 4 阶段第 7 项）：转角凉廊、富人成组拱窗的近景验证；按 `briefs/rome/refs/city_street_square.jpg` 新增：
   高楼顶层开敞拱廊（观景层）、檐下彩绘花环、墙上蓝底小神龛壁画、石砌拱门券石与转角隅石、铁/木栏杆阳台与花盆、
   底层红色勒脚+拱廊；广场：荣誉柱（柱顶雕像）、小圆亭式泉亭、成排柏树、大型雕像基座
+* ✅ 民居罗马化第 1–2 轮（10-28 合并 `claude/great-thompson-336bb8`）：材质按考古实物照片重做（不照游戏截图），约一半屋顶换红陶瓦；临街立面加店铺瓦檐，窗台、过梁、百叶只做在二层，檐口加瓦当；元老宅列柱加红色柱套，列柱廊加屋顶（`src/world/roman-details.js`，全按地块哈希，不另抽随机数）。
+  房子三角面 6.14M → 7.17M（+1.04M，预算 +1.2M）。合并后地块 28050、庭院 716、柱廊 1692、city-audit 无错，和合并前一样。出处和取舍：`briefs/rome/refs/arch/SOURCES.md`，`briefs/rome/facades.md`「Relief」。
 * 🔶 广场泉亭 `rome_tholos_fountain`（2 856 面，已审过可用）：✅ 小修已审过（3 836 面：微拱瓦顶带瓦脊、拱券券边+拱心石、柱脚加深）；放置在第 4 阶段
 * ⬜ 建模流程借鉴 img2threejs（`novel2city/references/16-img2threejs-trial.md`）：Blender 里先跑悬空/未连接检查再出图；
   审图用"参考图 | 渲染图"并排；动手前列细节清单
