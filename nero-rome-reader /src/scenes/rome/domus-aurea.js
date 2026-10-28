@@ -226,7 +226,8 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     const S=new THREE.Group();S.name='coenatioStand';G.add(S);const g2=new GB(1<<13);flushColumns(W);W.colGroup=S;   // the stand-in: drum, dome open at the top, 16 columns
     g2.set(2,.45);lathe(g2,F,0,0,0,[[17.5,T],[17.5,0],[0,0]],24);g2.set(24,.86);lathe(g2,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g2.set(2,.55);lathe(g2,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);
     for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
-    W.anim.push(t=>{if(!G.visible)return;if(!S.userData.asked){S.userData.asked=1;aureaLoad('coenatio',G,F,S,o=>AUREA.spin=o.getObjectByName('ROTATING_CEILING'));}if(AUREA.spin)AUREA.spin.rotation.y=t*.03;});});   // the starry timber ceiling turns under the fixed dome (about 3½ minutes a turn)
+    W.anim.push((t,dt)=>{if(!G.visible)return;if(!S.userData.asked){S.userData.asked=1;aureaLoad('coenatio',G,F,S,o=>AUREA.spin=o.getObjectByName('ROTATING_CEILING'));}if(AUREA.spin&&W.ev&&W.ev.dineSpin)AUREA.spin.rotation.y+=dt*.03;});});   // the starry timber ceiling under the fixed dome (about 3½ minutes a turn) stands still: vol 17 "转了一个月", then one night
+  // in 68 ("快到半夜，轴动了" ... "以后再也没有转过"), which the reader's excerpt turns on (W.ev.dineSpin, app.js TRIG)
 
   /* ---- the Oppian halls (the inner court, the octagon): half-built in 59-68, finished later; the old placeholder wing ---- */
   const halls=(g,scaff)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});if(scaff)for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
@@ -236,6 +237,11 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   L('aureaHalls7',16,(g)=>halls(g,true));L('aureaHalls8',0,(g)=>halls(g,false));
 
   W.views.aurea={n:'金宫谷地',pos:[300,gy(300,380)+150,380],tgt:[620,gy(620,170),170]};   // the copy team's fixed camera: above the Palatine's north-east corner, looking north-east
+  // where the reader's Golden House excerpts fly (app.js AUREA_EX, TRIG): the colossus from the Via Sacra, the colonnade's bend at Lentulus's site
+  // from over the lake, the lake from the east end, the park gate from inside, the round hall from the valley
+  W.views.aureaVest={n:'金宫前庭·铜巨人',pos:[355,62,72],tgt:[430,55,140]};W.views.aureaBend={n:'金柱廊拐弯处',pos:[515,62,235],tgt:[592,14,108]};
+  W.views.aureaLake={n:'金宫的湖',pos:[748,55,318],tgt:[600,9,222]};W.views.aureaGate={n:'园门·阿波罗的林子',pos:[660,34,280],tgt:[618,9,330]};
+  W.views.aureaDine={n:'旋转圆厅',pos:[392,62,222],tgt:[330,36,160]};
   /* ---- labels ---- */
   const poi=(n,l,x,z,s0,s1,info,d=1600,h=30)=>W.pois.push({n,l,x,z,y:gy(x,z)+h,s0,s1,d,info});
   poi('伦图卢斯家','【设】',AUREA.lent[0],AUREA.lent[1],0,6,'【书中】第9份：数地契那夜他说"差这几块"，伦图卢斯不卖房，神龛和住户也拆不得。门口一棵老悬铃木。64年大火后，这里成了金柱廊拐弯的地方。',900,18);
