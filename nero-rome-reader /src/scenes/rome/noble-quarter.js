@@ -58,8 +58,11 @@ function decorateNobleLot(W,g,L,o){
   }
   g.set(2,o.seed);g.poly([F.p(-1.48,3.56,z-.035),F.p(1.48,3.56,z-.035),F.p(0,3.94,z-.035)],[0,0,-1]);
   box(g,F,0,3.54,z+.025,1.55,.09,.06,31);
+  // Long fronts let out tabernae either side of the door (【史】Pompeii, Herculaneum; the Ostia front in refs/arch):
+  // brick piers, timber lintels, counters; a tiled pent roof only over a street at least 4.4 m wide.
+  if(l>=11){const roof=rdStreetWidth(W,L,1.3)>=4.4;rdShopRow(g,F,z,1.95,l/2-.3,0,o.seed,0,roof);rdShopRow(g,F,z,-l/2+.3,-1.95,0,o.seed,0,roof);}
   // Broad red-ochre painted fields flank the entrance without a dense stripe motif.
-  if(l>=8.5){
+  else if(l>=8.5){
     const hx=Math.min(1.05,(l*.5-1.65)*.42),cx=1.65+(l*.5-1.65)*.5;
     for(const sx of[-cx,cx]){
       g.set(25,o.seed);box(g,F,sx,.38,z-.01,hx,2.72,.025,31);
@@ -143,11 +146,13 @@ function nobleCourtHouse(W,g,P,R,block){
     // A low garden floor can be locally raised; the surrounding house still starts at the lowest terrain.
     courtyardDeck(W,g,I,{y:courtBase,bottom:ground.min-.2});const J=I.map(p=>lp(p,C,.22));
     for(let i=0;i<I.length;i++){const n=(i+1)%I.length,a=J[i],b=J[n],l=Math.hypot(b[0]-a[0],b[1]-a[1]),num=Math.max(1,Math.floor(l/3));
-      for(let j=0;j<num;j++){const q=lp(a,b,(j+.5)/num);W.cols.ion.push([q[0],courtBase,q[1],0,3.05,[.78,.7,.58]]);}
+      for(let j=0;j<num;j++){const q=lp(a,b,(j+.5)/num);W.cols.ion.push([q[0],courtBase,q[1],0,3.05,[.86,.8,.7]]);
+        g.set(35,.05);lathe(g,frame(q[0],courtBase,q[1],0),0,.15,0,[[.19,0],[.19,.92],[.175,.96]],8);}   // 【史】the lower third of the shaft plastered red, as in the Casa del Rilievo di Telefo, Herculaneum
       g.set(25,o.seed);wall(g,IDF,...I[n],...I[i],courtBase,courtBase+1.05,courtBase,2.9);
       g.set(2,o.seed);wall(g,IDF,...a,...b,courtBase+3.02,courtBase+3.25,courtBase,2.9);
       // Keep this inner arcade open to the sky so its columns remain visible from above.
     }
+    rdPeristyleRoof(g,I,J,courtBase,o.seed,lowestEave);
     const basinHalf=Math.min(2.1,Math.max(.9,Math.min(lotOBB(J).hw,lotOBB(J).hd)*.34)),F=frame(C[0],courtBase,C[1],0);
     g.set(2,.4);for(const sg of[-1,1]){box(g,F,sg*(basinHalf+.12),0,0,.12,.48,basinHalf+.24,31);box(g,F,0,0,sg*(basinHalf+.12),basinHalf,.48,.12,31);}
     if(W.poolG)W.poolG.poly([[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>F.p(x*basinHalf,.34,z*basinHalf)),[0,1,0]);

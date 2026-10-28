@@ -67,7 +67,7 @@ function houseShell(W,g,F,L,yB,H,floorY,o){
     const A=L[e],B=L[(e+1)%L.length],front=e===0;
     const draw=(a,b,lo,hi)=>{if(hi-lo<.001)return;
       const upper=two&&lo>=floorY+gH-.001,pt=upper?o.up:o.part;
-      const fl=two?(upper?(o.flUp||16):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072));
+      const fl=(two?(upper?(o.flUp||16):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072)))|(front&&o.geoWin?524288:0);   // 524288: every bay has its window, for the sills and shutters of romanFrontRelief
       g.set(pt,o.seed,upper?3:front?o.sty:o.sty%8,fl,upper||!two?o.nSt:1,gH,o.burn||0,o.lit);
       wall(g,F,a[0],a[1],b[0],b[1],lo,hi,floorY,sH);};
     const cuts=[yB,H];if(two)cuts.push(floorY+gH);
@@ -106,7 +106,8 @@ function roadDecorationClear(W,L,reach){const A=L[0],B=L[1],dx=B[0]-A[0],dz=B[1]
   for(const road of W.foot.list||[])if(road.tag==='road'&&Math.hypot(road.cx-q.cx,road.cz-q.cz)<=road.r+q.r&&obb(road,q))return false;return true;}
 function decorLot(W,g,L,o,R){if(o.noDecor)return;if(o.lux){decorateNobleLot(W,g,L,o);return;}if(L.length!==4||(o.nSt||1)<3||!R)return;const A=L[0],B=L[1],len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<6)return;const ground=houseGround(W,L);if(!ground)return;const fy=ground.min+.15,ux=(B[0]-A[0])/len,uz=(B[1]-A[1])/len;
   const cx=(L[0][0]+L[1][0]+L[2][0]+L[3][0])/4,cz=(L[0][1]+L[1][1]+L[2][1]+L[3][1])/4,mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,zo=((mx-cx)*uz+(mz-cz)*(-ux))>0?-1:1,F=frame(mx,fy,mz,Math.atan2(-uz,ux)),r=R(),gH=o.gH||4;
-  if(r<.24){g.set(3,.45);box(g,F,0,gH-.2,zo*.5,len/2-.5,.2,.5,31);box(g,F,0,gH,zo*.96,len/2-.5,.95,.04,31);for(let x=-len/2+.9;x<len/2-.5;x+=1.7)box(g,F,x,gH-.62,zo*.3,.07,.42,.3,31);}
+  if(W.rdCanopy?.has(L)){}   // a tiled shop roof already covers this front (romanFrontRelief); r is still drawn, so the dice stay
+  else if(r<.24){g.set(3,.45);box(g,F,0,gH-.2,zo*.5,len/2-.5,.2,.5,31);box(g,F,0,gH,zo*.96,len/2-.5,.95,.04,31);for(let x=-len/2+.9;x<len/2-.5;x+=1.7)box(g,F,x,gH-.62,zo*.3,.07,.42,.3,31);}
   else if(r<.38&&roadDecorationClear(W,L,2.9)){const k=Math.max(2,Math.round(len/3.2));for(let i=0;i<=k;i++){const q=F.p(-len/2+.4+(len-.8)*i/k,0,zo*2.5);W.cols.simple.push([q[0],fy,q[2],F.rot,gH-.5,[.96,.92,.86]]);}g.set(1,o.seed);g.poly([F.p(-len/2,gH-.3,0),F.p(len/2,gH-.3,0),F.p(len/2,gH-.8,zo*2.9),F.p(-len/2,gH-.8,zo*2.9)],[0,1,0]);}}
 // Final road check uses the generated eave polygon, including long mitres at acute corners.
 function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.hypot(o.hw,o.hd),cs=W.foot.cell,seen=new Set();
@@ -122,10 +123,10 @@ function lotBuild0(W,g,L,o,R,smk){
   const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
   if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
     if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
-  if(o.up===30&&o.nSt>4)o=Object.assign({},o,{up:0});   // timber frame only on houses of <= 4 storeys (facades.md); taller ones are plain plaster
+  if(o.up===30&&(o.nSt>4||hash2(Math.round(pCen(L)[0]*3)+4729,Math.round(pCen(L)[1]*3))<.65))o=Object.assign({},o,{up:0});   // timber frame on about a third of the drawn houses, only <= 4 storeys (facades.md); keyed to the place, no dice drawn
   const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
   const yB=groundMin-.25;
-  houseShell(W,g,IDF,L,yB,H,floorY,o);
+  o=Object.assign({},o,{geoWin:true});houseShell(W,g,IDF,L,yB,H,floorY,o);
   const sl=groundMax-groundMin;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,groundMin,groundMax,embeddedRise:sl,terrace:false,storeys:o.nSt,gH,sH,elite:!!(o.fl&262144)});
   if(n===4&&!o.flat){const E=pInset(L,-.55)||L,A=L[0],B=L[1],C=L[2],D=L[3],m0=lp(D,A,.5),m1=lp(B,C,.5),e0=lp(E[3],E[0],.5),e1=lp(E[1],E[2],.5),
       dep=Math.hypot((A[0]+B[0]-C[0]-D[0])/2,(A[1]+B[1]-C[1]-D[1])/2),tp=Math.tan(o.pitch),yR=H+Math.min(dep*.5*tp,6.5),yE=H-.55*tp;
@@ -133,7 +134,7 @@ function lotBuild0(W,g,L,o,R,smk){
     g.set(2,o.seed);for(const[a,b]of[[E[0],E[1]],[E[2],E[3]]])g.poly([P(a,yE-.24),P(b,yE-.24),P(b,yE),P(a,yE)],[b[1]-a[1],0,-(b[0]-a[0])]);
     g.set(wp,o.seed,0,1,o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
     if(smk&&R()<.03)smk.push([(e0[0]+e1[0])/2,yR+.6,(e0[1]+e1[1])/2]);}
-  else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?25:11;
+  else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?46:11;
     // flat roof terrace (opus signinum or slabs); big blocks get a real light-well court cut through them
     g.set(tp,o.seed);if(cy){for(let e=0;e<n;e++){const e2=(e+1)%n;g.poly([P(L[e],H+.05),P(L[e2],H+.05),P(cy[e2],H+.05),P(cy[e],H+.05)],[0,1,0]);}}else g.poly(L.map(p=>P(p,H+.05)),[0,1,0]);
     g.set(wp,o.seed,0,1,1,4,bn,1);
@@ -152,7 +153,7 @@ function lotBuild0(W,g,L,o,R,smk){
         g.set(8,(.3+R()*.7)/3.3);g.poly(I.map(p=>P(p,yp)),[0,1,0]);g.poly(I.map(p=>P(p,yp-.05)).reverse(),[0,-1,0]);}}}
     if(smk&&R()<.02){const c=pCen(L);smk.push([c[0],H+1.2,c[1]]);}}
   const a=L[0],b=L[1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,nx=dz/l,nz=-dx/l;
-  if(o.awn&&R()<o.awn&&l>5){const ay=floorY+gH-.55,t0=.12+R()*.2,p0=lp(a,b,t0),p1=lp(a,b,Math.min(.93,t0+.3+R()*.35));g.set(8,R());
+  let awnD=false;if(o.awn&&R()<o.awn&&l>5){awnD=true;const ay=floorY+gH-.55,t0=.12+R()*.2,p0=lp(a,b,t0),p1=lp(a,b,Math.min(.93,t0+.3+R()*.35));g.set(8,R());
     g.poly([[p0[0],ay,p0[1]],[p1[0],ay,p1[1]],[p1[0]+nx*1.6,ay-.75,p1[1]+nz*1.6],[p0[0]+nx*1.6,ay-.75,p0[1]+nz*1.6]],[nx,1,nz]);g.poly([[p1[0],ay,p1[1]],[p0[0],ay,p0[1]],[p0[0]+nx*1.6,ay-.75,p0[1]+nz*1.6],[p1[0]+nx*1.6,ay-.75,p1[1]+nz*1.6]],[-nx,-1,-nz]);}
   if(o.balc&&o.nSt>=3&&R()<o.balc&&l>5){const hs=k=>((Math.sin(o.seed*12.9898+k*78.233)*43758.5453)%1+1)%1,by=floorY+gH+sH*(1+Math.floor(hs(1)*Math.min(2,o.nSt-2))),t0=.08+hs(2)*.25,t1=Math.min(.92,t0+.35+hs(3)*.35),p0=lp(a,b,t0),p1=lp(a,b,t1),bl=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);
     if(bl>2.2){const Fb=frame((p0[0]+p1[0])/2,by,(p0[1]+p1[1])/2,Math.atan2(-dz/l,dx/l)),dp=1.15,zr=-dp+.06;(W.balcLog=W.balcLog||[]).push([Math.round(Fb.ox),+by.toFixed(1),Math.round(Fb.oz),+nx.toFixed(2),+nz.toFixed(2),+bl.toFixed(1)]);   // wooden balcony (local -z = outwards): plank deck, corbels, posts with a top and a mid rail, flower pots along the rail
@@ -163,6 +164,7 @@ function lotBuild0(W,g,L,o,R,smk){
       for(let x=-bl/2+.05;x<=bl/2-.04;x+=.55)box(g,Fb,x,.1,zr,.022,.9,.022,31);box(g,Fb,0,1.0,zr,bl/2,.05,.04,31);box(g,Fb,0,.55,zr,bl/2,.025,.02,31);
       for(const sx of[-1,1]){box(g,Fb,sx*(bl/2-.04),.1,-dp/2+.04,.022,.9,.022,31);box(g,Fb,sx*(bl/2-.04),1.0,-dp/2+.04,.04,.05,dp/2,31);}
       for(let x=-bl/2+.6;x<bl/2-.3;x+=.9+hs(4)*.5){lathe(g,Fb,x,.1,zr+.28,[[.1,0],[.17,.27],[.15,.3],[0,.3]],8,4);lathe(g,Fb,x,.38,zr+.28,[[.02,0],[.2,.14],[.15,.4],[0,.5]],7,23);}}}
+  romanFrontRelief(W,g,L,o,floorY,H,houseGalleryPlan(L,o),awnD);
   return true;}
 // street surface between the block edge (the street centre line) and the lot line: basalt paving in the city
 // (packed earth on the edges), a raised travertine sidewalk with a grey kerb on the wider streets

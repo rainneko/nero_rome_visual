@@ -1,7 +1,7 @@
 // Structural regression tests using production geometry; no browser or GPU needed.
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import * as THREE from 'three';
 const read=p=>fs.readFileSync(p,'utf8'),sandbox={THREE,window:{},console};vm.createContext(sandbox);
-const source=read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js');
+const source=read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/roman-details.js');
 vm.runInContext(source,sandbox);
 const result=vm.runInContext(`(()=>{
  const L=[[-5,-5],[5,-5],[5,5],[-5,5]],W={gy:(x,z)=>-4*Math.max(0,1-(x*x+z*z)/12),cols:{simple:[],cor:[],ion:[],dor:[]},trees:[]};

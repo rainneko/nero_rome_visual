@@ -1,6 +1,6 @@
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import * as THREE from 'three';
 const read=p=>fs.readFileSync(p,'utf8'),C={THREE,window:{},console};vm.createContext(C);
-vm.runInContext(read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/residential-policy.js'),C);
+vm.runInContext(read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/roman-details.js')+read('src/world/residential-policy.js'),C);
 const r=vm.runInContext(`(()=>{const B=[[-20,-15],[20,-15],[20,15],[-20,15]],C=pInset(B,8),lots=[];for(let i=0;i<4;i++){const j=(i+1)%4;lots.push([B[i],B[j],C[j],C[i]]);}const W={gy:()=>0,foot:new Foot()},o={margin:0};
  const full=estatePlanReason(W,B,C,lots,o,0,courtyardDeckPlan(W,C));
  const missing=estatePlanReason(W,B,C,lots.slice(0,3),o,0,courtyardDeckPlan(W,C));

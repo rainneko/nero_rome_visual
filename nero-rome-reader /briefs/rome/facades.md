@@ -1,5 +1,37 @@
 # 民居外立面：加什么、多大概率 · House facades: what ornament, how often
 
+## Sources and colour rules (2026-10-28, these override the older notes below)
+The `refs/houses_*.jpg` images that the table below was studied from are **screenshots of a city-building game**.
+They gave the city exposed braced half-timbering, washed-beige roofs, pastel and pink walls, and Renaissance stone
+balconies. The material and colour evidence is now `refs/arch/` (scans of Herculaneum, Ostia and Rome, sources and
+licences in `refs/arch/SOURCES.md`). The ornament percentages below still stand where they do not contradict this.
+* 【史】Walls: rubble or tuff (opus incertum, opus reticulatum) with brick quoins, bands and arches; brick facing
+  increasingly after AD 64. Upper storeys in lime plaster: off-white, grey-beige, yellow and pale ochre, sometimes a
+  red-ochre wash or red dado. No pinks or mauves.
+* 【史】Opus craticium (timber frame with infill) was plastered over, as at Herculaneum's Casa a Graticcio. Show the
+  frame only where the plaster has fallen, or as corner posts and floor-beam lines (GLB `timber_skin(plastered=True)`).
+  The book: "木头搭的，墙上糊着泥".
+* 【史】Roofs: fired terracotta tegulae and imbrices, orange-red, low pitch (about 18–24°). Weathering darkens them and
+  adds lichen; it does not bleach them beige. Flat terraces are opus signinum: matte brown-red, not shiny pink.
+* Albedo: the shader colours are linear and should sit near the GLB values in `romeMat` (plaster ~.5, roof tile
+  (.39,.1,.047)). The old .8–.9 plaster made the procedural houses glare white beside the modelled buildings.
+
+## Relief (2026-10-28, `src/world/roman-details.js`)
+The shader paints openings on one flat quad, so the houses read as flat boxes. The street front (L[0]→L[1]) of every
+procedural house now carries geometry sized exactly like the painted openings (same seed, sty, flags and wall length;
+fl bit 524288 makes every upper bay of that wall a window). No dice are drawn; per-house choices are `hash2` of the place.
+Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Herculaneum street links in `SOURCES.md`.
+* First upper floor (the largest windows): a travertine sill on every window; a timber lintel and, on about 40 % of
+  houses without painted shutters, a pair of open wooden shutters on the square ones. Higher floors keep the painted
+  sill: the relief is held to about +1.2M triangles for the city (+1.04M measured, houses 6.14M → 7.17M).
+* Shops (ground type 2) and arcades (type 1): projecting brick piers between the openings, a travertine impost at the
+  arch springing, a timber lintel over square shop openings, a masonry counter in about half the shops.
+* About 60 % of shop fronts: a tiled pent roof on timber beams and diagonal struts, 1.25 m deep, its eave edged with
+  antefixes; never over a cloth awning or into a road. decorLot then leaves that front alone.
+* Pitched roofs: a dark timber soffit under the street eave and a row of terracotta antefixes (about every 0.56 m).
+  Flat roofs: a stone cornice. A moulded string course where the house has its painted first-floor band.
+* Brick colour: R:G:B about 1 : .6 : .4, sampled from the unlit Ostia and Domus Aurea scans.
+
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
 scratchpad) and `refs/houses_*.jpg`. Today's procedural houses (src/world/lots.js + the facade shader driven by
 `g.set(part, seed, sty, fl, nSt, gH, band, lit)`) put a thin line at every floor, vertical timber grids on many walls,
