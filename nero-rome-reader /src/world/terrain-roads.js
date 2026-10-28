@@ -99,7 +99,7 @@ function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0};
 
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;
-  const G=(x,z)=>{const k=Math.floor(x/cs)+'_'+Math.floor(z/cs);let g=chunks.get(k);if(!g){g=new GB(1<<14);chunks.set(k,g);}return g;};
+  const G=(x,z,grp='')=>{const k=grp+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(k);if(!e){e={grp,g:new GB(1<<14)};chunks.set(k,e);}return e.g;};   // o.grp(x,z): a story-state group for the house (W.preLayers), '' = always shown
   for(let gz=o.ext[1];gz<o.ext[3];gz+=o.sp)for(let gx=o.ext[0];gx<o.ext[2];gx+=o.sp){const R=RNG(hash2(Math.round(gx)*13+(o.seed||7),Math.round(gz)*7+31)*4294967296);   // dice keyed to the grid cell: a change elsewhere does not reshuffle this house
     const x=gx+(R()-.5)*o.sp*.95,z=gz+(R()-.5)*o.sp*.95,Z=o.zone(x,z);if(!Z||R()>Z.d*Q.dens)continue;
     const r=R();let typ='insula';{let acc=0;for(const k in Z.mix){acc+=Z.mix[k];if(r<acc){typ=k;break;}}}
@@ -120,9 +120,9 @@ function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;le
     const baseH=typ==='slum'?3.5:gH,storeyH=typ==='slum'?2.85:sH,slopeLimit=nSt>=3?baseH+(nSt-3)*storeyH-.65:nSt===2?baseH-.65:1.5;
     if(res?y1-y0>slopeLimit:y1-y0>Z.step)continue;
     if(W.storeyCut&&(typ==='insula'||typ==='tower'))nSt=W.storeyCut(x,z,nSt,k=>!(y1-y0>gH+(k-3)*sH-.65));   // the scene's height limit (Rome: monuments.js)
-    W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z),typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH,sH);n++;
+    W.foot.add(x,z,hw,hd,rot);emitBuilding(W,G(x,z,o.grp?o.grp(x,z):''),typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH,sH);n++;
     if(Z.ppl&&R()<Z.ppl){for(let k=0;k<3;k++){const a=R()*TAU,rr=Math.max(hw,hd)+3;W.people.push([x+Math.cos(a)*rr,W.gy(x+Math.cos(a)*rr,z+Math.sin(a)*rr),z+Math.sin(a)*rr]);}}}
-  const grp=layTag(new THREE.Group(),'houses');for(const g of chunks.values()){const m=g.mesh(MAT.city);if(m)grp.add(m);}W.scene.add(grp);W.cityGroup=grp;return n;}
+  const grp=layTag(new THREE.Group(),'houses');for(const e of chunks.values()){const m=e.g.mesh(MAT.city);if(m){if(e.grp)preLayerGroup(W,e.grp).add(layTag(m,'houses'));else grp.add(m);}}W.scene.add(grp);W.cityGroup=grp;return n;}
 function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R()*.45){
   const PF=frame(x,0,z,rot),PP=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=PF.p(q[0],0,q[1]);return[p[0],p[2]];});if(typ!=='ware'&&typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,PP))return;
 

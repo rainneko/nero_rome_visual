@@ -4,11 +4,19 @@
    States: 0-6 the Velia and Carinae streets stand, with Lentulus's house and two crossroads shrines (their houses are in the aureaSite group);
    6 the Transitoria tower's loggia is glazed (the "golden house" of the townspeople); 7 (59-68) the half-built Golden House; 8 (68-100) the park, open.
    【史】Suetonius, Nero 31 (vestibule with the 120-foot statue, a triple colonnade a mile long, a lake like a sea, woods, a round dining hall that
-   turned day and night); Tacitus, Annals 15.39-43; Pliny, NH 34.45 (Zenodorus' colossus); the Oppian wing with its octagonal hall still stands. */
+   turned day and night); Tacitus, Annals 15.39-43; Pliny, NH 34.45 (Zenodorus' colossus); the Oppian wing with its octagonal hall still stands.
+   The vestibule court and the Neronian porticoes of the Via Sacra (states 7-8) follow the MadainProject site plan (the vestibule on the Velia, the
+   Via Sacra running straight up to it from the Forum; Van Deman, "The Neronian Sacra Via", AJA 1923). */
 const AUREA={vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[330,160],lake:{x:605,z:232,rx:118,rz:68,rot:-.17},
-  route:[[470,148],[560,134],[572,116],[600,113],[612,130],[742,126],[752,200],[748,300]]};   // the gilded colonnade: from the vestibule's foot along the valley's north edge, round Lentulus's site, then down the east end of the lake
+  route:[[467.8,157.8],[560,134],[572,116],[600,113],[612,130],[742,126],[752,200],[748,300]]};   // the gilded colonnade: from the vestibule's foot (its east face) along the valley's north edge, round Lentulus's site, then down the east end of the lake
 // the ground the fire and the Golden House take: the valley, the Velia shoulder, the Carinae's south edge down to the slope, the dining hall's corner of the Palatine
 function AUREA_SITE(x,z){return Math.hypot(x-572,z-200)<150||(x>380&&x<520&&z>20&&z<200)||(x>450&&x<1000&&z>-20&&z<120)||Math.hypot(x-AUREA.dine[0],z-AUREA.dine[1])<38;}
+// the vestibule court in the frame of the Via Sacra's last straight (via; +x up the road to the ESE, +z to the SW), centred on the colossus: court x0..x1, -hz..hz
+const VEST={x:430,z:140,rot:Math.atan2(-80,89),x0:-50,x1:38,hz:21,via:[[291,12],[380,92]]};
+function vestUV(x,z){const c=Math.cos(VEST.rot),s=Math.sin(VEST.rot),dx=x-VEST.x,dz=z-VEST.z;return[dx*c-dz*s,dx*s+dz*c];}
+// the ground the vestibule (with its stair) and the porticoes of the Via Sacra take after the fire, 16 m either side of the straight: the houses there are shown in states 0-6 only
+function AUREA_VEST_SITE(x,z){const[u,v]=vestUV(x,z);if(u>VEST.x0-16&&u<VEST.x1+4&&Math.abs(v)<VEST.hz+4)return true;
+  const[a,b]=VEST.via,dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz),t=((x-a[0])*dx+(z-a[1])*dz)/L;return t>8&&t<L+12&&Math.abs((z-a[1])*dx-(x-a[0])*dz)/L<16;}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
 // dist/aurea-assets.js sets window.AUREA_GLB={coenatio: base64 GLB} and calls aureaAssetsLoaded(); the hall goes into its layer G at frame F, S (the stand-in) hides
@@ -70,7 +78,61 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     g.set(2,.5);for(const t of[.62,.7,.78]){const p=lakeRing(1.2,1,t,t)[0],F=frame(p[0],yw,p[1],0);for(let k=0;k<4;k++)box(g,F,0,-k*.3,0,3.2,.3,1-k*.25,31);}});   // landing steps on the west shore
 
   /* ---- the colossus on the Velia, in the vestibule: headless 59-68 (iron in the neck, a nest), then the head of the Sun (c. 70), not Nero's face ---- */
-  const colossus=(g,head)=>{const[x,z]=AUREA.vest,yb=gy(x,z),F=frame(x,yb,z,-.35),u=3.1;
+  /* ---- the vestibule: a porticoed court on the Velia round the colossus, on the axis of the Via Sacra (VEST). The floor is just above the highest
+     ground under it; the east half stands on arcaded substructures over the valley, the west end meets the road with a gabled porch and a flight
+     of steps. Wings on three sides, a wall behind them; the east wing is an open loggia over the valley. 59-68 the platform stands, partly
+     rough, with the south wing up, the west wing's columns, the north wall half-high in scaffolding; from 68 finished and paved ---- */
+  const VF=(()=>{const F0=frame(VEST.x,0,VEST.z,VEST.rot);let m=-1e9;for(let u=VEST.x0;u<=VEST.x1;u+=4)for(let v=-VEST.hz;v<=VEST.hz;v+=3){const q=F0.p(u,0,v);m=Math.max(m,gy(q[0],q[2]));}return frame(VEST.x,m+.3,VEST.z,VEST.rot);})();
+  const inVest=(x,z,m)=>{const[u,v]=vestUV(x,z);return u>VEST.x0-m&&u<VEST.x1+m&&Math.abs(v)<VEST.hz+m;};
+  const vest=(g,done)=>{const F=VF,{x0,x1,hz}=VEST,cx=(x0+x1)/2,hx=(x1-x0)/2,D=7,H=7.6,WH=H+2.7,tint=[1,.92,.7],gw=9;
+    terraceRect(W,g,F,cx,0,hx,hz,0,done?11:21,done?{}:{unf:{E:{x0:-hz-1,x1:4},S:{x0:12,x1:hx+1}}});
+    const N=F.sub(cx,0,-hz,0),Sd=F.sub(cx,0,hz,Math.PI),Wd=F.sub(x0,0,0,Math.PI/2),E=F.sub(x1,0,0,-Math.PI/2);   // the four sides: local x along the side, +z into the court
+    const wall=(S,a,b,h)=>{g.set(24,.86);box(g,S,(a+b)/2,0,-.35,(b-a)/2,h,.4,31);if(h>=WH){g.set(2,.5);box(g,S,(a+b)/2,h-.5,-.55,(b-a)/2+.2,.5,.25,31);}};   // the outer wall, with a cornice on the outside once it has its full height
+    const wing=(S,L,o={})=>{const n=Math.round((L-2)/3.9),sp=(L-2)/n;   // columns at z=D on a step, entablature with a gilded band, a lean-to roof back to the wall; o.open: a second row on the outer edge instead of the wall
+      g.set(2,.5);box(g,S,0,0,D*.5+.1,L/2,.35,D*.5+.9,31);
+      for(let i=0;i<=n;i++){const x=-L/2+1+i*sp;if(o.skip&&o.skip(x))continue;W.cols.cor.push([...S.p(x,.35,D),S.rot,H,tint]);if(o.open)W.cols.cor.push([...S.p(x,.35,.3),S.rot,H,tint]);}
+      if(o.roof===false)return;
+      g.set(2,.5);box(g,S,0,H+.35,D,L/2,.95,.5,31);g.set(12,.4);box(g,S,0,H+.7,D+.52,L/2,.22,.04,31);if(o.open){g.set(2,.5);box(g,S,0,H+.35,.3,L/2,2.3,.5,31);}
+      g.set(4,.5);g.poly([S.p(-L/2,H+1.3,D+.7),S.p(L/2,H+1.3,D+.7),S.p(L/2,H+2.65,-.8),S.p(-L/2,H+2.65,-.8)],S.d(0,1,.18));};
+    const wl=2*(hz-D-1);   // the west and east wings fit between the long ones
+    wall(Sd,-hx,hx,WH);wing(Sd,2*hx);   // the south wing (towards the Palatine) is the first one finished
+    wall(N,-hx,hx,done?WH:4);if(done)wing(N,2*hx);
+    else{g.set(3,.35);for(let x=-hx;x<=hx;x+=3)for(const z of[-1.3,-2.5])box(g,N,x,-.5,z,.08,9,.08,31);for(let y=2.5;y<9;y+=2.5)for(const z of[-1.3,-2.5])box(g,N,0,y,z,hx,.08,.08,31);   // scaffolding outside the half-high north wall
+      g.set(6,.5);for(let k=0;k<7;k++){const x=-30+k*7.5;for(let j=0;j<1+k%3;j++)box(g,N,x+(j%2)*1.6,j*.9,10.5+j*.4,.45,.85,.45,31);}}   // column drums waiting on the floor
+    for(const s of[-1,1])wall(Wd,s>0?gw:-hz,s>0?hz:-gw,done?WH:5.5);if(done){g.set(24,.86);box(g,Wd,0,H+1.3,-.35,gw,WH-H-1.3,.4,31);}   // the west wall and its gate (the porch's roof rides over it)
+    wing(Wd,wl,{skip:x=>Math.abs(x)<gw-2,roof:done});
+    if(done){g.set(2,.5);box(g,E,0,.35,-.25,hz,1.05,.25,31);wing(E,wl,{open:true});}   // the east loggia over the valley, behind a parapet
+    // the porch in front of the gate: four columns, a pediment, steps down to the road
+    const P=Wd,Hp=9.2,ex=gw+.5;g.set(2,.5);box(g,P,0,0,-4,ex,.35,4,31);
+    {let yr=F.oy;for(const v of[-ex,0,ex]){const q=P.p(v,0,-11);yr=Math.min(yr,gy(q[0],q[2]));}const r=F.oy-yr+.35,n=Math.max(1,Math.ceil(r/.3)),rh=r/n;
+      for(let k=1;k<=n;k++)box(g,P,0,-r-1,-8-(k-.5)*.45,ex,r+1+.35-k*rh,.23,31);}
+    if(!done)return;
+    for(const x of[-7.5,-2.5,2.5,7.5])W.cols.cor.push([...P.p(x,.35,-7),P.rot,Hp,tint]);
+    const yE=.35+Hp;g.set(2,.5);box(g,P,0,yE,-3.9,ex,1.2,3.6,31);g.set(12,.4);box(g,P,0,yE+.45,-7.52,ex,.25,.04,31);
+    g.set(2,.55);g.poly([P.p(ex,yE+1.2,-7.5),P.p(-ex,yE+1.2,-7.5),P.p(0,yE+4,-7.5)],P.d(0,0,-1));   // the pediment
+    g.set(4,.5);for(const s of[-1,1])g.poly(s>0?[P.p(0,yE+4.1,.2),P.p(ex+.4,yE+1.1,.2),P.p(ex+.4,yE+1.1,-7.9),P.p(0,yE+4.1,-7.9)]:[P.p(-ex-.4,yE+1.1,.2),P.p(0,yE+4.1,.2),P.p(0,yE+4.1,-7.9),P.p(-ex-.4,yE+1.1,-7.9)],P.d(s*.3,1,0));
+    const R=RNG(6802);for(let i=0;i<22;i++){const u=x0+8+R()*(x1-x0-20),v=(R()-.5)*2*(hz-9);if(Math.abs(u)<9&&Math.abs(v)<9)continue;const q=F.p(u,0,v);W.people.push([q[0],F.oy+.06,q[2]]);}};   // people crossing the court
+  L('vest7',0,(g)=>vest(g,false));L('vest8',0,(g)=>vest(g,true));
+
+  /* ---- the Via Sacra's last straight, rebuilt after the fire with porticoes and shops on both sides (【史】Tacitus, Annals 15.43: porticoes in front of
+     the houses, built at Nero's cost): stepped every two bays up the slope, broken only where an older house still stands. 59-68 the south-west side
+     stands, the north-east one is a podium and a low wall in scaffolding ---- */
+  const VS=frame(VEST.via[0][0],0,VEST.via[0][1],VEST.rot),vsLen=Math.hypot(VEST.via[1][0]-VEST.via[0][0],VEST.via[1][1]-VEST.via[0][1]);
+  const vsKeep=W.foot.list.filter(o=>o.tag!=='road'&&o.tag!=='life-furnishing'&&Math.hypot(o.cx-335,o.cz-52)<o.r+90&&!AUREA_SITE(o.cx,o.cz)&&!AUREA_VEST_SITE(o.cx,o.cz));   // what still stands by the road after 64
+  const viaSacra=(g,sd,done)=>{const de=4.6,d0=7.4,d1=11.8,Hc=4.6,c=Math.cos(VEST.rot),s=Math.sin(VEST.rot),z1=d1-d0;   // de: the road's edge; d0..d1: the portico, columns at the front
+    for(let t=14;t+7.2<=vsLen+4;t+=7.2){const q=VS.p(t+3.6,0,sd*(d0+d1)/2);if(vsKeep.some(o=>obb(o,{cx:q[0],cz:q[2],hw:3.8,hd:(d1-de)/2+.4,c,s})))continue;
+      let yt=-1e9,yb=1e9,yf=1e9;for(const a of[0,3.6,7.2])for(const d of[de,d0,d1]){const p=VS.p(t+a,0,sd*d),h=gy(p[0],p[2]);if(d<d1)yt=Math.max(yt,h);yb=Math.min(yb,h);if(d===de)yf=Math.min(yf,h);}
+      const P=VS.sub(t+3.6,yt+.25,sd*d1,sd>0?Math.PI:0);   // floor level with the road's edge and the column line, the back wall retaining the slope behind; wall at z=0, the road towards +z
+      g.set(2,.45);box(g,P,0,yb-yt-.65,z1/2-.15,3.6,yt-yb+.65,z1/2+.4,31);
+      {const r=yt+.25-yf,n=Math.min(8,Math.ceil(r/.3)),run=(d0-de-.25)/8;if(r>.3)for(let k=1;k<=n;k++)box(g,P,0,-r-.5,z1+.25+(k-.5)*run,3.6,r+.5-k*r/n,run/2,31);}   // steps down to the road
+      g.set(9,.42);box(g,P,0,0,-.3,3.6,done?Hc+1.9:2.4,.3,31);
+      if(!done){g.set(3,.35);for(const x of[-3.6,0])for(const z of[z1-.3,z1+.9])box(g,P,x,0,z,.08,7,.08,31);for(let y=2;y<7;y+=2.4)box(g,P,0,y,z1+.3,3.6,.08,.08,31);continue;}   // poles and ledgers where the columns will go
+      g.set(3,.3);box(g,P,0,0,.02,1.3,3.2,.04,31);   // a shop in each segment, its timber shutters
+      for(const x of[-1.8,1.8])W.cols.dor.push([...P.p(x,0,z1-.3),P.rot,Hc,[1,.97,.9]]);
+      g.set(2,.5);box(g,P,0,Hc,z1-.3,3.75,.7,.45,31);g.set(4,.5);g.poly([P.p(-3.75,Hc+.7,z1+.3),P.p(3.75,Hc+.7,z1+.3),P.p(3.75,Hc+1.9,-.6),P.p(-3.75,Hc+1.9,-.6)],P.d(0,1,.2));}};
+  L('viaSacra7',0,(g)=>{viaSacra(g,1,true);viaSacra(g,-1,false);});L('viaSacra8',0,(g)=>{viaSacra(g,1,true);viaSacra(g,-1,true);});
+
+  const colossus=(g,head)=>{const F=VF.sub(0,0,0,-Math.PI/2),u=3.1;   // on the vestibule's floor, facing down the Via Sacra (+z)
     g.set(2,.5);box(g,F,0,-2,0,6.5,8,6.5,31);g.set(6,.6);box(g,F,0,6,0,7,.8,7,31);   // the base
     const y=6.8;g.set(13,.4);
     lathe(g,F,0,y,0,[[1.45*u,0],[1.5*u,.4*u],[1.15*u,1.5*u],[1.0*u,3.4*u],[1.15*u,4.7*u],[0,4.7*u]],10,13);box(g,F,0,y+4.6*u,0,1.55*u,3.1*u,1.0*u,31);
@@ -79,7 +141,7 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
       for(let k=0;k<7;k++){const a=(k/6-.5)*2.4,S=F.sub(Math.sin(a)*.8*u,y+8.9*u,-.15*u,0);box(g,S,0,0,0,.09*u,1.6*u,.06*u,31);}}   // the radiate crown of Sol
     else{g.set(22,.9);for(const[ox,oz,h]of[[-.35,0,2.6],[.3,.2,3.2],[0,-.3,2.2],[.5,-.2,1.8]])box(g,F,ox*u,y+7.6*u,oz*u,.06*u,h,.06*u,31);
       g.set(3,.8);lathe(g,F,.3*u,y+7.6*u+3.2,.2*u,[[.9,0],[1,.35],[.6,.45],[0,.35]],8);   // iron bars out of the neck, a bird's nest on the tallest
-      g.set(3,.6);for(const s of[-1,1])for(const t of[-1,1])box(g,F.sub(s*8,0,t*8,s*t*.6),0,-1,0,.18,10,.18,31);g.set(21,.3);g.poly([F.p(-12,.05,-12),F.p(12,.05,-12),F.p(12,.05,12),F.p(-12,.05,12)],[0,1,0]);}};   // casting timbers round the base, trodden earth
+      g.set(3,.6);for(const s of[-1,1])for(const t of[-1,1])box(g,F.sub(s*8,0,t*8,s*t*.6),0,-1,0,.18,10,.18,31);}};   // casting timbers round the base (the court round it is still bare earth)
   L('colossus7',0,(g)=>colossus(g,false));L('colossus8',0,(g)=>colossus(g,true));
 
   /* ---- the wood: planted thick from the Velia across the valley, no lamp in it; the same trees grown tall by the time the park is open ---- */
@@ -87,8 +149,8 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
       if(!(Math.hypot(px-572,pz-200)<146||(px>385&&px<515&&pz>145&&pz<195)))continue;if(aureaInLake(px,pz,9)||aureaNearRoute(px,pz,11)||Math.hypot(px-AUREA.vest[0],pz-AUREA.vest[1])<20)continue;
       if(Math.hypot(px-455,pz-300)<14)continue;grovePts.push([px,pz,R(),R()]);}}   // (the houses' footprints here are gone by 59: no Foot test)
   const kinds=r=>r<.35?'broad':r<.55?'plane':r<.72?'pine':r<.85?'cyp':'broadD';
-  L('grove7',0,()=>{for(const[x,z,r,s]of grovePts)W.trees.push([x,gy(x,z),z,kinds(r),.5+s*.2]);});
-  L('grove8',0,()=>{for(const[x,z,r,s]of grovePts){if(s<.3&&aureaInLake(x,z,30))continue;W.trees.push([x,gy(x,z),z,kinds(r),1+s*.35]);}});   // clearings of lawn open on the shore
+  L('grove7',0,()=>{for(const[x,z,r,s]of grovePts){if(inVest(x,z,6))continue;W.trees.push([x,gy(x,z),z,kinds(r),.5+s*.2]);}});   // (none on the vestibule's platform or against its walls)
+  L('grove8',0,()=>{for(const[x,z,r,s]of grovePts){if(s<.3&&aureaInLake(x,z,30)||inVest(x,z,6))continue;W.trees.push([x,gy(x,z),z,kinds(r),1+s*.35]);}});   // clearings of lawn open on the shore
 
   /* ---- 59-68: the building site round the wood: a wall with a breach (children outside), refugee huts by the lake ---- */
   L('aureaBuild7',0,(g)=>{const wall=(a,b,gap)=>{const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/6);for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,m=(t0+t1)/2;if(gap&&m>gap[0]&&m<gap[1])continue;const p=lp(a,b,t0),q=lp(a,b,t1),F=frame((p[0]+q[0])/2,Math.min(gy(...p),gy(...q))-.4,(p[1]+q[1])/2,Math.atan2(-(q[1]-p[1]),q[0]-p[0]));g.set(24,.6);box(g,F,0,0,0,Math.hypot(q[0]-p[0],q[1]-p[1])/2+.2,3.6,.35,31);}};
@@ -101,7 +163,7 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     wall([470,322],[770,322],[.4,.6]);wall([772,140],[772,322]);   // the breach widened into the gate
     {const F=frame(620,gy(620,322),322,0);g.set(2,.5);for(const s of[-1,1])box(g,F,s*30,-.4,0,1.1,5.4,1.1,31);g.set(22,.9);box(g,F,0,.02,2.4,29,.04,.12,31);   // gate piers; the line cut in the paving
       g.set(6,.6);box(g,F,34,-.2,4,.55,2.4,.25,31);}   // the stone with the garden's rules beside the gate
-    wall([395,120],[395,250],[.45,.55],1.3);for(const z of[180,190])W.people.push([398,gy(398,z),z]);   // the royal quarter: a low wall and guards, not a fortress
+    wall([395,142],[395,250],[.34,.46],1.3);for(const z of[180,190])W.people.push([398,gy(398,z),z]);   // the royal quarter: a low wall and guards, not a fortress
     {const F=frame(680,gy(680,140),140,0);g.set(3,.5);box(g,F,0,0,0,2.2,1,1,31);for(let i=0;i<14;i++)W.people.push([680-3-i*1.6,gy(677-i*1.6,146),146]);}   // the hearing table under the colonnade and its queue
     const R=RNG(68);for(let i=0;i<160;i++){const x=470+R()*270,z=150+R()*170;if(aureaInLake(x,z,-4)){if(aureaInLake(x,z,-14))continue;}else if(aureaInLake(x,z,6)||aureaNearRoute(x,z,9))continue;W.people.push([x,gy(x,z),z]);}});   // on the grass, under the trees, children in the shallows
 
@@ -138,6 +200,9 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   poi('金宫园子','Domus Aurea · 开放园区',600,180,8,99,'【书中】回来以后园子开放，按一半、四分之一、四分之一分开：柱廊以南的湖、林子和草地给所有人，门口地上刻一道线，旁边立着写规矩的石头；柱廊以北奥庇乌斯山脚的几座厅和八角厅是内院，门口挂铜牌名单；帕拉蒂尼山那面坡（旋转餐厅）和凯利安山的水景、长凳归皇家，中间只是矮墙和卫兵。湖后来挖完，巨人补上了太阳神的头。',3000,40);
   poi('铜巨人','Colossus',AUREA.vest[0],AUREA.vest[1],7,7,'【书中】约35米，没有头，脖子上戳着铁条，上面有鸟窝。【史】策诺多鲁斯铸，原为尼禄像（老普林尼《博物志》34.45）。',1500,45);
   poi('铜巨人','Colossus Solis',AUREA.vest[0],AUREA.vest[1],8,99,'【书中】约70年补上了头：太阳神的脸，头上一圈光芒，不是尼禄的脸。',1500,45);
+  poi('金宫前庭','Vestibulum（在建）',...VEST.via[1],7,7,'【史】苏埃托尼乌斯《尼禄传》31：金宫的前庭里立着一座一百二十尺高的尼禄像。【设】前庭在韦利亚坡顶，正对圣道最后一段直路；西头是门廊和台阶，东半边架在拱廊基座上，俯瞰谷地。59–68年：台基已起，南廊先盖好，西廊只立了柱子，北墙搭着脚手架，院里还是土地。',1200,14);
+  poi('金宫前庭','Vestibulum',...VEST.via[1],8,99,'【史】苏埃托尼乌斯《尼禄传》31：金宫的前庭里立着一座一百二十尺高的尼禄像。【设】前庭在韦利亚坡顶，正对圣道最后一段直路：三面柱廊，东面是朝谷地敞开的凉廊；西头门廊和台阶下接圣道，东半边架在拱廊基座上。',1200,14);
+  poi('圣道','Via Sacra',335,52,7,99,'【史】64年大火后，尼禄把圣道从广场到韦利亚坡顶这一段拉直，两边盖起带柱廊的店铺，一直通到金宫前庭（考古：Van Deman 1923）。塔西佗《编年史》15.43：重建的街区，房前要加柱廊，柱廊由尼禄出钱修。【设】59–68年西南一侧先完工，东北一侧还在搭脚手架；有一座老宅没拆，柱廊在它门前断开。',900,10);
   poi('旋转餐厅','Coenatio rotunda',AUREA.dine[0],AUREA.dine[1],7,99,'【书中】第17份：帕拉蒂尼山这一头的坡上，一座圆厅；深蓝木顶嵌银钉，中心铁轴。【史】苏埃托尼乌斯《尼禄传》31：主饭厅是圆的，日夜像天穹一样转；2009年在帕拉蒂尼山东北角发现疑似其基座的圆形遗构。',1200,22);
   poi('听诉处','【书中】',680,140,8,99,'【书中】柱廊底下一张桌子，前面排着长队。',700,10);
   poi('园门','阿波罗的林子',620,322,8,99,'【书中】第18份《开门》：“门口的石板上刻了一道线。线外面是城。线里面，我让人在门边立了一块石头，上面只刻了几行字：阿波罗的林子。不许打人。不许抓人。不许喧哗。不收钱。”',900,12);}

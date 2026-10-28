@@ -658,9 +658,9 @@ async function buildRome(msg){
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
    W.nInsulaGLB=nIn;}
-  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_SITE(x,z)?'aureaSite':'',lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
+  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)?'aureaSite':'',lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,lanes:outSub,chunk:600});
-  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>AUREA_SITE(x,z)?'aureaSite':'',chunk:600});
+  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)?'aureaSite':'',chunk:600});
 
   {const gI=new GB(1<<17),RI=RNG(77);let nI=0,nS=0;const zones=[[-760,-330,-400,190],[-430,-150,90,460],[-330,-160,-330,90],[-665,-515,10,125]];
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
@@ -685,7 +685,7 @@ async function buildRome(msg){
     const rot=-30*DEG+.9*(fbm(x*.0006+11,z*.0006,2)-.5),burn=(x,z)=>Math.hypot(x-250,z-300)<950?1:0;
     if(u>=.5)return{d:.8*(1-gd*.8),mix:{shed:.5,tower:.15,insula:.35},st:[2,4],rot,m:.7,step:7,shops:.7,brick:.35,ppl:.05,burn};
     return{d:Math.min(.5,u*1.2)*(1-gd*.9),mix:{hut:.55,shed:.2,insula:.15,domus:.1},st:[1,3],rot,m:2,step:6,shops:.3,brick:.25,ppl:.03,burn};};
-  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)?null:izone(x,z),chunk:700});   // the scattered houses have no story-state groups: none on the Golden House ground
+  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)?null:izone(x,z),grp:(x,z)=>AUREA_VEST_SITE(x,z)?'aureaSite':'',chunk:700});   // none on the Golden House ground; those by the Via Sacra and the vestibule go with the fire (states 0-6)
   fillCentralHousing(W);
   await msg('郊野：农庄、佃农棚屋、墓道……');
   {const R=RNG(33),gV=new GB(1<<15),Zv={shops:0,brick:.25},MR=[[[555,890],[900,1500],[1500,2600],[2000,3500]],[[-500,2400],[-440,2950],[-520,3600]],[[-480,-1100],[-720,-2300],[-900,-2800]],[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]],[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]];
