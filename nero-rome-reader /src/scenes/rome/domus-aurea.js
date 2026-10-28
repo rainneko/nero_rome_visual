@@ -7,7 +7,7 @@
    turned day and night); Tacitus, Annals 15.39-43; Pliny, NH 34.45 (Zenodorus' colossus); the Oppian wing with its octagonal hall still stands.
    The vestibule court and the Neronian porticoes of the Via Sacra (states 7-8) follow the MadainProject site plan (the vestibule on the Velia, the
    Via Sacra running straight up to it from the Forum; Van Deman, "The Neronian Sacra Via", AJA 1923). */
-const AUREA={vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[330,160],lake:{x:605,z:232,rx:118,rz:68,rot:-.17},
+const AUREA={glb:{},vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[330,160],lake:{x:605,z:232,rx:118,rz:68,rot:-.17},
   route:[[467.8,157.8],[560,134],[572,116],[600,113],[612,130],[742,126],[752,200],[748,300]]};   // the gilded colonnade: from the vestibule's foot (its east face) along the valley's north edge, round Lentulus's site, then down the east end of the lake
 // the ground the fire and the Golden House take: the valley, the Velia shoulder, the Carinae's south edge down to the slope, the dining hall's corner of the Palatine
 function AUREA_SITE(x,z){return Math.hypot(x-572,z-200)<150||(x>380&&x<520&&z>20&&z<200)||(x>450&&x<1000&&z>-20&&z<120)||Math.hypot(x-AUREA.dine[0],z-AUREA.dine[1])<38;}
@@ -24,14 +24,17 @@ function AUREA_EAST(x,z){return x>660&&x<776&&z>118&&z<326;}
 function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z);}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
-// dist/aurea-assets.js sets window.AUREA_GLB={coenatio: base64 GLB} and calls aureaAssetsLoaded(); the hall goes into its layer G at frame F, S (the stand-in) hides
-function aureaLoad(G,F,S){AUREA.glb=1;
-  const go=()=>{const D=window.AUREA_GLB;if(!D||!D.coenatio)return;
-    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D.coenatio),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name='coenatioGLB';
+// dist/aurea-assets.js sets window.AUREA_GLB={coenatio, colossus: base64 GLBs} and calls aureaAssetsLoaded(); the file is fetched once, by the first
+// layer that shows. Model n goes into its layer G at frame F, S (the stand-in) hides, then cb(model).
+const AUREA_WAIT=[];
+function aureaLoad(n,G,F,S,cb){AUREA.glb[n]=1;
+  const go=()=>{const D=window.AUREA_GLB;if(!D||!D[n])return;
+    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name=n+'GLB';
       o.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});o.position.set(F.ox,F.oy,F.oz);o.rotation.y=F.rot;G.add(o);S.visible=false;
-      AUREA.spin=o.getObjectByName('ROTATING_CEILING');},e=>console.warn('coenatio glb',e));};
-  if(window.AUREA_GLB){go();return;}window.aureaAssetsLoaded=go;const s=document.createElement('script');s.src='aurea-assets.js';
-  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural dining hall stays');document.head.appendChild(s);}
+      if(cb)cb(o);},e=>console.warn(n+' glb',e));};
+  if(window.AUREA_GLB){go();return;}AUREA_WAIT.push(go);if(AUREA_WAIT.length>1)return;
+  window.aureaAssetsLoaded=()=>AUREA_WAIT.forEach(f=>f());const s=document.createElement('script');s.src='aurea-assets.js';
+  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural stand-ins stay');document.head.appendChild(s);}
 function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   const lakeRing=(m,n=56,u0=0,u1=1)=>{const c=Math.cos(LK.rot),s=Math.sin(LK.rot),P=[];for(let i=0;i<=n;i++){const a=(u0+(u1-u0)*i/n)*TAU,u=Math.cos(a)*(LK.rx+m),v=Math.sin(a)*(LK.rz+m);P.push([LK.x+c*u+s*v,LK.z-s*u+c*v]);}return P;};
   const yw=gy(LK.x,LK.z)+.25;
@@ -150,7 +153,12 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     else{g.set(22,.9);for(const[ox,oz,h]of[[-.35,0,2.6],[.3,.2,3.2],[0,-.3,2.2],[.5,-.2,1.8]])box(g,F,ox*u,y+7.6*u,oz*u,.06*u,h,.06*u,31);
       g.set(3,.8);lathe(g,F,.3*u,y+7.6*u+3.2,.2*u,[[.9,0],[1,.35],[.6,.45],[0,.35]],8);   // iron bars out of the neck, a bird's nest on the tallest
       g.set(3,.6);for(const s of[-1,1])for(const t of[-1,1])box(g,F.sub(s*8,0,t*8,s*t*.6),0,-1,0,.18,10,.18,31);}};   // casting timbers round the base (the court round it is still bare earth)
-  L('colossus7',0,(g)=>colossus(g,false));L('colossus8',0,(g)=>colossus(g,true));
+  /* from c. 70 the Sun's colossus is assets/models/aurea/colossus.glb (version C, "long legs", of renders/domus-aurea/proportion-20261028, its head put on
+     the chest's midline by tools/models/rome/colossus_centre_head.mjs): a 13 m stone base 6.7 m high, the figure to 36.6 m, the crown's rays to 39.4 m,
+     facing down the Via Sacra. It comes in dist/aurea-assets.js with the dining hall; the procedural statue stands in until then, or for good without the file. */
+  L('colossus7',0,(g)=>colossus(g,false));
+  L('colossus8',0,(g,G)=>{const F=VF.sub(0,0,0,-Math.PI/2),S=new THREE.Group(),g2=new GB(1<<13);S.name='colossusStand';G.add(S);colossus(g2,true);const m=g2.mesh(MAT.city);if(m)S.add(m);
+    W.anim.push(()=>{if(G.visible&&!AUREA.glb.colossus)aureaLoad('colossus',G,F,S);});});
 
   /* ---- the walks: from 68 a gravel ring round the lake, a walk along the colonnade's front (from the vestibule's foot to the east end), links from the
      ring to it, the paved way in from the gate; the emperor's walk from the dining hall's back to a door in the vestibule's south wall, round the two
@@ -213,7 +221,7 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     const S=new THREE.Group();S.name='coenatioStand';G.add(S);const g2=new GB(1<<13);flushColumns(W);W.colGroup=S;   // the stand-in: drum, dome open at the top, 16 columns
     g2.set(2,.45);lathe(g2,F,0,0,0,[[17.5,T],[17.5,0],[0,0]],24);g2.set(24,.86);lathe(g2,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g2.set(2,.55);lathe(g2,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);
     for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
-    W.anim.push(t=>{if(!G.visible)return;if(!AUREA.glb)aureaLoad(G,F,S);if(AUREA.spin)AUREA.spin.rotation.y=t*.03;});});   // the starry timber ceiling turns under the fixed dome (about 3½ minutes a turn)
+    W.anim.push(t=>{if(!G.visible)return;if(!AUREA.glb.coenatio)aureaLoad('coenatio',G,F,S,o=>AUREA.spin=o.getObjectByName('ROTATING_CEILING'));if(AUREA.spin)AUREA.spin.rotation.y=t*.03;});});   // the starry timber ceiling turns under the fixed dome (about 3½ minutes a turn)
 
   /* ---- the Oppian halls (the inner court, the octagon): half-built in 59-68, finished later; the old placeholder wing ---- */
   const halls=(g,scaff)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});if(scaff)for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
