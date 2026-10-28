@@ -132,10 +132,14 @@ varying vec4 vA;varying vec4 vB;varying vec4 vC;
 vec3 plasterCol(float s){float k=fract(s*7.13);vec3 c;
  if(k<.15)c=vec3(.56,.52,.44);else if(k<.33)c=vec3(.48,.44,.36);else if(k<.52)c=vec3(.54,.44,.27);else if(k<.66)c=vec3(.57,.5,.38);
  else if(k<.78)c=vec3(.5,.47,.4);else if(k<.9)c=vec3(.5,.39,.24);else c=vec3(.42,.2,.12);return c*(.94+.1*fract(s*31.7));}
-// fired terracotta tegulae, as the GLB roofs (.39,.1,.047): orange-red; the old grey mix and x1.36 brightening washed them to beige
+// fired terracotta tegulae. Half the roofs (keyed to the roof's seed) are red like the GLB roofs (.39,.1,.047);
+// the other half keep the older, paler sun-bleached tiles (the author: red on about 50 %, not on all of them).
 vec3 roofCol(float s){float k=fract(s*5.31);vec3 c;
- if(k<.3)c=vec3(.4,.12,.055);else if(k<.55)c=vec3(.36,.11,.05);else if(k<.72)c=vec3(.44,.15,.07);else if(k<.86)c=vec3(.33,.12,.06);else c=vec3(.42,.17,.08);
- return c*(.86+.24*fract(s*17.3));}
+ if(fract(s*13.7)<.5){
+  if(k<.3)c=vec3(.4,.12,.055);else if(k<.55)c=vec3(.36,.11,.05);else if(k<.72)c=vec3(.44,.15,.07);else if(k<.86)c=vec3(.33,.12,.06);else c=vec3(.42,.17,.08);
+  return c*(.86+.24*fract(s*17.3));}
+ if(k<.3)c=vec3(.55,.21,.09);else if(k<.55)c=vec3(.49,.2,.1);else if(k<.72)c=vec3(.6,.28,.12);else if(k<.86)c=vec3(.44,.22,.13);else c=vec3(.56,.31,.16);
+ {vec3 rc_=(c*(.86+.24*fract(s*17.3)));return mix(vec3(dot(rc_,vec3(.3,.59,.11))),rc_,.6)*vec3(1.36,1.3,.96);}}
 float openM(vec2 q,float hw,float h,float ar,float aa){
  float m=smoothstep(-aa,aa,q.y)*(1.-smoothstep(hw-aa,hw+aa,abs(q.x)))*(1.-smoothstep(h-aa,h+aa,q.y));   // (smoothstep with edge0>edge1 is undefined in GLSL: it speckled the window frames)
  if(ar>.5&&q.y>h-hw){float d=length(vec2(q.x,q.y-(h-hw)))-hw;m=(1.-smoothstep(-aa,aa,d))*smoothstep(-aa,aa,q.y);}return m;}
