@@ -4,7 +4,10 @@ Site: the narrow streets below the Palatine (Velabrum, Vicus Tuscus) and the Sub
 Each origin = centre of the footprint, z = 0 = street level, front = −Y (the street side).
 References: `houses_timber.jpg` (wooden balconies, tiled roofs), `houses_poor_1.jpg`, `houses_poor_2.jpg` (plain poor
 houses), `houses_mid_1.jpg`, `houses_mid_2.jpg` (warm plaster, red bands, roof terraces with pergolas),
-`houses_street.jpg` (a street with awnings and stalls).
+`houses_street.jpg` (a street with awnings and stalls). These are city-builder game screenshots, so use them for mood only.
+For materials and colours the evidence is `refs/arch/` (see `refs/arch/SOURCES.md` and the rules at the top of
+`facades.md`). In particular the timber frame is plastered over (`timber_skin(plastered=True)`), with no open braced
+grid, and rome_insula_c has one 0.5 m maenianum, not a stepped jetty on every floor (2026-10-28).
 
 ## From the book (quoted exactly)
 * "它比我想的乱。房子挤着房子，四五层高，木头搭的，墙上糊着泥，窗户小得像洞。一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐的。二楼往上住人，阳台上晒着衣服"

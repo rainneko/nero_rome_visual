@@ -122,7 +122,7 @@ function lotBuild0(W,g,L,o,R,smk){
   const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
   if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
     if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
-  if(o.up===30&&o.nSt>4)o=Object.assign({},o,{up:0});   // timber frame only on houses of <= 4 storeys (facades.md); taller ones are plain plaster
+  if(o.up===30&&(o.nSt>4||hash2(Math.round(pCen(L)[0]*3)+4729,Math.round(pCen(L)[1]*3))<.65))o=Object.assign({},o,{up:0});   // timber frame on about a third of the drawn houses, only <= 4 storeys (facades.md); keyed to the place, no dice drawn
   const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
   const yB=groundMin-.25;
   houseShell(W,g,IDF,L,yB,H,floorY,o);
@@ -133,7 +133,7 @@ function lotBuild0(W,g,L,o,R,smk){
     g.set(2,o.seed);for(const[a,b]of[[E[0],E[1]],[E[2],E[3]]])g.poly([P(a,yE-.24),P(b,yE-.24),P(b,yE),P(a,yE)],[b[1]-a[1],0,-(b[0]-a[0])]);
     g.set(wp,o.seed,0,1,o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
     if(smk&&R()<.03)smk.push([(e0[0]+e1[0])/2,yR+.6,(e0[1]+e1[1])/2]);}
-  else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?25:11;
+  else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?46:11;
     // flat roof terrace (opus signinum or slabs); big blocks get a real light-well court cut through them
     g.set(tp,o.seed);if(cy){for(let e=0;e<n;e++){const e2=(e+1)%n;g.poly([P(L[e],H+.05),P(L[e2],H+.05),P(cy[e2],H+.05),P(cy[e],H+.05)],[0,1,0]);}}else g.poly(L.map(p=>P(p,H+.05)),[0,1,0]);
     g.set(wp,o.seed,0,1,1,4,bn,1);

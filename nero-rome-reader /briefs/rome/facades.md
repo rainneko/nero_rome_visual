@@ -1,5 +1,21 @@
 # 民居外立面：加什么、多大概率 · House facades: what ornament, how often
 
+## Sources and colour rules (2026-10-28, these override the older notes below)
+The `refs/houses_*.jpg` images that the table below was studied from are **screenshots of a city-building game**.
+They gave the city exposed braced half-timbering, washed-beige roofs, pastel and pink walls, and Renaissance stone
+balconies. The material and colour evidence is now `refs/arch/` (scans of Herculaneum, Ostia and Rome, sources and
+licences in `refs/arch/SOURCES.md`). The ornament percentages below still stand where they do not contradict this.
+* 【史】Walls: rubble or tuff (opus incertum, opus reticulatum) with brick quoins, bands and arches; brick facing
+  increasingly after AD 64. Upper storeys in lime plaster: off-white, grey-beige, yellow and pale ochre, sometimes a
+  red-ochre wash or red dado. No pinks or mauves.
+* 【史】Opus craticium (timber frame with infill) was plastered over, as at Herculaneum's Casa a Graticcio. Show the
+  frame only where the plaster has fallen, or as corner posts and floor-beam lines (GLB `timber_skin(plastered=True)`).
+  The book: "木头搭的，墙上糊着泥".
+* 【史】Roofs: fired terracotta tegulae and imbrices, orange-red, low pitch (about 18–24°). Weathering darkens them and
+  adds lichen; it does not bleach them beige. Flat terraces are opus signinum: matte brown-red, not shiny pink.
+* Albedo: the shader colours are linear and should sit near the GLB values in `romeMat` (plaster ~.5, roof tile
+  (.39,.1,.047)). The old .8–.9 plaster made the procedural houses glare white beside the modelled buildings.
+
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
 scratchpad) and `refs/houses_*.jpg`. Today's procedural houses (src/world/lots.js + the facade shader driven by
 `g.set(part, seed, sty, fl, nSt, gH, band, lit)`) put a thin line at every floor, vertical timber grids on many walls,
