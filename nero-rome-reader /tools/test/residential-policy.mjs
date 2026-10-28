@@ -1,6 +1,6 @@
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import * as THREE from 'three';
 const read=p=>fs.readFileSync(p,'utf8'),C={THREE,window:{},console};vm.createContext(C);
-vm.runInContext(read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/residential-policy.js')+read('src/scenes/rome/noble-quarter.js')+`const WAT={add(){}};`,C);
+vm.runInContext(read('src/core/renderer.js').split('const nextFrame=')[0]+read('src/core/materials.js').split('/* ---------- city / architecture material ---------- */')[0]+read('src/world/terrain-roads.js')+read('src/world/lots.js')+read('src/world/roman-details.js')+read('src/world/residential-policy.js')+read('src/scenes/rome/noble-quarter.js')+`const WAT={add(){}};`,C);
 const r=vm.runInContext(`(()=>{const rect=(w,d,x=0,z=0)=>[[-w/2+x,-d/2+z],[w/2+x,-d/2+z],[w/2+x,d/2+z],[-w/2+x,d/2+z]],profile={part:0,seed:.4,sty:0,fl:2|16,nSt:3,gH:3.8,sH:2.9,pitch:.32,lit:.8,flat:false,noSplit:true,noDecor:true};
  const W=makeWorld('test');W.gy=()=>0;const large=rect(50,20),g=new GB();lotBuild(W,g,large,profile,RNG(12),null);const split=W.lotLog.map(l=>residentialBounds(l.L));
  const F=makeWorld('test');F.gy=()=>0;reserveResidentialArea(F,rect(12,10),'garden');const blocked=lotBuild(F,new GB(),rect(8,8),profile,RNG(13),null),outside=lotBuild(F,new GB(),rect(8,8,25),profile,RNG(14),null);

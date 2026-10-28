@@ -5,6 +5,7 @@
     "src/world/builders.js",
     "src/world/terrain-roads.js",
     "src/world/lots.js",
+    "src/world/roman-details.js",
     "src/world/residential-policy.js",
     "src/world/streets.js",
     "src/scenes/rome/noble-quarter.js",

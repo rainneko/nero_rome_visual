@@ -167,7 +167,7 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  vec3 base;
  if(P<.5)base=plasterCol(seed);
  else if(P<9.5){float far=smoothstep(.012,.035,aa);float row=floor(v/.072);float mo=1.-smoothstep(.0,.004+aa,abs(fract(v/.072)-.5)*.072-.02);
-  vec3 bc=vec3(.42,.19,.11)*(.78+.38*h12(vec2(floor(u/.3+fract(row*.5)),row)+seed));base=mix(mix(bc,vec3(.45,.41,.34),mo*.8),vec3(.42,.22,.14),far);   // salmon-orange brick, as the Ostia and Rome facings
+  vec3 bc=vec3(.42,.23,.15)*(.78+.38*h12(vec2(floor(u/.3+fract(row*.5)),row)+seed));base=mix(mix(bc,vec3(.45,.41,.34),mo*.8),vec3(.42,.25,.17),far);   // salmon-orange brick: R:G:B about 1:.6:.4 as sampled from the Ostia and Domus Aurea scans (refs/arch)
   if(fract(seed*11.)<.6&&v>.9&&v<gH+sH*.9){vec2 rq=vec2(u+v,u-v)*1.9;vec2 rf=abs(fract(rq)-.5);float rj=1.-smoothstep(.40,.46+aa*2.,max(rf.x,rf.y));vec3 tf=vec3(.42,.38,.31)*(.85+.25*h12(floor(rq)+seed));base=mix(base,mix(tf*.8,tf,rj*.6),.55*(1.-far));}}   // opus reticulatum: tuff net between brick bands on the lower walls of ~60 % of the brick houses
  else if(P>29.5){vec3 mud=mix(vec3(.46,.39,.29),vec3(.4,.33,.25),fract(seed*5.7))*(.78+.36*fbm2(vec2(u,v)*.6+seed*3.));float pu=u+fract(seed*9.)*1.7,pc=floor(pu/1.7),px=fract(pu/1.7)*1.7,py=fract(v/2.85)*2.85,dir=h12(vec2(pc,floor(v/2.85))+seed)<.5?1.:-1.;float diag=1.-smoothstep(.09,.09+aa*2.,abs((dir>0.?px/1.7:1.-px/1.7)*2.85-py)*.4);float fr=max(joint(pu,1.7,.1,aa),max(joint(v,2.85,.14,aa),diag*step(.45,h12(vec2(pc,floor(v/2.85))+seed*3.))));float tsl=1.+floor(fract(seed*6.1)*max(nSt-1.,1.)),tmb=step(gH+(tsl-1.)*sH-.01,v)*step(v,gH+tsl*sH+.01),fall=smoothstep(.6,.72,fbm2(vec2(u,v)*.35+seed*7.));base=mix(plasterCol(seed),mix(mud,vec3(.3,.19,.1),fr*.95*(1.-smoothstep(.02,.06,aa))),tmb*fall);}   // opus craticium on ONE upper storey, plastered over as at Herculaneum: the frame and infill show only where the plaster has fallen (facades.md)
  else base=stoneC(vec2(u,v),seed,vec3(.81,.725,.58),1.2,.6,aa);
@@ -213,7 +213,7 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  float bayW=arcLevel?4.8:(!residential&&bGAr>.5)?4.6:inwardTown?4.5+fract(seed*5.1)*1.5:3.+fract(seed*5.1);float nb=max(1.,floor(L/bayW+.3));float bay=L/nb;float bi=floor(u/bay);float bu=u-(bi+.5)*bay;
  if(!inwardTown&&nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sH,.1,aa),joint(sv+sH*.5,sH,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
  float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.;
- float wsd=h12(vec2(bi+seed*97.,si+seed*31.));
+ float wsd=h12(vec2(bi+seed*97.,si+seed*31.)),wsdS=wsd;if(mod(floor(fl/524288.),2.)>.5&&si>.5)wsd=1.;   // geometric-window wall (romanFrontRelief): every upper bay has its window
  if(arcLevel){kind=2.;hw=bay*.31;float hh=si<.5?gH:sH;oh=hh*.8;ar=1.;dep=2.4;}
  else if(si<.5){float doorBay=floor(fract(seed*11.3)*nb);bool isDoor=bDoor>.5&&abs(bi-doorBay)<.5;
   if(bGAr>.5&&!residential){kind=2.;hw=min(bay*.32,1.7);oh=min(gH-.5,2.9);ar=1.;dep=2.2;}
@@ -246,7 +246,7 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  float glz=step(h12(vec2(bi*3.1+seed*11.,si*7.7+seed)),uGlass);float rnd=h12(vec2(bi*1.7+seed*5.,si*2.3+seed*3.));float lit=step(rnd,uLit*litB*(si<.5?.55:mix(.07,.55,uGlass)));float flk=.78+.22*sin(uTime*7.+seed*30.+bi*1.7);
  bool archInterior=ar>.5||kind>3.5; if(archInterior)dep=min(dep,.8);
  vec3 inter;vec3 em=vec3(0.);vec3 lamp=vec3(1.,.42,.13);
- if(kind<.5&&!archInterior){float sh=bShut*step(.45,fract(wsd*7.3))*(1.-glz);vec3 wc=(fract(seed*13.37)<.5)?vec3(.1,.15,.1):vec3(.17,.1,.05);
+ if(kind<.5&&!archInterior){float sh=bShut*step(.45,fract(wsdS*7.3))*(1.-glz);vec3 wc=(fract(seed*13.37)<.5)?vec3(.1,.15,.1):vec3(.17,.1,.05);
   inter=mix(vec3(.27,.2,.125)*(.88+.24*smoothstep(-1.,1.2,qb.y)),wc*1.5,sh);S.rough=1.;   // flat dark warm void (sRGB ~40/34/30): one soft vertical gradient, a shutter as a flat shape, no per-pixel hash
   if(glz>.5){float fr=pow(1.-abs(vnn),4.);inter=mix(vec3(.07,.08,.09),uSkyRefl,.3+.6*fr);S.rough=.08;}
   em=lamp*lit*uNight*(glz>.5?2.4:(sh>.5?.14:.5))*flk*back;}

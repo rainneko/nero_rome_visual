@@ -27,3 +27,8 @@ Each image is the preview of a 3D scan or model on Sketchfab. The licence is the
 
 All three are by juanbrualla. They show two-storey street fronts with rubble and tuff walls, brick quoins and arches,
 wide shop openings with timber lintels, an upper floor projecting on beams, and brick columns of a portico.
+
+## Studied as 3D (2026-10-28)
+The six CC BY models ostia_front, opus_retic, paestum_brick, tegula, herc_gem and vle_aurea were downloaded as GLB
+(1024 px textures) to a scratch folder, rendered unlit in Blender and sampled for colour; they are not kept in the repo.
+What was taken from them is written in `../../facades.md` ("Relief") and in `src/world/roman-details.js`.

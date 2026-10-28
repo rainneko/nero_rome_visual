@@ -16,6 +16,21 @@ licences in `refs/arch/SOURCES.md`). The ornament percentages below still stand 
 * Albedo: the shader colours are linear and should sit near the GLB values in `romeMat` (plaster ~.5, roof tile
   (.39,.1,.047)). The old .8–.9 plaster made the procedural houses glare white beside the modelled buildings.
 
+## Relief (2026-10-28, `src/world/roman-details.js`)
+The shader paints openings on one flat quad, so the houses read as flat boxes. The street front (L[0]→L[1]) of every
+procedural house now carries geometry sized exactly like the painted openings (same seed, sty, flags and wall length;
+fl bit 524288 makes every upper bay of that wall a window). No dice are drawn; per-house choices are `hash2` of the place.
+Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Herculaneum street links in `SOURCES.md`.
+* Upper windows: a travertine sill on every window; a timber lintel and, on about 40 % of houses without painted
+  shutters, a pair of open wooden shutters on the square ones.
+* Shops (ground type 2) and arcades (type 1): projecting brick piers between the openings, a travertine impost at the
+  arch springing, a timber lintel over square shop openings, a masonry counter in about half the shops.
+* About 60 % of shop fronts: a tiled pent roof on timber beams and diagonal struts, 1.25 m deep, its eave edged with
+  antefixes; never over a cloth awning or into a road. decorLot then leaves that front alone.
+* Pitched roofs: a dark timber soffit under the street eave and a row of terracotta antefixes (about every 0.48 m).
+  Flat roofs: a stone cornice. A moulded string course where the house has its painted first-floor band.
+* Brick colour: R:G:B about 1 : .6 : .4, sampled from the unlit Ostia and Domus Aurea scans.
+
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
 scratchpad) and `refs/houses_*.jpg`. Today's procedural houses (src/world/lots.js + the facade shader driven by
 `g.set(part, seed, sty, fl, nSt, gH, band, lit)`) put a thin line at every floor, vertical timber grids on many walls,
