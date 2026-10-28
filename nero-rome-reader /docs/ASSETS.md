@@ -46,4 +46,7 @@ in the Codex worktree, put through `tools/models/rome/colossus_centre_head.mjs`:
 the chest's midline (the body's neck stub follows on a falloff), the toes and drape hem move from the stone mesh to the bronze, materials are
 renamed to the city's `bronze` / `travertine` / `gold`, vertex colours and UVs are dropped (2.3 MB, 116,229 triangles). Run it again on a new
 source rather than editing the GLB. Origin at the foot of the 13 m stone base (top 6.68 m, footing to -2 m), front on +Z, 1 unit = 1 m.
-`domus-aurea.js` loads it from `dist/aurea-assets.js` the first time `colossus8` shows; state 7 keeps the procedural headless statue.
+`domus-aurea.js` loads it from `dist/aurea-assets.js` the first time `colossus8` or `colossus7` shows. In state 7 the head nodes
+(`Sol_Head_Continuous_Neck`, `Original_A3_Curls_And_Ears`, `Seven_Ray_Crown`) are taken off and `colossus_works.glb` is added: the iron bars,
+nest, timber props and casting debris of Kimi's construction model (`Kimi_Agent_头部重做/金宫铜巨人/rome_colossus_headless.glb` on the backup
+drive), moved onto this body by `tools/models/rome/colossus_works.mjs` (Kimi's own body is the older, shorter-legged one and is not used).
