@@ -30,3 +30,23 @@ the model cannot load.
 
 ## Rome generators
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
+
+## Golden House: the round dining hall (2026-10-28)
+`assets/models/aurea/coenatio.glb` is `models/reader/K5-core.glb` (the finished hall, 24,872 triangles, 18 PNG textures, 2.5 MB) of the
+six-stage model closed on 2026-10-28: `renders/domus-aurea/coenatio-phase2-fixed-20261028/` in the main checkout, generator
+`tools/models/construction/coenatio_phase2/model.py`, review `docs/reviews/coenatio-codex-closeout-20261028.md`. Copy it as it is:
+`tools/glbopt.mjs` drops textures and UVs, so the build bundles it unshrunk into `dist/aurea-assets.js` (`lazy`, no `optimize`).
+`domus-aurea.js` loads that file the first time the `coenatio` layer shows (states 7–8) and keeps the procedural drum until then.
+Floor y = 0 at the model origin, door on +Z (the Palatine grid's SSW, down the slope); the node `ROTATING_CEILING` turns.
+K0–K4 (the building of it) are not in the reader: the stages are not tied to any chapter in `book.txt`.
+
+## Golden House: the colossus (2026-10-28)
+`assets/models/aurea/colossus.glb` is version C ("long legs") of `renders/domus-aurea/proportion-20261028/long-legs/rome_colossus_sol.glb`
+in the Codex worktree, put through `tools/models/rome/colossus_centre_head.mjs`: the head, curls and crown move 0.65 m to +x and 0.15 m up onto
+the chest's midline (the body's neck stub follows on a falloff), the toes and drape hem move from the stone mesh to the bronze, materials are
+renamed to the city's `bronze` / `travertine` / `gold`, vertex colours and UVs are dropped (2.3 MB, 116,229 triangles). Run it again on a new
+source rather than editing the GLB. Origin at the foot of the 13 m stone base (top 6.68 m, footing to -2 m), front on +Z, 1 unit = 1 m.
+`domus-aurea.js` loads it from `dist/aurea-assets.js` the first time `colossus8` or `colossus7` shows. In state 7 the head nodes
+(`Sol_Head_Continuous_Neck`, `Original_A3_Curls_And_Ears`, `Seven_Ray_Crown`) are taken off and `colossus_works.glb` is added: the iron bars,
+nest, timber props and casting debris of Kimi's construction model (`Kimi_Agent_头部重做/金宫铜巨人/rome_colossus_headless.glb` on the backup
+drive), moved onto this body by `tools/models/rome/colossus_works.mjs` (Kimi's own body is the older, shorter-legged one and is not used).

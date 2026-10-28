@@ -120,7 +120,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     float ed=smoothstep(.0,.3,cov)*(1.-smoothstep(.55,.95,cov));stC=mix(stC,cD*.92,ed*.55*(1.-wD));
     c=mix(c,stC,cov);}}}
  if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
-  float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),1.-smoothstep(32.,40.,length(p-vec2(330.,160.)))));
+  float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),max(1.-smoothstep(32.,40.,length(p-vec2(330.,160.))),1.-smoothstep(-6.,2.,max(max(660.-p.x,p.x-776.),max(118.-p.y,p.y-326.))))));   // (+ AUREA_EAST)
   mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
@@ -259,6 +259,15 @@ function flushColumns(W){for(const k in W.cols){const L=W.cols[k];if(!L.length)c
   L.forEach((c,i)=>{q.setFromAxisAngle(new THREE.Vector3(0,1,0),c[3]||0);S.set(c[4],c[4],c[4]);Pp.set(c[0],c[1],c[2]);M.compose(Pp,q,S);m.setMatrixAt(i,M);
     col.setRGB(...(c[5]||[1,1,1]));m.setColorAt(i,col);});
   layTag(m,'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);W.cols[k]=[];}}
+// layerAt(x,z): a story-state group key for the columns there (preLayerGroup), or null for the usual place
+function flushColumnsAt(W,layerAt){const C=W.cols,G0=W.colGroup,by={};
+  for(const k in C)C[k]=C[k].filter(c=>{const lk=layerAt(c[0],c[2]);if(!lk)return true;const b=by[lk]||(by[lk]={});(b[k]||(b[k]=[])).push(c);return false;});
+  flushColumns(W);for(const lk in by){Object.assign(C,by[lk]);W.colGroup=preLayerGroup(W,lk);flushColumns(W);}W.colGroup=G0;}
+// a GB's triangles split by where they lie (layerAt(x,z) at each triangle's centre): {key: GB}, '' for the rest
+function gbSplitAt(g,layerAt){const out={},map={};
+  for(let t=0;t<g.ni;t+=3){const T=[g.ix[t],g.ix[t+1],g.ix[t+2]],k=layerAt((g.p[T[0]*3]+g.p[T[1]*3]+g.p[T[2]*3])/3,(g.p[T[0]*3+2]+g.p[T[1]*3+2]+g.p[T[2]*3+2])/3)||'',o=out[k]||(out[k]=new GB(1<<10)),mp=map[k]||(map[k]=new Map());o.grow(o.nv+3,o.ni+3);
+    for(const i of T){let j=mp.get(i);if(j===undefined){j=o.nv++;o.p.set(g.p.subarray(i*3,i*3+3),j*3);o.n.set(g.n.subarray(i*3,i*3+3),j*3);for(const a of['a','b','c'])o[a].set(g[a].subarray(i*4,i*4+4),j*4);mp.set(i,j);}o.ix[o.ni++]=j;}}
+  return out;}
 
 /* ---------- trees (instanced) ---------- */
 function treeGeo(type){const P=[],N=[],F=[],I=[];let base=0;
@@ -283,21 +292,23 @@ const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
-function flushTrees(W,list,parent){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
+function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
-  for(const k in by){const L=by[k];if(!L.length)continue;const kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
+  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree keeps its index in its kind's list for its size and colour
+  for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});
+   for(const lk in parts){const I=parts[lk],kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
-    const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,L.length);
-    const aI=kd.m?new Float32Array(L.length*4):null;
+    const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,I.length);
+    const aI=kd.m?new Float32Array(I.length*4):null;
     const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),c=new THREE.Color();
-    L.forEach((t,i)=>{const s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
-      M.compose(Pp,q,S);m.setMatrixAt(i,M);const v=.75+.5*hash2(i,3);
-      if(kd.m){c.setRGB(v,v,v);aI[i*4]=kd.t;aI[i*4+1]=hash2(t[0]*.37,t[2]*.53);aI[i*4+2]=t[6]||0;aI[i*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
+    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
+      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*hash2(i,3);
+      if(kd.m){c.setRGB(v,v,v);aI[j*4]=kd.t;aI[j*4+1]=hash2(t[0]*.37,t[2]*.53);aI[j*4+2]=t[6]||0;aI[j*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
       else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
-      m.setColorAt(i,c);});
+      m.setColorAt(j,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
-    layTag(m,'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out;}
+    layTag(m,'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(lk?preLayerGroup(W,lk):(parent||W.scene)).add(m);out.push(m);}}return out;}
 // watered ground (palace and domus gardens): discs the terrain shader keeps green all year (uWat)
 const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.uWat.value[this.n++].set(x,z,r,hd);}}};   // circle (x,z,r) or rectangle (x,z,half-width,half-depth,rot as in Foot)
 
@@ -330,7 +341,8 @@ function bigBase(g,F,x,z,y,w,d,h,o={}){g.set(2,.5);box(g,F,x,y,z,w/2+.9,.3,d/2+.
 // a row of cypresses between two local points (y from the ground); trees go in W.trees (the instanced tree pass)
 function cypRow(W,F,ax,az,bx,bz,step,gyF,sc=1){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<=n;i++){const q=F.p(ax+(bx-ax)*i/n,0,az+(bz-az)*i/n);W.trees.push([q[0],gyF(q[0],q[2]),q[2],'cyp',sc*(.92+.16*((i*37)%7)/7)]);}}
 // temple: front faces +z of the frame
-function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
+function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:o.podH||3,stairs:o.stairs!==false});   // every temple, for the links to the streets (temple-links.js)
+  const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
   const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1);
   g.set(6,o.seed||.3);let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}box(g,F,0,-fd,0,W2,fd+ph,L2,31);
   g.set(2,.4);box(g,F,0,-.5,0,W2+.3,.9,L2+.3,15);box(g,F,0,ph-.45,0,W2+.25,.45,L2+.25,31);

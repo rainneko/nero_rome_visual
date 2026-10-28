@@ -7,7 +7,7 @@ import * as THREE from 'three';
 const read=f=>fs.readFileSync(f,'utf8');
 const materials=read('src/core/materials.js');
 const builders=read('src/world/builders.js');
-const lots=read('src/world/lots.js');
+const lots=read('src/world/lots.js')+read('src/world/roman-details.js');
 function block(src,marker){
   const at=src.indexOf(marker);assert(at>=0,`production source contains ${marker}`);
   const open=marker.startsWith('class ')?src.indexOf('{',at):src.indexOf('){',at)+1;

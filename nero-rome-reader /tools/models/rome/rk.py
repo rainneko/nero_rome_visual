@@ -39,7 +39,7 @@ _bk.PAL.update({
     'blue':       ((0.20, 0.36, 0.62), 0.0, 0.80),   # Egyptian blue paint
     'plaster2':   ((0.87, 0.71, 0.52), 0.0, 0.88),   # warm ochre plaster (houses)
     'plaster3':   ((0.83, 0.64, 0.56), 0.0, 0.88),   # pinkish plaster
-    'mud':        ((0.64, 0.54, 0.40), 0.0, 0.95),   # wattle-and-daub infill (timber-framed floors)
+    'mud':        ((0.62, 0.55, 0.43), 0.0, 0.95),   # mud-and-lime daub over the timber-framed floors
     'linen':      ((0.92, 0.90, 0.84), 0.0, 0.95),   # laundry, awnings
     'awning':     ((0.76, 0.58, 0.32), 0.0, 0.95),
     'flame':      ((1.00, 0.55, 0.15), 0.0, 1.00),   # fire in braziers (the page makes it glow)
@@ -707,15 +707,24 @@ def balcony(F, x0, y0, x1, y1, z, depth=1.1, mat='wood', roof=True, laundry=Fals
             u += w + 0.25; k += 1
 
 
-def timber_skin(F, x0, y0, x1, y1, z0, h, floors=1, mat='mud', frame='wood', post_every=1.5, windows=2, braces=True):
+def timber_skin(F, x0, y0, x1, y1, z0, h, floors=1, mat='mud', frame='wood', post_every=1.5, windows=2, braces=True,
+                plastered=True):
     """Timber-framed (opus craticium) upper floors on the outside of a wall line: mud infill skin with small square
-    windows, posts every `post_every` m, a beam at every floor, diagonal braces in some panels."""
+    windows. plastered (default): as at Herculaneum (Casa a Graticcio) the frame is daubed over, so only the corner
+    posts and the floor beams' line show, no braced grid (the open grid read as a Northern European half-timbered
+    house). plastered=False: posts every `post_every` m, a beam at every floor, diagonal braces in some panels."""
     S, L = _seg_frame(F, x0, y0, x1, y1, 0)
     fh = h / floors; ops = []
     for f in range(floors):
         for k in range(windows):
             ops.append(((k + 0.5) * L / windows, f * fh + fh * 0.4, 0.75, 0.75, 'rect'))
     opening_skin(S, 0, 0, L, 0, z0, h, ops, mat, depth=0.25)
+    if plastered:
+        for u in (0.08, L - 0.08):
+            box(S, u, -0.27, z0, 0.16, 0.06, h, frame)
+        for f in range(floors + 1):
+            box(S, L / 2, -0.27, z0 + f * fh - 0.05, L, 0.06, 0.1, frame)
+        return
     np_ = max(1, int(round(L / post_every)))
     for i in range(np_ + 1):
         box(S, L * i / np_, -0.3, z0, 0.16, 0.12, h, frame)

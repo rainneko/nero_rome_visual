@@ -12,7 +12,8 @@ function fillCentralHousing(W){const R=RNG(641024),g=new GB(1<<18),late=new GB(1
   // before repairing rejected boundary parcels so the fallback cannot seal a through route.
   for(const r of W.nobleRoads||[]){const C=lp(r.a,r.b,.5);if(nobleQuarterAt(...C)!=='core')continue;const dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],l=Math.hypot(dx,dz);W.foot.add(C[0],C[1],l/2,r.width/2,Math.atan2(-dz,dx),'road');}
   for(const[step,w,d]of[[23,19,16],[15,12,10],[10,8.4,8.2]]){let added=0;
-    for(let u=-850;u<1780;u+=step)for(let v=-1400;v<1400;v+=step){const[x,z]=world(u+(hash2(u,v)-.5)*1.4,v+(hash2(v,u)-.5)*1.4);if(!housingCore(x,z))continue;
+    for(let u=-850;u<1780;u+=step)for(let v=-1400;v<1400;v+=step){const R=RNG(hash2(u*31+step,v*17+977)*4294967296);   // dice keyed to the candidate: a change elsewhere does not reshuffle this house
+      const[x,z]=world(u+(hash2(u,v)-.5)*1.4,v+(hash2(v,u)-.5)*1.4);if(!housingCore(x,z))continue;
       const D=dCity(x,z);if(D<.36)continue; // Never turn low-density outskirts into a city grid.
       if(palFilled(x,z))continue;
       // Keep small public lanes through each repaired patch; old major roads are Foot obstacles.
@@ -21,7 +22,7 @@ function fillCentralHousing(W){const R=RNG(641024),g=new GB(1<<18),late=new GB(1
       if(P.some(p=>!housingCore(...p))||!housingFree(W,P))continue;
       const ground=houseGround(W,P);if(!ground||ground.max-ground.min>6)continue;
       const elite=nobleQuarterAt(x,z)==='core',early=Math.hypot(x-572,z-200)<155||AUREA_SITE(x,z)||deferred.some(f=>nobleOverlap(P,f));
-      const G=early?late:g;let rec;
+      const G=early||AUREA_GONE(x,z)?late:g;let rec;   // (the houses by the vestibule and the Via Sacra keep their look but go with the fire too)
       if(elite&&!early&&pArea(P)>260){rec=nobleCourtHouse(W,G,P,R,'repair');if(!rec)continue;rec.meshTag='central_housing_repairs';W.nobleParcels.push(rec);W.nobleProcedural.push(rec);stats.noble++;}
       else{const ns=elite?(R()<.82?3:4):3+Math.floor(R()*3),seed=R(),profile={part:elite?0:R()<.28?9:0,seed,sty:elite?0:3+(R()<.4?8:0),fl:(elite?262144:0)|2|16,nSt:ns,gH:3.8,sH:2.9,pitch:20*DEG,lit:.7,flat:false,noSplit:true,noDecor:early,awn:early?0:.08,balc:early?0:.08};
         if(!lotBuild(W,G,P,profile,R,null))continue;rec={polygon:P,x,z,y:ground.min+.15,groundMin:ground.min,groundMax:ground.max,storeys:ns};}

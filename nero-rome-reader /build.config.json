@@ -5,6 +5,7 @@
     "src/world/builders.js",
     "src/world/terrain-roads.js",
     "src/world/lots.js",
+    "src/world/roman-details.js",
     "src/world/residential-policy.js",
     "src/world/streets.js",
     "src/scenes/rome/noble-quarter.js",
@@ -64,6 +65,12 @@
       "dir": "assets/models/antium"
     },
     {
+      "file": "aurea-assets.js",
+      "var": "AUREA_GLB",
+      "cb": "aureaAssetsLoaded",
+      "dir": "assets/models/aurea"
+    },
+    {
       "file": "rome-assets.js",
       "var": "ROME_GLB",
       "cb": "romeAssetsLoaded",
@@ -110,5 +117,11 @@
     ],
     "lastChapter": 35
   },
-  "counter": ""
+  "counter": "",
+  "media": [
+    [
+      "assets/audio/music-box-canon.m4a",
+      "music-box-canon.m4a"
+    ]
+  ]
 }

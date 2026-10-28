@@ -195,10 +195,10 @@ def build_insula_c():
     for key in 'ENW':
         p0, p1 = ln[key]
         _skin(F, p0, p1, 0.0, H_g, _wins(_len(p0, p1), 1, 2.2, 0.6, 0.7), 'brick', frame='stone')
-    # upper floors: each jutting 0.5 m further over the street (fill, joists, timber skin with shutters)
+    # upper floors over one 0.5 m maenianum on joists (stepped jetties, one per floor, read as a medieval house)
     for k in range(3):
         z = H_g + H_f * k
-        off = 0.5 * (k + 1)
+        off = 0.5
         yf = -hd - off
         box(F, 0, -hd - off / 2, z, 2 * hw + 2 * SKIN, off, H_f, 'mud')          # jetty fill: nothing see-through
         for x in (-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0):
@@ -217,8 +217,8 @@ def build_insula_c():
             p0, p1 = ln[key]
             timber_skin(F, p0[0], p0[1], p1[0], p1[1], z, H_f, floors=1, mat='mud', frame='wood', post_every=1.5,
                         windows=1, braces=True)
-    # gabled roof with the gable to the street, spanning out over the jetties
-    gable_roof(F, 0.0, -0.75, H, 8.0, 13.5, pitch=28.0, axis='y', overhang=0.4, gable_mat='mud')
+    # gabled roof with the gable to the street, low Roman pitch, out over the maenianum
+    gable_roof(F, 0.0, -0.25, H, 8.0, 12.5, pitch=22.0, axis='y', overhang=0.4, gable_mat='mud')
     # laundry pole sticking out from the third floor, with a cloth on it
     beam(F, 3.0, -hd + 0.3, 9.0, 3.0, -hd - 2.4, 9.0, 0.08, 0.08, 'wood')
     box(F, 3.0, -hd - 2.3, 8.4, 0.5, 0.02, 0.6, 'linen')
