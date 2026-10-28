@@ -169,7 +169,7 @@ function nobleDetailHouse(W,g,P,R,block,index){
   let fit=1.05;const rect=s=>[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>{const q=F.p(x*dim[0]*s/2,0,z*dim[1]*s/2);return[q[0],q[2]];});
   while(fit>.8&&!rect(fit).every(p=>nobleInside(...p,P)))fit-=.025;if(fit<=.8)return null;
   const I=rect(fit),ground=houseGround(W,P),lo=ground.min,hi=ground.max;if(hi-lo>2.2)return null;
-  const y=lo+.15;romeStand(W,n,ob.cx,ob.cz,y,ob.rot,(gg,FF)=>courtBlock(W,gg,FF,{cx:0,cz:0,w:dim[0]*fit-.9,d:dim[1]*fit-.9,y0:0,nSt:4,gH:4,sH:3.2,cw:7*fit,cd:6*fit,part:0,seed:R(),sty:1,fl:2,garden:false}),{grot:ob.rot+Math.PI,sx:fit,sz:fit});
+  const y=lo+.15;romeStand(W,n,ob.cx,ob.cz,y,ob.rot,(gg,FF)=>courtBlock(W,gg,FF,{cx:0,cz:0,w:dim[0]*fit-.9,d:dim[1]*fit-.9,y0:0,nSt:4,gH:4,sH:3.2,cw:7*fit,cd:6*fit,part:0,seed:R(),sty:1,fl:2,garden:false}),{grot:ob.rot+Math.PI,sx:fit,sz:fit,parent:AUREA_GONE(...pCen(P))?preLayerGroup(W,'aureaSite'):undefined});   // a house on the Golden House ground goes with the fire (states 0-6), stand-in and model
   const all=[...P,...I],Y=(p,h)=>[p[0],h,p[1]];g.set(11,.4);
   for(const t of THREE.ShapeUtils.triangulateShape(P.map(p=>new THREE.Vector2(...p)),[I.map(p=>new THREE.Vector2(...p))]))g.poly(t.map(k=>Y(all[k],y+.04)),[0,1,0]);
   const C=pCen(I),rec={asset:n,x:ob.cx,z:ob.cz,y,rot:ob.rot,w:dim[0]*fit,d:dim[1]*fit,storeys:4,polygon:P,court:null,block,groundMin:lo,groundMax:hi,scale:fit};
@@ -190,7 +190,7 @@ function buildNobleQuarter(W){
       const shape=raw[t],id=`${i}:${j}:${t}`,count=triangular?4:(widths.some(w=>w>=5.4)&&hash2(i+9,j+42)<.6?4:(hash2(i+7,j+71)<.65?6:4)),candidates=nobleParcels(shape,count,R),built=[];
       const attempt=(P,level=0)=>{if(!P||P.some(p=>nobleQuarterAt(...p)!=='core')||blocked(P)){
           if(P&&level<2&&pArea(P)>300)for(const Q of nobleSplitPlot(P))attempt(Q,level+1);return;}
-        const gg=AUREA_SITE(...pCen(P))?gA:g;let rec=homes.length<4&&pArea(P)>600?nobleDetailHouse(W,gg,P,R,id,homes.length):null;if(rec)homes.push(rec);else rec=nobleCourtHouse(W,gg,P,R,id);   // gA: the parcels on the Golden House ground, shown in states 0-6 (aureaSite)
+        const gg=AUREA_GONE(...pCen(P))?gA:g;let rec=homes.length<4&&pArea(P)>600?nobleDetailHouse(W,gg,P,R,id,homes.length):null;if(rec)homes.push(rec);else rec=nobleCourtHouse(W,gg,P,R,id);   // gA: the parcels on the Golden House ground, shown in states 0-6 (aureaSite)
         if(!rec){if(level<3&&pArea(P)>220)for(const Q of nobleSplitPlot(P))attempt(Q,level+1);return;}
         plots.push(rec);built.push(rec);};
       for(const P0 of candidates)attempt(nobleOffset(P0,P0.map(()=>.9)));
@@ -209,7 +209,7 @@ function buildNobleQuarter(W){
   const pg=new GB(1<<15),pgA=new GB(1<<12),seen=new Set();for(const r of roads){const ka=r.a.map(x=>x.toFixed(2)).join(','),kb=r.b.map(x=>x.toFixed(2)).join(','),key=[ka,kb].sort().join('|');if(seen.has(key))continue;seen.add(key);
     const dx=r.b[0]-r.a[0],dz=r.b[1]-r.a[1],l=Math.hypot(dx,dz),nx=-dz/l,nz=dx/l,N=Math.ceil(l/2.5);
     for(let k=0;k<N;k++){const a=lp(r.a,r.b,k/N),b=lp(r.a,r.b,(k+1)/N),c=lp(a,b,.5);if(nobleQuarterAt(...c)!=='core'||fixed.some(f=>Math.abs(f.c*(c[0]-f.cx)-f.s*(c[1]-f.cz))<f.hw+.2&&Math.abs(f.s*(c[0]-f.cx)+f.c*(c[1]-f.cz))<f.hd+.2&&f.tag!=='road'))continue;
-      const P=[[-1,a],[1,a],[1,b],[-1,b]].map(([s,p])=>[p[0]+nx*r.width/2*s,p[1]+nz*r.width/2*s]),gp=AUREA_SITE(...c)?pgA:pg;gp.set(r.width>4?10:33,.4);gp.poly(P.map(p=>[p[0],W.gy(...p)+.16,p[1]]),[0,1,0]);}}
+      const P=[[-1,a],[1,a],[1,b],[-1,b]].map(([s,p])=>[p[0]+nx*r.width/2*s,p[1]+nz*r.width/2*s]),gp=AUREA_GONE(...c)?pgA:pg;gp.set(r.width>4?10:33,.4);gp.poly(P.map(p=>[p[0],W.gy(...p)+.16,p[1]]),[0,1,0]);}}
   const pm=layTag(pg.mesh(MAT.city,false),'roadDetail');if(pm){pm.name='noble_main_streets_and_lanes';W.scene.add(pm);}const pA=layTag(pgA.mesh(MAT.city,false),'roadDetail');if(pA)preLayerGroup(W,'aureaSite').add(pA);
   W.pois.push({n:'卡里奈·庭院街宅',l:'Carinae',x:680,z:-40,y:W.gy(680,-40)+25,s0:0,s1:99,d:1000,sub:true,
     info:'【史】卡里奈有显贵住宅。此处用贴邻宅院、曲折街巷和三／四层混合体量作设计推演；层数、户数和道路宽度不是考古测绘结论。'});

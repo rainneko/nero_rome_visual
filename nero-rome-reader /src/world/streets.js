@@ -141,8 +141,9 @@ function streetStairFit(S,cx,cz,dx,dz,t0,t1,maxW,wmin){const{x0,z0,cs,nx,nz}=S,n
    to its street (streetStairFit): the longest straight stretch along the patch's fall line that is at least 2.4 m clear, as wide as it is clear less 0.3 m
    a side (at most 7 m, 9 m in marble), opening onto street at both ends (straight on, or to a side where the street bends). A climb longer than 36 m becomes several flights. Each tread sits on the ground
    under it, at least 5 cm below the one above. Patches wider than 12 m are street networks on a hillside and stay ramps. Main-road cells are left to
-   roadStairs, and so is anything within 12 m of one of its flights. S.stair marks the cells the flights cover (no stalls or carts there). */
-function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g=new GB(1<<16),RS=W.roadStairs||[];let nSt=0;const nMat={1:0,2:0,3:0},why={};
+   roadStairs, and so is anything within 12 m of one of its flights. S.stair marks the cells the flights cover (no stalls or carts there).
+   o.layerAt(x,z): a story-state group for a flight there (the streets the Golden House takes), or null. */
+function streetStairs(W,o={}){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g0=new GB(1<<16),gl={},RS=W.roadStairs||[];let nSt=0,g=g0;const nMat={1:0,2:0,3:0},why={};
   const no=r=>{why[r]=(why[r]||0)+1;};S.stair=new Uint8Array(N);
   for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=j*nx+i;if(!grd[k]||S.road[k])continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,dx=(gy(x+cs,z)-gy(x-cs,z))/(2*cs),dz=(gy(x,z+cs)-gy(x,z-cs))/(2*cs);
     const m2=dx*dx+dz*dz;if(m2>(grd[k]===3?.0121:grd[k]===2?.0256:.04)){   // marble streets turn to stairs from ~11 %, stone ones from ~16 %, earth lanes from 20 %
@@ -170,11 +171,12 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
     const opens=sg=>{for(let a=.6;a<=4;a+=.7)for(let o=-hw-3;o<=hw+3;o+=1){const x=mid[0]+dx*sg*(run/2+a)+px*o,z=mid[1]+dz*sg*(run/2+a)+pz*o,i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);if(i<0||j<0||i>=nx||j>=nz)continue;const kk=j*nx+i;if(S.st[kk]&&!S.solid[kk]&&!S.water[kk])return true;}return false;};
     if(!opens(-1)||!opens(1)){no('ends');continue;}
     if(RS.some(r=>Math.hypot(r.x-mid[0],r.z-mid[1])<r.len/2+run/2+12)){no('road');continue;}
+    const lk=o.layerAt&&o.layerAt(mid[0],mid[1]);g=lk?(gl[lk]||(gl[lk]=new GB(1<<13))):g0;
     const k=Math.ceil(run/36),seg=run/k;let built=0;
     for(let q=0;q<k;q++){const ta=fit.ta+q*seg,ax=ox+dx*ta,az=oz+dz*ta,bx=ax+dx*seg,bz=az+dz*seg,n=flight(M,ax,az,dx,dz,seg,hw,gy(bx,bz));
       if(n){(W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:hw*2,run:seg,mat,marble:mat===3,drop:gy(ax,az)-gy(bx,bz),n});nSt++;nMat[mat]++;built++;}}
     if(!built)no('slope');}
-  const m=layTag(g.mesh(MAT.city),'stairs');if(m){m.name='streetStairs';W.scene.add(m);}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
+  const m=layTag(g0.mesh(MAT.city),'stairs');if(m){m.name='streetStairs';W.scene.add(m);}for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city),'stairs');if(mk){mk.name='streetStairs_'+k;preLayerGroup(W,k).add(mk);}}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
 /* main-road stairs: where a road's graded bed still climbs more than 30 % (gradeRoads caps its cut and fill at 4 m) the paint stops and a flight follows
    the road, as wide as the road, in its district's material (S.region). A run is where the signed grade over +-2.5 m passes 30 %, grown while it stays
    above 18 % the same way; same-way runs less than 5 m apart are one flight; a flight needs 1 m of drop and treads of at least 26 cm.
@@ -226,8 +228,9 @@ function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0
     const mw=layTag(gW.mesh(MAT.cityDecal,false),'roadDetail');if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=layTag(glW[k].mesh(MAT.cityDecal,false),'roadDetail');if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
   const m=layTag(g0.mesh(MAT.city,false),'roadDetail');if(m)W.scene.add(m);for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city,false),'roadDetail');if(mk)preLayerGroup(W,k).add(mk);}}
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
-   props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed */
-function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
+   props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed.
+   o.layerAt(x,z): a story-state group for a prop there (parentLayer; the streets the Golden House takes), or null. */
+function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
   let nP=0,nS=0,nC=0;const plaza=[];
   for(let j=3;j<nz-3;j+=2)for(let i=3;i<nx-3;i+=2){const k=j*nx+i,g=grd[k];if(!g||g===3)continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,u=o.urban(x,z);if(u<.25)continue;
     const w=wid[k];
