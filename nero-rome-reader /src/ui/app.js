@@ -69,13 +69,27 @@ const icoI=k=>`<img src="${ICO_IMG[k]}" alt="">`;
 const HUDICO=[ICO_SVG.coin,ICO_SVG.guild,ICO_SVG.purse,ICO_SVG.coal+icoI('iron'),icoI('steel'),icoI('cement'),icoI('glass'),ICO_SVG.scroll,icoI('bread')];
 const HUDTIP=['国库','公社金库','尼禄私库','焦炭·生铁','平炉钢','水泥','玻璃','学园','存粮'];
 
-const MUS={el:null,url:null,blob:null,name:''};
+/* music: the music box's Canon (dist/music-box-canon.m4a, built from assets/audio) plays from the toolbar button and from the
+   small player in chapter 31 after CANON_AT; a track the reader uploads (kept in this browser) takes over the toolbar button */
+const CANON_SRC='music-box-canon.m4a',CANON_LEN=161.2,CANON_AT='那是两千年后几乎所有人都听过的《卡农》。';
+const MBOX='<div class="mbox" role="group" aria-label="八音盒《卡农》"><button class="rbtn mplay" aria-label="播放">▶</button><span class="mt">八音盒《卡农》</span><span class="mbar" title="点一下跳到这里"><i></i></span><span class="mtime">0:00 / 2:41</span></div>';
+const MUS={el:null,url:null,blob:null,name:'',cur:''};
 function musDB(fn){try{const rq=indexedDB.open('nero-music',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('f');rq.onsuccess=()=>fn(rq.result);}catch(e){}}
-function musLabel(){const b=$('#tMusic');if(b){b.textContent=MUS.blob?'♪ 播放音乐':'♪ 音乐';b.title=MUS.blob?('当前：'+MUS.name):'先上传一首音乐';}}
-function musSet(file,play){MUS.blob=file;MUS.name=file.name||'音乐';if(MUS.url){URL.revokeObjectURL(MUS.url);MUS.url=null;}if(MUS.el){MUS.el.pause();MUS.el.removeAttribute('src');}musLabel();if(play)toggleCanon($('#tMusic'),true);}
-function toggleCanon(b,force){if(!MUS.blob){const f=$('#musFile');if(f)f.click();return;}if(!force&&MUS.el&&!MUS.el.paused){MUS.el.pause();b.classList.remove('on');return;}
-  if(!MUS.el){MUS.el=new Audio();MUS.el.loop=true;MUS.el.volume=.6;}if(!MUS.url){MUS.url=URL.createObjectURL(MUS.blob);MUS.el.src=MUS.url;}MUS.el.play().then(()=>b.classList.add('on')).catch(()=>b.classList.remove('on'));}
-function initMusic(){const tb=$('#tMusic');if(!tb)return;const up=document.createElement('button');up.className=tb.className;up.id='musUp';up.textContent='上传音乐';up.title='选一个音频文件（mp3、ogg、m4a……），它会留在这个浏览器里';
+function musLabel(){const b=$('#tMusic');if(b){b.textContent=MUS.blob?'♪ 播放音乐':'八音盒《卡农》';b.title=MUS.blob?('当前：'+MUS.name):'第31章那只八音盒里的《卡农》';}}
+function musSet(file,play){MUS.blob=file;MUS.name=file.name||'音乐';if(MUS.url){URL.revokeObjectURL(MUS.url);MUS.url=null;}if(MUS.el){MUS.el.pause();MUS.el.removeAttribute('src');MUS.cur='';}musLabel();if(play)toggleCanon($('#tMusic'),true);}
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function musSync(){const on=!!MUS.el&&!MUS.el.paused,t=$('#tMusic');if(t)t.classList.toggle('on',on);
+  $$('.mbox').forEach(m=>{const c=on&&MUS.cur===CANON_SRC,b=m.querySelector('.mplay');m.classList.toggle('on',c);b.textContent=c?'❚❚':'▶';b.setAttribute('aria-label',c?'暂停':'播放');});mboxTime();}
+function mboxTime(){const c=MUS.el&&MUS.cur===CANON_SRC,T=c&&MUS.el.duration||CANON_LEN,s=c?MUS.el.currentTime:0;
+  $$('.mbox').forEach(m=>{m.querySelector('.mbar i').style.width=(s/T*100).toFixed(2)+'%';m.querySelector('.mtime').textContent=mmss(s)+' / '+mmss(T);});}
+function musPlay(src,at){if(!MUS.el){MUS.el=new Audio();MUS.el.loop=true;MUS.el.volume=.6;['play','pause','ended'].forEach(e=>MUS.el.addEventListener(e,musSync));MUS.el.addEventListener('timeupdate',mboxTime);}
+  if(MUS.cur!==src){MUS.el.src=src;MUS.cur=src;}if(at!=null)MUS.el.currentTime=at;MUS.el.play().catch(musSync);}
+function toggleCanon(b,force){if(!force&&MUS.el&&!MUS.el.paused){MUS.el.pause();return;}
+  if(MUS.blob){if(!MUS.url)MUS.url=URL.createObjectURL(MUS.blob);musPlay(MUS.url);}else musPlay(CANON_SRC);}
+function mboxClick(e){const m=e.target.closest('.mbox');if(!m)return;const bar=e.target.closest('.mbar');
+  if(bar){const r=bar.getBoundingClientRect(),T=MUS.cur===CANON_SRC&&MUS.el.duration||CANON_LEN;musPlay(CANON_SRC,clamp((e.clientX-r.left)/r.width,0,1)*T);return;}
+  if(MUS.el&&!MUS.el.paused&&MUS.cur===CANON_SRC)MUS.el.pause();else musPlay(CANON_SRC);}
+function initMusic(){const R=$('#rscroll');if(R)R.addEventListener('click',mboxClick);musLabel();const tb=$('#tMusic');if(!tb)return;const up=document.createElement('button');up.className=tb.className;up.id='musUp';up.textContent='上传音乐';up.title='选一个音频文件（mp3、ogg、m4a……），它会留在这个浏览器里';
   const inp=document.createElement('input');inp.type='file';inp.accept='audio/*';inp.id='musFile';inp.hidden=true;tb.parentNode.insertBefore(up,tb.nextSibling);tb.parentNode.insertBefore(inp,up.nextSibling);up.onclick=()=>inp.click();
   inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;musSet(f,true);musDB(db=>{try{db.transaction('f','readwrite').objectStore('f').put({blob:f,name:f.name},'track');}catch(e){}});};
   const restore=()=>musDB(db=>{try{const g=db.transaction('f','readonly').objectStore('f').get('track');g.onsuccess=()=>{if(g.result&&!MUS.blob){MUS.blob=g.result.blob;MUS.name=g.result.name;musLabel();}};}catch(e){}});if(!/[?&]test/.test(location.search))addEventListener('pointerdown',restore,{once:true});musLabel();}
@@ -184,7 +198,8 @@ function setState(i,o={}){i=clamp(i,0,STATES.length-1);const S=STATES[i];curS=i;
 function goState(j){j=clamp(j,0,STATES.length-1);const a=document.querySelector(`.ch[data-s="${j}"]`);if(a){suppress=true;a.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>suppress=false,1100);}setState(j);}
 function buildReader(secs,note){const R=$('#rscroll');R.innerHTML='';const nt=note===undefined?EX:note;if(nt){const n=document.createElement('p');n.className='note';n.style.margin='0 0 22px';n.textContent=nt;R.appendChild(n);if(nt===EX&&typeof bookRead==='function'){const b=document.createElement('div');b.className='bacts';b.innerHTML='<button class="rbtn rmain" data-r="read">▶ 读正文</button><button class="rbtn" data-r="toc">目录</button>';b.onclick=e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.r==='read')bookRead();else bookToc();};R.appendChild(b);}}
   for(const s of secs){const a=document.createElement('article');a.className='ch';a.dataset.s=s.s;
-    const cnt={};let sc='rome';a.innerHTML=(s.when?`<p class="when">${esc(s.when)}</p>`:'')+`<h2>${esc(s.ch)}</h2>`+s.p.map(t=>{sc=gzScene(t,sc);const f=gzAuto(t,sc),tg=trigOf(t);return `<p${f>=0?` data-fly="${f}"`:''}${tg>=0?` data-trig="${tg}"`:''}>${gzWrap(esc(t),cnt,sc)}</p>`;}).join('')+(s.n?`<p class="note">${esc(s.n)}</p>`:'');R.appendChild(a);}}
+    const cnt={};let sc='rome';a.innerHTML=(s.when?`<p class="when">${esc(s.when)}</p>`:'')+`<h2>${esc(s.ch)}</h2>`+s.p.map(t=>{sc=gzScene(t,sc);const f=gzAuto(t,sc),tg=trigOf(t);return `<p${f>=0?` data-fly="${f}"`:''}${tg>=0?` data-trig="${tg}"`:''}>${gzWrap(esc(t),cnt,sc)}</p>`+(t.indexOf(CANON_AT)>=0?MBOX:'');}).join('')+(s.n?`<p class="note">${esc(s.n)}</p>`:'');R.appendChild(a);}
+  if(R.querySelector('.mbox'))musSync();}
 function buildLabels(){const box=$('#labels');box.innerHTML='';LABS=W0.pois.map(p=>{const d=document.createElement('div');d.className='lab';d.innerHTML=`${esc(p.n)}<small>${esc(p.l||'')}</small>`;
   d.onclick=()=>showCard(p,true);box.appendChild(d);return{p,d,v:new THREE.Vector3(p.x,p.y,p.z)};});}
 function updLabels(){const W=innerWidth,H=innerHeight,q=new THREE.Vector3();for(const L of LABS){const p=L.p;let vis=settings.labels&&curS>=p.s0&&curS<=p.s1&&camera.position.distanceTo(L.v)<p.d&&(p.ch0==null||(W0.curCh!=null?W0.curCh>=p.ch0:curS>=1||p.ch0<=3))&&(p.ch1==null||W0.curCh==null||W0.curCh<=p.ch1);

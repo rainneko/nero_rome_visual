@@ -110,5 +110,11 @@
     ],
     "lastChapter": 35
   },
-  "counter": ""
+  "counter": "",
+  "media": [
+    [
+      "assets/audio/music-box-canon.m4a",
+      "music-box-canon.m4a"
+    ]
+  ]
 }

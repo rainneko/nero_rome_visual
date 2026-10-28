@@ -1,6 +1,7 @@
 # Project notes for Claude
 
-* Build: `npm run build` → `dist/index.html`, `dist/antium-assets.js` (Antium GLBs), `dist/book.js` (full text).
+* Build: `npm run build` → `dist/index.html`, `dist/antium-assets.js` (Antium GLBs), `dist/book.js` (full text),
+  `dist/music-box-canon.m4a` (the music box Canon, ch. 31; build.config.json "media").
   Check: `npm run check`. Headless: `npm run build:test && npm run test:boot`. Serve `dist/` over http to test
   (the page loads book.js and antium-assets.js on demand). Node.js is not installed on the owner's Mac by default.
 * Classic scripts and globals, no modules, three.js r147. Keep `build.config.json` order.

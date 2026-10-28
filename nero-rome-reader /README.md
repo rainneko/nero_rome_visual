@@ -41,7 +41,8 @@ chapter-synced 3D city.
 
 ```bash
 npm install            # three (for local tests) and puppeteer
-npm run build          # -> dist/index.html, dist/rome-assets.js, dist/antium-assets.js, dist/book.js
+npm run build          # -> dist/index.html, dist/rome-assets.js, dist/antium-assets.js, dist/book.js,
+                       #    dist/music-box-canon.m4a (copied from assets/audio)
 npm run serve          # http://localhost:8080 (use a server: the page loads book.js and antium-assets.js)
 ```
 
@@ -68,6 +69,7 @@ data/                          density map, empire map data, book.txt (the full 
 assets/models/*.glb            Rome hero buildings (Jupiter temple, Domus Tiberiana, Curia), inlined in the page
 assets/models/antium/*.glb     Antium core buildings, bundled into dist/antium-assets.js
 assets/icons/                  resource icons (source PNGs; the page embeds them)
+assets/audio/music-box-canon.m4a  the music box Canon (ch. 31 player, toolbar button), copied to dist/ as it is
 tools/build.mjs, check.mjs     build and syntax check
 tools/test/                    headless boot test and view renderer
 tools/models/                  Python generators of the Rome models
