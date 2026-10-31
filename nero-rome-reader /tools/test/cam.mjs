@@ -1,5 +1,5 @@
 // Render arbitrary cameras to PNG with headless Chromium (software WebGL), no browser window needed.
-// Usage: node tools/test/cam.mjs jobs.json      (build with `npm run build:test` first)
+// Usage: node tools/test/cam.mjs jobs.json      (build with `npm run build:test` first; PAGE=test-old.html renders another build in dist/)
 // jobs.json: [{"out":"forum.png","state":0,"tod":0.45,"view":"forum"} | {"out":..,"pos":[x,y,z],"tgt":[x,y,z]},
 //             optional "js": "code run in the page before the shot", "wait": ms]
 // Output goes to shots/. Models from dist/*-assets.js are loaded before the first shot.
@@ -8,7 +8,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const jobs=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));fs.mkdirSync(path.join(root,'shots'),{recursive:true});
 const b=await puppeteer.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files','--ignore-gpu-blocklist']});
 const p=await b.newPage();await p.setViewport({width:1280,height:720});const errs=[];p.on('pageerror',e=>errs.push(e.message));
-await p.goto('file://'+path.join(root,'dist/test.html')+'?test',{timeout:0});
+await p.goto('file://'+path.join(root,'dist/'+(process.env.PAGE||'test.html'))+'?test',{timeout:0});
 const t0=Date.now();while(Date.now()-t0<400000){if(await p.evaluate(()=>!!window.__ready))break;await new Promise(r=>setTimeout(r,1500));}
 console.log('boot',((Date.now()-t0)/1000).toFixed(0)+'s');
 await p.evaluate(()=>{if(typeof romeLoadModels==='function')romeLoadModels();if(typeof antLoadModels==='function')antLoadModels();});

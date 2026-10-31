@@ -1,12 +1,12 @@
 // Where the memory and the frame go: geometry bytes by layer and by mesh, the JS heap, and what one frame draws (with shadows) at a few views.
 // Usage: node tools/test/perf-profile.mjs [state:view ...]      (build with `npm run build:test` first; default views 0:forum 6:galba 8:aurea)
-//   GPU=1: the machine's GPU instead of SwiftShader, and each view's frame time (CPU submit, mean of 20 renders; and a 180-frame rAF loop, mean and p95; shadows on)
+//   PAGE=test-old.html: another build in dist/ (A/B). GPU=1: the machine's GPU instead of SwiftShader, and each view's frame time (CPU submit, mean of 20 renders; and a 180-frame rAF loop, mean and p95; shadows on)
 import puppeteer from 'puppeteer';import path from 'node:path';import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const views=(process.argv.slice(2).length?process.argv.slice(2):['0:forum','6:galba','8:aurea']).map(s=>{const[a,b]=s.split(':');return[+a,b];});
 const GPU=!!process.env.GPU,b=await puppeteer.launch({headless:'new',args:[...(GPU?['--enable-gpu','--use-angle=metal']:['--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--allow-file-access-from-files','--ignore-gpu-blocklist','--enable-precise-memory-info']});
 const p=await b.newPage();await p.setViewport({width:1280,height:720});const errs=[];p.on('pageerror',e=>errs.push(e.message));
-const t0=Date.now();await p.goto('file://'+path.join(root,'dist/test.html')+'?test',{timeout:0});
+const t0=Date.now();await p.goto('file://'+path.join(root,'dist/'+(process.env.PAGE||'test.html'))+'?test',{timeout:0});
 while(Date.now()-t0<400000){if(await p.evaluate(()=>!!window.__ready))break;await new Promise(r=>setTimeout(r,1000));}
 if(GPU)await p.evaluate(()=>{window.__gpuT=1;});const boot=(Date.now()-t0)/1000;
 await p.evaluate(()=>{if(typeof romeLoadModels==='function')romeLoadModels();});   // the models first (as cam.mjs), so every view counts them

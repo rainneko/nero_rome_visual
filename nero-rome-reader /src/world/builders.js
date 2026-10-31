@@ -258,7 +258,7 @@ const COLGEO={};['cor','ion','dor','simple'].forEach(k=>COLGEO[k]=colGeo(k));
 // every frame, in the shadow pass too, wherever the camera looked. instTiles cuts a list of copies into INST_CELL squares (one mesh each); instCull gives
 // a mesh its own geometry object (the same buffers) with a sphere round all its copies and turns culling back on.
 const INST_CELL=400;
-function instTiles(n,xz){const T=new Map();for(let i=0;i<n;i++){const[x,z]=xz(i),k=Math.floor(x/INST_CELL)+','+Math.floor(z/INST_CELL);let a=T.get(k);if(!a)T.set(k,a=[]);a.push(i);}return[...T.values()];}
+function instTiles(n,xz,cell=INST_CELL){const T=new Map();for(let i=0;i<n;i++){const[x,z]=xz(i),k=Math.floor(x/cell)+','+Math.floor(z/cell);let a=T.get(k);if(!a)T.set(k,a=[]);a.push(i);}return[...T.values()];}
 function instCull(m){const g=m.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const s0=g.boundingSphere,M=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),B=new THREE.Box3();let r=0;
   for(let i=0;i<m.count;i++){m.getMatrixAt(i,M);M.decompose(p,q,sc);B.expandByPoint(p);r=Math.max(r,(s0.radius+s0.center.length())*Math.max(sc.x,sc.y,sc.z));}
   const g2=new THREE.BufferGeometry();for(const a in g.attributes)g2.setAttribute(a,g.attributes[a]);if(g.index)g2.setIndex(g.index);g2.boundingSphere=B.getBoundingSphere(new THREE.Sphere());g2.boundingSphere.radius+=r;
