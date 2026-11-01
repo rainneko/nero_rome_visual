@@ -235,30 +235,51 @@ MAT.lamp=new THREE.MeshBasicMaterial({color:new THREE.Color(1,.6,.28)});
 MAT.dark=new THREE.MeshBasicMaterial({color:0x000000});
 
 /* ---------- columns (instanced) ---------- */
-function colGeo(type){ // height 1, base at 0
-  const g=new GB(4096),F=frame(0,0,0);const R=type==='cor'?.05:type==='ion'?.055:type==='dor'?.068:.042;
+function colGeo(type,lo){ // height 1, base at 0. lo: the far copy (LOD): plain 8-sided shaft, 6-sided mouldings, no leaves or volutes
+  const g=new GB(4096),F=frame(0,0,0),ls=lo?6:16;const R=type==='cor'?.05:type==='ion'?.055:type==='dor'?.068:.042;
   g.set(6,.5);const capH=type==='cor'?.11:type==='ion'?.065:.05,baseH=type==='dor'?0:.05,sh=1-capH-baseH;
-  if(baseH){box(g,F,0,0,0,R*1.45,baseH*.35,R*1.45,31);lathe(g,F,0,baseH*.35,0,[[R*1.35,0],[R*1.35,baseH*.25],[R*1.15,baseH*.4],[R*1.25,baseH*.5],[R*1.05,baseH*.65]],16);}
-  const fl=type==='simple'?0:20,seg=type==='simple'?10:40,rings=type==='simple'?2:6;
+  if(baseH){box(g,F,0,0,0,R*1.45,baseH*.35,R*1.45,31);lathe(g,F,0,baseH*.35,0,[[R*1.35,0],[R*1.35,baseH*.25],[R*1.15,baseH*.4],[R*1.25,baseH*.5],[R*1.05,baseH*.65]],ls);}
+  const fl=type==='simple'||lo?0:20,seg=lo?8:type==='simple'?10:40,rings=lo?1:type==='simple'?2:6;
   for(let j=0;j<rings;j++){const t0=j/rings,t1=(j+1)/rings,r0=R*(1-.14*Math.pow(t0,1.3)),r1=R*(1-.14*Math.pow(t1,1.3)),y0=baseH*.65+sh*t0,y1=baseH*.65+sh*t1;
     for(let s=0;s<seg;s++){const a0=s/seg*TAU,a1=(s+1)/seg*TAU;const f0=fl?1-.07*Math.max(0,Math.cos(a0*fl)):1,f1=fl?1-.07*Math.max(0,Math.cos(a1*fl)):1;
       g.poly([F.p(Math.cos(a0)*r0*f0,y0,Math.sin(a0)*r0*f0),F.p(Math.cos(a1)*r0*f1,y0,Math.sin(a1)*r0*f1),F.p(Math.cos(a1)*r1*f1,y1,Math.sin(a1)*r1*f1),F.p(Math.cos(a0)*r1*f0,y1,Math.sin(a0)*r1*f0)],F.d(Math.cos((a0+a1)/2),0,Math.sin((a0+a1)/2)));}}
   const yc=1-capH,rt=R*.86;
-  if(type==='cor'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.12,capH*.25],[rt*1.28,capH*.55],[rt*1.5,capH*.8],[rt*1.55,capH*.86]],16);
-    for(let k=0;k<8;k++){const a=k/8*TAU;const L=frame(Math.cos(a)*rt*1.18,yc+capH*.08,Math.sin(a)*rt*1.18,-a);box(g,L,0,0,0,rt*.32,capH*.42,rt*.12,31);}
+  if(type==='cor'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.12,capH*.25],[rt*1.28,capH*.55],[rt*1.5,capH*.8],[rt*1.55,capH*.86]],ls);
+    if(!lo)for(let k=0;k<8;k++){const a=k/8*TAU;const L=frame(Math.cos(a)*rt*1.18,yc+capH*.08,Math.sin(a)*rt*1.18,-a);box(g,L,0,0,0,rt*.32,capH*.42,rt*.12,31);}
     box(g,F,0,1-capH*.14,0,R*1.62,capH*.14,R*1.62,31);}
-  else if(type==='ion'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.25,capH*.45],[rt*1.1,capH*.7]],16);box(g,F,0,yc+capH*.35,0,R*1.55,capH*.35,R*1.1,31);
-    for(const sx of[-1,1])lathe(frame(0,0,0).p?g:g,frame(sx*R*1.45,yc+capH*.5,0,Math.PI/2),0,-R*.9,0,[[0,0],[R*.38,0],[R*.38,R*1.8],[0,R*1.8]],10);
+  else if(type==='ion'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.25,capH*.45],[rt*1.1,capH*.7]],ls);box(g,F,0,yc+capH*.35,0,R*1.55,capH*.35,R*1.1,31);
+    if(!lo)for(const sx of[-1,1])lathe(frame(0,0,0).p?g:g,frame(sx*R*1.45,yc+capH*.5,0,Math.PI/2),0,-R*.9,0,[[0,0],[R*.38,0],[R*.38,R*1.8],[0,R*1.8]],10);
     box(g,F,0,1-capH*.25,0,R*1.45,capH*.25,R*1.45,31);}
-  else{lathe(g,F,0,yc,0,[[rt,0],[rt*1.35,capH*.55],[rt*1.4,capH*.6]],16);box(g,F,0,1-capH*.4,0,R*1.45,capH*.4,R*1.45,31);}
+  else{lathe(g,F,0,yc,0,[[rt,0],[rt*1.35,capH*.55],[rt*1.4,capH*.6]],ls);box(g,F,0,1-capH*.4,0,R*1.45,capH*.4,R*1.45,31);}
   return g.geometry();
 }
-const COLGEO={};['cor','ion','dor','simple'].forEach(k=>COLGEO[k]=colGeo(k));
-function flushColumns(W){for(const k in W.cols){const L=W.cols[k];if(!L.length)continue;
+const COLGEO={},COLGEO_LO={};['cor','ion','dor','simple'].forEach(k=>{COLGEO[k]=colGeo(k);COLGEO_LO[k]=colGeo(k,true);});
+// r147 makes every InstancedMesh with frustumCulled=false (its bounds would be one copy at the origin), so a city's worth of trees or columns was drawn
+// every frame, in the shadow pass too, wherever the camera looked. instTiles cuts a list of copies into INST_CELL squares (one mesh each); instCull gives
+// a mesh its own geometry object (the same buffers) with a sphere round all its copies and turns culling back on.
+const INST_CELL=400;
+function instTiles(n,xz,cell=INST_CELL){const T=new Map();for(let i=0;i<n;i++){const[x,z]=xz(i),k=Math.floor(x/cell)+','+Math.floor(z/cell);let a=T.get(k);if(!a)T.set(k,a=[]);a.push(i);}return[...T.values()];}
+function instCull(m){const g=m.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const s0=g.boundingSphere,M=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),B=new THREE.Box3();let r=0;
+  for(let i=0;i<m.count;i++){m.getMatrixAt(i,M);M.decompose(p,q,sc);B.expandByPoint(p);r=Math.max(r,(s0.radius+s0.center.length())*Math.max(sc.x,sc.y,sc.z));}
+  const g2=new THREE.BufferGeometry();for(const a in g.attributes)g2.setAttribute(a,g.attributes[a]);if(g.index)g2.setIndex(g.index);g2.boundingSphere=B.getBoundingSphere(new THREE.Sphere());g2.boundingSphere.radius+=r;g2.boundingBox=B.expandByScalar(r);
+  m.geometry=g2;m.frustumCulled=true;return m;}
+// Far copies (LOD): a tile of trees or columns also gets a plainer InstancedMesh on the same instance buffers (matrices, colours, season attribute: nothing
+// new on the GPU but the template). lodUpdate, each frame before the render, shows one of the two by the camera's distance to the tile's box (instCull):
+// the far copy beyond `far` metres on a 720 px high canvas (further on a bigger one, so a copy switches at the same size on screen; Q.lod scales it).
+const LODS=[],LODV=new THREE.Vector3();
+function instLod(m,geo,far){if(!geo)return null;const lo=new THREE.InstancedMesh(geo,m.material,m.count),g=new THREE.BufferGeometry(),h=m.geometry;
+  for(const a in geo.attributes)g.setAttribute(a,geo.attributes[a]);if(geo.index)g.setIndex(geo.index);if(h.attributes.aI)g.setAttribute('aI',h.attributes.aI);
+  g.boundingSphere=h.boundingSphere;g.boundingBox=h.boundingBox;lo.geometry=g;lo.instanceMatrix=m.instanceMatrix;lo.instanceColor=m.instanceColor;lo.frustumCulled=true;
+  lo.customDepthMaterial=m.customDepthMaterial;lo.castShadow=m.castShadow;lo.receiveShadow=m.receiveShadow;lo.userData.lay=m.userData.lay;lo.userData.kind=m.userData.kind;lo.visible=false;
+  m.parent.add(lo);LODS.push({hi:m,lo,far,near:true});return lo;}
+function lodUpdate(cam){cam.getWorldPosition(LODV);const k=(Q.lod||1)*Math.max(1,renderer.domElement.height/720);
+  for(const L of LODS){const near=L.hi.geometry.boundingBox.distanceToPoint(LODV)<L.far*k*(L.near?1.1:1);if(near!==L.near){L.near=near;L.hi.visible=near;L.lo.visible=!near;}}}   // 10 % slack against flicker at the edge
+function flushColumns(W){for(const k in W.cols){const A=W.cols[k];if(!A.length)continue;
+  for(const T of instTiles(A.length,i=>[A[i][0],A[i][2]])){const L=T.map(i=>A[i]);
   const m=new THREE.InstancedMesh(COLGEO[k],MAT.city,L.length);const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),col=new THREE.Color();
   L.forEach((c,i)=>{q.setFromAxisAngle(new THREE.Vector3(0,1,0),c[3]||0);S.set(c[4],c[4],c[4]);Pp.set(c[0],c[1],c[2]);M.compose(Pp,q,S);m.setMatrixAt(i,M);
     col.setRGB(...(c[5]||[1,1,1]));m.setColorAt(i,col);});
-  layTag(m,'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);W.cols[k]=[];}}
+  layTag(instCull(m),'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);instLod(m,COLGEO_LO[k],200);}W.cols[k]=[];}}
 // layerAt(x,z): a story-state group key for the columns there (preLayerGroup), or null for the usual place
 function flushColumnsAt(W,layerAt){const C=W.cols,G0=W.colGroup,by={};
   for(const k in C)C[k]=C[k].filter(c=>{const lk=layerAt(c[0],c[2]);if(!lk)return true;const b=by[lk]||(by[lk]={});(b[k]||(b[k]=[])).push(c);return false;});
@@ -270,24 +291,24 @@ function gbSplitAt(g,layerAt){const out={},map={};
   return out;}
 
 /* ---------- trees (instanced) ---------- */
-function treeGeo(type){const P=[],N=[],F=[],I=[];let base=0;
+function treeGeo(type,lo){const P=[],N=[],F=[],I=[];let base=0;const e=lo?1.1:1,dt=lo?0:1;   // lo: the far copy (LOD): the same blobs from the same dice, unsubdivided (a tenth larger: an icosahedron's faces sit inside its corners)
   const add=(geo,fol,cy,rad)=>{const g=geo.index?geo.toNonIndexed():geo;g.computeVertexNormals();const p=g.attributes.position,n=g.attributes.normal;
     for(let i=0;i<p.count;i++){P.push(p.getX(i),p.getY(i),p.getZ(i));N.push(n.getX(i),n.getY(i),n.getZ(i));
       const r=rad?Math.min(1,Math.hypot(p.getX(i),p.getZ(i))/rad):1;F.push(fol,clamp(p.getY(i)/cy,0,1),fol?.35+.65*r:0);I.push(base+i);}base+=p.count;};
   const rnd=RNG(type==='cyp'?3:type==='pine'?7:11);
   const bump=(geo,amt,sc)=>{const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const k=1+amt*(vnoise(x*sc+9,y*sc+z*sc*.7)-.5)*2;p.setXYZ(i,x*k,y,z*k);}return geo;};
-  if(type==='cyp'){add(new THREE.CylinderGeometry(.18,.28,2,5),0,10,0);
-    const prof=[];for(let i=0;i<=9;i++){const t=i/9;prof.push(new THREE.Vector2(t>=1?0:1.15*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.05+.02)),.75)*(1-t*.55),1+t*10.5));}
-    add(bump(new THREE.LatheGeometry(prof,9),.28,1.4),1,11.5,1.2);}
-  else if(type==='pine'){const tr=new THREE.CylinderGeometry(.22,.38,12,6);tr.translate(0,6,0);add(tr,0,16,0);
-    for(let k=0;k<5;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(3.6+rnd()*1.6,1.3+rnd()*.5,3.4+rnd()*1.6);s.translate((rnd()-.5)*4.5,12.6+rnd()*1.6,(rnd()-.5)*4.5);add(bump(s,.2,.8),1,15,7);}}
+  if(type==='cyp'){add(new THREE.CylinderGeometry(.18,.28,2,lo?3:5,1,!!lo),0,10,0);const n=lo?5:9;
+    const prof=[];for(let i=0;i<=n;i++){const t=i/n;prof.push(new THREE.Vector2(t>=1?0:1.15*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.05+.02)),.75)*(1-t*.55),1+t*10.5));}
+    add(bump(new THREE.LatheGeometry(prof,lo?6:9),.28,1.4),1,11.5,1.2);}
+  else if(type==='pine'){const tr=new THREE.CylinderGeometry(.22,.38,12,lo?3:6,1,!!lo);tr.translate(0,6,0);add(tr,0,16,0);
+    for(let k=0;k<5;k++){const s=new THREE.IcosahedronGeometry(1,dt);s.scale((3.6+rnd()*1.6)*e,(1.3+rnd()*.5)*e,(3.4+rnd()*1.6)*e);s.translate((rnd()-.5)*4.5,12.6+rnd()*1.6,(rnd()-.5)*4.5);add(bump(s,.2,.8),1,15,7);}}
   else if(type==='palm'){const tr=new THREE.CylinderGeometry(.2,.34,9,6);tr.translate(0,4.5,0);add(tr,0,13,0);   // date palm (one, at the House of Augustus): trunk and nine arching fronds
     for(let k=0;k<9;k++){const f=new THREE.IcosahedronGeometry(1,0);f.scale(2.9,.09,.5);f.translate(2.7,0,0);f.rotateZ(.55-.25*(k%3)/2);f.rotateY(k/9*TAU+rnd()*.3);f.translate(0,9.2,0);add(f,1,13,3.4);}}
-  else{const tr=new THREE.CylinderGeometry(.2,.32,3.2,5);tr.translate(0,1.6,0);add(tr,0,9,0);
-    for(let k=0;k<4;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(2.4+rnd(),2.2+rnd(),2.4+rnd());s.translate((rnd()-.5)*2.6,4.6+rnd()*2.2,(rnd()-.5)*2.6);add(bump(s,.25,.9),1,8,4);}}
+  else{const tr=new THREE.CylinderGeometry(.2,.32,3.2,lo?3:5,1,!!lo);tr.translate(0,1.6,0);add(tr,0,9,0);
+    for(let k=0;k<4;k++){const s=new THREE.IcosahedronGeometry(1,dt);s.scale((2.4+rnd())*e,(2.2+rnd())*e,(2.4+rnd())*e);s.translate((rnd()-.5)*2.6,4.6+rnd()*2.2,(rnd()-.5)*2.6);add(bump(s,.25,.9),1,8,4);}}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
   G.setAttribute('aF',new THREE.Float32BufferAttribute(F,3));G.computeBoundingSphere();return G;}
-const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad'),palm:treeGeo('palm')};
+const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad'),palm:treeGeo('palm')},TREEGEO_LO={cyp:treeGeo('cyp',1),pine:treeGeo('pine',1),broad:treeGeo('broad',1)};TREEGEO_LO.olive=TREEGEO_LO.broad;   // palm, shrub and flower have no far copy (one palm; a shrub is 20 triangles)
 const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive:[.08,.088,.058]};TREEGEO.olive=TREEGEO.broad;TREEGEO.shrub=(()=>{const g=new THREE.IcosahedronGeometry(1,0).toNonIndexed();g.scale(1.25,.8,1.25);g.translate(0,.62,0);g.computeVertexNormals();const p=g.attributes.position,a=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){a[i*3]=1;a[i*3+1]=Math.min(1,p.getY(i)/1.4);a[i*3+2]=.85;}g.setAttribute('aF',new THREE.BufferAttribute(a,3));return g;})();TREEGEO.flower=TREEGEO.shrub;TREECOL.shrub=[.055,.085,.03];TREECOL.palm=[.06,.095,.03];TREECOL.flower=[.3,.1,.16];
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
@@ -296,7 +317,7 @@ function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
   // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree keeps its index in its kind's list for its size and colour
   for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});
-   for(const lk in parts){const I=parts[lk],kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
+   for(const lk in parts)for(const T of instTiles(parts[lk].length,j=>{const t=all[parts[lk][j]];return[t[0],t[2]];})){const I=T.map(j=>parts[lk][j]),kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
     const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,I.length);
     const aI=kd.m?new Float32Array(I.length*4):null;
@@ -308,7 +329,7 @@ function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k
       m.setColorAt(j,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
-    layTag(m,'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(lk?preLayerGroup(W,lk):(parent||W.scene)).add(m);out.push(m);}}return out;}
+    layTag(instCull(m),'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(lk?preLayerGroup(W,lk):(parent||W.scene)).add(m);out.push(m);instLod(m,TREEGEO_LO[kd.g],250);}}return out;}
 // watered ground (palace and domus gardens): discs the terrain shader keeps green all year (uWat)
 const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.uWat.value[this.n++].set(x,z,r,hd);}}};   // circle (x,z,r) or rectangle (x,z,half-width,half-depth,rot as in Foot)
 
@@ -316,9 +337,10 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
-  list.forEach((p,i)=>{M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(i,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(i,c);});
-  layTag(m,'people');m.castShadow=false;m.receiveShadow=true;m.frustumCulled=false;(parent||W.scene).add(m);return m;}   // r147 culls an InstancedMesh by one figure's bounds at the origin: a crowd far from the origin vanished
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
+  for(const T of instTiles(list.length,i=>[list[i][0],list[i][2]])){const m=new THREE.InstancedMesh(PPLGEO,MAT.people,T.length),M=new THREE.Matrix4(),c=new THREE.Color();
+    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
+    layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
 
 /* ---------- monument generators (into GB g) ---------- */
 function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand

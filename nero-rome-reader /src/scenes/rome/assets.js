@@ -52,9 +52,19 @@ function romeStand(W,n,x,z,y,rot,fn,o){const G=layTag(new THREE.Group(),'models'
   ((o&&o.parent)||W.scene).add(G);ROME.GLB.push({n,x,y:y+((o&&o.dy)||0),z,r:(o&&o.grot!==undefined)?o.grot:(rot||0),stand:G,o:o||{}});return G;}   // o: {dy: GLB height offset, grot: GLB turn if it differs from the stand-in's, hide, parent, sx/sy/sz}
 // a GLB without a stand-in; o.inst = true draws many copies as one InstancedMesh per part (street kit)
 function romePlace(n,x,y,z,rot,o){ROME.GLB.push({n,x,y,z,r:rot||0,o:o||{}});}
+// A model placed three times or more is drawn as one InstancedMesh per part, per parent group and per ROME_INST_CELL square (instTiles/instCull, builders.js):
+// a clone per placement cost a draw call per part (170 insulae of 13-18 parts were ~2500 calls a frame). p.ghost() makes that placement's clone on demand (__floatCheck).
+const ROME_INST_CELL=1000;
 function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});
-  const inst=[];for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const o=layTag(scene.clone(true),'models');p.obj=o;o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;
-    if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);(p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene).add(o);if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
+  const inst=[],share=ROME.GLB.filter(p=>p.n===n&&!p.o.inst).length>=3,byPar=new Map();
+  for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const par=p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene;
+    const mk=()=>{const o=layTag(scene.clone(true),'models');o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);return o;};
+    if(share){p.ghost=mk;if(!byPar.has(par))byPar.set(par,[]);byPar.get(par).push(p);}else{p.obj=mk();par.add(p.obj);}
+    if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
+  if(byPar.size){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
+    for(const[par,L]of byPar)for(const I of instTiles(L.length,i=>[L[i].x,L[i].z],ROME_INST_CELL))scene.traverseVisible(m=>{if(!m.isMesh)return;const im=new THREE.InstancedMesh(m.geometry,m.material,I.length);
+      I.forEach((j,i)=>{const p=L[j],sc=p.o.sx||p.o.sy||p.o.sz;S.set(sc?p.o.sx||1:1,sc?p.o.sy||1:1,sc?p.o.sz||p.o.sx||1:1);M.compose(T.set(p.x,p.y,p.z),Q.setFromEuler(E.set(0,p.r,0)),S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});   // the clone's own transform, as mk()
+      im.castShadow=im.receiveShadow=true;par.add(layTag(instCull(im),'models'));});}
   if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler(),byL={};   // one set of InstancedMeshes per story-state group (o.parentLayer), the rest in the scene
     for(const p of inst)(byL[p.o.parentLayer||'']||(byL[p.o.parentLayer||'']=[])).push(p);
     for(const lk in byL){const inst=byL[lk],par=(lk&&W0.preLayers&&W0.preLayers[lk])||W0.scene;
@@ -73,7 +83,7 @@ function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return
    1 m above the floor level (the model's y) = buried. Returns [{n,x,z,y,floatN,floatMax,at,buriedN,buriedMax}], logs the ones with problems. */
 window.__floatCheck=(opt)=>{const W=W0,out=[],CS=3,tolF=opt&&opt.tolF||.4,tolB=opt&&opt.tolB||1,A=new THREE.Vector3(),B=new THREE.Vector3(),C=new THREE.Vector3(),sup=ROME.supports||[];
   const supported=(x,z)=>sup.some(q=>{const dx=x-q.x,dz=z-q.z,u=q.c*dx-q.s*dz,v=q.s*dx+q.c*dz;return Math.abs(u)<q.hw+1&&Math.abs(v)<q.hd+1;});   // ROME.supports: footprints of hand-built foundations (palBlocks) that carry a model where the ground is far below
-  for(const p of ROME.GLB){const o=p.obj;if(!o||!o.visible)continue;o.updateMatrixWorld(true);const cells=new Map();
+  for(const p of ROME.GLB){const o=p.obj||(p.ghost&&p.ghost());if(!o||!o.visible)continue;o.updateMatrixWorld(true);const cells=new Map();
     const put=(x,y,z)=>{const i=Math.floor(x/CS),j=Math.floor(z/CS),k=i+','+j;let c=cells.get(k);if(!c){c={y:1e9,x:0,z:0,i,j};cells.set(k,c);}if(y<c.y){c.y=y;c.x=x;c.z=z;}};
     o.traverse(m=>{if(!m.isMesh||!m.visible)return;const P=m.geometry.attributes.position,I=m.geometry.index,nT=I?I.count/3:P.count/3;
       for(let t=0;t<nT;t++){const a=I?I.getX(t*3):t*3,b=I?I.getX(t*3+1):t*3+1,c=I?I.getX(t*3+2):t*3+2;A.fromBufferAttribute(P,a).applyMatrix4(m.matrixWorld);B.fromBufferAttribute(P,b).applyMatrix4(m.matrixWorld);C.fromBufferAttribute(P,c).applyMatrix4(m.matrixWorld);

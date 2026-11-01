@@ -96,6 +96,8 @@ function fxMat(o){
 /* ---------- renderer & post ---------- */
 const canvas=$('#gl');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance',stencil:false,preserveDrawingBuffer:TEST});
+// a GPU context that comes back has lost the city's buffers, and their JS copies are gone (GB.mesh frees them once uploaded): reload; the book keeps its place (bookSave)
+canvas.addEventListener('webglcontextrestored',()=>location.reload());
 THREE.ColorManagement.legacyMode=false;
 renderer.outputEncoding=THREE.LinearEncoding;renderer.toneMapping=THREE.NoToneMapping;
 renderer.physicallyCorrectLights=true;

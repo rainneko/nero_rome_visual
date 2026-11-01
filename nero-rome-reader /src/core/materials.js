@@ -28,8 +28,12 @@ class GB{
     G.setAttribute('aA',new THREE.BufferAttribute(this.a.slice(0,nv*4),4));G.setAttribute('aB',new THREE.BufferAttribute(this.b.slice(0,nv*4),4));
     G.setAttribute('aC',new THREE.BufferAttribute(this.c.slice(0,nv*4),4));G.setIndex(new THREE.BufferAttribute(this.ix.slice(0,this.ni),1));
     G.computeBoundingSphere();G.computeBoundingBox();return G;}
-  mesh(mat,shadow=true){if(!this.nv)return null;const m=new THREE.Mesh(this.geometry(),mat);m.castShadow=shadow;m.receiveShadow=true;return m;}
+  // a mesh of its own: once its buffers are on the GPU the JS copies are let go (gbFree; the bounds and counts stay). Nothing reads a built mesh back;
+  // geometry() (templates such as COLGEO, read again by addGeo and instancing) keeps its arrays.
+  mesh(mat,shadow=true){if(!this.nv)return null;const G=this.geometry();for(const k in G.attributes)G.attributes[k].onUpload(gbFree);G.index.onUpload(gbFree);
+    const m=new THREE.Mesh(G,mat);m.castShadow=shadow;m.receiveShadow=true;return m;}
 }
+function gbFree(){this.array=null;}
 function nrm(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
   let x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx;const l=Math.hypot(x,y,z)||1;return[x/l,y/l,z/l];}
 function autoUV(p,n){if(Math.abs(n[1])>.97)return[p[0],p[2]];let tx=-n[2],tz=n[0];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;
