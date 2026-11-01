@@ -5,7 +5,7 @@ Each origin = centre of the footprint, z = 0 = street level, front = −Y (the s
 References: `houses_timber.jpg` (wooden balconies, tiled roofs), `houses_poor_1.jpg`, `houses_poor_2.jpg` (plain poor
 houses), `houses_mid_1.jpg`, `houses_mid_2.jpg` (warm plaster, red bands, roof terraces with pergolas),
 `houses_street.jpg` (a street with awnings and stalls). These are city-builder game screenshots, so use them for mood only.
-For materials and colours the evidence is `refs/arch/` (see `refs/arch/SOURCES.md` and the rules at the top of
+`houses_ai_watercolour.jpg` is AI-generated (mood only). For materials and colours the evidence is `refs/arch/` (see `refs/arch/SOURCES.md` and the rules at the top of
 `facades.md`). In particular the timber frame is plastered over (`timber_skin(plastered=True)`), with no open braced
 grid, and rome_insula_c has one 0.5 m maenianum, not a stepped jetty on every floor (2026-10-28).
 
@@ -17,6 +17,22 @@ grid, and rome_insula_c has one 0.5 m maenianum, not a stepped jetty on every fl
 Before the fire of AD 64 most apartment blocks had a masonry ground floor and timber-framed upper floors filled with
 mud and lime (opus craticium); Augustus limited their height to about 21 m; tile roofs; wooden balconies (maeniana).
 Porticoes along every street came only with Nero's building rules after AD 64 — do not add street porticoes.
+
+## Roman style pass (2026-11-01; this overrides the per-asset lists below where they differ)
+Learnt from `refs/arch/trajan_market_LATE.jpg` (Trajan's Market, about AD 110: materials and construction only, not its
+plan) and the Ostia/Herculaneum shop rows; mood from `refs/houses_ai_watercolour.jpg`.
+* 【史】Shop door (taberna): travertine jambs, lintel and threshold; a small window over the lintel that lights the
+  pergula (the loft over the shop); a brick relieving arch over both. Helpers `_shops` / `_shop_side` / `_arch`.
+* 【史】Brick-faced concrete (opus testaceum) is in Rome from Tiberius on (Castra Praetoria), so an exposed brick ground
+  floor is allowed before AD 64, but it is the newer, better block (insula_a), not the norm.
+* A projecting brick string course over the shops; a stepped brick cornice on insula_b; flat brick relieving arches
+  over the windows of insula_a floors 2–3; rafter ends under the eaves (a, and the sides of c).
+* No pink: insula_b is an ochre ground floor with lime-plastered floors above; one red band only (the second floor).
+* insula_a: brick ground floor, lime first floor with the maenianum and its tile pent roof, ochre floors 2–3, one
+  timber-framed top floor. insula_b: an open timber loggia across the top floor of the street front.
+  insula_c: timber lintel, loft window and brick arch over the workshop, a brick ring round the door.
+* Not copied: the hemicycle and the medieval tower of Trajan's Market; from the AI image the bicycle, the lettering, the
+  street portico and the deep eaves. Triangles: a 5 422, b 5 114, c 2 374.
 
 ## rome_insula_a — 14 × 12 m, 5 storeys (ground 4.2 m, upper 3.0 m each; eaves at ~16.2 m)
 * Ground floor masonry ('plaster2' over a 'brick' plinth) with three shops on the front (`taberna_front`, counters)

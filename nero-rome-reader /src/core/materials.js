@@ -212,13 +212,14 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  bool arcLevel=bArc>.5&&!residential;
  float bayW=arcLevel?4.8:(!residential&&bGAr>.5)?4.6:inwardTown?4.5+fract(seed*5.1)*1.5:3.+fract(seed*5.1);float nb=max(1.,floor(L/bayW+.3));float bay=L/nb;float bi=floor(u/bay);float bu=u-(bi+.5)*bay;
  if(!inwardTown&&nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sH,.1,aa),joint(sv+sH*.5,sH,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
- float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.;
+ float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.,shopHw=0.,shopOh=0.;
  float wsd=h12(vec2(bi+seed*97.,si+seed*31.)),wsdS=wsd;if(mod(floor(fl/524288.),2.)>.5&&si>.5)wsd=1.;   // geometric-window wall (romanFrontRelief): every upper bay has its window
  if(arcLevel){kind=2.;hw=bay*.31;float hh=si<.5?gH:sH;oh=hh*.8;ar=1.;dep=2.4;}
  else if(si<.5){float doorBay=floor(fract(seed*11.3)*nb);bool isDoor=bDoor>.5&&abs(bi-doorBay)<.5;
   if(bGAr>.5&&!residential){kind=2.;hw=min(bay*.32,1.7);oh=min(gH-.5,2.9);ar=1.;dep=2.2;}
   else if(grT>.5&&grT<1.5){kind=2.;hw=min(bay*.34,1.6);oh=min(gH-.45,2.1+hw);ar=1.;dep=1.4;}
-  else if(grT>1.5&&grT<2.5){kind=3.;hw=min(bay*.38,1.5);oh=min(gH-.6,2.6);ar=step(.55,fract(seed*4.1));dep=.6;}
+  else if(grT>1.5&&grT<2.5){kind=3.;hw=min(bay*.38,1.5);oh=min(gH-.6,2.6);ar=step(.55,fract(seed*4.1));dep=.6;
+   if(ar<.5&&gH-oh>1.3){shopHw=hw;shopOh=oh;if(sv>oh+.3){kind=0.;hw=.3;sill=oh+.45;oh=.55;dep=.3;}}}   // 【史】a small window over the lintel lights the pergula, the shopkeeper's loft (Ostia, Herculaneum, Trajan's Market)
   else if(grT>2.5){if(isDoor){kind=1.;hw=.75;oh=2.7;ar=1.;dep=.5;}}
   else{if(isDoor){kind=1.;hw=.6;oh=2.3;ar=step(.5,fract(seed*8.7));dep=.45;}else if(wsd>.35){kind=0.;hw=.3;oh=.6;sill=gH-1.25;}}}
  else{if(bLog>.5&&top&&!residential){kind=4.;float sb=bay*.5;bu=u-(floor(u/sb)+.5)*sb;hw=min(sb*.36,1.1);sill=.85;oh=sH-1.2;ar=1.;dep=1.8;}
@@ -229,6 +230,9 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  if(!inwardTown&&kind>-.5&&kind<.5&&nSt>2.5&&si>.5&&si<1.5&&!(bLog>.5&&top)){hw=max(hw,.5);oh=max(oh,1.55);sill=min(sill,1.05);ar=1.;}
  if(inwardTown&&kind>-.5&&kind<.5){ar=0.;hw=min(hw,.38);oh=min(oh,1.15);if(si>.5&&wsd<.38)kind=-1.;}
  if(kind>-.5&&kind<.5&&si>.5&&fract(seed*3.9)<.18&&P<.5&&(top||si<1.5)){hw=min(bay*.36,1.25);oh=max(oh,1.7);ar=1.;sill=min(sill,.8);}
+ if(shopHw>0.){float spz=shopOh+.24,s2=shopHw+.25,Rr=(s2*s2+.7225)/1.7;vec2 ad=vec2(bu,sv-(spz+.85-Rr));float r=length(ad),an=atan(ad.x,ad.y)*Rr/.26;   // brick relieving arch over lintel and loft window
+  float ring=smoothstep(Rr-aa,Rr+aa,r)*(1.-smoothstep(Rr+.22-aa,Rr+.22+aa,r))*step(spz,sv);
+  S.alb=mix(S.alb,vec3(.42,.23,.15)*(.82+.2*h12(vec2(floor(an),bi)+seed))*(1.-.4*step(.86,fract(an))),ring*.95*dfar);}
  if(kind<0.||(uDbg.w>.5&&uDbg.w<1.5))return;
  vec2 q=vec2(bu,sv-sill);float ins=openM(q,hw,oh,ar,aa);
  if(bVou>.5&&ar>.5&&si<.5){float ro=clamp(openM(q+vec2(0.,.03),hw+.3,oh+.3,ar,aa)-openM(q,hw+.015,oh+.015,ar,aa),0.,1.);float an=atan(q.x,q.y-(oh-hw));float vs=step(.5,fract(an*5.7))*.14;float onA=smoothstep(oh-hw-.05,oh-hw+.05,q.y);S.alb=mix(S.alb,vec3(.74,.68,.56)*(1.-vs*onA),ro*.95*dfar);}
