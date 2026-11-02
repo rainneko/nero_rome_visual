@@ -71,3 +71,29 @@ function streetLifeViews(W){
   for(const[n,key,title]of[['rome_market_pair','lifeMarket','街边市集'],['rome_bakery_bay','lifeBakery','烘焙作坊'],['rome_garden_exedra','lifeGarden','庭院休憩角']]){
     const p=records.find(p=>p.n===n);if(!p)continue;const F=frame(p.x,p.y,p.z,p.rot),offset=n==='rome_garden_exedra'?[0,12,5]:n==='rome_market_pair'?[0,20,4]:[0,17,9],a=F.p(...offset),b=F.p(0,1.1,0);W.views[key]={n:title,pos:a,tgt:b};}
 }
+/* Flowers along the wide avenues (the author, 2026-11-02). 【史】Rome had no municipal flower beds that we know of: a street's flowers were the tenants' own,
+   pots by the door and window gardens (Pliny NH 19.59). So along the main roads 9 m and wider inside the city, every 14-26 m (keyed to place): where a house
+   front stands within 4 m of the kerb, two or three terracotta pots of flowering shrubs 0.7 m before it (season profile 4, the tenants' pots); where the
+   margin is wide and open, a travertine trough of them just beyond the kerb (a reconstruction; profile 2). Not on fields, stairs, slopes, water or crossings,
+   not by a stall, not in the fire zone (o.skip). */
+function avenueFlowers(W,o){const S=W.street;if(!S)return;const g=new GB(1<<14),spots=[],rej={},no=k=>{rej[k]=(rej[k]||0)+1;};
+  const at=(x,z)=>{const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz?j*S.nx+i:-1;};
+  for(const[w,pts]of W.roadList){if(w<9)continue;const dense=densify(pts,2);let acc=0,next=6;
+    for(let i=1;i<dense.length;i++){const a=dense[i-1],b=dense[i],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(!l)continue;acc+=l;if(acc<next)continue;
+      const h=hash2(b[0]*.13,b[1]*.17);next=acc+14+h*12;const ux=dx/l,uz=dz/l,rot=Math.atan2(-dz,dx);
+      for(const sd of[-1,1]){if(hash2(b[0]*.31+sd,b[1]*.29)<.3)continue;const P=off=>[b[0]-uz*off*sd,b[1]+ux*off*sd];
+        if(o.urban(...P(w/2+3))<.55||(o.skip&&o.skip(...P(w/2+3)))){no('outside');continue;}
+        let f=0;for(let off=w/2+1.4;off<=w/2+4;off+=.5){const q=P(off);if(W.foot.hits(q[0],q[1],.25,.25,0,0,'road')){f=off;break;}}
+        const pots=!!f,[x,z]=P(pots?f-.7:w/2+1.3),k=at(x,z);
+        if(k<0||S.solid[k]||S.water[k]||S.court[k]||S.veg[k]||(S.openLand&&S.openLand[k])||(S.stair&&S.stair[k])||(S.waterAt&&S.waterAt(x,z))){no('mask');continue;}
+        if(W.foot.hits(x,z,1.5,.4,rot,0,'road')){no('foot');continue;}   // clear of the front and of anything set before it
+        if(W.roadList.some(([w2,p2])=>p2!==pts&&polyDist(x,z,p2)[0]<w2/2+4)){no('crossing');continue;}
+        const y0=W.gy(x,z);if(Math.abs(W.gy(x+1.6*ux,z+1.6*uz)-W.gy(x-1.6*ux,z-1.6*uz))>.35){no('slope');continue;}
+        if(ROME.GLB.some(p=>p.o&&p.o.inst&&Math.abs(p.x-x)<4&&Math.abs(p.z-z)<4)){no('prop');continue;}
+        const F=frame(x,y0,z,rot),m=h>.6?3:2;
+        if(pots)for(let j=0;j<m;j++){const u=(j-(m-1)/2)*1.05,sc=.8+.3*hash2(x+j,z),q=F.p(u,0,0);g.set(25,.3+.4*hash2(x,z+j));lathe(g,F,u,-.05,0,[[.24*sc,0],[.34*sc,.5*sc],[.39*sc,.56*sc]],9);
+          W.trees.push([q[0],y0+.5*sc,q[2],hash2(x*.7+j,z*.3)<.75?'flower':'shrub',.42*sc,null,4]);}
+        else{g.set(2,.45);box(g,F,0,-.1,0,1.3,.62,.42,31);g.set(2,.55);box(g,F,0,.52,0,1.36,.06,.48,31);   // a travertine trough with a moulded lip
+          for(let j=0;j<3;j++){const q=F.p(-.85+j*.85,0,0);W.trees.push([q[0],y0+.62,q[2],j===1&&h<.5?'shrub':'flower',.48,null,2]);}}
+        spots.push([x,y0,z,rot,w,pots?1:0]);}}}
+  const m=g.mesh(MAT.city);if(m)W.scene.add(layTag(m,'roadDetail'));W.avenueFlowers=spots;console.log('avenue flowers',spots.length,JSON.stringify(rej));}

@@ -239,6 +239,50 @@ async function buildRome(msg){
    gC.set(2,.55);box(gC,F,0,0,60,2.6,1.5,1.6,31);for(const[sx,sz]of[[-16,58],[16,58],[-28,66],[28,66],[-40,52],[40,56]])pedestalStatue(gC,F,sx,sz,0,4.5,{gilt:Math.abs(sx)<20});for(const sx of[-22,22]){const q=F.p(sx,0,78);W.cols.cor.push([q[0],F.oy,q[2],0,11,[1,.97,.9]]);pedestalStatue(gC,F,sx,78,11.4,2.6,{gilt:true});}
    for(const[tx,tz]of[[-50,46],[52,62],[-48,-40]]){const q=F.p(tx,0,tz);W.trees.push([q[0],F.oy,q[2],'cyp',.9]);}
    poi('诚信女神神庙','Aedes Fidei',q1[0],q1[2],14,0,99,'卡比托利欧山上的古老神庙，元老院有时在这里开会，墙上挂着外交条约的铜板。',900);poi('丰饶女神神庙','Aedes Opis',q2[0],q2[2],14,0,99,'奥普斯女神的神庙，凯撒曾把国库存放在这里。',900);poi('朱庇特·费雷特里乌斯神庙','Aedes Iovis Feretrii',q3[0],q3[2],12,0,99,'罗马最古老的神庙，罗慕路斯在这里献上敌将的盔甲。',900);}
+  // The Area Capitolina was crowded (the author, 2026-11-02): what else stood on it by AD 56. 【史】It was so full that in 179 BC the censors had statues and columns taken
+  // away that stood in the way (Livy 40.51). Nothing later than Nero: no Jupiter Custos (Domitian), no Arch of Nero (AD 62).
+  {const F=frame(-275,W.capY||gy(-275,10),10,0),P=(x,z)=>F.p(x,0,z);
+   {const q=P(44,40);temple(W,gC,{x:q[0],y:F.oy,z:q[2],rot:0,W:9,L:13,podH:2.4,colH:7,nf:4,rows:1,seed:.58,band:false,pave:false,altar:false,fest:false,sculpt:false});
+    poi('雷神朱庇特神庙','Aedes Iovis Tonantis',q[0],q[2],12,0,99,'【史】奥古斯都在西班牙夜行军时，雷电擦着他的轿子劈死了前面的奴隶，他许愿建庙，前22年落成，整座用实心大理石砌成（苏维托尼乌斯《奥古斯都传》29；老普林尼《博物志》36.50）。',800);}
+   for(const[x,z]of[[-40,-44],[40,-44]]){const q=P(x,z);temple(W,gC,{x:q[0],y:F.oy,z:q[2],rot:0,W:4.6,L:6,podH:1.4,colH:3.6,nf:4,rows:1,seed:.6+x*.001,band:false,pave:false,altar:false,fest:false,sculpt:false,acro:false});}   // two small shrines (aediculae) before the north portico
+   pedestalStatue(gC,F,-46,8,0,15,{gilt:true});pedestalStatue(gC,F,44,0,0,11,{gilt:true});   // the colossal bronze Jupiter of Sp. Carvilius and Lysippus' Hercules
+   {const q=P(-46,8),q2=P(44,0);poi('卡维利乌斯的巨像朱庇特','Iuppiter Carvilii',q[0],q[2],18,0,99,'【史】前293年卡维利乌斯打败萨莫奈人，用缴来的胸甲、护胫和头盔熔铸成这尊朱庇特巨像，据说在阿尔班山上都看得见（老普林尼《博物志》34.43）。',700);
+    poi('留西波斯的赫拉克勒斯','Hercules Lysippi',q2[0],q2[2],14,0,99,'【史】前209年法比乌斯·马克西穆斯从塔兰托运回的青铜巨像，留西波斯的作品（老普林尼《博物志》34.40；普鲁塔克《法比乌斯传》22）。',700);}
+   for(let i=0;i<8;i++)pedestalStatue(gC,F,-23.8+i*6.8,-46,0,3.8,{gilt:true});   // the seven kings and Brutus, in bronze
+   {const q=P(0,-46);poi('七王与布鲁图斯像','Statuae regum',q[0],q[2],8,0,99,'【史】卡比托利欧山上立着罗马七位国王的铜像，第八尊是赶走最后一个国王的布鲁图斯，手里握着出鞘的剑（老普林尼《博物志》33.9、34.22；普鲁塔克《布鲁图斯传》1）。',600);}
+   for(let k=0;k<9;k++)pedestalStatue(gC,F,-58,-36+k*8,0,4,{gilt:k%3===1});for(let k=0;k<6;k++)pedestalStatue(gC,F,-14+k*8,86,0,4,{gilt:k%2===0});   // honorific statues along the west and south edges
+   for(const[x,z]of[[-34,40],[28,42]]){const q=P(x,z);W.cols.cor.push([q[0],F.oy,q[2],0,9,[1,.97,.9]]);pedestalStatue(gC,F,x,z,9.4,2.4,{gilt:true});}   // honorific columns
+   for(const sx of[-20,20]){gC.set(2,.55);box(gC,F,sx,0,46,1.3,1.6,1.3,31);gC.set(40,.5);box(gC,F,sx,1.6,46,.14,4.6,.14,31);box(gC,F,sx,4.2,46,.55,1.1,.3,31);box(gC,F,sx-.62,4.6,46,.1,.85,.18,31);box(gC,F,sx+.62,4.6,46,.1,.85,.18,31);   // Marius' trophies: post, cuirass, arms
+     lathe(gC,F,sx,5.3,46,[[.28,0],[.3,.2],[.24,.42],[0,.5]],10,40);lathe(gC,F,sx,5.82,46,[[.04,0],[.05,.5],[0,.56]],6,8);for(const d of[-1,1]){gC.set(13,.5);box(gC,F,sx+d*.95,2.9,46.35,.42,1.15,.05,31);gC.set(40,.5);box(gC,F,sx+d*1.15,1.6,45.6,.03,4.4,.03,31);}}   // two shields (scuta) and two spears
+   {const q=P(20,46);poi('马略的战利品','Tropaea Mariana',q[0],q[2],8,0,99,'【史】马略战胜朱古达和辛布里人后立在卡比托利欧山上的战利品，苏拉把它们推倒，凯撒任营造官时又连夜立了回来（苏维托尼乌斯《凯撒传》11）。',600);}
+   // the hut of Romulus (thatched, kept up as it was: Vitruvius 2.1.5) and the Curia Calabra by it, where the pontiffs called out the new moon (Varro LL 5.13, 6.27)
+   {const S=F.sub(-50,0,66,.12);gC.set(2,.5);box(gC,S,0,-.2,0,3.4,.45,2.9,31);rectWalls(gC,S,0,0,5,4,.25,2.3,.25,{part:30,seed:.21,sty:3,fl:1,nSt:1,gH:2.3,sH:2.3,lit:.2});
+    const t0=gC.nv;roof(gC,S,'gable',0,0,5,4,2.3,40*DEG,.55,.21);retag(gC,1,21,t0);retag(gC,4,21,t0);gC.set(3,.35);for(let x=-3.6;x<=3.6;x+=.6)for(const z of[-3.2,3.2])box(gC,S,x,0,z,.04,.9,.04,31);box(gC,S,0,.75,3.2,3.6,.04,.04,31);box(gC,S,0,.75,-3.2,3.6,.04,.04,31);
+    const q=F.p(-50,0,66);poi('罗慕路斯的茅屋','Casa Romuli',q[0],q[2],6,0,99,'【史】卡比托利欧山上保存着一座茅草顶的小屋，说是罗慕路斯住过的，烧了就照原样再修（维特鲁威《建筑十书》2.1.5）。',500);}
+   {const S=F.sub(-38,0,80,.42);rectWalls(gC,S,0,0,8,6,-1.5,4.2,0,{part:22,seed:.33,sty:3,fl:1|8,nSt:1,gH:4.2,sH:4.2,lit:.2});roof(gC,S,'gable',0,0,8,6,4.2,22*DEG,.5,.33);
+    const q=F.p(-38,0,80);poi('卡拉布拉会所','Curia Calabra',q[0],q[2],7,0,99,'【史】祭司团每逢新月在这里宣布本月哪天是“初五”还是“初七”，curia calabra 的名字来自“召唤”（瓦罗《论拉丁语》5.13、6.27）。',500);}}
+  // Still too open from above (the author, 2026-11-02, with the Gismondi model): more that stood in the precinct by AD 56, each with its source. Gilt figures are bronze retagged to gold (28).
+  {const F=frame(-275,W.capY||gy(-275,10),10,0),P=(x,z)=>F.p(x,0,z),gild=t0=>retag(gC,40,28,t0),
+    horse=(S,x,y,z)=>{box(gC,S,x,y+1,z,.3,.75,.95,31);box(gC,S,x,y+1.55,z+.9,.17,.75,.22,31);box(gC,S,x,y+2.1,z+1.2,.14,.26,.42,31);for(const a of[-.2,.2])for(const b of[-.72,.72])box(gC,S,x+a,y,z+b,.07,1,.07,31);};   // a horse: body, neck, head, four legs, head to +z
+   // the small round temple of Mars Ultor that first held the standards won back from the Parthians
+   {const q=P(-38,26);tholos(W,gC,{x:q[0],y:F.oy,z:q[2],R:3.8,podH:1.6,colH:5.2,n:10,colTint:[1,.97,.9]});
+    poi('复仇者马尔斯小圆庙','Aedes Martis Ultoris in Capitolio',q[0],q[2],11,0,99,'【史】前20年帕提亚人交还了克拉苏丢掉的军旗，奥古斯都先在卡比托利欧山上仿照费雷特里乌斯神庙修了一座小庙存放它们（卡西乌斯·狄奥《罗马史》54.8），当时的钱币上铸着一座放着军旗的小圆庙。样子是复原。',600);}
+   // the Thensarium: the shed of the sacred cars (tensae) that carried the gods' emblems in the procession down to the Circus Maximus
+   {const S=F.sub(-50,0,-28,0);rectWalls(gC,S,0,0,8,14,-1.5,5.6,0,{part:22,seed:.37,sty:3,fl:1|8,nSt:1,gH:5.6,sH:5.6,lit:.15});roof(gC,S,'gable',0,0,8,14,5.6,22*DEG,.5,.37);
+    gC.set(40,.45);for(const z of[-4.2,0,4.2])box(gC,S,4.03,0,z,.06,4.1,1.3,2);gC.set(2,.5);box(gC,S,4.2,0,0,.5,.25,6.6,31);   // three bronze double doors on the plaza side, a threshold step
+    const q=F.p(-50,0,-28);poi('圣车库','Thensarium',q[0],q[2],9,0,99,'【史】存放圣车（tensae）的库房：竞技节的游行从卡比托利欧山出发，圣车载着诸神的标志穿过广场，从大竞技场的游行门进场（哈利卡纳苏斯的狄奥尼修斯《罗马古事记》7.72）。后来军人的铜证书上写着“卡比托利欧山上旧圣车库的后面”（CIL XVI）。样子是复原。',500);}
+   // Caesar's chariot set up facing Jupiter and his bronze statue standing on the globe
+   {const S=F.sub(-8,0,72,Math.PI);gC.set(2,.5);box(gC,S,0,0,0,2.2,.3,3.9,31);gC.set(6,.55);box(gC,S,0,.3,0,1.9,1.9,3.6,31);gC.set(2,.5);box(gC,S,0,2.2,0,2.05,.25,3.75,31);
+    const y=2.45;gC.set(40,.4);for(const hx of[-1.05,-.35,.35,1.05])horse(S,hx,y,1.1);box(gC,S,0,y+.55,-1.5,.75,.85,.55,31);for(const sx of[-.82,.82])box(gC,S,sx,y,-1.5,.05,1.1,.55,31);statue(gC,S,0,y+.6,-1.5,2.2,true);
+    const G=F.sub(8,0,72,Math.PI);gC.set(2,.5);box(gC,G,0,0,0,1.6,.3,1.6,31);gC.set(6,.55);box(gC,G,0,.3,0,1.3,2.2,1.3,31);
+    lathe(gC,G,0,2.5,0,[[0,0],[.75,.2],[1.1,.65],[1.2,1.15],[1.1,1.65],[.75,2.1],[0,2.3]],12,40);statue(gC,G,0,4.75,0,2.4,true);
+    const q=P(0,72);poi('凯撒的战车和地球上的铜像','Currus Caesaris',q[0],q[2],8,0,99,'【史】前46年元老院下令在卡比托利欧山上正对朱庇特立凯撒的战车，又立一尊他脚踏地球的铜像，铭文称他是“半神”，凯撒后来叫人把这个词凿掉了（卡西乌斯·狄奥《罗马史》43.14、43.21）。',600);}
+   // Bocchus' gilded group: Jugurtha handed over to Sulla
+   {const t0=gC.nv;gC.set(2,.5);box(gC,F,44,0,28,3.7,.3,1.15,31);gC.set(6,.55);box(gC,F,44,.3,28,3.4,1.4,.9,31);for(const x of[41.8,44,46.2])statue(gC,F,x,1.7,28,2.3,true);gild(t0);
+    const q=P(44,28);poi('博库斯献的镀金群像','Donum Bocchi',q[0],q[2],6,0,99,'【史】前91年毛里塔尼亚国王博库斯在卡比托利欧山上献了一组镀金像：他把朱古达交到苏拉手里。马略为此大怒（普鲁塔克《苏拉传》6、《马略传》32）。',500);}
+   // the gate arch at the head of the way up becomes the arch of Scipio Africanus, with its seven gilt statues and two horses on top
+   {const S=F.sub(54,0,86,-.75),t0=gC.nv;gC.set(40,.4);for(let k=0;k<7;k++)statue(gC,S,-2.7+k*.9,8.2,0,1.9,true);for(const sx of[-3.9,3.9])horse(S,sx,8.2,0);gild(t0);
+    const q=P(54,86);poi('西庇阿拱门','Fornix Scipionis',q[0],q[2],12,0,99,'【史】前190年大西庇阿出征亚洲之前，在卡比托利欧山上正对上山的路修了一座拱门，上面立着七尊镀金像和两匹马，门前放了两只大理石水盆（李维《罗马史》37.3）。',600);}}
   temple(W,gC,{x:-200,y:gy(-200,-210),z:-210,rot:Math.PI-135*DEG,W:20,L:32,podH:3.5,colH:10,nf:6,rows:2,seed:.5});
   W.foot.add(-200,-210,15,21,Math.PI-135*DEG);
   {const RS=RNG(41);let placed=0;
@@ -347,8 +391,14 @@ async function buildRome(msg){
    // the Vatican circus of Gaius and Nero: raised wooden stands (modules in two rows, hidden-by-nothing: the earth banks stay under them), the royal stables at the gate end, Nero's private theatre with its colonnade and the treasure room on the south side
    for(let x=-240;x<=240;x+=30){vp('rome_vatican_stand',x,-46,0,{inst:1});vp('rome_vatican_stand',x,46,Math.PI,{inst:1});}
    vp('rome_vatican_stables',-150,90,Math.PI);W.foot.add(th(-150,90)[0],th(-150,90)[2],32,21,F.rot);
-   vp('rome_nero_theatre',40,100,Math.PI);{const c=th(40,100);W.foot.add(c[0],c[2],56,26,F.rot);}
-   {const q=th(40-79.4,100-6.5),yq=F.oy+.25;W.pois.push({n:'尼禄的静室',l:'梵蒂冈 · 私人剧场回廊',x:q[0],z:q[2],y:yq+9,s0:8,s1:99,d:900,sub:true,info:'第26章：“回廊深处的一间静室里，四面点着熏香，正中央的紫丝绒底座上，端端正正地托着一只只有巴掌大的浅口小酒杯。”【史】尼禄为一只萤石（murrhine）杯花了巨款（普林尼《博物志》37.18–20）；他还有私人剧场用来排练。'});
+   vp('rome_nero_theatre',40,100,Math.PI);{const c=th(40-26.5,100+12.75);W.foot.add(c[0],c[2],50.5,32.3,F.rot);}   // theatre and colonnade, GLB x -24..77, y -19.5..45 (the old box stopped at x 56, so a wild tree grew through the colonnade roof)
+   // the garden villa (行宫) that closes the east end of the colonnade, the treasure room its last room (the author, 2026-11-02). GLB x,y -> frame 40-x, 100+y;
+   // the villa spans x 75..136, y -10..45 there. Its cypresses and the fruit trees of the kitchen garden are scene trees (imperial flowering season).
+   {const b=th(40-105.5,100+17.5);W.foot.add(b[0],b[2],31.5,28.5,F.rot);const yv=F.oy+.25,tv=(x,y,k,s)=>{const q=th(40-x,100+y);W.trees.push([q[0],yv,q[2],k,s,null,1]);};
+    for(const[x,y]of[[113.8,-7.6],[113.8,9.2],[121.8,-7.6],[121.8,9.2],[133.6,-7.6],[133.6,9.2],[84.6,38.6],[94.4,38.6]])tv(x,y,'cyp',.8);
+    let k=0;for(const x of[124.5,128.5,132.5])for(const y of[15.6,19.2,22.8])tv(x,y,['pomegr','fig','almond'][k++%3],.9);
+    W.pois.push({n:'尼禄的行宫',l:'梵蒂冈 · 阿格里皮娜花园',x:b[0],z:b[2],y:yv+12,s0:8,s1:99,d:900,sub:true,info:'私人剧场回廊东头的一座花园小行宫：围着列柱庭院的一层房屋、一座两层带凉廊的楼、朝花园开的餐厅和葡萄架、一个小浴室，静室是它的最后一间。【史】梵蒂冈平原是阿格里皮娜的花园（Horti Agrippinae），花园里有别墅；尼禄在这里的私人剧场排练（普林尼）。行宫的样子是复原。'});}
+   {const q=th(40-78.2,100-6.1),yq=F.oy+.25;W.pois.push({n:'尼禄的静室',l:'梵蒂冈 · 私人剧场回廊',x:q[0],z:q[2],y:yq+6,s0:8,s1:99,d:900,sub:true,info:'第26章：“回廊深处的一间静室里，四面点着熏香，正中央的紫丝绒底座上，端端正正地托着一只只有巴掌大的浅口小酒杯。”【史】尼禄为一只萤石（murrhine）杯花了巨款（普林尼《博物志》37.18–20）；他还有私人剧场用来排练。'});
      const q2=th(40,100);W.pois.push({n:'尼禄的私人剧场',l:'Theatrum Neronis privatum',x:q2[0],z:q2[2],y:F.oy+16,s0:8,s1:99,d:1100,sub:true,info:'第26章：“他却一把攥住我的手腕，不由分说地拉着我往跑马场侧面那座刚落成的私人剧场回廊里拽”。【史】尼禄在私人剧场里排练唱歌（普林尼）。'});}}
   poi('庞培剧场','Theatrum Pompei',-1036,-356,40,0,99,'罗马第一座石砌剧场。第11卷：四百片锌铜电堆点亮电弧灯。',2600);
   poi('马塞卢斯剧场','Theatrum Marcelli',-448,22,40,0,99,'三层拱廊立面的剧场。',1600);
@@ -368,9 +418,27 @@ async function buildRome(msg){
     const F=frame(cx,y,cz,Math.atan2(-uz,ux));lathe(gM,F,-20,0,0,[[1.3,0],[1,14],[0,15.4]],4,25);gM.set(2,.4);
     gM.poly([F.p(126,-4,-22),F.p(150,-4,0),F.p(150,3,0),F.p(126,3,-22)],F.d(.7,0,-.7));gM.poly([F.p(150,-4,0),F.p(126,-4,22),F.p(126,3,22),F.p(150,3,0)],F.d(.7,0,.7));
     bridgeAt(gM,cx-ux*25+lx*46,cz-uz*25+lz*46,ux,uz,52,2,9,11,2,false,gy);bridgeAt(gM,cx+ux*20-lx*46,cz+uz*20-lz*46,ux,uz,52,1,9,11,2,false,gy);}
+  // The island was built up by AD 56 (the author, 2026-11-02: "那边好像也有一些建筑才是"). Island frame: x along the flow (downstream +x, the prow), z across;
+  // ground x -106..118, z -17..17, the bridgeheads at (-25,-20) and (20,20), the obelisk at (-20,0), Aesculapius at (55,0). Upstream the two temples of 194 BC
+  // and the shrine of Tiberinus at the tip, round Aesculapius the porticoes where the sick slept, houses between, and a deck on the travertine prow.
+  {const ux=.94,uz=.342,cx=-630,cz=156,y=gy(cx,cz),F=frame(cx,y,cz,Math.atan2(-uz,ux)),P=(x,z)=>F.p(x,0,z),east=Math.atan2(ux,uz);
+   {const q=P(-80,-2);temple(W,gM,{x:q[0],y:gy(q[0],q[2]),z:q[2],rot:east,W:9,L:14,podH:2.2,colH:6.5,nf:4,rows:1,seed:.41,sculpt:false,fest:false});
+    poi('法乌努斯神庙','Aedes Fauni',q[0],q[2],12,0,99,'【史】平民营造官用罚没放牧违规者的钱修建，前194年在台伯岛上落成（李维《罗马史》33.42、34.53；奥维德《岁时记》2.193）。',700);}
+   {const q=P(-52,0);temple(W,gM,{x:q[0],y:gy(q[0],q[2]),z:q[2],rot:east,W:10,L:15,podH:2.4,colH:7,nf:4,rows:1,seed:.45,sculpt:false,fest:false});
+    poi('岛上的朱庇特神庙','Aedes Iovis in Insula',q[0],q[2],12,0,99,'【史】与法乌努斯神庙同年（前194年）在岛上落成（李维《罗马史》34.53）。奥维德说，这座岛一边住着医神，一边住着朱庇特（《岁时记》1.293）。',700);}
+   {const q=P(-99,1);temple(W,gM,{x:q[0],y:gy(q[0],q[2]),z:q[2],rot:east,W:4,L:5,podH:1.2,colH:3.2,nf:2,rows:1,seed:.62,band:false,pave:false,altar:false,fest:false,sculpt:false,acro:false});
+    poi('台伯河神龛','Sacellum Tiberini',q[0],q[2],6,0,99,'【史】罗马的历书在12月8日这天记着“台伯河神，在岛上”（阿米特努姆历书）。样子是复原。',500);}
+   openPortico(W,gM,F,36,-12,36,12,0,5,5,3.2,[1,.97,.9]);openPortico(W,gM,F,74,-12,74,12,0,5,-5,3.2,[1,.97,.9]);
+   {const q=P(36,0);poi('医神的病人柱廊','Porticus Aesculapii',q[0],q[2],8,0,99,'【史】病人睡在医神神庙的柱廊里，等神在梦里指点疗法。有主人把病了的奴隶扔到岛上不管，克劳狄定下规矩：这样的奴隶病好了就是自由人（苏维托尼乌斯《克劳狄传》25）。',600);}
+   // houses: plastered, two or three storeys, shops below (the city's wall shader draws the storeys); gables as the walls
+   for(const[hx,hz,w,d,n,sd]of[[-40,13,14,7,3,.23],[-40,-13,12,7,2,.71],[-12,14,12,7,3,.37],[0,-14,12,6,3,.58],[20,-13,12,6,2,.14]]){
+    const S=F.sub(hx,gy(...[P(hx,hz)[0],P(hx,hz)[2]])-y,hz,0),fac={part:sd<.5?0:9,seed:sd,sty:sd<.5?0:3,fl:2|16,nSt:n,gH:3.8,sH:2.9,lit:1,floorY:0},yT=3.8+(n-1)*2.9;
+    rectWalls(gM,S,0,0,w,d,-1.5,yT,0,fac);roof(gM,S,'gable',0,0,w,d,yT,.4,.45,sd,fac);const q=P(hx,hz);W.foot.add(q[0],q[2],w/2,d/2,F.rot);}
+   gM.set(2,.42);gM.poly([F.p(126,3.02,22),F.p(150,3.02,0),F.p(126,3.02,-22)],[0,1,0]);{const S=F.sub(141,3,0,Math.PI/2);pedestalStatue(gM,S,0,0,0,4);}   // the prow's deck with a herm of the god
+   W.foot.add(cx,cz,108,17,F.rot);}   // nothing else grows on the island (no wild trees through the houses)
   const brT=(t,len,nA,w,wood)=>{const[x,z]=polyAt(TIBER,t);const i=Math.floor(t),a=TIBER[i],b=TIBER[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);bridgeAt(gM,x,z,(b[0]-a[0])/l,(b[1]-a[1])/l,len,nA,w,12,2,wood,gy);};
   brT(16.15,150,5,12);brT(16.9,150,0,10,true);brT(12.0,150,5,11);brT(7.1,150,5,12);brT(13.02,150,5,11);{const q=polyAt(TIBER,13.02);poi('阿格里帕桥','Pons Agrippae',q[0],q[1],16,0,99,'【史】阿格里帕修的石桥，连接战神广场和台伯河西岸。',1400);}
-  poi('台伯岛','Insula Tiberina',-630,156,24,0,99,'船形小岛，岛上是医神埃斯库拉庇乌斯神庙，岛头砌成船首。',1600);
+  poi('台伯岛','Insula Tiberina',-630,156,24,0,99,'船形小岛，岛上是医神埃斯库拉庇乌斯神庙，岛头砌成船首。【史】前291年罗马从埃皮道鲁斯请来医神的圣蛇，蛇在这里下船上岛，就在岛上建庙（李维《罗马史》摘要11）；岛尾用石灰华砌成船头的样子，侧面刻着医神缠蛇的手杖。',1600);
   {const q=polyAt(TIBER,7.1);poi('尼禄桥','Pons Neronianus',q[0],q[1],18,0,99,'通往梵蒂冈跑马场的桥。',1800);}
   poi('台伯河','Tiberis',-1650,-760,12,0,99,'',4500);
   /* ---- aqueduct (Aqua Claudia + Arcus Neroniani) ---- */
@@ -655,7 +723,7 @@ async function buildRome(msg){
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
      const w=7+RI()*4.5,d=8+RI()*4.5,rot=(RI()<.5?0:Math.PI/2)+(RI()-.5)*.25;if(W.foot.hits(px,pz,w/2+.7,d/2+.7,rot,0))continue;const B=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=B.p(...[p[0],0,p[1]]);return[q[0],q[2]];}),ground=houseGround(W,P),y=ground.min+.15;if(ground.max-ground.min>4)continue;
      if(!residentialSiteAllowed(W,P))continue;
-     const n=W.storeyCut(px,pz,3+Math.floor(RI()*3),()=>true),top=3.9+(n-1)*2.9,F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16,nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());
+     const n=W.storeyCut(px,pz,3+Math.floor(RI()*3),()=>true),tap=n>=4,top=3.9+stUp(n-1,2.9,tap),F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16|(tap?STOREY_TAPER:0),nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());
      if(RI()<.3){gI.set(3,.42);box(gI,F,0,3.7,d/2+.45,w/2-.4,.16,.45,31);box(gI,F,0,3.9,d/2+.86,w/2-.4,.9,.04,31);}W.foot.add(px,pz,w/2+.5,d/2+.5,rot);nI++;}
    for(const[cx,cz]of[[-485,-60],[-520,-10],[-455,-70],[-540,30],[-360,300],[-330,260],[-300,330]])for(let k=0;k<6;k++){const px=cx+(RI()-.5)*30,pz=cz+(RI()-.5)*30,rot=RI()*Math.PI;if(W.foot.hits(px,pz,1.8,1.3,rot,0))continue;const F=frame(px,gy(px,pz),pz,rot);
      gI.set(3,.4);for(const[sx,sz]of[[-1.5,-1],[1.5,-1],[-1.5,1],[1.5,1]])box(gI,F,sx,0,sz,.06,2.3,.06,31);box(gI,F,0,.8,0,1.4,.1,.8,31);gI.set(8,RI());gI.poly([F.p(-1.7,2.5,-1.2),F.p(1.7,2.5,-1.2),F.p(1.7,2.1,1.3),F.p(-1.7,2.1,1.3)],[0,1,0]);W.foot.add(px,pz,1.8,1.4,rot);nS++;}
@@ -705,7 +773,7 @@ async function buildRome(msg){
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
    const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
-   roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);
+   roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.

@@ -133,7 +133,8 @@ function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R(
   const F=frame(x,0,z,rot),seed=R(),res=['insula','tower','domus','shed','hut','slum'].includes(typ),floorY=(res?y0:y1)+.15,winT=Math.floor(R()*8);let grT=0;
   if(typ==='insula'&&R()<Z.shops)grT=R()<.55?1:2;if(typ==='domus')grT=R()<.5?2:0;if(typ==='ware')grT=3;
   let fl=2;if(R()<.7)fl|=8;if(R()<.55)fl|=16;if(R()<.3)fl|=32;if(R()<.22)fl|=64;if(R()<.18)fl|=4;if(typ==='tower'||(typ==='insula'&&R()<.13))fl|=256;
-  const part=R()<(Z.brick||0)?9:0,yT=floorY+gH+(nSt-1)*sH,lit=.4+R()*.6;
+  const tap=(typ==='insula'||typ==='tower')&&nSt>=4;if(tap)fl|=STOREY_TAPER;   // the low top storeys of a tenement (materials.js stH)
+  const part=R()<(Z.brick||0)?9:0,yT=floorY+gH+stUp(nSt-1,sH,tap),lit=.4+R()*.6;
   const fac={part,seed,sty:winT+8*grT,fl,nSt,gH,sH,lit,shopMask:R()<.5?1:5,doorSide:Math.floor(R()*4),burn:Z.burn?Z.burn(x,z)*(R()<.65?1:0):0};
   const yB=res?y0-.25:y0-2.5;
   if(typ==='hut'){const hp=R()<.6?22:30,hf={part:hp,seed,sty:3,fl:16|2,nSt:1,gH:3,sH:3,lit:.4,burn:0},yT2=floorY+3;rectWalls(g,F,0,0,w,d,yB,yT2,floorY,hf);const t0=g.nv;roof(g,F,'gable',0,0,w,d,yT2,(24+R()*10)*DEG,.35,seed+.2,{part:hp,seed,nSt:1,gH:3,sH:3,floorY});if(R()<.5)retag(g,1,21,t0);return;}
@@ -159,8 +160,8 @@ function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R(
   const rr=R();const rt=typ==='tower'?'pyr':typ==='ware'?'gable':rr<.48?'hip':rr<.86?'gable':'flat';
   const wf=Object.assign({},fac,{floorY});
   roof(g,F,rt,0,0,w,d,yT,(typ==='tower'?24:19+R()*6)*DEG,typ==='tower'?1.2:.75,seed+.2,wf);
-  if(typ==='insula'&&R()<.22){const tw=Math.min(w,d)*.45,tx=(R()<.5?-1:1)*(w/2-tw/2),tz=(R()<.5?-1:1)*(d/2-tw/2),tn=nSt+1+(R()<.3?1:0),tY=floorY+gH+(tn-1)*sH;
-    houseRectWalls(W,g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256,shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
+  if(typ==='insula'&&R()<.22){const tw=Math.min(w,d)*.45,tx=(R()<.5?-1:1)*(w/2-tw/2),tz=(R()<.5?-1:1)*(d/2-tw/2),tn=nSt+1+(R()<.3?1:0),tY=floorY+gH+stUp(tn-1,sH,tn>=4);
+    houseRectWalls(W,g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256|(tn>=4?STOREY_TAPER:0),shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
   if(typ==='insula'&&nSt>=3&&R()<.28){const by=floorY+gH+sH,bw=w*.7;g.set(3,seed);box(g,F,0,by-.2,d/2+.55,bw/2,.2,.55,31);box(g,F,0,by,d/2+1.05,bw/2,.95,.05,31);
     for(let k=-bw/2;k<=bw/2;k+=1.8)box(g,F,k,by-1.6,d/2+1.05,.06,1.6,.06,15);}
   if(grT>0&&R()<.55){const n=Math.max(1,Math.floor(w/3.4));for(let i=0;i<n;i++){if(R()<.35)continue;const bx=-w/2+(i+.5)*w/n,aw=w/n*.42,ay=floorY+gH-.75;g.set(8,R());
