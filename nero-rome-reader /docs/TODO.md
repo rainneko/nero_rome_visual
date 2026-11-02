@@ -4,9 +4,11 @@ Keep this file current: every promise made to the author goes here until it is d
 状态：✅ 完成并看过 · 🔶 做了一半 · ⬜ 未开始 · ⚠️ 需要作者操作
 （2026-10-23 精简版；旧的逐轮记录已合并进下面各节。设计说明在 `briefs/rome/*.md`。）
 
-## 部署（作者操作）
-* ⚠️ 上传 `dist/` 的四个文件一起：`index.html`、`rome-assets.js`（7.8 MB，已压缩；2026-10-23 09:14 构建，含第 3–5b 阶段）、`book.js`、`antium-assets.js`。
-  2026-10-28 起还有 `construction-assets.js`、`music-box-canon.m4a`（第 31 章八音盒）和 `aurea-assets.js`（旋转圆厅和巨人，6.7 MB，只在 59 年以后的两个状态才下载）。
+## 部署
+* 2026-11-02 起由 Claude 部署：`npm run build` 后 `sh tools/deploy-pages.sh`（wrangler 3 直传到 Cloudflare Pages 的 nero-rome-visual，生产分支 main）。
+  直传会替换整个站点，所以脚本每次都传页面要用的七个文件：`index.html`、`book.js`、`rome-assets.js`、`antium-assets.js`、
+  `construction-assets.js`、`aurea-assets.js`（旋转圆厅和巨人，只在 59 年以后的两个状态才下载）、`music-box-canon.m4a`（第 31 章八音盒）。
+  测试页和审阅页（test.html、city-audit.html 等）不上线。
 * ⚠️ 章节访客计数：先部署 `server/visit-counter/`，再把地址填进 `build.config.json` 的 `"counter"`。
 
 ## 2026-10-25 架构审阅（先读这一节）
