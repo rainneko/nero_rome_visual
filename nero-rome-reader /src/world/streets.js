@@ -227,11 +227,28 @@ function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0
           s0=s1+2.5+R()*R()*12;ri++;}}}
     const mw=layTag(gW.mesh(MAT.cityDecal,false),'roadDetail');if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=layTag(glW[k].mesh(MAT.cityDecal,false),'roadDetail');if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
   const m=layTag(g0.mesh(MAT.city,false),'roadDetail');if(m)W.scene.add(m);for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city,false),'roadDetail');if(mk)preLayerGroup(W,k).add(mk);}}
+/* A shop awning (rome_awning: 4 m wide, its rail on the wall at local z -.8, poles .8 out at +z, pole feet at the model's y) stood against the nearest straight stretch of a house wall,
+   found from the footprints themselves: the raster cell is up to 3.8 m from the wall and its gradient only knows eight directions (the awning used to float mid-street, turned round and askew).
+   done: the awnings already placed [x,z,rot,y]. Returns [x,z,rot,y] with the rail .12 m off the wall and the open side to the street, or null when there is no wall stretch of 4.4 m within 4.2 m,
+   the wall is a noble house's (its front has its own shop roofs), the cloth or a pole would stand over another footprint, or another awning is within 4.4 m. */
+function streetAwning(W,x,z,done){const F=W.foot,cs=F.cell,seen=new Set(),obst=[];let best=null;
+  for(let i=Math.floor((x-8)/cs);i<=Math.floor((x+8)/cs);i++)for(let j=Math.floor((z-8)/cs);j<=Math.floor((z+8)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){
+    if(seen.has(f)||f.tag&&f.tag!=='road'&&f.tag!=='court')continue;seen.add(f);const P=f.blkLot||f.poly||footBox(f);obst.push(P);if(f.tag||f.circ)continue;
+    for(let e=0;e<P.length;e++){const a=P[e],b=P[(e+1)%P.length],dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz);if(L<4.4)continue;
+      const t=((x-a[0])*dx+(z-a[1])*dz)/(L*L);if(t<=0||t>=1)continue;const qx=a[0]+dx*t,qz=a[1]+dz*t,d=Math.hypot(x-qx,z-qz);   // not the corner wedge: two walls meet there
+      if(d>.2&&d<4.2&&(!best||d<best.d))best={d,f,a,ex:dx/L,ez:dz/L,L,s:t*L,sg:(x-qx)*-dz+(z-qz)*dx>0?1:-1};}}
+  if(!best||best.f.nobleHome)return null;
+  const nx=-best.ez*best.sg,nz=best.ex*best.sg,s=Math.max(2.2,Math.min(best.L-2.2,best.s)),wx=best.a[0]+best.ex*s,wz=best.a[1]+best.ez*s,ox=wx+nx*.92,oz=wz+nz*.92;   // the origin .8 + .12 off the wall; (nx,nz) points to the street
+  const at=(u,v)=>[wx+best.ex*u+nx*v,wz+best.ez*u+nz*v];
+  for(const[u,v]of[[-1.9,.3],[1.9,.3],[-1.9,1],[1.9,1],[-1.9,1.72],[1.9,1.72],[0,.3],[0,1],[0,1.72],[-1,1.72],[1,1.72]]){const p=at(u,v);if(obst.some(P=>nobleInside(p[0],p[1],P)))return null;}
+  if(done.some(q=>Math.hypot(q[0]-ox,q[1]-oz)<4.4))return null;
+  const g0=W.gy(...at(-1.9,1.72)),g1=W.gy(...at(1.9,1.72));if(Math.abs(g0-g1)>.6)return null;   // a street that climbs along the wall: one pole would sink into the ground
+  return[ox,oz,Math.atan2(nx,nz),Math.min(g0,g1)];}   // the model opens to +z: turn it to face the street; the poles stand on the lower foot, never hang
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
    props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed.
    o.layerAt(x,z): a story-state group for a prop there (parentLayer; the streets the Golden House takes), or null. */
 function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
-  let nP=0,nS=0,nC=0;const plaza=[];
+  let nP=0,nS=0,nC=0;const plaza=[],awnings=[];
   for(let j=3;j<nz-3;j+=2)for(let i=3;i<nx-3;i+=2){const k=j*nx+i,g=grd[k];if(!g||g===3)continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,u=o.urban(x,z);if(u<.25)continue;
     const w=wid[k];
     if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35)plaza.push([x,z,w]);
@@ -239,7 +256,7 @@ function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(1
     const gx=dist[k+1]-dist[k-1],gz=dist[k+nx]-dist[k-nx],l=Math.hypot(gx,gz);if(l<.3)continue;const wx=gx/l,wz=gz/l;   // direction away from the wall
     if(R()>(g===2?.075:.045)*(u>.6?1:.6))continue;if(W.gy(x,z)>o.maxY)continue;
     const r=R(),rot=Math.atan2(-wx,-wz),tint=TINT[Math.floor(R()*TINT.length)];
-    if(r<.3)put('rome_awning',x,z,rot,{tint,dy:2.4});
+    if(r<.3){const a=streetAwning(W,x,z,awnings);if(!a)continue;put('rome_awning',a[0],a[1],a[2],{tint,dy:a[3]-W.gy(a[0],a[1])});awnings.push(a);}   // the dice above are drawn either way: the other props keep their places
     else if(r<.55)put('rome_counter',x,z,rot);
     else if(r<.75)put('rome_amphorae',x,z,rot);
     else if(r<.85)put('rome_cart',x,z,rot+(R()-.5)*1.2);
