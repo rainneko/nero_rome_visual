@@ -2,6 +2,9 @@
 
 ## Sources and colour rules (2026-10-28, these override the older notes below)
 The `refs/houses_*.jpg` images that the table below was studied from are **screenshots of a city-building game**.
+`refs/houses_ai_watercolour.jpg` (2026-11-01) is **AI-generated**: mood only (wooden maeniana under tile pent roofs,
+a timber loggia on the top floor, shops with counters). It has anachronisms (a bicycle, nonsense lettering) and a
+post-AD 64 street portico; do not copy those.
 They gave the city exposed braced half-timbering, washed-beige roofs, pastel and pink walls, and Renaissance stone
 balconies. The material and colour evidence is now `refs/arch/` (scans of Herculaneum, Ostia and Rome, sources and
 licences in `refs/arch/SOURCES.md`). The ornament percentages below still stand where they do not contradict this.
@@ -31,6 +34,10 @@ Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Hercu
 * Pitched roofs: a dark timber soffit under the street eave and a row of terracotta antefixes (about every 0.56 m).
   Flat roofs: a stone cornice. A moulded string course where the house has its painted first-floor band.
 * Brick colour: R:G:B about 1 : .6 : .4, sampled from the unlit Ostia and Domus Aurea scans.
+* Loft window (2026-11-01, shader only, no triangles): over every square shop opening (ground type 2, not arched) whose
+  ground storey leaves 1.3 m above the 2.6 m opening, `wallS` paints a 0.6 × 0.55 m window 0.45 m over the lintel (the
+  pergula, the shopkeeper's loft) and a brick relieving arch with voussoir joints over lintel and window.
+  【史】Ostia, Herculaneum and Trajan's Market (`refs/arch/trajan_market_LATE.jpg`, later: construction only).
 
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
 scratchpad) and `refs/houses_*.jpg`. Today's procedural houses (src/world/lots.js + the facade shader driven by
