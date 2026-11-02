@@ -80,8 +80,8 @@ function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);
       if(A.n==='rome_apollo'){terraceRect(W,g,F,0,0,47,47,0,34);temple(W,g,{x,y,z:z,rot,W:24,L:40,podH:5,colH:14,nf:6,rows:2,peri:true,colTint:[1,1,.97],seed:.21,pave:false});}
       else if(A.n==='rome_transitoria'){courtBlock(W,g,F,{cx:0,cz:0,w:112,d:92,y0:0,nSt:2,sH:4.8,gH:6,cw:64,cd:48,part:24,seed:.83,sty:15,fl:8|32|4|256});tower(g,F,50,0,12,0,6,5,{part:24,seed:.84});}
       else if(A.n==='rome_domus_augusti')courtBlock(W,g,F,{cx:0,cz:-8,w:70,d:52,y0:0,nSt:1,sH:4,gH:5,cw:34,cd:22,part:0,seed:.55,sty:0,fl:8|16});
-      else if(A.n==='rome_magna_mater')temple(W,g,{x,y,z,rot,W:17.5,L:33,podH:6,colH:12,nf:6,rows:3,seed:.4});
-      else if(A.n==='rome_victoria')temple(W,g,{x,y,z,rot,W:16,L:28,podH:4,colH:10,nf:6,rows:2,seed:.45});
+      else if(A.n==='rome_magna_mater')temple(W,g,{x,y,z,rot,W:17.5,L:33,podH:6,colH:12,nf:6,rows:3,seed:.4,name:'众神之母神庙（库柏勒）'});
+      else if(A.n==='rome_victoria')temple(W,g,{x,y,z,rot,W:16,L:28,podH:4,colH:10,nf:6,rows:2,seed:.45,name:'胜利女神神庙'});
       else courtBlock(W,g,F,{cx:0,cz:-6,w:28,d:30,y0:0,nSt:2,sH:3.8,gH:4.4,cw:12,cd:10,part:0,seed:.3+A.lx*.001,sty:0,fl:1|64|8});});
     W.foot.add(x,z,A.hw,A.hd,rot);}}
 
@@ -150,7 +150,7 @@ function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W,a,b,{
         const run=12,n=36;
         for(let s=0;s<n;s++){const t=(s+.5)/n*run,p=[oA[0]+ux*t+nx*2.1,oA[1]+uz*t+nz*2.1],q=xyz(p,0),ys=yk-7+(s+1)*7/n;g.set(2,.42);box(g,frame(q[0],0,q[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5),1.3,31);
           const p2=[p[0]+nx*1.55,p[1]+nz*1.55],q2=xyz(p2,0);g.set(2,.55);box(g,frame(q2[0],0,q2[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5)+.7,.18,31);}}
-      const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr,'open');}});   // 'open': garden terraces count as vegetation for the street raster
+      const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr,'open').palTer=yk;}});   // 'open': garden terraces count as vegetation for the street raster; palTer: the floor, for the hill stairs (temple-links.js)
   flushColumns(W);const m=g.mesh(MAT.city);if(m)W.scene.add(m);}
 
 /* ================= crowded saddle: block stand-ins, basin deck, walls, cryptoporticus, temple, gardens ================= */

@@ -17,6 +17,7 @@ Each image is the preview of a 3D scan or model on Sketchfab. The licence is the
 | herc_galba.jpg | Herculaneum house: tuff walls round a court | [House of the Galba](https://sketchfab.com/3d-models/78b74a70962f4acf9cda0699da99804c) | fredpalmer101 | CC BY-SA |
 | herc_telefo.jpg | Herculaneum peristyle: red-plastered columns | [Casa del Rilievo di Telefo](https://sketchfab.com/3d-models/e6308ba00fc543cb8e0567f9c7840710) | fredpalmer101 | CC BY-SA |
 | vle_aurea.jpg | Rome, by the Domus Aurea: brick-faced concrete ruin | [Vle Della Domus Aurea Ruin](https://sketchfab.com/3d-models/1564748715b545cda0304ea94b4d723a) | artfletch | CC BY |
+| trajan_market_LATE.jpg | Trajan's Market, Rome (about AD 110, so later than Nero: materials and construction only, not the building). Brick-faced concrete, travertine door frames, shops with a small loft window over each door, deep window reveals, brick relieving arches, stepped volumes on the slope | Photo on Wikimedia Commons (own work) | Jebulon | CC0 |
 | domus_greggi.jpg | Rome, domus floors and wall bases | [Roman Domus of via Greggi](https://sketchfab.com/3d-models/36f3533c3a274979b76b2a6d538c2a99) | tdr125 | CC BY |
 
 ## Linked only (no free licence, so no copy is kept here)
