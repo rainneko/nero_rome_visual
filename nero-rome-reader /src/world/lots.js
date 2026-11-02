@@ -61,25 +61,25 @@ function houseGallery(W,g,F,L,y,h,o,wrap=true){
   return true;
 }
 function houseShell(W,g,F,L,yB,H,floorY,o){
-  const plan=houseGalleryPlan(L,o),gH=o.gH,sH=o.sH,flags=o.fl||0,two=o.up!==undefined&&o.up!==o.part;
-  const at=k=>floorY+gH+(k-1)*sH;
+  const plan=houseGalleryPlan(L,o),gH=o.gH,sH=o.sH,flags=o.fl||0,two=o.up!==undefined&&o.up!==o.part,tap=!!(flags&STOREY_TAPER);
+  const at=k=>floorY+gH+stUp(k-1,sH,tap),hk=k=>stH(k,sH,tap);
   for(let e=0;e<L.length;e++){
     const A=L[e],B=L[(e+1)%L.length],front=e===0;
     const draw=(a,b,lo,hi)=>{if(hi-lo<.001)return;
       const upper=two&&lo>=floorY+gH-.001,pt=upper?o.up:o.part;
-      const fl=(two?(upper?(o.flUp||16):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072)))|(front&&o.geoWin?524288:0);   // 524288: every bay has its window, for the sills and shutters of romanFrontRelief
+      const fl=(two?(upper?(o.flUp||16)|(flags&STOREY_TAPER):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072)))|(front&&o.geoWin?524288:0);   // 524288: every bay has its window, for the sills and shutters of romanFrontRelief
       g.set(pt,o.seed,upper?3:front?o.sty:o.sty%8,fl,upper||!two?o.nSt:1,gH,o.burn||0,o.lit);
       wall(g,F,a[0],a[1],b[0],b[1],lo,hi,floorY,sH);};
     const cuts=[yB,H];if(two)cuts.push(floorY+gH);
     const active=plan.filter(t=>t.wrap||front);
-    for(const t of active)cuts.push(at(t.level),at(t.level)+sH);
+    for(const t of active)cuts.push(at(t.level),at(t.level)+hk(t.level));
     const ys=[...new Set(cuts)].sort((a,b)=>a-b);
-    for(let j=0;j<ys.length-1;j++){const lo=ys[j],hi=ys[j+1],gap=active.find(t=>lo>=at(t.level)-.001&&hi<=at(t.level)+sH+.001);
+    for(let j=0;j<ys.length-1;j++){const lo=ys[j],hi=ys[j+1],gap=active.find(t=>lo>=at(t.level)-.001&&hi<=at(t.level)+hk(t.level)+.001);
       if(!gap)draw(A,B,lo,hi);else if(!gap.wrap){draw(A,lp(A,B,gap.t0),lo,hi);draw(lp(A,B,gap.t1),B,lo,hi);}}
   }
-  for(const t of plan){if(t.wrap)houseGallery(W,g,F,L,at(t.level),sH,o,true);else{
+  for(const t of plan){if(t.wrap)houseGallery(W,g,F,L,at(t.level),hk(t.level),o,true);else{
     const a=lp(L[0],L[1],t.t0),b=lp(L[0],L[1],t.t1),dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),depth=1.1;
-    houseGallery(W,g,F,[a,b,[b[0]-dz/len*depth,b[1]+dx/len*depth],[a[0]-dz/len*depth,a[1]+dx/len*depth]],at(t.level),sH,o,false);}}
+    houseGallery(W,g,F,[a,b,[b[0]-dz/len*depth,b[1]+dx/len*depth],[a[0]-dz/len*depth,a[1]+dx/len*depth]],at(t.level),hk(t.level),o,false);}}
   return plan;
 }
 
@@ -115,6 +115,8 @@ function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.h
     if(typeof nobleOverlap==='function'?nobleOverlap(P,f):obb({...o,c:Math.cos(o.rot),s:Math.sin(o.rot)},f))return false;}return true;
 }
 // a house of n storeys stands on this ground: its roof clears the uphill side, and the slope is no more than its lower storeys can take in
+// The fit and the storey caps use the full storey height, as before the taper: the same houses with the same storeys, only lower (the author, 2026-11-02:
+// the low top storeys are there to make some buildings lower, not to fit another floor under the same limit).
 function lotFits(L,o,ground,n){const H=ground.min+.15+o.gH+(n-1)*o.sH,roofRise=L.length===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
   return!(ground.max>H+roofRise)&&!(ground.max-ground.min>lotSlopeLimit(n||1,o.gH,o.sH,Math.abs(pArea(L))));}
 function lotBuild0(W,g,L,o,R,smk){
@@ -124,7 +126,8 @@ function lotBuild0(W,g,L,o,R,smk){
   if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
     if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
   if(o.up===30&&(o.nSt>4||hash2(Math.round(pCen(L)[0]*3)+4729,Math.round(pCen(L)[1]*3))<.65))o=Object.assign({},o,{up:0});   // timber frame on about a third of the drawn houses, only <= 4 storeys (facades.md); keyed to the place, no dice drawn
-  const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
+  if(!(o.fl&262144)&&o.nSt>=4)o=Object.assign({},o,{fl:(o.fl||0)|STOREY_TAPER});   // the low top storeys of a tenement (materials.js stH)
+  const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+stUp(o.nSt-1,sH,!!(o.fl&STOREY_TAPER)),n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
   const yB=groundMin-.25;
   o=Object.assign({},o,{geoWin:true});houseShell(W,g,IDF,L,yB,H,floorY,o);
   const sl=groundMax-groundMin;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,groundMin,groundMax,embeddedRise:sl,terrace:false,storeys:o.nSt,gH,sH,elite:!!(o.fl&262144)});
@@ -132,7 +135,7 @@ function lotBuild0(W,g,L,o,R,smk){
       dep=Math.hypot((A[0]+B[0]-C[0]-D[0])/2,(A[1]+B[1]-C[1]-D[1])/2),tp=Math.tan(o.pitch),yR=H+Math.min(dep*.5*tp,6.5),yE=H-.55*tp;
     g.set(1,o.seed+.2);g.poly([P(E[0],yE),P(E[1],yE),P(e1,yR),P(e0,yR)],[0,1,0]);g.poly([P(e0,yR),P(e1,yR),P(E[2],yE),P(E[3],yE)],[0,1,0]);g.set(4,o.seed);ridgeCap(g,P(e0,yR),P(e1,yR));
     g.set(2,o.seed);for(const[a,b]of[[E[0],E[1]],[E[2],E[3]]])g.poly([P(a,yE-.24),P(b,yE-.24),P(b,yE),P(a,yE)],[b[1]-a[1],0,-(b[0]-a[0])]);
-    g.set(wp,o.seed,0,1,o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
+    g.set(wp,o.seed,0,1|(o.fl&STOREY_TAPER),o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
     if(smk&&R()<.03)smk.push([(e0[0]+e1[0])/2,yR+.6,(e0[1]+e1[1])/2]);}
   else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?46:11;
     // flat roof terrace (opus signinum or slabs); big blocks get a real light-well court cut through them
