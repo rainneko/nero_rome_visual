@@ -298,7 +298,13 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
       if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
     for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
       // a block a main road crosses is cut along the road's corridor; each piece is judged on its own (faces.js): a whole block (F5) goes on below, the rest become squares
-      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(const P of pieces){const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
+      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(let P of pieces){
+          if((Z.kind==='mid'||Z.kind==='dense')&&typeof faceFrontage==='function'){const fr=faceFrontage(W,P,R,Z.lotW/Math.sqrt(dq)*.85,Math.min(16,Math.max(11,Z.depth||13)),L=>!lotHits(W,L,mg+.8));   // the row of shop houses on the road (faces.js)
+            if(fr){faceStat(W,'frontTried',null,fr.tried);const row=[];for(const L of fr.lots){const ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;if(lotHits(W,L,mg+.8)){faceStat(W,'frontHit');continue;}const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
+                const p=Z.lot(R);p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){row.push([ob,L]);faceStat(W,'front');nL++;}else faceStat(W,'frontFail');}
+              for(const[ob,L]of row)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot).blkLot=L;   // after the row, as a block's lots: neighbours share a party wall
+              P=fr.rest;if(!P)continue;}}
+          const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
           if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],'','squares'),P,f,R,Z.kind);else faceStat(W,'F0',P);}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
       const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring

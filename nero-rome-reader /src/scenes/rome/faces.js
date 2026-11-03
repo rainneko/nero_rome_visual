@@ -11,14 +11,31 @@ function faceInfo(P){let A=Math.abs(pArea(P)),per=0,Lmax=0,iL=0;const n=P.length
   const corners=ang.filter(a=>a<170).length;return{A,n:corners,minAng:Math.min(...ang),rho:2*A/(per||1),Lmax,iL,ang};}
 function faceClass(P){const f=faceInfo(P);
   f.kind=f.A<80||f.rho<3?'F0':f.n===3&&f.A<300?'F1':f.n===3&&f.A<1200?'F2':f.n>=4&&f.A<2500&&(f.minAng<55||f.rho<10)?'F4':f.n===3?'F2':'F5';return f;}
-function faceStat(W,k,P){const S=W.faceStats||(W.faceStats={});S[k]=(S[k]||0)+1;if(P)(W.faceLog||(W.faceLog=[])).push({kind:k,c:pCen(P).map(Math.round),area:Math.round(Math.abs(pArea(P))),P});}
+function faceStat(W,k,P,n=1){const S=W.faceStats||(W.faceStats={});S[k]=(S[k]||0)+n;if(P)(W.faceLog||(W.faceLog=[])).push({kind:k,c:pCen(P).map(Math.round),area:Math.round(Math.abs(pArea(P))),P});}
 // the block cut by the widest main road strip that crosses it: the pieces on either side of the road's reserved corridor, or null
 function faceRoadCut(W,B){const ob=lotOBB(B),r=Math.hypot(ob.hw,ob.hd);let best=null;
   for(const[w,P]of W.roadList||[]){const half=w/2+(w>=7?2.6:1.2);for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];if(segD(ob.cx,ob.cz,a[0],a[1],b[0],b[1])>r+half)continue;
       const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(l<1)continue;const tx=dx/l,tz=dz/l,nx=-tz,nz=tx,c=a[0]*nx+a[1]*nz,t0=a[0]*tx+a[1]*tz;
       const sd=B.map(p=>p[0]*nx+p[1]*nz-c),st=B.map(p=>p[0]*tx+p[1]*tz-t0),mn=Math.min(...sd),mx=Math.max(...sd);
       if(mn>half||mx<-half||Math.max(...st)<-2||Math.min(...st)>l+2)continue;const cover=Math.min(mx,half)-Math.max(mn,-half);if(!best||cover>best.cover)best={nx,nz,c,half,cover};}}
-  if(!best)return null;const h=best.half+1;return[clipHalf(B,best.nx,best.nz,best.c+h,1),clipHalf(B,best.nx,best.nz,best.c-h,-1)].filter(p=>p&&Math.abs(pArea(p))>20);}   // 1 m beyond the corridor: the houses' eaves margin
+  if(!best)return null;const h=best.half+1,out=[];   // 1 m beyond the corridor: the houses' eaves margin
+  for(const sg of[1,-1]){const p=clipHalf(B,best.nx,best.nz,best.c+sg*h,sg);if(p&&Math.abs(pArea(p))>20){p.cut={nx:best.nx,nz:best.nz,c:best.c,h,sg};out.push(p);}}return out;}   // .cut: the road's line, for faceFrontage
+// Shop houses along the main roads (the author, 2026-11-03: a main road runs between two rows of houses with shops on the ground floor; the cut blocks
+// left it between paved squares and the side walls of rings). The strip of a cut piece next to the road, D m deep, becomes a row of lots whose front
+// (L[0]->L[1], where lotBuild puts the shop bays) lies on the road's edge, each lw*(.75-1.15) wide. The road bends, the cut line is one straight
+// segment of it: a lot that would touch the road's corridor (ok) steps back 0.8-3.8 m, so the row follows the bend in short steps. A lot that does not
+// fit inside the piece at D or .72 D is left out (the sharp corners stay pavement). A 2.6 m back lane behind the row; what is left beyond it is
+// judged as before (faceClass).
+function faceFrontage(W,P,R,lw,D,ok){const k=P.cut;if(!k)return null;const{nx,nz,c,h,sg}=k,tx=nz,tz=-nx,off=c+sg*h,pt=(s,d)=>[s*tx+(c+sg*d)*nx,s*tz+(c+sg*d)*nz];
+  const on=P.filter(p=>Math.abs(p[0]*nx+p[1]*nz-off)<.08).map(p=>p[0]*tx+p[1]*tz);if(on.length<2)return null;
+  const pin=(x,z)=>{let hit=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
+  const fits=L=>{const m=pCen(L);return L.every(p=>{const dx=m[0]-p[0],dz=m[1]-p[1],l=Math.hypot(dx,dz)||1;return pin(p[0]+dx/l*.3,p[1]+dz/l*.3);});};
+  const s0=Math.min(...on)+.4,s1=Math.max(...on)-.4,lots=[];let back=0,tried=0;
+  for(let s=s0;s1-s>=5;){let w=lw*(.75+.4*R());if(s1-s-w<5)w=s1-s;tried++;
+    lot:for(const e of[0,.8,1.6,2.6,3.8])for(const d of[D,D*.72]){let L=[pt(s,h+e),pt(s+w,h+e),pt(s+w,h+e+d),pt(s,h+e+d)];if(pArea(L)<0)L=[L[1],L[0],L[3],L[2]];
+      if(fits(L)&&(!ok||ok(L))){lots.push(L);back=Math.max(back,e+d);break lot;}}
+    s+=w;}
+  const rest=clipHalf(P,nx,nz,c+sg*(h+Math.max(back,D)+2.6),sg);return{lots,tried,rest:rest&&Math.abs(pArea(rest))>20?rest:null};}
 // a polygon laid on the ground: clipped to the coarse terrain triangles (the split W.gy and the mesh use), so every piece is flat on its triangle and
 // the terrain never pokes through (4 m triangles crossed the terrain's folds, and on road cuts the ground showed through the paving)
 function faceDrape(W,g,P,lift){const G=W.grid,xs=P.map(p=>p[0]),zs=P.map(p=>p[1]),cl=(v,n)=>Math.max(0,Math.min(n-1,v)),
