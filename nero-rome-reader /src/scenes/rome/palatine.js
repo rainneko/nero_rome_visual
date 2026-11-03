@@ -83,7 +83,18 @@ function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);
       else if(A.n==='rome_magna_mater')temple(W,g,{x,y,z,rot,W:17.5,L:33,podH:6,colH:12,nf:6,rows:3,seed:.4,name:'众神之母神庙（库柏勒）'});
       else if(A.n==='rome_victoria')temple(W,g,{x,y,z,rot,W:16,L:28,podH:4,colH:10,nf:6,rows:2,seed:.45,name:'胜利女神神庙'});
       else courtBlock(W,g,F,{cx:0,cz:-6,w:28,d:30,y0:0,nSt:2,sH:3.8,gH:4.4,cw:12,cd:10,part:0,seed:.3+A.lx*.001,sty:0,fl:1|64|8});});
-    W.foot.add(x,z,A.hw,A.hd,rot);}}
+    (W.palFeet||(W.palFeet=[])).push(W.foot.add(x,z,A.hw,A.hd,rot));}}
+// Scrub round the foot of the rock hills (the author, 2026-11-03: the rock bases looked odd, bare stone straight out of the grass; the reference has
+// bushes and small trees in the hollows at the foot of the cliffs): holm oak, wild fig, box, cypress and pine every 5-9 m round each rock outline,
+// 1-6 m outside it, clear of streets, buildings and the other rocks; keyed to the place. Run once the city stands (monuments.js, after the outcrops).
+function palRockScrub(W){if(typeof PAL_ROCK==='undefined')return 0;const own=W.palFeet||[];for(const o of own)o.tag='palRock';let n=0;
+  const inRock=(lx,lz)=>PAL_ASSETS.some(A=>{const E=palRockE[A.n];if(!E)return false;const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;let d=-1e9;for(const[px,pz,nx,nz]of E)d=Math.max(d,(u-px)*nx+(v-pz)*nz);return d<.8;});
+  for(const A of PAL_ASSETS){const P=PAL_ROCK[A.n]?.pts,E=palRockE[A.n];if(!P||!E)continue;const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t);
+    for(let i=0;i<P.length;i++){const[px,pz,nx,nz]=E[i],q=P[(i+1)%P.length],L=Math.hypot(q[0]-px,q[1]-pz);
+      for(let k=1.5;k<L;k+=5+4*hash2(px*.37+k,pz*.41)){const h=j=>hash2(px*1.13+k*.71+j*3.7,pz*.97+k*1.31+j*5.1),off=1+5*h(1),u=px+(q[0]-px)*k/L+nx*off,v=pz+(q[1]-pz)*k/L+nz*off;
+        if(h(2)>.62)continue;const lx=A.lx+c*u+s*v,lz=A.lz-s*u+c*v;if(inRock(lx,lz))continue;const[x,z]=palW(lx,lz);if(W.streetAt(x,z)||W.foot.hits(x,z,1.2,1.2,0,0,'palRock'))continue;
+        const r=h(3),kind=r<.42?'shrub':r<.6?'broadD':r<.72?'fig':r<.84?'cyp':r<.92?'pine':'olive';W.trees.push([x,W.gy(x,z),z,kind,kind==='shrub'?.8+.5*h(4):.55+.35*h(4)]);n++;}}}
+  for(const o of own)o.tag=undefined;return n;}
 
 /* terraces: for each level, march rays out from the hilltop; the outer wall stands where the ground drops 6 m below the
    terrace, the floor reaches back to where the ground is level with it */

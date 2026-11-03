@@ -4,7 +4,7 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:1,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
+const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 vec3 romePat(vec3 c,vec3 wp,float pat){
@@ -24,6 +24,13 @@ vec3 romePat(vec3 c,vec3 wp,float pat){
  else if(pat<6.5){c*=(.9+.14*fbm2(uv*vec2(.25,.12)))*mix(1.,.85,smoothstep(.55,.8,fbm2(vec2(uv.x*1.3,uv.y*.15))));}
  else if(pat<7.5){c*=.88+.2*vn2(uv*vec2(2.1,1.));}
  else if(pat<8.5)c*=.8+.35*fbm2(wp.xz*.4);
+ else if(pat>9.5){   // natural rock (the hills' tufa and limestone): wavy bedding planes 1.5-3 m apart, each bed its own tone, dark vertical joints, ochre and grey stains,
+  // moss and grass on the up-facing ledges (rock and rock2 used the ashlar courses of pattern 1, so the hill bases read as cut stone or concrete; the author, 2026-11-03)
+  float st=wp.y+2.4*fbm2(wp.xz*.03)+.6*vn2(uv*vec2(.08,.3));float bed=floor(st/2.3),lay=h12(vec2(bed,7.3));
+  float seam=rpJ(st,2.3,.06+.05*lay);float jx=uv.x*.21+.9*vn2(vec2(uv.x*.04,bed*.7)),jd=abs(fract(jx)-.5);float jt=(1.-smoothstep(.015,.05,jd))*step(.35,h12(vec2(floor(jx),bed)));
+  c*=(.78+.34*lay)*(.82+.32*fbm3(wp*.19))*mix(1.-.42*seam-.5*jt*(1.-n.y*n.y),1.,far*.7);
+  c=mix(c,c*vec3(1.16,.97,.74),smoothstep(.56,.78,fbm2(wp.xz*.045+vec2(wp.y*.05,0.))));c=mix(c,vec3(dot(c,vec3(.33)))*1.05,smoothstep(.6,.8,fbm2(wp.zx*.06+3.7))*.35);
+  c=mix(c,vec3(.19,.22,.085)*(.8+.4*fbm2(wp.xz*.5)),smoothstep(.6,.85,n.y)*smoothstep(.38,.62,fbm2(wp.xz*.22))*.85);}
  else if(n.y>.25&&n.y<.985){vec3 ac=normalize(cross(vec3(0.,1.,0.),n));vec3 dn=normalize(cross(n,ac));float u=dot(wp,ac)/.47,v=dot(wp,dn)/.42;
   float cu=clamp(1.-fwidth(u)*1.1,0.,1.),cv=clamp(1.-fwidth(v)*1.1,0.,1.);       // band-limited: stripes fade only when finer than a pixel
   float rib=.5+.5*cos(6.2832*u),crs=smoothstep(0.,.25,fract(v)),th=h12(vec2(floor(u),floor(v)));
@@ -35,7 +42,7 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
   if(mt.name==='dark'||mt.name==='gallery_wall'){mt.color.setRGB(.40,.35,.28);mt.roughness=.92;mt.userData.galleryInterior=true;}
   if(mt.name==='gallery_floor'){mt.color.setRGB(.47,.42,.34);mt.userData.galleryInterior=true;}
-  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.36,.31,.23],rock2:[.27,.23,.165],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
@@ -68,7 +75,7 @@ function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.r
   if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler(),byL={};   // one set of InstancedMeshes per story-state group (o.parentLayer), the rest in the scene
     for(const p of inst)(byL[p.o.parentLayer||'']||(byL[p.o.parentLayer||'']=[])).push(p);
     for(const lk in byL){const inst=byL[lk],par=(lk&&W0.preLayers&&W0.preLayers[lk])||W0.scene;
-    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.21,.18,.127],rock2:[.165,.138,.096],moss:[.188,.216,.08]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn)mt.color.setRGB(...RK);if(RK&&m.material.name==='moss'){mt.userData.rome=0;romeMat(mt);}const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
+    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.27,.23,.17],rock2:[.2,.17,.12],moss:[.13,.155,.06]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn){mt.userData.rome=0;romeMat(mt);mt.color.setRGB(...RK);}/* a clone loses onBeforeCompile: the instanced rocks had no rock pattern or haze */const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
   const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
     const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;

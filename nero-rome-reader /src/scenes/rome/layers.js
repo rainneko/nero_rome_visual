@@ -416,8 +416,18 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     rectWalls(g,ZF,40,130,56,22,-1,10,0,{part:9,seed:.55,sty:1,fl:8|2,nSt:2,gH:5,sH:5,lit:1});roof(g,ZF,'gableX',40,130,57,23,10,22*DEG,.5,.45,{part:9,seed:.55,nSt:2,gH:5,sH:5,floorY:0});
     g.set(9,.45,0,1);lathe(g,ZF,85,-1,150,[[2.2,0],[1.8,34],[2.1,34.5],[2.1,35.5],[1.6,35.5]],12);g.set(14,.5);for(let k=0;k<4;k++)box(g,ZF,0,0,60+k*4,240,.25,.18,31);
     rectWalls(g,ZF,170,80,40,30,-1,8,0,{part:22,seed:.4,sty:0,fl:1,nSt:1,gH:8,sH:4,lit:0});roof(g,ZF,'gable',170,80,40,30,8,24*DEG,.6,.4,{part:22,seed:.4,nSt:1,gH:8,sH:4,floorY:0});});
-  const farm=(g,x0,z0,x1,z1,nh)=>{for(let x=x0;x<x1;x+=24){{const q=Math.floor((x-x0)/24)%3;g.set(q===2?23:21,q===0?.32:q===1?.55:.12);}g.poly([ZF.p(x,.12,z0),ZF.p(Math.min(x1,x+23),.12,z0),ZF.p(Math.min(x1,x+23),.12,z1),ZF.p(x,.12,z1)],[0,1,0]);}
-    for(let k=0;k<nh;k++){const x=lerp(x0+15,x1-15,(k+.5)/nh),z=lerp(z0,z1,.3+.4*((k*37)%10)/10),F=ZF.sub(x,0,z,k*.7);g.set(30,.3+k*.07);box(g,F,0,-.5,0,3.4,3.4,2.6,31);const t0=g.nv;roof(g,F,'gable',0,0,7.4,5.8,2.9,26*DEG,.3,.4,{part:30,seed:.4,nSt:1,gH:3,sH:3,floorY:0});retag(g,1,21,t0);}};
+  // The farms the works will take (zoneFarm1 states 0-2, zoneFarm2 0-5). No ground of their own: the crop map's fields (farmland.js, painted in the terrain with ragged
+  // edges and the season) run on under them, as all round the zone (the author, 2026-11-03: the even 24 m stripes of grey and green looked unnatural). Here only the
+  // farmsteads: a house (tile or thatch), an open thatched shed, a round threshing floor, straw stacks, a fig or an olive by the door and a row of poplars or elms
+  // along the lane (vines were trained on them, the arbustum). Each keyed to its place, turned a little, on its own ground.
+  const farm=(g,x0,z0,x1,z1,nh)=>{for(let k=0;k<nh;k++){const h=j=>hash2(x0*.37+k*7.13+j*1.31,z0*.29+k*3.71+j*2.93),x=lerp(x0+20,x1-20,(k+.25+.5*h(0))/nh),z=lerp(z0+18,z1-18,.15+.7*h(1)),q0=ZF.p(x,0,z),
+      F=ZF.sub(x,gy(q0[0],q0[2])-ZF.oy,z,(h(2)-.5)*1.4),tile=h(3)<.5;
+    g.set(30,.3+h(4)*.3);box(g,F,0,-.5,0,4.2,3.6,3,31);let t0=g.nv;roof(g,F,'gable',0,0,9,6.6,3.1,26*DEG,.35,.4,{part:30,seed:.4,nSt:1,gH:3.1,sH:3,floorY:0});if(!tile)retag(g,1,21,t0);
+    g.set(3,.35);for(const[px,pz]of[[-3.6,-2],[3.6,-2],[-3.6,2],[3.6,2]])box(g,F,px+9,-.3,pz+1,.15,2.7,.15,31);t0=g.nv;roof(g,F,'gable',9,1,8,5,2.4,22*DEG,.4,.5,{part:30,seed:.5,nSt:1,gH:2.4,sH:2.4,floorY:0});retag(g,1,21,t0);
+    g.set(30,.55);lathe(g,F,-1,-.2,-11,[[5.2,0],[5.2,.28],[0,.28]],14);
+    g.set(21,.35);for(let j=0;j<1+Math.floor(h(5)*3);j++)lathe(g,F,7+j*4.5,-.2,-9-h(6+j)*3,[[2,0],[2.2,1.4],[1.6,2.6],[0,3.6]],8);
+    for(const[px,pz]of[[-6,3.5],[-7.5,-4]].slice(0,1+(h(7)<.5?1:0))){const q=F.p(px,0,pz);W.trees.push([q[0],gy(q[0],q[2]),q[2],h(8)<.55?'fig':'olive',.6+h(9)*.3]);}
+    const ang=h(10)*TAU,ca=Math.cos(ang),sa=Math.sin(ang),pop=h(11)<.6,nT=5+Math.floor(h(12)*5);for(let i=0;i<nT;i++){const d=14+i*(6.5+h(13)*2),q=F.p(ca*d,0,sa*d);W.trees.push([q[0],gy(q[0],q[2]),q[2],pop?'poplar':'broadD',.7+.3*hash2(q[0]*.3,q[2]*.7)]);}}};
   L('zoneFarm1',0,(g)=>farm(g,-10,-175,200,-20,3));L('zoneFarm2',0,(g)=>farm(g,-245,30,245,210,6));
   for(const[a,b,t]of[[2,2,'第一批地：栅栏围起来的一小块，三座高炉和几排木棚。旁边还是农田。'],[3,5,'地往下游扩了一段：平炉、窑、玻璃、肥皂、铅室。'],[6,99,'【待写·第9–13卷】工业用地越来越大，吞掉了旁边的农田和几户人家。']])W.pois.push({n:'南岸工坊',l:'神机公社',x:ZF.ox,z:ZF.oz,y:gy(ZF.ox,ZF.oz)+30,s0:a,s1:b,d:2400,info:t});
   L('cathFrame',8,(g)=>{const len=84,nw=16;g.set(3,.38);for(let z=-len/2;z<=len/2+.01;z+=7){for(const sd of[1,-1]){box(g,CT,sd*(nw/2+8),-1,z,.35,17,.35,31);box(g,CT,sd*nw/2,-1,z,.4,34,.4,31);}

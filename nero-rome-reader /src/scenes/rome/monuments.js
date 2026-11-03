@@ -110,6 +110,8 @@ function theatre(W,g,F,o){const R=o.R,h=o.h,r0=R*.3,seg=16;g.set(26,.5);
   for(const a of[Math.PI,2*Math.PI]){const tx=-Math.sin(a),tz=Math.cos(a),A=Pp(r0,a,-1),B=Pp(R,a,-1),C=Pp(R,a,h-2),D=Pp(r0,a,1.2);g.set(2,.4);g.poly([A,B,C,D],F.d(tx,0,tz));g.poly([D,C,B,A],F.d(-tx,0,-tz));}
   const nS=10;for(let k=0;k<nS;k++){const a=Math.PI+(k+.5)/nS*Math.PI,len=2*R*Math.sin(Math.PI/nS/2)+.8,S=F.sub(Math.cos(a)*R,0,Math.sin(a)*R,-a-Math.PI/2);
     let yy=-2;const hs=[h*.37,h*.33,h*.30];for(let j=0;j<3;j++){arcade(g,S,0,yy,0,len,hs[j]+(j?0:2),3,3.2,2,{span:.3,pilasters:true});yy+=hs[j]+(j?0:2);}}
+  // the stage building, stage and main entrances: rome_theatre_scaena (briefs/rome/theatre_scaena.md; modelled for R 62, h 32 and scaled to each theatre), the old box its stand-in
+  romeStand(W,'rome_theatre_scaena',F.ox,F.oz,F.oy,F.rot,(g,F)=>{
   rectWalls(g,F,0,9,2*R*.94,12,-2,h*.88,0,{part:24,seed:.42,sty:5,fl:8|32,nSt:3,gH:h*.3,sH:h*.28,lit:1});
   roof(g,F,'gableX',0,9,2*R*.94,12,h*.88,15*DEG,.6,.4,{part:24,seed:.42,nSt:3,gH:h*.3,sH:h*.28,floorY:0});
   g.set(2,.45);box(g,F,0,-2,4,R*.94,3,6.2,31);
@@ -120,6 +122,7 @@ function theatre(W,g,F,o){const R=o.R,h=o.h,r0=R*.3,seg=16;g.set(26,.5);
   g.set(7,.2);box(g,F,0,y1,3.02,1.8,7,.06,31);for(const sd of[1,-1])box(g,F,sd*R*.32,y1,3.02,1.3,5.4,.06,31);
   for(let x=-R*.73;x<=R*.74;x+=R*.182)pedestalStatue(g,F,x,1.5,y2+.2,2.4,{gilt:false});
   g.set(1,.4);g.poly([F.p(-R*.7,h*.66,3.2),F.p(R*.7,h*.66,3.2),F.p(R*.7,h*.6,-6.6),F.p(-R*.7,h*.6,-6.6)],[0,1,0]);g.poly([F.p(R*.7,h*.66,3.2),F.p(-R*.7,h*.66,3.2),F.p(-R*.7,h*.6,-6.6),F.p(R*.7,h*.6,-6.6)],[0,-1,0]);
+  },{dy:.6,sx:R/62,sy:h/32,sz:R/62});   // dy: the model's z 0 is the orchestra floor, drawn .6 m up
   const c=F.p(0,0,-R*.4+8);W.foot.add(c[0],c[2],R+4,R*.6+12,F.rot);}
 function bridgeAt(g,x,z,ux,uz,len,nA,w,h,part,wood,gyF){const F=frame(x,RW-3,z,Math.atan2(-ux,-uz));if(gyF){const dk=h+.35;for(const sd of[1,-1]){const e1=F.p(sd*len/2,0,0),e2=F.p(sd*(len/2+16),0,0),gE=gyF(e1[0],e1[2])-F.oy+.35,gO=gyF(e2[0],e2[2])-F.oy+.35;if(gE<dk-.3){g.set(2,.42);box(g,F,sd*(len/2+1.6),gE-2.4,0,1.7,dk-gE+2.4,w/2,31);}const dh=dk-Math.max(gO,gE);if(dh>.4){const rl=Math.min(42,dh*7);g.set(10,.3);g.poly([F.p(sd*(len/2),dk,-w/2+.6),F.p(sd*(len/2+rl),dk-dh,-w/2+.6),F.p(sd*(len/2+rl),dk-dh,w/2-.6),F.p(sd*(len/2),dk,w/2-.6)],[0,1,0]);g.set(2,.42);box(g,F,sd*(len/2+rl/2),dk-dh-2.5,0,rl/2,dh+2.4,w/2-.5,31);}}}
   if(wood){g.set(3,.4);for(let i=-len/2;i<=len/2;i+=9)box(g,F,i,0,0,.5,h,w/2-.6,31);box(g,F,0,h,0,len/2,.6,w/2,31);}
@@ -317,8 +320,6 @@ async function buildRome(msg){
       statue(gS,CW,-9.4,26.5,0,3.4,true);}
     const q=CF.p(10,14,-60);temple(W,gS,{x:q[0],y:q[1],z:q[2],rot:CF.rot,W:12,L:8,podH:1,colH:6,nf:4,rows:1,stairs:false,sculpt:false,seed:.6});
     for(const s of[1,-1]){gS.set(2,.4);gS.poly([P(-268,s*42,0),P(-268,s*84,0),P(-268,s*84,27),P(-268,s*42,3)],CF.d(-1,0,0));}
-    {const GE=CF.sub(306,0,0,0);rectWalls(gC,GE,0,0,14,40,-2,31,0,{part:24,seed:.6,sty:1,fl:8|32|128|1,nSt:3,gH:12,sH:9.5,lit:1});gC.set(2,.5);box(gC,GE,0,31,0,7.6,.8,20.6,31);gC.set(24,.6,0,1);box(gC,GE,0,31.8,0,6.4,4,17,31);
-      gC.set(7,.3);for(const s of[1,-1]){const S=GE.sub(s*6.06,0,0,s>0?Math.PI/2:-Math.PI/2);gC.poly(arch(gC,S,0,5,0,15,0),S.d(0,0,1));}statue(gC,GE,0,35.8,0,4.6,true);for(const s of[-1,1])statue(gC,GE,0,35.8,s*12,3.4,true);}
     for(const s of[1,-1]){portico(W,gS,CF,-268,s*77,222,s*77,24,6.5,s*5,3.6,[1,.96,.9]);ROME.porticos[ROME.porticos.length-1].carried='stands of the Circus Maximus (rome_cavea GLBs, top at +24 m)';}
     for(const x of[-120,95]){const q=CF.p(x,1.7,0);tholos(W,gS,{x:q[0],y:q[1],z:q[2],R:2.6,podH:.8,colH:4,n:8,roofPart:13});}
     {const m=gS.mesh(MAT.city);if(m)GS.add(m);flushColumns(W);W.colGroup=null;W.scene.add(GS);}
@@ -327,8 +328,10 @@ async function buildRome(msg){
       for(let i=0;i<NM;i++){const x=X0+LM*(i+.5),pav=i===3||i===7||i===11;pl(pav?'rome_cavea_pavilion':'rome_cavea_s',x,-62,0,{sx:sc,sy:1,sz:1});pl(pav?'rome_cavea_pavilion':'rome_cavea_s',x,62,Math.PI,{sx:sc,sy:1,sz:1});}
       for(let k=0;k<8;k++){const th=-Math.PI/2+(k+.5)*Math.PI/8;pl('rome_cavea_c',222,0,Math.atan2(-Math.cos(th),-Math.sin(th)));}
       pl('rome_circus_carceres',-277,0,Math.PI/2);pl('rome_circus_end_r',X0-13,-62,0);pl('rome_circus_end_l',X0-13,62,Math.PI);
+      pl('rome_circus_gate_e',222,0,-Math.PI/2);   // the gate in the middle of the curved end (briefs/rome/circus_gate_east.md; it was a plain 14 x 40 m box): on the axis, r 37-90 from the curve's centre
       pl('rome_circus_spina',-23,0,0);pl('rome_circus_pulvinar',-27.2,-65,0,{}); ROME.GLB[ROME.GLB.length-1].y=Y+12;}
-    W.foot.add(0,667,310,94,CF.rot);}
+    W.foot.add(0,667,310,94,CF.rot);{const g=CF.p(292,0,0);W.foot.add(g[0],g[2],34,15,CF.rot);   // the gate, its steps and stair towers, and a small square before the street arch (to r 104)
+      W.pois.push({n:'大竞技场弯道正门',l:'大竞技场 · 弯道一端',x:g[0],z:g[2],y:CF.oy+44,s0:0,s1:99,d:1200,sub:true,info:'弯道正中的门楼：赛道一侧是一大两小三座拱门，红柱子夹着；门楼顶上一座带凉廊的楼阁，从这一头看比赛；街面一侧一座大拱门，两边是楼梯塔。【史】大竞技场弯道正中有门，赛会游行可由此出入；后来立在这里的提图斯凯旋门是公元81年以后的事，这时还没有。门楼的样子是复原。'});}}
   W.scene.add(gC.mesh(MAT.city));
   poi('大竞技场','Circus Maximus',0,667,40,0,99,'十五万人的赛车场。第一卷：朱红热气球在这里升空；55年冬的战车赛。',3000);
   await msg('建造埃斯奎利诺山学园与战神广场……');
@@ -674,16 +677,18 @@ async function buildRome(msg){
    poi('百级台阶','Centum Gradus',-181,54,10,0,99,'从卡比托利欧山圣域走下去的大理石台阶。',800);poi('卡库斯台阶','Scalae Caci',-67,462,10,0,99,'帕拉蒂尼山西南角最古老的上山路，通到罗慕路斯草屋。',800);}
   const inPalZ=(x,z)=>segD(x,z,0,280,230,320)<205||segD(x,z,-262,40,-205,-225)<135,inPal=inPalZ,CAMPN=(x,z)=>x>-1150&&x<-420&&z>-1750&&z<-950,VAL=(x,z)=>Math.hypot(x-572,z-200)<150;
   const hz=(s,k)=>((Math.sin(s*12.9898+k*78.233)*43758.5453)%1+1)%1;   // per-building hash from the lot seed (no extra R() draws: the city layout stays as it was)
-  /* The height limit: the Subura keeps its tall insulae; everywhere else there are 70 % fewer houses of six storeys, 40 % fewer of five and
-     20 % fewer of four, and half that in a 200 m band around the Subura. A cut house loses one storey, so each rate below also takes in the houses
-     that come down from the storey above, and the cuts a slope refuses (set on the measured counts; the band rates again on the layout with lanes). A cut that leaves a house too low for its
+  /* The height limit: the Subura keeps its tall insulae; everywhere else (the city and a 200 m band round the Subura) there are about 90 % fewer
+     houses of six storeys than the generator draws, 45 % fewer of five and 25 % fewer of four (the author, 2026-11-03: six storeys much rarer,
+     five a little, four a very little; measured against the 2026-11-02 counts: six -70 %, five -14 %, four -7 %). A cut house loses a storey with
+     the rate of its count, then may lose the next with the next rate (at most three, each its own hash), so every rate also takes in the houses that
+     come down from above; the rates are set on the measured counts, since a slope refuses some cuts. A cut that leaves a house too low for its
      slope is not made. Called once a house is placed, keyed to its place: no dice drawn, the layout stays. W.storeyStats counts before/after.
      【史】Augustus limited new buildings to 70 feet (Strabo 5.3.7); the tallest insulae stood in the crowded valleys like the Subura. */
   const SUB_BOX=[200,1050,-950,-120];   // the Subura of bzone below; outside it the blocks get lanes (genBlocks o.lanes)
   const outSub=(x,z)=>!(x>SUB_BOX[0]&&x<SUB_BOX[1]&&z>SUB_BOX[2]&&z<SUB_BOX[3]);
   W.storeyCut=(x,z,n,fits)=>{const d=Math.hypot(Math.max(SUB_BOX[0]-x,0,x-SUB_BOX[1]),Math.max(SUB_BOX[2]-z,0,z-SUB_BOX[3])),zn=d===0?'subura':d<200?'band':'city',
-      q=zn==='city'?{6:.7,5:.58,4:.8}:zn==='band'?{6:.39,5:.39,4:.82}:null,S=(W.storeyStats||(W.storeyStats={}))[zn]||(W.storeyStats[zn]={before:{},after:{}});
-    const k=q&&q[n]&&hash2(Math.round(x*4)+9311,Math.round(z*4))<q[n]&&fits(n-1)?n-1:n;S.before[n]=(S.before[n]||0)+1;S.after[k]=(S.after[k]||0)+1;return k;};
+      q=zn==='city'?{6:.905,5:.59,4:.61}:zn==='band'?{6:.78,5:.52,4:.8}:null,S=(W.storeyStats||(W.storeyStats={}))[zn]||(W.storeyStats[zn]={before:{},after:{}});
+    let k=n;if(q)for(let j=0;j<3&&q[k]&&hash2(Math.round(x*4)+9311+j*7919,Math.round(z*4)+j*1049)<q[k]&&fits(k-1);j++)k--;S.before[n]=(S.before[n]||0)+1;S.after[k]=(S.after[k]||0)+1;return k;};
   const fxb=(sd,t)=>{let f=0;if(t==='rich'){if(hz(sd,1)<.25)f|=16384;if(hz(sd,2)<.08)f|=32768;if(hz(sd,3)<.4)f|=65536;}else if(t==='mid'){if(hz(sd,1)<.15)f|=16384;if(hz(sd,2)<.08)f|=32768;if(hz(sd,3)<.2)f|=65536;if(hz(sd,4)<.2)f|=131072;}return f;};   // facades.md phase 4 table
   const lotP={dense:R=>{const r=R();const p={part:9,up:r<.35?30:r<.88?0:9,seed:R(),sty:3+8*(R()<.6?2:1),flUp:16|(R()<.3?32:0),nSt:4+Math.floor(R()*4),gH:3.6,sH:2.9,pitch:(15+R()*9)*DEG,lit:.4+R()*.6,flat:R()<.18,awn:.35,balc:.35};p.shr=hz(p.seed,2)<.08;if(p.up===p.part&&p.shr)p.fl=32768;return p;},
     mid:R=>{let fl=2;if(R()<.75)fl|=8;if(R()<.5)fl|=16;if(R()<.45)fl|=32;if(R()<.5)fl|=64;if(R()<.2)fl|=1024;if(R()<.15)fl|=2048;if(R()<.4)fl|=8192;if(R()<.15)fl|=4;if(R()<.3)fl|=128;const p={part:R()<.38?9:0,seed:R(),sty:Math.floor(R()*8)+8*(R()<.62?1:2),fl,nSt:3+Math.floor(R()*3),gH:4.2,sH:3.15,pitch:(17+R()*8)*DEG,lit:.4+R()*.6,flat:R()<.12,awn:.3,balc:.3,loggia:R()<.12};p.fl|=fxb(p.seed,'mid');p.loggiaA=hz(p.seed,5)<.1;return p;},
@@ -715,6 +720,7 @@ async function buildRome(msg){
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
    W.nInsulaGLB=nIn;}
+  fillRoadFrontage(W);   // the main roads in the centre lined with shop houses first; the blocks, genCity and the repair grid fill in behind them
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,lanes:outSub,chunk:600});
   W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600});
@@ -776,7 +782,8 @@ async function buildRome(msg){
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
-   // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.
+   // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,
+   // not a boulder lying on the slope; the author 2026-11-03 found them odd) and sunk half their height below the ground. At most 40.
    {const RC=RNG(77),dim={rome_rock_a:[6,4.5,6.5],rome_rock_b:[4.3,3.2,9.5],rome_rock_c:[3,2.2,4.3]};   // [half length along the contour, half depth, height from the cut base (-1.5 m) to the top]
     const grd=(x,z)=>{const gx=(gy(x+3,z)-gy(x-3,z))/6,gz=(gy(x,z+3)-gy(x,z-3))/6;return[gx,gz,Math.hypot(gx,gz)];},cand=[];
     for(let x=-420;x<=420;x+=6)for(let z=-350;z<=520;z+=6){const hill=segD(x,z,-262,40,-205,-225)<=118?0:segD(x,z,0,280,230,320)<=185?1:-1;if(hill<0)continue;const[gx,gz,sl]=grd(x,z);if(sl<.8||W.streetAt(x,z))continue;
@@ -784,13 +791,14 @@ async function buildRome(msg){
     const top=[],seeds=[],nH=[0,0],rej=[0,0],rkSeg=[];let nR=0;for(const h of[0,1]){const ch=cand.filter(c=>c.hill===h).sort((a,b)=>b.sl-a.sl);top.push(...ch.slice(0,Math.ceil(ch.length*.4)));}   // the steepest 40 % of the slope>.8 cells (20 % gave only 3 clusters: the steepest cells sit together under the temples)
     for(const c of top){if(nR>=40)break;if(nH[c.hill]>=20||seeds.some(q=>Math.hypot(q.x-c.x,q.z-c.z)<24))continue;seeds.push(c);
       const[sgx,sgz,ssl]=grd(c.x,c.z),dx=-sgx/ssl,dz=-sgz/ssl,tx=-dz,tz=dx,n=3+Math.floor(RC()*3);let off=-(n-1)/2*8;const pend=[];   // d = downhill, t = along the contour
-      for(let k=0;k<n&&nR<40;k++,off+=8){const kk=k===Math.floor(n/2)?(RC()<.5?'rome_rock_b':'rome_rock_a'):RC()<.45?'rome_rock_a':RC()<.7?'rome_rock_b':'rome_rock_c',[hx,hz,H]=dim[kk],s=.85+RC()*.4,el=kk==='rome_rock_c'?1.1:1.3+RC()*.5,sy=.5+RC()*.2,
+      for(let k=0;k<n&&nR<40;k++,off+=8){const kk=k===Math.floor(n/2)?(RC(),'rome_rock_a'):RC()<.45?'rome_rock_a':(RC(),'rome_rock_c'),[hx,hz,H]=dim[kk],s=.85+RC()*.4,el=kk==='rome_rock_c'?1.2:1.4+RC()*.5,sy=.3+RC()*.12,
           x=c.x+tx*(off+(RC()-.5)*2.5)+dx*(RC()-.5)*5-dx*hz*s*.25,z=c.z+tz*(off+(RC()-.5)*2.5)+dz*(RC()-.5)*5-dz*hz*s*.25,[gx,gz,sl]=grd(x,z),r=(sl>.25?Math.atan2(-gx,-gz):Math.atan2(-sgx,-sgz))+(RC()-.5)*.3;
         if(W.streetAt(x,z)){rej[0]++;continue;}if(W.foot.hits(x,z,hx*s*.25,hz*s*.25,r,0)){rej[1]++;continue;}
-        ROME.GLB.push({n:kk,x,y:gy(x,z)+sy*(1.5-.4*H)-.3,z,r,o:{inst:1,sx:s*el,sy,sz:s,tilt:Math.min(.95,Math.atan(Math.max(sl,.4))*.8)}});pend.push([x,z,hx*s*el,hz*s,r]);nR++;nH[c.hill]++;}
+        ROME.GLB.push({n:kk,x,y:gy(x,z)+sy*(1.5-.5*H)-.3,z,r,o:{inst:1,sx:s*el,sy,sz:s,tilt:Math.atan(Math.max(sl,.4))*.35}});pend.push([x,z,hx*s*el,hz*s,r]);nR++;nH[c.hill]++;}
       for(const q of pend)W.foot.add(...q);if(pend.length&&rkSeg.length<16)rkSeg.push([pend[0][0],pend[0][1],pend[pend.length-1][0]+.5,pend[pend.length-1][1]]);}   // (a cluster may overlap itself, not the buildings)
     rkSeg.forEach((q,i)=>U.uRk.value[i].set(...q));
-    W.nRocks=nR;W.rockInfo={rej,cand:cand.length,top:top.length,seeds:seeds.length};}}
+    W.nRocks=nR;W.rockInfo={rej,cand:cand.length,top:top.length,seeds:seeds.length};}
+   W.palScrub=palRockScrub(W);}   // scrub round the foot of the Palatine rock bases (palatine.js)
   /* ---- trees ---- */
   const treeN0=W.trees.length;
   {const R=RNG(91),cap=Math.round(21000*Q.trees);for(let z=-2800;z<3500&&W.trees.length<cap;z+=19)for(let x=-3100;x<2700;x+=19){const X=x+(R()-.5)*19,Z=z+(R()-.5)*19,[rd]=polyDist(X,Z,TIBER);if(rd<RTW+8)continue;
