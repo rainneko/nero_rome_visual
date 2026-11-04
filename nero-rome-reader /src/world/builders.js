@@ -496,8 +496,8 @@ function arcade(g,F,cx,y0,cz,len,h,nArch,thick,part,o={}){const s=new THREE.Shap
   const bay=len/nArch,r=bay*(o.span||.32),spring=o.spring??Math.max(.6,h-r-(o.attic??h*.22));
   for(let i=0;i<nArch;i++){const x=-len/2+bay*(i+.5);const p=new THREE.Path();p.moveTo(x-r,0);p.lineTo(x+r,0);p.lineTo(x+r,spring);p.absarc(x,spring,r,0,Math.PI,false);p.lineTo(x-r,0);s.holes.push(p);}
   const geo=new THREE.ExtrudeGeometry(s,{depth:thick,bevelEnabled:false,curveSegments:5});geo.translate(0,0,-thick/2);
-  const M=new THREE.Matrix4().makeRotationY(F.rot);const pp=F.p(cx,y0,cz);M.setPosition(pp[0],pp[1],pp[2]);g.set(part,o.seed||.4);g.addGeo(geo,M);
-  if(o.pilasters!==false){g.set(part,o.seed||.4);for(let i=0;i<=nArch;i++){const x=-len/2+bay*i;box(g,F,cx+x,y0,cz+thick/2+.18,.32,h*.94,.18,1|2|8);}}
+  const M=new THREE.Matrix4().makeRotationY(F.rot);const pp=F.p(cx,y0,cz);M.setPosition(pp[0],pp[1],pp[2]);g.set(part,o.seed||.4,o.sty||0);g.addGeo(geo,M);
+  if(o.pilasters!==false){g.set(part,o.seed||.4,o.sty||0);for(let i=0;i<=nArch;i++){const x=-len/2+bay*i;box(g,F,cx+x,y0,cz+thick/2+.18,.32,h*.94,.18,1|2|8);}}
   if(o.cornice!==false){g.set(2,.5);box(g,F,cx,y0+h-.35,cz,len/2+.15,.35,thick/2+.35,31);}}
 /* Roman substructure face (phase 5b): a blind-arcade wall along a plain block wall. S = frame whose local x runs along the wall (centred on it); the existing wall face is the plane z=zf and `out` (+1/-1)
    is the local z direction that points away from the building. Between pilaster buttresses every 6-8 m: two or three storeys of recessed, darker blind arches (each with a moulded ring and sill),
@@ -509,21 +509,21 @@ function _archGeo(aw,ah,depth,ring){const k=[aw.toFixed(2),ah.toFixed(2),depth,r
   let s;if(ring){s=arch(aw+1.0,ah+.5,-.45,new THREE.Shape());s.holes.push(arch(aw,ah,0,new THREE.Path()));}else s=arch(aw,ah,0,new THREE.Shape());
   return _subGeo[k]=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false,curveSegments:6});}
 function substructure(W,g,S,L,yTop,zf,out,o={}){
-  const gy=W.gy,nb=Math.max(1,Math.round(L/(o.bay||7))),bw=L/nb,hs=o.hs||9.5,pil=o.pil??2,dk=o.dark??38,Z=d=>zf+out*d,x0=-L/2,uf=o.unfinished,
+  const sty=o.sty||0,gy=W.gy,nb=Math.max(1,Math.round(L/(o.bay||7))),bw=L/nb,hs=o.hs||9.5,pil=o.pil??2,dk=o.dark??38,Z=d=>zf+out*d,x0=-L/2,uf=o.unfinished,
     fin=x=>!(uf&&x>uf.x0&&x<uf.x1),yc=yTop-1.0;
   const gAt=(x,w=0)=>{let m=1e9;for(const dx of[-w,0,w])for(const d of[-1.5,0,2,5]){const q=S.p(x+dx,0,Z(d));m=Math.min(m,gy(q[0],q[2]));}return m;};
   const B=(cx,y0,cz,hx,h,hz,f)=>box(g,S,cx,y0-S.oy,cz,hx,h,hz,f);
-  const rot=S.rot+(out<0?Math.PI:0),addX=(geo,x,y,part,seed)=>{const M=new THREE.Matrix4().makeRotationY(rot),p=S.p(x,y-S.oy,zf);M.setPosition(p[0],p[1],p[2]);g.set(part,seed);g.addGeo(geo,M);};
-  for(const[ca,cb]of uf?[[x0-.4,Math.max(x0-.4,uf.x0)],[Math.min(-x0+.4,uf.x1),-x0+.4]]:[[x0-.4,-x0+.4]]){if(cb-ca<.5)continue;g.set(pil,.5);B((ca+cb)/2,yTop-1.0,Z(.6),(cb-ca)/2,1.0,.6,31&~32);B((ca+cb)/2,yTop-1.35,Z(.3),(cb-ca)/2-.2,.4,.3,31&~32);}   // cornice and its soffit course
+  const rot=S.rot+(out<0?Math.PI:0),addX=(geo,x,y,part,seed)=>{const M=new THREE.Matrix4().makeRotationY(rot),p=S.p(x,y-S.oy,zf);M.setPosition(p[0],p[1],p[2]);g.set(part,seed,part===pil?sty:0);g.addGeo(geo,M);};
+  for(const[ca,cb]of uf?[[x0-.4,Math.max(x0-.4,uf.x0)],[Math.min(-x0+.4,uf.x1),-x0+.4]]:[[x0-.4,-x0+.4]]){if(cb-ca<.5)continue;g.set(pil,.5,sty);B((ca+cb)/2,yTop-1.0,Z(.6),(cb-ca)/2,1.0,.6,31&~32);B((ca+cb)/2,yTop-1.35,Z(.3),(cb-ca)/2-.2,.4,.3,31&~32);}   // cornice and its soffit course
   let nA=0;
   for(let j=0;j<nb;j++){const xa=x0+j*bw,xc=xa+bw/2,gB=gAt(xc,bw*.4);
-    if(!fin(xc)){g.set(pil,.5);continue;}
+    if(!fin(xc)){g.set(pil,.5,sty);continue;}
     for(let k=0;k<4;k++){const yt=yc-k*hs,yb=yt-hs;if(yt<gB+2.5)break;
       const y0=Math.max(yb+.9,gB+.15),ah=yt-.9-y0,aw=Math.min(bw-2.5,6);if(ah<.5*(hs-1.8)||aw<1.8)continue;   // a storey the ground cuts to less than half is left as plain wall
       addX(_archGeo(aw,ah,.5,true),xc,y0,pil,.5);addX(_archGeo(aw,ah,.2,false),xc,y0,dk,.5);nA++;
-      g.set(pil,.5);B(xc,yb-.1,Z(.2),bw/2-.55,.55,.2,31&~32);}   // string course under every storey, between the buttresses
-    g.set(pil,.5);B(xc,yc-.25,Z(.2),bw/2-.55,.55,.2,31&~32);}
-  for(let i=0;i<=nb;i++){const x=x0+i*bw;if(uf&&x>uf.x0+.1&&x<uf.x1-.1)continue;const b=gAt(x,.7)-1.5;g.set(pil,.5);B(x,b,Z(.35),.62,yTop-1.0-b,.35,31&~32);B(x,yc-1.1,Z(.45),.82,.55,.45,31&~32);}   // buttress pilasters with a capital
+      g.set(pil,.5,sty);B(xc,yb-.1,Z(.2),bw/2-.55,.55,.2,31&~32);}   // string course under every storey, between the buttresses
+    g.set(pil,.5,sty);B(xc,yc-.25,Z(.2),bw/2-.55,.55,.2,31&~32);}
+  for(let i=0;i<=nb;i++){const x=x0+i*bw;if(uf&&x>uf.x0+.1&&x<uf.x1-.1)continue;const b=gAt(x,.7)-1.5;g.set(pil,.5,sty);B(x,b,Z(.35),.62,yTop-1.0-b,.35,31&~32);B(x,yc-1.1,Z(.45),.82,.55,.45,31&~32);}   // buttress pilasters with a capital
   if(uf){const xa=Math.max(x0,uf.x0),xb=Math.min(-x0,uf.x1),n=Math.max(2,Math.round((xb-xa)/2.4)),P=(x,y,d)=>S.p(x,y,Z(d));   // scaffolding: poles, ledgers, putlogs and two plank decks
     for(let i=0;i<=n;i++){const x=xa+(xb-xa)*i/n,b=gAt(x)-.4,h=yTop+2.5-b;g.set(32,.5);B(x,b,Z(1.5),.07,h,.07,31&~32);B(x,b,Z(2.9),.07,h,.07,31&~32);
       for(let l=0;l<=Math.floor(h/3.2);l++){const y=b+1.5+l*3.2;if(y>yTop+2)break;g.set(32,.4);B(x,y,Z(2.2),.04,.1,1.5,31);}}
