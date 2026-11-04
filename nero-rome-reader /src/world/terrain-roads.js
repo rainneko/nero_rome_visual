@@ -93,7 +93,7 @@ function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0};
     for(const r of runs)if(r[2]){r[0]=Math.max(0,r[0]-6);r[1]=Math.min(L,r[1]+6);}
     const M=[];for(const r of runs){const q=M[M.length-1];if(q&&r[0]-q[1]<o.gap){q[1]=Math.max(q[1],r[1]);q[2]=q[2]||r[2];}else M.push(r);}
     runs=M.filter(r=>r[2]||r[1]-r[0]>=o.min);if(runs.length){if(runs[0][0]<o.gap)runs[0][0]=0;if(L-runs[runs.length-1][1]<o.gap)runs[runs.length-1][1]=L;}
-    const piece=(a,b,ww,hill)=>{if(b-a<1)return;const pts=[at(a)];for(let i=1;i<P.length-1;i++)if(cum[i]>a+.5&&cum[i]<b-.5)pts.push(P[i].slice());pts.push(at(b));out.push(hill?[ww,pts,{hill:true,w0:w}]:[ww,pts]);};
+    const piece=(a,b,ww,hill)=>{if(b-a<1)return;const pts=[at(a)];for(let i=1;i<P.length-1;i++)if(cum[i]>a+.5&&cum[i]<b-.5)pts.push(P[i].slice());pts.push(at(b));out.push(hill?[ww,pts,Object.assign({},R[2],{hill:true,w0:w})]:R[2]?[ww,pts,R[2]]:[ww,pts]);};   // a piece keeps its road's meta (name, kind, stairs)
     let s0=0;for(const[a,b]of runs){piece(s0,a,w,false);piece(a,b,HW,true);st.pieces++;st.metres+=b-a;s0=b;}piece(s0,L,w,false);}
   st.metres=Math.round(st.metres);W.roadHill=st;return out;}
 
