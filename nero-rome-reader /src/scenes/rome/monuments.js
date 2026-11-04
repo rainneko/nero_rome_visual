@@ -24,12 +24,22 @@ function romeFar(x,z){const r=Math.hypot(x,z);let h=12+34*fbm(x*.0004,z*.0004,4)
 const CLP=(()=>{const P0=[2790,-60],P1=[2545,56],L=Math.hypot(P0[0]-P1[0],P0[1]-P1[1]),ux=(P0[0]-P1[0])/L,uz=(P0[1]-P1[1])/L,tx=P1[0]+ux*18,tz=P1[1]+uz*18,rot=Math.atan2(-uz,ux),c=Math.cos(rot),s=Math.sin(rot),lx=5,lz=6;
   return{tx,tz,rot,c,s,cx:tx+lx*c+lz*s,cz:tz-lx*s+lz*c,hw:24,hd:14,on:false,h:0};})();
 function claudiaPad(x,z,h){const q=CLP,dx=x-q.cx,dz=z-q.cz;if(dx*dx+dz*dz>3600)return h;const u=q.c*dx-q.s*dz,v=q.s*dx+q.c*dz,e=Math.min(q.hw-Math.abs(u),q.hd-Math.abs(v));return e>-10?lerp(h,q.h,clamp((e+10)/10,0,1)):h;}
-// Capitoline terraces (Jupiter's PLY and the lower LOW terrace): an embankment (slope .95, ~42 deg) outside each polygon edge up to the terrace level, so the retaining wall is a short coping and not a 25 m sheet hanging over the slope
-const CAPF={on:false,y:0,cx:-275,cz:10,T:[[[-62,-50],[-30,-64],[30,-64],[62,-46],[72,10],[66,72],[36,92],[-22,96],[-60,78],[-72,30]],0],L:[[[-72,30],[-60,78],[-22,96],[-30,124],[-84,112],[-100,62]],-5.9]};
-function capFill(x,z,h){const dx=x-CAPF.cx,dz=z-CAPF.cz;if(dx<-150||dx>150||dz<-170||dz>190)return h;let out=h;
-  for(const k of['T','L']){const[P,yo]=CAPF[k];let dmin=1e9,ins=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[j],b=P[i];if(((a[1]>dz)!==(b[1]>dz))&&(dx<(b[0]-a[0])*(dz-a[1])/(b[1]-a[1])+a[0]))ins=!ins;dmin=Math.min(dmin,segD(dx,dz,a[0],a[1],b[0],b[1]));}
-    if(ins||dmin>45)continue;out=Math.max(out,CAPF.y+yo-.5-dmin*.95);}
+// Capitoline terraces (Jupiter's PLY and the lower LOW terrace, phase 2 of the podium brief, 2026-11-04). Outside each outline the ground is filled up to a crest
+// WH m under the terrace, so a retaining wall of about that height shows above it (terraceEdge), and falls away at the slope given; values per vertex [WH, slope],
+// an edge runs from its first vertex's to its second's; null: no fill (the edge between the two terraces, where the upper wall stands on the lower floor).
+// Inside, the ground is held under the floor: at the crest of the nearest edge within 3 m of it, 0.25-1.2 m under the floor from 8 m in.
+// On the west and south-west (the Tarpeian side) the fill is steep and short: the old one (0.5 m under the terrace, slope .95) buried the Porta Carmentalis under a 20 m mound.
+const CAPF={on:false,y:0,cx:-275,cz:10,T:[[[-62,-50],[-30,-64],[30,-64],[62,-46],[72,10],[66,72],[36,92],[-22,96],[-60,78],[-72,30]],0,[[7,2.2],[4,1.2],[.5,.95],[.5,.95],[.5,.95],[5,1.2],[7,1.6],[7,1.6],null,[9,2.5]],[7,8]],
+  L:[[[-72,30],[-60,78],[-22,96],[-30,124],[-84,112],[-100,62]],-5.9,[[9,2.5],null,[7,1.8],[10,2.6],[12,3],[11,3]],[0,1]]};
+function capFill(x,z,h){const dx=x-CAPF.cx,dz=z-CAPF.cz;if(dx<-150||dx>150||dz<-170||dz>190)return h;let out=h,inside=null;const lowTop=CAPF.y+CAPF.L[1];
+  const ed=(k,cb)=>{const[P,yo,V,skip]=CAPF[k],top=CAPF.y+yo;for(let i=0;i<P.length;i++){const j=(i+1)%P.length,a=P[i],b=P[j],ex=b[0]-a[0],ez=b[1]-a[1],l2=ex*ex+ez*ez,t=clamp(((dx-a[0])*ex+(dz-a[1])*ez)/l2,0,1),d=Math.hypot(a[0]+ex*t-dx,a[1]+ez*t-dz);
+      if(skip.includes(i))cb(d,lowTop-.6,0);else cb(d,top-lerp(V[i][0],V[j][0],t),lerp(V[i][1],V[j][1],t));}};
+  for(const k of['T','L']){const P=CAPF[k][0];let ins=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[j],b=P[i];if(((a[1]>dz)!==(b[1]>dz))&&(dx<(b[0]-a[0])*(dz-a[1])/(b[1]-a[1])+a[0]))ins=!ins;}if(ins){inside=k;break;}}
+  if(inside){const top=CAPF.y+CAPF[inside][1];let dm=1e9,cr=top-.6,sk=false;ed(inside,(d,c,sl)=>{if(d<dm){dm=d;cr=c;sk=sl===0;}});return lerp(cr,clamp(h,top-1.2,top-.25),sk?sstep(6,11,dm):sstep(3,8,dm));}   // behind the wall between the two floors the ground stays at the lower floor for 6 m: the rooms in that wall (B8) are 4.7 m deep
+  for(const k of['T','L'])ed(k,(d,c,sl)=>{if(sl>0&&d<45)out=Math.max(out,c-d*sl);});
   return out;}
+const CAP_SCIP=(()=>{const a=[66,72],b=[36,92],L=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/L,uz=(b[1]-a[1])/L;return{x:a[0]+ux*9,z:a[1]+uz*9,rot:Math.atan2(uz,-ux),nx:uz,nz:-ux};})();   // the Scipio arch on PLY edge 5 (frame local x along the wall, z out)
+const CAP_PATCH=[-440,-100,-262,190];   // whole coarse cells x -440..-272, z -99.2..182.4: no main road runs through it; it stops west of the Palatine patch (x -200)
 // Boarium tholos fountain (Forum Boarium frame: centre (-440,215), rot 60 deg, local (0,17)): a level pad of the ground height at its centre, blended into the bank over ~7 m
 const THP={x:-425.3,z:223.5,r:18,h:0,on:false};
 function romeH(x,z){let h=romeRaw(x,z);
@@ -141,11 +151,13 @@ async function buildRome(msg){
   {let m=0,k=0;for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const lx=5+i*CLP.hw*.8,lz=6+j*CLP.hd*.8,tx0=CLP.tx+lx*CLP.c+lz*CLP.s,tz0=CLP.tz-lx*CLP.s+lz*CLP.c;m+=romeH(tx0,tz0);k++;}CLP.h=m/k;CLP.on=true;}   // mean ground under the footprint
   THP.h=romeH(THP.x,THP.z);THP.on=true;
   {const y0c=romeH(CAPF.cx,CAPF.cz);let yt=0;for(const[px,pz]of CAPF.T[0])yt=Math.max(yt,romeH(CAPF.cx+px*.8,CAPF.cz+pz*.8)-y0c);CAPF.y=y0c+Math.max(.15,yt-2.2);CAPF.on=true;}   // terrace level as the Capitol block computes it (before the embankment exists)
-  buildGrid(W,R_EXT,Q.name==='low'?320:500,romeH);
-  terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH}]);
+  const GRID_N=500;buildGrid(W,R_EXT,Q.name==='low'?320:GRID_N,romeH);   // the low tier's grid is coarser
+  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH}];
+  terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
+  W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
   buildFarmland(W);   // the crop map: fields, vineyards, olive groves and their seasons (farmland.js)
-  const fpw=(F,x,z,hw,hd,r=0)=>{const q=F.p(x,0,z);W.foot.add(q[0],q[2],hw,hd,F.rot+r);};
+  const fpw=(F,x,z,hw,hd,r=0)=>{const q=F.p(x,0,z);return W.foot.add(q[0],q[2],hw,hd,F.rot+r);};
   const sqF=(F,x,z,y,rot=0)=>{const q=F.p(x,y,z);let yb=q[1];if(W.gy){for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]]){const h=gy(q[0]+a*4.3,q[2]+b*4.3);if(h<yb-.01&&Math.abs(h-q[1])<3)yb=h;}}romePlace('rome_tholos_fountain',q[0],Math.min(q[1],yb),q[2],F.rot+rot);W.foot.add(q[0],q[2],5.2,5.2,0);};   // tholos fountain on a square (GLB, 8.6 m)
   const poi=(n,l,x,z,h,s0,s1,info,d)=>W.pois.push({n,l,x,z,y:gy(x,z)+h,s0:s0??0,s1:s1??99,info:info||'',d:d||3000});
   await msg('建造罗马广场与元老院……');
@@ -191,7 +203,7 @@ async function buildRome(msg){
   await msg('建造帕拉蒂尼山皇宫……');
   /* ---- Palatine ---- */
   const gP=new GB(1<<16),PalF=(x,z)=>frame(x,gy(x,z),z,-30*DEG);
-  {const F=PalF(-5,205);flushColumns(W);const gD=new GB(1<<14),DG=new THREE.Group(),gS=new GB(1<<15);courtBlock(W,gD,F,{cx:0,cz:0,w:130,d:100,y0:0,nSt:3,sH:4.6,gH:5.6,cw:64,cd:44,part:24,seed:.36,sty:13,fl:8|32|4|64,garden:false});{const dm=gD.mesh(MAT.city);if(dm)DG.add(dm);}W.colGroup=DG;flushColumns(W);W.colGroup=null;W.scene.add(DG);W.dtProc=DG;W.dtPos=[F.ox,F.oy,F.oz];W.dtRot=F.rot+Math.PI;fpw(F,0,0,66,51);
+  {const F=PalF(-5,205);flushColumns(W);const gD=new GB(1<<14),DG=new THREE.Group(),gS=new GB(1<<15);courtBlock(W,gD,F,{cx:0,cz:0,w:130,d:100,y0:0,nSt:3,sH:4.6,gH:5.6,cw:64,cd:44,part:24,seed:.36,sty:13,fl:8|32|4|64,garden:false});{const dm=gD.mesh(MAT.city);if(dm)DG.add(dm);}W.colGroup=DG;flushColumns(W);W.colGroup=null;W.scene.add(DG);W.dtProc=DG;W.dtPos=[F.ox,F.oy,F.oz];W.dtRot=F.rot+Math.PI;W.dtFoot=fpw(F,0,0,66,51);
     gS.set(6,.3);box(gS,F,0,0,0,15,.6,9,31);pedestalStatue(gS,F,0,0,.6,5,{gilt:true});
     gS.set(23,.4);for(const[bx,bz]of[[-24,-15],[24,-15],[-24,15],[24,15],[0,-17],[0,17]])box(gS,F,bx,0,bz,3.2,1.1,1.6,31);
     {const yT=5.6+2*4.6,E=F.sub(-52,yT+5.6,36,.6);gS.set(2,.5);box(gS,F,-52,yT+4.6,36,.6,1.4,.6,31);gS.set(25,.6);box(gS,E,0,0,0,.3,.45,.5,31);box(gS,E,0,.4,.42,.16,.2,.18,31);box(gS,E,0,.05,-.55,.12,.25,.2,31);box(gS,E,.55,.25,0,.6,.05,.32,31);box(gS,E,-.32,.25,0,.14,.05,.2,31);
@@ -211,36 +223,29 @@ async function buildRome(msg){
   await msg('建造卡比托利欧山与大竞技场……');
   /* ---- Capitoline ---- */
   const gC=new GB(1<<16);
-  {const x=-275,z=10,y0c=gy(x,z),PLY=[[-62,-50],[-30,-64],[30,-64],[62,-46],[72,10],[66,72],[36,92],[-22,96],[-60,78],[-72,30]];let yt=0;for(const[px,pz]of PLY)yt=Math.max(yt,gy(x+px*.8,z+pz*.8)-y0c);const y=y0c+Math.max(.15,yt-2.2);W.capPLY=PLY;W.capY=y;flushColumns(W);const gJ=new GB(1<<14),JG=new THREE.Group();temple(W,gJ,{x,y,z,rot:0,W:50,L:62,podH:5,colH:15,nf:6,rows:3,peri:true,roof:'gilt',colTint:[1,.98,.92],seed:.27});const jm=gJ.mesh(MAT.city);if(jm)JG.add(jm);W.colGroup=JG;flushColumns(W);W.colGroup=null;W.scene.add(JG);W.jomProc=JG;W.jomPos=[x,y-.8,z];
-    const F=frame(x,y,z,0);
-    const terrace=(P,yTop)=>{const c=P.reduce((a2,p)=>[a2[0]+p[0]/P.length,a2[1]+p[1]/P.length],[0,0]);gC.set(11,.3);
-      for(let i=0;i<P.length;i++){const a2=P[i],b2=P[(i+1)%P.length];gC.poly([F.p(c[0],yTop+.08,c[1]),F.p(a2[0],yTop+.08,a2[1]),F.p(b2[0],yTop+.08,b2[1])],[0,1,0]);}
-      for(let i=0;i<P.length;i++){const a2=P[i],b2=P[(i+1)%P.length];
-        let nx=b2[1]-a2[1],nz=-(b2[0]-a2[0]);const mx=(a2[0]+b2[0])/2-c[0],mz=(a2[1]+b2[1])/2-c[1];if(nx*mx+nz*mz<0){nx=-nx;nz=-nz;}const nl=Math.hypot(nx,nz)||1;
-        const nSg=Math.max(1,Math.ceil(Math.hypot(b2[0]-a2[0],b2[1]-a2[1])/4));   // the retaining wall follows the ground in 4 m runs (one quad per edge left a pale wedge hanging over the slope)
-        for(let k=0;k<nSg;k++){const u0=k/nSg,u1=(k+1)/nSg,p0=[lerp(a2[0],b2[0],u0),lerp(a2[1],b2[1],u0)],p1=[lerp(a2[0],b2[0],u1),lerp(a2[1],b2[1],u1)],q0=F.p(p0[0],0,p0[1]),q1=F.p(p1[0],0,p1[1]),qm=F.p((p0[0]+p1[0])/2,0,(p0[1]+p1[1])/2),
-          yb=Math.min(gy(q0[0],q0[2]),gy(q1[0],q1[2]),gy(qm[0],qm[2]),F.oy+yTop)-1.6;
-          gC.set(37,.36);gC.poly([F.p(p0[0],yb-F.oy,p0[1]),F.p(p1[0],yb-F.oy,p1[1]),F.p(p1[0],yTop,p1[1]),F.p(p0[0],yTop,p0[1])],F.d(nx/nl,0,nz/nl));   // tufa substruction, not white marble
-          gC.poly([F.p(p1[0],yb-F.oy,p1[1]),F.p(p0[0],yb-F.oy,p0[1]),F.p(p0[0],yTop,p0[1]),F.p(p1[0],yTop,p1[1])],F.d(-nx/nl,0,-nz/nl));}
-        const Lw=Math.hypot(b2[0]-a2[0],b2[1]-a2[1]),S=F.sub((a2[0]+b2[0])/2,0,(a2[1]+b2[1])/2,Math.atan2(-(b2[1]-a2[1]),b2[0]-a2[0]));gC.set(2,.5);box(gC,S,0,yTop,0,Lw/2+.3,.95,.32,31);}};
-    const LY=-5.9;terrace(PLY,0);const LOW=[[-72,30],[-60,78],[-22,96],[-30,124],[-84,112],[-100,62]];terrace(LOW,LY);   // the paired-temple terrace sits 1.3 m lower than before (was -4.6)
-    
-    {const S1=F.sub(-28,0,93,Math.atan2(-.43,.9));gC.set(2,.5);for(let i=0;i<21;i++){box(gC,S1,0,LY-.3,.22+i*.42,2.1,-LY+.3-i*.28,.21,31);}for(const sd of[1,-1])box(gC,S1,sd*2.35,LY-.3,4.4,.25,7,4.4,31);
-     {const path=[[-22,96],[-30,124],[-84,112]];let seg=0,t=1.2,yT=LY;for(let k=0;k<140;k++){let a=path[seg],b=path[seg+1],L3=Math.hypot(b[0]-a[0],b[1]-a[1]);if(t>L3-1.4){if(seg+1>=path.length-1)break;seg++;t=1.6;a=path[seg];b=path[seg+1];L3=Math.hypot(b[0]-a[0],b[1]-a[1]);}
-       const dx=(b[0]-a[0])/L3,dz=(b[1]-a[1])/L3,nx=dz,nz=-dx,px=a[0]+dx*t+nx*1.75,pz=a[1]+dz*t+nz*1.75,S=F.sub(px,0,pz,Math.atan2(dx,dz)),q=F.p(px,0,pz),gl=gy(q[0],q[2])-F.oy;if(yT<=gl+.25)break;
-       const yb=gl-.6;gC.set(2,.46);box(gC,S,0,yb,0,1.35,yT-yb,.22,31);gC.set(2,.52);box(gC,S,1.5,yb,0,.2,yT-yb+.9,.22,31);t+=.42;yT-=.3;}}}
+  {const x=-275,z=10,y0c=gy(x,z),PLY=[[-62,-50],[-30,-64],[30,-64],[62,-46],[72,10],[66,72],[36,92],[-22,96],[-60,78],[-72,30]];const y=CAPF.y;W.capPLY=PLY;W.capY=y;flushColumns(W);const gJ=new GB(1<<14),JG=new THREE.Group();temple(W,gJ,{x,y,z,rot:0,W:50,L:62,podH:5,colH:15,nf:6,rows:3,peri:true,roof:'gilt',colTint:[1,.98,.92],seed:.27});const jm=gJ.mesh(MAT.city);if(jm)JG.add(jm);W.colGroup=JG;flushColumns(W);W.colGroup=null;W.scene.add(JG);W.jomProc=JG;W.jomPos=[x,y-.8,z];
+    const F=frame(x,y,z,0),LY=-5.9,LOW=[[-72,30],[-60,78],[-22,96],[-30,124],[-84,112],[-100,62]];W.capLOW=LOW;W.capLY=LY;   // the paired-temple terrace sits 5.9 m under Jupiter's
+    // C1 floors: white marble and travertine slabs; a 1 m band of dark stone along the porticoes and down the temple's axis, a drain at the porticoes' edge.
+    // C2: coloured marble squares under the porticoes. The walls round both terraces (terraceEdge) are built further down, once the Clivus and the stairs exist.
+    {const floor=(P,yTop)=>{const c=P.reduce((a2,p)=>[a2[0]+p[0]/P.length,a2[1]+p[1]/P.length],[0,0]);gC.set(49,.32);for(let i=0;i<P.length;i++){const a2=P[i],b2=P[(i+1)%P.length];gC.poly([F.p(c[0],yTop+.08,c[1]),F.p(a2[0],yTop+.08,a2[1]),F.p(b2[0],yTop+.08,b2[1])],[0,1,0]);}};
+     floor(PLY,0);floor(LOW,LY);
+     const q=(S,x0,z0,x1,z1,part)=>{gC.set(part,.5);gC.poly([S.p(x0,.1,z0),S.p(x1,.1,z0),S.p(x1,.1,z1),S.p(x0,.1,z1)],[0,1,0]);};
+     q(F,-30.6,-58.6,30.6,-50.9,34);q(F,-30.6,-50.9,30.6,-50.6,41);q(F,-30.6,-50.6,30.6,-49.6,38);   // the north portico
+     {const S=F.sub(61,0,1,Math.atan2(-78,6)),L=Math.hypot(6,78);q(S,-L/2-.6,-7.1,L/2+.6,.6,34);q(S,-L/2-.6,.6,L/2+.6,.9,41);q(S,-L/2-.6,.9,L/2+.6,1.9,38);}   // the east portico (its open side faces west)
+     q(F,-.5,40,.5,94,38);}   // the temple's axis, from its stair to the south edge
+    terraceReserve(W,F,PLY,{skip:[7,8]});terraceReserve(W,F,LOW,{skip:[0,1]});
     {const yl=F.oy+LY;for(const[lx,lz,sd]of[[-77,82,.48],[-49,98,.51]])temple(W,gC,{x:F.ox+lx,y:yl,z:F.oz+lz,rot:0,W:12,L:20,podH:2.6,colH:8,nf:6,rows:1,peri:true,seed:sd,pave:false,sculpt:false});
      const ch=new THREE.Mesh(new THREE.PlaneGeometry(4,22).rotateX(-Math.PI/2),MAT.pool);ch.position.set(F.ox-63,yl+.25,F.oz+91);ch.rotation.y=-.45;W.scene.add(ch);gC.set(2,.5);for(const sd of[1,-1])box(gC,F.sub(-63,0,91,-.45),sd*2.3,LY-.3,0,.3,.6,11,31);
      poi('心智女神与厄律克斯维纳斯神庙','Aedes Mentis · Veneris Erycinae',F.ox-63,F.oz+90,14,0,99,'【史】前215年在卡比托利欧山上并排落成的两座神庙，中间只隔一道水渠（李维《罗马史》23.31）。',900);}
     temple(W,gC,{x:F.ox-48,y:F.oy,z:F.oz+40,rot:Math.PI/2,W:6,L:7,podH:1.2,colH:3.6,nf:2,rows:1,seed:.55,pave:false,sculpt:false,stairs:true});
     fountain(W,gC,F.ox+30,F.oz+66,{hx:5.2,hz:3.2,y:F.oy+.08});
-    {const GF=F.sub(54,0,86,-.75);arcade(gC,GF,0,0,0,9,8.2,1,2.2,2,{span:.36,attic:1.6});}
+    {const GF=F.sub(CAP_SCIP.x,0,CAP_SCIP.z,CAP_SCIP.rot);arcade(gC,GF,0,0,0,9,8.2,1,2.2,2,{span:.36,attic:1.6});}   // the gate of the precinct in the south-east wall, at the head of the Centum Gradus
     openPortico(W,gC,F,-30,-58,30,-58,0,6.8,6.5,3.6,[1,.97,.9]);openPortico(W,gC,F,58,-38,64,40,0,6.8,-6.5,3.6,[1,.97,.9]);
-    for(const[px,pz]of PLY){const q=F.p(px*.92,0,pz*.92);W.foot.add(q[0],q[2],10,10,0);}W.foot.add(x,z+14,70,80,0);}
+    for(const[px,pz]of PLY){const q=F.p(px*.92,0,pz*.92);W.foot.add(q[0],q[2],10,10,0,'precinct');}W.foot.add(x,z+14,70,80,0,'precinct');}
   {const F=frame(-275,W.capY||gy(-275,10),10,0),TS=(lx,lz,b,o)=>{const q=F.p(lx,0,lz);temple(W,gC,Object.assign({x:q[0],y:F.oy,z:q[2],rot:Math.PI-b*DEG,band:false,pave:false,altar:false,fest:false},o));return q;};
    const q1=TS(38,-18,90,{W:9,L:15,podH:3.4,colH:7,nf:4,rows:1,seed:.44}),q2=TS(38,18,90,{W:9,L:15,podH:3.4,colH:7,nf:4,rows:1,seed:.47}),q3=TS(-38,-20,270,{W:7,L:10,podH:2.8,colH:5.5,nf:4,rows:1,seed:.52,sculpt:false});
    gC.set(2,.55);box(gC,F,0,0,60,2.6,1.5,1.6,31);for(const[sx,sz]of[[-16,58],[16,58],[-28,66],[28,66],[-40,52],[40,56]])pedestalStatue(gC,F,sx,sz,0,4.5,{gilt:Math.abs(sx)<20});for(const sx of[-22,22]){const q=F.p(sx,0,78);W.cols.cor.push([q[0],F.oy,q[2],0,11,[1,.97,.9]]);pedestalStatue(gC,F,sx,78,11.4,2.6,{gilt:true});}
-   for(const[tx,tz]of[[-50,46],[52,62],[-48,-40]]){const q=F.p(tx,0,tz);W.trees.push([q[0],F.oy,q[2],'cyp',.9]);}
+   for(const[tx,tz]of[[-50,46],[52,62],[-48,-40]])treePit(W,gC,F,tx,tz,0,'cyp',.9);
    poi('诚信女神神庙','Aedes Fidei',q1[0],q1[2],14,0,99,'卡比托利欧山上的古老神庙，元老院有时在这里开会，墙上挂着外交条约的铜板。',900);poi('丰饶女神神庙','Aedes Opis',q2[0],q2[2],14,0,99,'奥普斯女神的神庙，凯撒曾把国库存放在这里。',900);poi('朱庇特·费雷特里乌斯神庙','Aedes Iovis Feretrii',q3[0],q3[2],12,0,99,'罗马最古老的神庙，罗慕路斯在这里献上敌将的盔甲。',900);}
   // The Area Capitolina was crowded (the author, 2026-11-02): what else stood on it by AD 56. 【史】It was so full that in 179 BC the censors had statues and columns taken
   // away that stood in the way (Livy 40.51). Nothing later than Nero: no Jupiter Custos (Domitian), no Arch of Nero (AD 62).
@@ -284,17 +289,26 @@ async function buildRome(msg){
    {const t0=gC.nv;gC.set(2,.5);box(gC,F,44,0,28,3.7,.3,1.15,31);gC.set(6,.55);box(gC,F,44,.3,28,3.4,1.4,.9,31);for(const x of[41.8,44,46.2])statue(gC,F,x,1.7,28,2.3,true);gild(t0);
     const q=P(44,28);poi('博库斯献的镀金群像','Donum Bocchi',q[0],q[2],6,0,99,'【史】前91年毛里塔尼亚国王博库斯在卡比托利欧山上献了一组镀金像：他把朱古达交到苏拉手里。马略为此大怒（普鲁塔克《苏拉传》6、《马略传》32）。',500);}
    // the gate arch at the head of the way up becomes the arch of Scipio Africanus, with its seven gilt statues and two horses on top
-   {const S=F.sub(54,0,86,-.75),t0=gC.nv;gC.set(40,.4);for(let k=0;k<7;k++)statue(gC,S,-2.7+k*.9,8.2,0,1.9,true);for(const sx of[-3.9,3.9])horse(S,sx,8.2,0);gild(t0);
-    const q=P(54,86);poi('西庇阿拱门','Fornix Scipionis',q[0],q[2],12,0,99,'【史】前190年大西庇阿出征亚洲之前，在卡比托利欧山上正对上山的路修了一座拱门，上面立着七尊镀金像和两匹马，门前放了两只大理石水盆（李维《罗马史》37.3）。',600);}}
+   {const S=F.sub(CAP_SCIP.x,0,CAP_SCIP.z,CAP_SCIP.rot),t0=gC.nv;gC.set(40,.4);for(let k=0;k<7;k++)statue(gC,S,-2.7+k*.9,8.2,0,1.9,true);for(const sx of[-3.9,3.9])horse(S,sx,8.2,0);gild(t0);
+    const q=P(CAP_SCIP.x,CAP_SCIP.z);poi('西庇阿拱门','Fornix Scipionis',q[0],q[2],12,0,99,'【史】前190年大西庇阿出征亚洲之前，在卡比托利欧山上正对上山的路修了一座拱门，上面立着七尊镀金像和两匹马，门前放了两只大理石水盆（李维《罗马史》37.3）。',600);}}
   temple(W,gC,{x:-200,y:gy(-200,-210),z:-210,rot:Math.PI-135*DEG,W:20,L:32,podH:3.5,colH:10,nf:6,rows:2,seed:.5});
   W.foot.add(-200,-210,15,21,Math.PI-135*DEG);
-  {const RS=RNG(41);let placed=0;
+  // C3 (podium brief, phase 2): 【史】Romulus opened his refuge in the saddle between the Capitol's two tops, the place "between the two groves" (inter duos lucos,
+  // Livy 1.8.5): two small groves of holm oak and laurel on either side of it, reserved before the saddle houses. Plane trees and laurels in stone pits on the lower terrace.
+  {for(const[gx,gz,n]of[[-260,-84,10],[-222,-160,11]]){W.foot.addCircle(gx,gz,13,'open');   // clear of the Veiovis temple (-232,-112), which stood in the asylum between them: its test box (9 x 13 m and 2 m) is 4 m off the first grove's
+   for(let k=0;k<n;k++){const a=k*2.4+teH(gx,gz,k)*1.1,r=3+9*Math.sqrt((k+.5)/n),x=gx+Math.cos(a)*r,z=gz+Math.sin(a)*r,h=teH(x,z,2);W.trees.push([x,gy(x,z),z,h<.78?'broadD':'plane',.85+.4*teH(x,z,3),null,3]);}}
+   const F=frame(-275,W.capY,10,0);for(const[tx,tz,k]of[[-82,44,'plane'],[-89,57,'broadD'],[-93,70,'plane']])treePit(W,gC,F,tx,tz,W.capLY,k,1);
+   poi('两片圣林之间','Inter duos lucos',-240,-122,10,0,99,'【史】卡比托利欧两峰之间的鞍部。罗慕路斯在这里开了避难所，李维说那地方“如今围起来了，下山时在两片圣林之间”（《罗马史》1.8）。',700);}
+  // E3: the Scalae Gemoniae, from the Arx down to the Forum by the prison (built like the other hill stairs, hillStair)
+  {const R=hillRoute(W,[-175,-150],[-115,-142],{lim:.3,half:14,step:2});hillStair(W,R,3.2,gy(-175,-150));W.capGem=R;const m=R[Math.floor(R.length/2)];
+   poi('哀悼阶梯','Scalae Gemoniae',m[0],m[1],10,0,99,'【史】从广场边的监狱旁登上卡比托利欧山的阶梯。提比略时代处死的人被扔在这里示众，再拖进台伯河：公元31年的塞扬努斯（卡西乌斯·狄奥《罗马史》58.11）；公元28年提提乌斯·萨比努斯的狗守在主人的尸体旁，人们把食物扔给它，它叼到主人嘴边（老普林尼《博物志》8.145）。',800);}
+  {let placed=0;
    {const vx=-232,vz=-112,vy=gy(vx,vz);if(!W.foot.hits(vx,vz,9,13,0,2)){temple(W,gC,{x:vx,y:vy,z:vz,rot:Math.PI*.5,W:12,L:18,podH:2.4,colH:7,nf:4,rows:1,seed:.46,sculpt:false});W.foot.add(vx,vz,8,11,Math.PI*.5);poi('维尤维斯神庙','Aedes Veiovis',vx,vz,14,0,99,'卡比托利欧两座山顶之间鞍部（避难所）里的小神庙。',900);}}
    {const F=frame(-252,gy(-252,-140),-140,0);gC.set(11,.34);gC.poly([F.p(-14,.1,-10),F.p(14,.1,-10),F.p(14,.1,10),F.p(-14,.1,10)],[0,1,0]);W.foot.add(-252,-140,15,11,0);}
-   for(let t=0;t<520&&placed<34;t++){const x=-318+RS()*140,z=-192+RS()*132,rot=(RS()-.5)*.5,two=RS()<.6,w=8+RS()*5,d=7.5+RS()*4.5;
+   for(let t=0;t<520&&placed<34;t++){const RS=RNG(41*65537+t*7919),x=-318+RS()*140,z=-192+RS()*132,rot=(RS()-.5)*.5,two=RS()<.6,w=8+RS()*5,d=7.5+RS()*4.5;
      if(W.foot.hits(x,z,w/2+1,d/2+1,rot,2))continue;const y=gy(x,z);if(Math.abs(gy(x+w/2,z)-gy(x-w/2,z))>4||Math.abs(gy(x,z+d/2)-gy(x,z-d/2))>4)continue;
      const F=frame(x,y,z,rot),top=two?6.6:3.8;rectWalls(gC,F,0,0,w,d,-2.5,top,0,{part:RS()<.5?0:24,seed:RS(),sty:3,fl:2|16,nSt:two?2:1,gH:3.8,sH:2.8,lit:.6});roof(gC,F,'gable',0,0,w+.8,d+.8,top,24*DEG,.4,RS());W.foot.add(x,z,w/2+.9,d/2+.9,rot);placed++;}
-   W.capSaddle=placed;}
+   W.capSaddle=placed;}   // the saddle houses: each candidate has its own dice (keyed to its number), so a reservation that blocks one (the groves) leaves the others as they are
   poi('卡比托利欧山·朱庇特神庙','Iuppiter Optimus Maximus',-275,10,48,0,99,'罗马最神圣的神庙。高台基，正面六柱、三排，三间内殿。神庙立在顺着山顶地形砌出来的多边形平台上，平台边是挡土墙。',3500);
   /* ---- Circus Maximus ---- */
   const yC=gy(0,667),CF=frame(0,yC,667,-29*DEG);W.circF=CF;
@@ -489,7 +503,7 @@ async function buildRome(msg){
   for(const[x,z,r]of[[-480,940,7],[-470,2520,7],[-560,3480,7],[-1460,2380,7],[-660,1430,26],[430,140,10]])W.foot.addCircle(x,z,r,'open');W.foot.add(850,-40,142,26,Math.PI-190*DEG,'open').preAurea=true;
   /* ---- roads ---- */
   const gR=new GB(1<<15);
-  const clCap=hillRoute(W,[-142,-4],[-212,22],{lim:.14,half:46,step:3});
+  const clCap=hillRoute(W.routeGround,[-142,-4],[-212,22],{lim:.14,half:46,step:3});   // on the desktop-tier ground at every tier (fixedGround): it goes into the join key
   // main roads: hand-drawn waypoints (bridgeheads, gates, junctions) after the ancient routes; routeRoad keeps the clear, gentle stretches as drawn and
   // reroutes the rest round monuments, reserved sites, the river and steep ground; gradeRoads then cuts and fills a bed along each of them
   const LATE0=[[-1280,180,19,16,Math.PI/2],[-898,1490,192,32,-2.219],[-770,1780,42,42,0],[-1250,600,132,100,.15],[-960,-525,64,44,0],[-540,-560,56,21,0],[-430,-780,34,76,0],[930,-280,64,44,0],[1240,-560,33,24,0],[1420,-415,8,8,.3],
@@ -691,8 +705,24 @@ async function buildRome(msg){
     for(let i=0;i<32;i++){const a0=i/32*TAU,a1=(i+1)/32*TAU,P1=(r,a)=>F.p(Math.cos(a)*r*1.53,.18,Math.sin(a)*r);g3.poly([P1(56,a0),P1(56,a1),P1(62,a1),P1(62,a0)],[0,1,0]);}
     W.scene.add(g3.mesh(MAT.city));W.foot.add(-735,-1240,97,63,.08);poi('战神广场练兵草坪','Campus Martius',-735,-1240,10,0,99,'北部保留的开阔草坪和沙地跑道，市民在这里锻炼、骑马、投枪；第10卷军校的骑射也在这一带。',1800);}
   {const grandStair=(x0,z0,x1,z1,w,top,half)=>hillStair(W,hillRoute(W,[x0,z0],[x1,z1],{lim:.3,half:half||16,step:2}),w,top);   // a stair that follows the hill: flights of at most ~30 % between landings, turning at each landing (hillRoute), never one straight run (temple-links.js)
-   grandStair(-207,86,-140,150,3.2,(W.capY||gy(-275,10)),12);grandStair(-42,424,-92,500,4.5,gy(-30,392),14);grandStair(78,432,42,498,7,gy(95,382),16);grandStair(-530,962,-445,900,5,gy(-560,975),16);
-   poi('百级台阶','Centum Gradus',-181,54,10,0,99,'从卡比托利欧山圣域走下去的大理石台阶。',800);poi('卡库斯台阶','Scalae Caci',-67,462,10,0,99,'帕拉蒂尼山西南角最古老的上山路，通到罗慕路斯草屋。',800);}
+   {const F=frame(-275,W.capY,10,0),t=F.p(CAP_SCIP.x+CAP_SCIP.nx*2.3,0,CAP_SCIP.z+CAP_SCIP.nz*2.3),R=hillRoute(W,[t[0],t[2]],[-140,150],{lim:.3,half:12,step:2});W.capCG=R;hillStair(W,R,3.2,W.capY);}   // the Centum Gradus, from the Scipio arch down to the Velabrum
+   grandStair(-42,424,-92,500,4.5,gy(-30,392),14);grandStair(78,432,42,498,7,gy(95,382),16);grandStair(-530,962,-445,900,5,gy(-560,975),16);
+   {const m=W.capCG[Math.floor(W.capCG.length/2)];poi('百级台阶','Centum Gradus',m[0],m[1],10,0,99,'从卡比托利欧山圣域走下去的大理石台阶，上端穿过西庇阿拱门进圣域。【史】塔西佗《历史》3.71：从塔尔佩亚岩上去走一百级台阶。',800);}poi('卡库斯台阶','Scalae Caci',-67,462,10,0,99,'帕拉蒂尼山西南角最古老的上山路，通到罗慕路斯草屋。',800);}
+  // Capitoline terrace edges (podium brief B, phase 2, 2026-11-04): the retaining walls round Jupiter's terrace (PLY) and the paired-temple terrace (LOW), built
+  // here, once the Clivus Capitolinus and the Centum Gradus exist, so that each opening is where the way comes in. PLY: piers and stone grilles where it looks
+  // down on the lower terrace, rooms in its wall there (B8), two flights down along it from a landing in the middle (B7); half-round projections at the two
+  // rock spurs (north-west, and the Tarpeian corner of LOW: reconstructions).
+  {const F=frame(-275,W.capY,10,0),LY=W.capLY,gE=new GB(1<<17),gS=new GB(1<<15),top=F.oy,wp=(lx,lz)=>{const q=F.p(lx,0,lz);return[q[0],q[2]];},clv=clCap.slice(-16),arch=wp(CAP_SCIP.x,CAP_SCIP.z);
+   const P7=[[-22,96],[-60,78]],u7=[(P7[1][0]-P7[0][0])/42.02,(P7[1][1]-P7[0][1])/42.02],n7=[u7[1],-u7[0]],e7=(s,d)=>wp(P7[0][0]+u7[0]*s+n7[0]*d,P7[0][1]+u7[1]*s+n7[1]*d),mid=21,land=e7(mid,1.65);
+   const openP=(x,z,i,s)=>Math.hypot(x-arch[0],z-arch[1])<4.6?'arch':nearPoly(x,z,clv,5.5)?'road':i===7&&Math.abs(s-mid)<1.6?'stair':false;
+   const eP=terraceEdge(W,gE,W.capPLY,0,{F,tag:'capPLY',footY:{7:LY,8:LY},rail:{7:'transenna',8:'transenna'},open:openP,spur:[0],rooms:{8:[4,45.5]}});
+   const eL=terraceEdge(W,gE,W.capLOW,LY,{F,tag:'capLOW',skip:[0,1],spur:[4]});
+   {const S=frame(land[0],0,land[1],Math.atan2(-u7[1],u7[0]));gS.set(60,.5,0,0);box(gS,S,0,top+LY-.3,0,1.6,-LY+.3-.12,1.3,31&~32);gS.set(48,.45);box(gS,S,0,top-.12,0,1.63,.12,1.33,31);
+    gS.set(60,.5,0,0);box(gS,S,0,top,-1.48,1.6,1.0,.18,31);gS.set(48,.5);box(gS,S,0,top+1,-1.48,1.63,.08,.22,31);   // the landing in front of the opening, its parapet on the lower terrace's side
+    const fa=edgeStair(W,gS,[e7(mid-1.6,1.65),e7(3,1.65)],top,{w:2.6,side:-1,floorY:top+LY,pal:0}),fb=edgeStair(W,gS,[e7(mid+1.6,1.65),e7(39,1.65)],top,{w:2.6,side:1,floorY:top+LY,pal:0});W.capFlights=[fa.steps,fb.steps];}
+   W.capEdges={PLY:eP.edges.map(e=>e.runs?e.runs.length:0),LOW:eL.edges.map(e=>e.runs?e.runs.length:0),spurs:eP.spurs.concat(eL.spurs).map(q=>[Math.round(q.x),Math.round(q.z)])};
+   {const m=gE.mesh(MAT.city);if(m){m.name='capEdges';W.scene.add(m);}const ms=layTag(gS.mesh(MAT.city),'stairs');if(ms)W.scene.add(ms);}
+   {const q=eL.spurs[0];if(q)poi('塔尔佩亚岩','Saxum Tarpeium',q.x,q.z,6,0,99,'【史】卡比托利欧山西南的悬崖，罗马把叛国者从这里推下去（李维《罗马史》6.20：曼利乌斯·卡皮托利努斯）。崖顶墙角的半圆台是复原。',900);}}
   const inPalZ=(x,z)=>segD(x,z,0,280,230,320)<205||segD(x,z,-262,40,-205,-225)<135,inPal=inPalZ,CAMPN=(x,z)=>x>-1150&&x<-420&&z>-1750&&z<-950,VAL=(x,z)=>Math.hypot(x-572,z-200)<150;
   const hz=(s,k)=>((Math.sin(s*12.9898+k*78.233)*43758.5453)%1+1)%1;   // per-building hash from the lot seed (no extra R() draws: the city layout stays as it was)
   /* The height limit: the Subura keeps its tall insulae; everywhere else (the city and a 200 m band round the Subura) there are about 90 % fewer
@@ -818,7 +848,7 @@ async function buildRome(msg){
       for(const q of pend)W.foot.add(...q);if(pend.length&&rkSeg.length<16)rkSeg.push([pend[0][0],pend[0][1],pend[pend.length-1][0]+.5,pend[pend.length-1][1]]);}   // (a cluster may overlap itself, not the buildings)
     rkSeg.forEach((q,i)=>U.uRk.value[i].set(...q));
     W.nRocks=nR;W.rockInfo={rej,cand:cand.length,top:top.length,seeds:seeds.length};}
-   W.palScrub=palRockScrub(W);}   // scrub round the foot of the Palatine rock bases (palatine.js)
+   W.palScrub=palRockScrub(W);palGlbFeet(W);W.edgeFeet=terraceFeet(W);}   // scrub round the foot of the Palatine rock bases (palatine.js); then rocks, moss, shrubs and cypresses at the foot of the terrace walls and of the Tiberiana's base (terrace-edge.js)
   /* ---- trees ---- */
   const treeN0=W.trees.length;
   {const R=RNG(91),cap=Math.round(21000*Q.trees);for(let z=-2800;z<3500&&W.trees.length<cap;z+=19)for(let x=-3100;x<2700;x+=19){const X=x+(R()-.5)*19,Z=z+(R()-.5)*19,[rd]=polyDist(X,Z,TIBER);if(rd<RTW+8)continue;
@@ -843,7 +873,7 @@ async function buildRome(msg){
   flushTrees(W,W.trees,null,aureaGone);W.trees=[];flushPeople(W,W.people);W.people=[];
   W.views={forum:{n:'罗马广场',pos:[-250,118,-205],tgt:[40,26,40]},senate:{n:'元老院',pos:[150,64,40],tgt:[-45,22,-84]},palatine:{n:'帕拉蒂尼',pos:[520,210,560],tgt:[120,70,290]},
     circus:{n:'大竞技场',pos:[-340,150,990],tgt:[60,30,600]},academy:{n:'学园',pos:[1110,205,-50],tgt:[1360,95,-330]},campus:{n:'战神广场',pos:[-360,230,-380],tgt:[-880,20,-720]},
-    south:{n:'南岸特区',pos:[-820,150,2380],tgt:[-1240,25,2790]},pagoda:{n:'琉璃塔',pos:[-1250,170,2280],tgt:[-1420,95,2460]},subura:{n:'苏布拉',pos:[520,135,-330],tgt:[700,30,-640]},circusW:{n:'竞技场西门',pos:[-382,70,490],tgt:[-242,12,533]},capitol:{n:'卡比托利欧',pos:[-150,95,170],tgt:[-275,35,10]},claudius:{n:'克劳狄神庙',pos:[720,95,470],tgt:[880,20,640]},jupiter:{n:'朱庇特神庙',pos:[-186,118,142],tgt:[-275,42,8]},palW:{n:'提比略宫西侧',pos:[-178,75,105],tgt:[-20,25,190]},campusS:{n:'战神广场南部',pos:[-450,140,250],tgt:[-620,20,-150]},boarium:{n:'牛市广场河岸',pos:[-245,75,455],tgt:[-370,8,330]},stoa:{n:'鸟瞰对照',pos:[280,1250,2150],tgt:[20,0,-300]},galba:{n:'城东',pos:[GALBA[0]-310,230,GALBA[1]-370],tgt:[GALBA[0],110,GALBA[1]]},
+    south:{n:'南岸特区',pos:[-820,150,2380],tgt:[-1240,25,2790]},pagoda:{n:'琉璃塔',pos:[-1250,170,2280],tgt:[-1420,95,2460]},subura:{n:'苏布拉',pos:[520,135,-330],tgt:[700,30,-640]},circusW:{n:'竞技场西门',pos:[-382,70,490],tgt:[-242,12,533]},capitol:{n:'卡比托利欧',pos:[-150,95,170],tgt:[-275,35,10]},claudius:{n:'克劳狄神庙',pos:[720,95,470],tgt:[880,20,640]},jupiter:{n:'朱庇特神庙',pos:[-186,118,142],tgt:[-275,42,8]},palW:{n:'提比略宫西侧',pos:[-178,75,105],tgt:[-20,25,190]},tarpeia:{n:'塔尔佩亚岩下',pos:[-430,22,205],tgt:[-345,38,105]},forumCap:{n:'广场望卡比托利欧',pos:[-140,24,30],tgt:[-212,48,8]},campusS:{n:'战神广场南部',pos:[-450,140,250],tgt:[-620,20,-150]},boarium:{n:'牛市广场河岸',pos:[-245,75,455],tgt:[-370,8,330]},stoa:{n:'鸟瞰对照',pos:[280,1250,2150],tgt:[20,0,-300]},galba:{n:'城东',pos:[GALBA[0]-310,230,GALBA[1]-370],tgt:[GALBA[0],110,GALBA[1]]},
     gallery:(()=>{const a=palW(-34,-178),b=palW(-34,-102);return{n:'尼禄长廊',pos:[a[0],84,a[1]],tgt:[b[0],54,b[1]]};})(),
     overview:{n:'全城',pos:[700,1900,3500],tgt:[-200,0,200]}};
   nobleViews(W);streetLifeViews(W);
