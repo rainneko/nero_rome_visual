@@ -446,18 +446,20 @@ Keep this file current: every promise made to the author goes here until it is d
   - 开口：优先开在 3.5 m 内的共墙处，否则从一栋房中间劈开。劈出的两栋都 ≥ 4.8 m，按原参数重盖（第二栋换种子）。其他房子一栋不动。
   - 节奏：排屋仍然连续 40–56 m 没有口子的，在背后有空地（≥ 2.5 m）的共墙处再开一条。
   - 做法：宽 2.2–3.0 m，凝灰岩石板（城市材质 47 号）；中间一条细的 road 占地，以后的摊子、树不进来；进 `W.laneLog` 给街面栅格。
-  - 结果：全城 224 条，其中接小巷口 48 条、按节奏 176 条；小巷口 82 处，33 处原本已接上。重盖 377 栋，27 块太窄盖不下，留作空地。耗时 0.4–0.8 s。
+  - 结果（合并第二期以后，桌面画质）：全城 225 条，其中接小巷口 49 条、按节奏 176 条；小巷口 85 处，35 处原本已接上。重盖 384 栋，26 块太窄盖不下，留作空地。耗时 0.4–0.8 s。
 - [x] B 小巷石板路（地形着色器 builders.js；`buildStreets` 的新选项 `lanePath` 写进街面纹理 T1 的 alpha）。
   - 范围：城内（`romeUrban > .45`）的土巷。主干、宽 > 14 m 的广场、市场不铺；别的场景不传 `lanePath`，不铺。
   - 样子：中间 1.1–1.3 m 宽的不规则凝灰岩石板，约 0.5 m 一块，少数缺块，缝里有土。石板的中心在路里才铺，所以路边沿着石头走；远处是一条匀色的带。
   - 路中线改为四个粗格各自的中线混合（先转到同一方向，路口方向分开处不混），车辙和石板路在 10 m 格边不再错开。
 - [x] C 背街 `backLanes`（street-life.js，在 `streetKit`、`populateStreetLife` 之后），每个骰子按地点。
-  - 小广场 14 处：穿堂小巷出口后面有半径 4.5–7 m 的空地时，地面写成石铺（街面栅格 grade 2），放公共水池（lacus，12 处）或贴排屋后墙的路口神龛（compitum，2 处），旁边一棵无花果。70 m 内只有一处，45 m 内不挨着别的水池或神龛。
-  - 树 230 棵：背街宽 ≥ 7 m、离墙 ≥ 2.5 m 处，18–30 m 一棵，无花果为主，也有石榴、扁桃；穿堂口不种。
-  - 后墙边作坊的东西 173 件：柜台、遮阳棚、双耳罐、手推车、晾衣绳。
-  - 主干店前摊子 79 个：三成店铺放柜台或双耳罐，离车道 1 m 以上，穿堂口不放。
+  - 小广场 13 处：穿堂小巷出口后面有半径 4.5–7 m 的空地时，地面写成石铺（街面栅格 grade 2），放公共水池（lacus，12 处）或贴排屋后墙的路口神龛（compitum，1 处），旁边一棵无花果。70 m 内只有一处，45 m 内不挨着别的水池或神龛。
+  - 树 237 棵：背街宽 ≥ 7 m、离墙 ≥ 2.5 m 处，18–30 m 一棵，无花果为主，也有石榴、扁桃；穿堂口不种。
+  - 后墙边作坊的东西 179 件：柜台、遮阳棚、双耳罐、手推车、晾衣绳。
+  - 主干店前摊子 84 个：三成店铺放柜台或双耳罐，离车道 1 m 以上，穿堂口不放。
   - 【史】老普林尼记罗马有 265 个路口神龛（《自然史》3.66），阿格里帕修了 700 个水池（36.121）；图密善下令之前，店铺占满了街（马提亚尔 7.61）。大火以后每栋房子要有自己的墙，不得共墙（塔西佗《编年史》15.43）；十二表法本来就规定房子之间留 2.5 尺（ambitus）。
-- [x] 检查：`npm run check`；`build:test` + `test:boot` 无页面错误；`city-audit --assert` 无错误（H1 = 0，H3 = 0）；`bake-roads --check` 路网未变；`street-rules`、`street-life-city`、`neighborhood-regression`、`residential-city-policy` 通过。`street-generation.mjs` 的“road must stop on natural vegetation”在 HEAD 上就失败（主干现在压过植被，测试过时），未改。`backLanes` 约 40 ms。三角形数没有量：新增的是 224 条穿堂小巷的石板（每条约 10 个四边形）、252 件实例化小品和 230 棵树。
+- [x] 检查（合并第二期以后）：`npm run check`；`build:test` + `test:boot` 无页面错误；`city-audit --assert` 无错误（H1 = 0，H3 = 0，H13 = 3.4 %）；`bake-roads --check` 路网未变；两边跑过的 10 项回归（street-rules、street-life-city、neighborhood-regression、residential-city-policy、residential-policy、housing-foundations、courtyard-closure、gallery-light-regression、estate-transaction、noble-quarter）通过。`street-generation.mjs` 的“road must stop on natural vegetation”在 main 上就失败（主干现在压过植被，测试过时），未改。`backLanes` 约 30 ms。
+  - 三角形（1280 × 720，高画质）：main 45,892,595，只有第二期 46,032,237，合并后 46,475,269。这一节的改动 +443,032（+0.96 %），是 225 条穿堂小巷的石板、劈开重盖的房子、263 件实例化小品、13 处小广场的水池和神龛，以及 237 棵树。
+  - `__floatCheck()`：这一节的改动不增加（只有第二期 73，合并后 73）。`W.templeLinks` 的 linked 比只有第二期多 1 座（40 → 41）。
 - [ ] P3 由街坊和地块直接生成临街排屋时，穿堂小巷由 L4 留出，`finishRoadFrontage` 退役；背街、小广场改由路网图生成（设计稿 4.4 节）。
 - [ ] `fillPocketSquares` 和 `streetKit` 还用一条共用的随机数流（`RNG(241024)`、`RNG(123)`），不是按地点；改一处会挪动全城的街心广场和街边小品。
 
