@@ -1,6 +1,6 @@
-// Whole-city audit for briefs/rome/city-generation-spec.md section 8 (H1-H5, H8) and road-first-city.md section 9 (H12). Needs `npm run build:test`.
+// Whole-city audit for briefs/rome/city-generation-spec.md section 8 (H1-H5, H8) and road-first-city.md section 9 (H12, H13). Needs `npm run build:test`.
 // Usage: node tools/test/city-audit.mjs [--assert]   -> prints the counts, writes shots/city-audit.json; --assert fails on any H1-H3, H5 or H8 hit,
-// H4 < 50 % or H12 >= 1 %.
+// H4 < 50 %, H12 >= 1 % or H13 >= 10 % (P2, fabric.js: street ends that meet their street outside 60-120°; only round the Y junction for now).
 // Open dist/city-audit.html?review (or dist/index.html?review served over http) for the layer panel and the generator lines (src/ui/review.js).
 import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import puppeteer from 'puppeteer';
 const root=process.cwd(),strict=process.argv.includes('--assert');fs.mkdirSync('shots',{recursive:true});
@@ -40,11 +40,14 @@ const a=await page.evaluate(()=>{const W=W0,R=v=>Math.round(v),seg=(p,q,w,tag)=>
    for(let i=0;i<D.length;i++){const on=g15[i]>(run?.07:.10)||g3[i]>.28;if(!on){close();continue;}if(!run)run={a:S[i],b:S[i],p:D[i],g:0,steep:false,ok:true};run.b=S[i];run.g=Math.max(run.g,g15[i]);run.steep=run.steep||g3[i]>.28;run.ok=run.ok&&marked(D[i]);}close();}
  // H12: land in the districts with no use (roadgraph.js cityDistricts: districts with no road or ring along them, fragments with nothing round them), per cent
  const CD=cityDistricts(W);
- return{faces:W.faceStats||{},triLots:(W.lotLog||[]).filter(l=>l.L&&l.L.length===3).length,rings:{courts:RS.rings,closed:RS.closed,walled:RS.walled,rate:RS.rings?+(RS.closed/RS.rings).toFixed(3):null,lots:RS.lot},H5,H8:H8.length,H8sample:H8.slice(0,20),H12:CD.stats.H12,roads:G.stats,city:CD.stats,H1:onRoad.length,H1bySource:bySrc,H1sample:onRoad.slice(0,25),H2:wet,H3:openGardens,courts,H4:{attempted:E.attempted,committed:E.committed,rate:E.attempted?+(E.committed/E.attempted).toFixed(3):null,steepTerraced:E.steep||0,tooSmall:E.tooSmall||0,reasons:E.reasons,fallbackHomes:E.fallbackHomes},
+ // P2 (fabric.js): the secondary streets and blocks round the Y junction, H13 and the block areas
+ const FB=cityFabric(W).stats,P2={H13:FB.H13,H13ends:FB.H13ends,cuts:FB.cuts,blocks:FB.blocks,squares:FB.squares,km:FB.km,blockArea:FB.blockArea,blockAreaWindow:FB.blockAreaWindow,holes:FB.holes,unsnapped:FB.unsnapped,snapFixed:FB.snapFixed,ms:FB.ms,districts:FB.districts};
+ return{P2,faces:W.faceStats||{},triLots:(W.lotLog||[]).filter(l=>l.L&&l.L.length===3).length,rings:{courts:RS.rings,closed:RS.closed,walled:RS.walled,rate:RS.rings?+(RS.closed/RS.rings).toFixed(3):null,lots:RS.lot},H5,H8:H8.length,H8sample:H8.slice(0,20),H12:CD.stats.H12,roads:G.stats,city:CD.stats,H1:onRoad.length,H1bySource:bySrc,H1sample:onRoad.slice(0,25),H2:wet,H3:openGardens,courts,H4:{attempted:E.attempted,committed:E.committed,rate:E.attempted?+(E.committed/E.attempted).toFixed(3):null,steepTerraced:E.steep||0,tooSmall:E.tooSmall||0,reasons:E.reasons,fallbackHomes:E.fallbackHomes},
    noble:{blocks:(W.nobleBlocks||[]).length,partial:(W.nobleBlocks||[]).filter(b=>b.parcels<b.target).length,triangular:(W.nobleBlocks||[]).filter(b=>b.triangular).length}};});
 fs.writeFileSync('shots/city-audit.json',JSON.stringify({a,errors},null,1));
-console.log(JSON.stringify({faces:a.faces,triLots:a.triLots,rings:a.rings,H1:a.H1,H1bySource:a.H1bySource,H2:a.H2,H3:a.H3,courts:a.courts,H4:a.H4,H5:a.H5,H8:a.H8,H8sample:a.H8sample,H12:a.H12,roads:a.roads,city:a.city,noble:a.noble,errors},null,1));
+console.log(JSON.stringify({faces:a.faces,triLots:a.triLots,rings:a.rings,H1:a.H1,H1bySource:a.H1bySource,H2:a.H2,H3:a.H3,courts:a.courts,H4:a.H4,H5:a.H5,H8:a.H8,H8sample:a.H8sample,H12:a.H12,P2:a.P2,roads:a.roads,city:a.city,noble:a.noble,errors},null,1));
 assert.equal(errors.length,0,'page errors');
 if(strict){assert.equal(a.H1,0,'H1 houses on roads');assert.equal(a.H2.length,0,'H2 roads in the river');assert.equal(a.H3,0,'H3 open courts with gardens');assert.ok(a.H4.committed>=a.H4.attempted*.5,'H4 old courtyard estates below 50 %');
-  assert.equal(a.H5.n,0,'H5 network in pieces or a bridge end with no road');assert.equal(a.H8,0,'H8 steep A-level stretches unmarked');assert.ok(a.H12<1,'H12 district land with no use 1 % or more');}
+  assert.equal(a.H5.n,0,'H5 network in pieces or a bridge end with no road');assert.equal(a.H8,0,'H8 steep A-level stretches unmarked');assert.ok(a.H12<1,'H12 district land with no use 1 % or more');
+  assert.ok(a.P2.H13<10,'H13 street ends off square 10 % or more');}
 }finally{await browser.close();}

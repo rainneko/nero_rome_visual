@@ -362,23 +362,99 @@ function bigBase(g,F,x,z,y,w,d,h,o={}){g.set(2,.5);box(g,F,x,y,z,w/2+.9,.3,d/2+.
   const yt=y+.9+h;if(o.eq){g.set(40,.4);box(g,F,x,yt+.9,z,d*.18,1.0,d*.42,31);box(g,F,x+d*.14,yt+1.9,z-d*.34,.28,1.1,.3,31);statue(g,F,x-.2,yt+1.8,z,1.9,true);}else statue(g,F,x,yt,z,1.9,o.gilt!==false,false);}
 // a row of cypresses between two local points (y from the ground); trees go in W.trees (the instanced tree pass)
 function cypRow(W,F,ax,az,bx,bz,step,gyF,sc=1){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<=n;i++){const q=F.p(ax+(bx-ax)*i/n,0,az+(bz-az)*i/n);W.trees.push([q[0],gyF(q[0],q[2]),q[2],'cyp',sc*(.92+.16*((i*37)%7)/7)]);}}
+// ---- temple podiums, stairs and altars (briefs/rome/podium-stairs-rock.md, part A) ----
+// A2: Vitruvius 3.4.4, an odd number of steps (one sets off and arrives on the right foot), risers of 9-10 Roman inches (0.22-0.25 m), treads of
+// 1.5-2 ft (0.44-0.59 m). An odd count of risers within 0.22-0.26 m whose total is nearest the podium height asked for (the podium is moved to that total:
+// at most 0.14 m for the heights in use), then the riser nearest 0.235 m.
+function templeRise(ph){let b=null;for(let n=1;n<301;n+=2){const r=Math.min(.26,Math.max(.22,ph/n)),q=n*r,e=Math.abs(q-ph)+Math.abs(r-.235)*.01;if(!b||e<b.e)b={n,r,ph:q,e};if(ph/n<.2)break;}return b;}
+// the stair in front of a temple: wing walls (antae) either side, a landing halfway up a podium over 3.6 m. Longer than the old 0.30/0.40 stair, so the
+// ground it gains is checked first: where something else stands there, the fewest steps (risers up to 0.26 m), treads of 0.44 m and no landing (W.templeStairLog).
+// front 'rostra' (A3): a platform as wide as the temple, a flight cut into each end of it climbing toward the temple, a half-round niche for the altar in the
+// middle of its front (as the GLBs do it, tools/models/rome/rk.py stair='sides'). o.fit: a GLB stand-in keeps to the depth of the GLB's stair (treads shortened).
+// is the strip [-hw,hw] x [z0,z1] before the temple taken (W.foot)? Its own ground (precinct, forum, terrace: footprints holding its centre, 'open', 'court') is no
+// obstacle; a round footprint is a circle, not its square
+// the terrain under a strip in front of the temple, relative to its foot: {mn,mx}; null off the Rome terrain grid (Ostia and Antium have their own ground)
+function templeGround(W,F,hw,z0,z1){const G=W.grid;if(!W.gy||!G)return null;let mn=1e9,mx=-1e9;
+  for(const sx of[-1,0,1])for(const t of[0,.5,1]){const q=F.p(sx*hw,0,z0+(z1-z0)*t);if(q[0]<G.x0||q[0]>G.x1||q[2]<G.z0||q[2]>G.z1)return null;const h=W.gy(q[0],q[2])-F.oy;mn=Math.min(mn,h);mx=Math.max(mx,h);}
+  return{mn,mx};}
+function templeHit(W,F,o,hw,z0,z1){if(!W.foot)return false;const hd=(z1-z0)/2,q=F.p(0,0,(z0+z1)/2),rot=o.rot||0,c=Math.cos(rot),s=Math.sin(rot);
+  const off=f=>{if(f.tag==='open'||f.tag==='court')return true;let dx=o.x-f.cx,dz=o.z-f.cz;if(f.circ){if(Math.hypot(dx,dz)<=f.hw)return true;}else{const u=f.c*dx-f.s*dz,v=f.s*dx+f.c*dz;if(Math.abs(u)<=f.hw&&Math.abs(v)<=f.hd)return true;}
+    if(!f.circ)return false;dx=f.cx-q[0];dz=f.cz-q[2];const u=dx*c-dz*s,v=dx*s+dz*c;return Math.hypot(Math.max(0,Math.abs(u)-hw),Math.max(0,Math.abs(v)-hd))>=f.hw;};
+  return W.foot.hits(q[0],q[2],hw,hd,rot,0,off);}
+function templeStair(W,F,o,W2,L2,ph,rise){const front=o.front==='rostra'&&o.W>=12?'rostra':'stair',a=front==='stair'&&o.W>=8?Math.min(2.2,Math.max(.8,o.W*.07)):0;
+  const plan=(t,fewest)=>{let s={n:rise.n,r:rise.r};if(fewest){let n=Math.ceil(ph/.26-1e-9);if(n%2===0)n++;if(ph/n>=.22-1e-9)s={n,r:ph/n};}const land=!fewest&&front==='stair'&&ph>3.6,Ld=land?Math.min(2,1.5+(ph-3.6)*.1):0;
+    return{n:s.n,r:s.r,t,land,Ld,iL:land?Math.floor(s.n/2):-1,R:s.n*t+(land?Ld-t:0)};};
+  const Dp0=front==='rostra'?Math.min(9,Math.max(5,o.W*.3)):0,depth=P=>front==='rostra'?Math.max(Dp0,P.R):P.R,R0=Math.max(4,Math.round(ph/.3))*.4;
+  const blocked=D=>D>R0+.05&&templeHit(W,F,o,W2,L2+R0,L2+D+.5);   // only the ground beyond the old stair is new
+  let P=plan(.48),why='';
+  if(o.fit){P=plan(.44,true);if(P.R>o.fit)P=plan(o.fit/P.n,true);why='glb';}
+  else if(blocked(depth(P))){P=plan(.44,true);why=blocked(depth(P))?'overlap':'tight';}
+  const Dp=front==='rostra'?(o.fit?Math.max(P.R,Math.min(o.fit,Dp0)):depth(P)):0,st={...P,a,front,Dp,run:front==='rostra'?Dp:P.R,why};
+  (W.templeStairLog||(W.templeStairLog=[])).push({x:Math.round(o.x),z:Math.round(o.z),name:o.name||'',ph:+ph.toFixed(3),n:P.n,r:+P.r.toFixed(3),t:+P.t.toFixed(3),run:+st.run.toFixed(2),land:P.land,front,why});return st;}
+// A1: podium mouldings (Vitruvius 3.4.5: the spira below, corona and lysis on top) as boxes round the plan block [x0,x1] x [z0,z1]: the sides in the mask
+// (1 +z, 2 +x, 4 -z, 8 -x) get the overhang and their faces; [y, height, overhang] per layer
+const POD_BASE=[[-.6,.8,.36],[.2,.18,.27],[.38,.12,.16],[.5,.08,.08]],podTop=ph=>[[ph-.64,.12,.1],[ph-.52,.32,.3],[ph-.2,.2,.2]];
+function podMould(g,F,x0,x1,z0,z1,L,sides,under){for(const[y,h,ov]of L){const X0=x0-(sides&8?ov:0),X1=x1+(sides&2?ov:0),Z0=z0-(sides&4?ov:0),Z1=z1+(sides&1?ov:0);box(g,F,(X0+X1)/2,y,(Z0+Z1)/2,(X1-X0)/2,h,(Z1-Z0)/2,sides|16|(under?32:0));}}
+// A5: bronze tripod (three legs and a bowl)
+function tripod(g,F,x,z,y,h){g.set(13,.3);for(let k=0;k<3;k++){const a=k/3*TAU;box(g,F,x+Math.cos(a)*.28,y,z+Math.sin(a)*.28,.035,h,.035,31);}lathe(g,F,x,y+h-.05,z,[[.08,0],[.42,.14],[.5,.3],[.45,.32],[0,.18]],10);}
+// A5: the altar before a temple. Small: a block with a cornice and bolsters (pulvini) at both ends; middle: on two steps; large (state temples, W >= 26):
+// inside a court of low screen walls with a door in front (the Ara Pacis type), on three steps. Bronze tripods either side, a brazier (foculus) before the small one.
+function templeAltar(g,F,o,az,size,ya=0,yb=ya){const big=size==='big',mid=size==='mid',aw=big?1.5:mid?1.2:.9,ad=aw*.62;let y=ya;   // ya: on ground that rises in front; yb<ya: a socle down to the ground
+  if(big){const ew=Math.min(12,Math.max(7,o.W*.3)),ed=ew*.85,hW=1.7,th=.35,gw=ew/4-.7;g.set(6,.5);
+    for(const[cx,cz,hx,hz]of[[0,az-ed/2,ew/2,th/2],[-ew/2,az,th/2,ed/2],[ew/2,az,th/2,ed/2],[-(ew/4+.7),az+ed/2,gw,th/2],[ew/4+.7,az+ed/2,gw,th/2]]){box(g,F,cx,ya,cz,hx,hW,hz,31);box(g,F,cx,ya+hW,cz,hx+.06,.12,hz+.06,31);}
+    for(let k=0;k<3;k++)box(g,F,0,ya+k*.22,az,aw+1.6-k*.5,.22,ad+1.6-k*.5,31);y=ya+.66;}
+  else if(mid){g.set(6,.5);box(g,F,0,ya,az,aw+1,.24,ad+1,31);box(g,F,0,ya+.24,az,aw+.55,.24,ad+.55,31);y=ya+.48;}
+  g.set(6,.45);box(g,F,0,y,az,aw,1.05,ad,31);box(g,F,0,y+1.05,az,aw+.08,.12,ad+.08,31);for(const sx of[-1,1])box(g,F,sx*(aw-.16),y+1.17,az,.16,.26,ad,31);
+  for(const sx of[-1,1])tripod(g,F,sx*(aw+(big?2.4:1.6)),az+(big?0:.4),ya,big?1.6:1.3);
+  if(!mid&&!big){g.set(13,.3);lathe(g,F,0,ya,az+ad+1.1,[[.12,0],[.12,.55],[.32,.62],[.36,.78],[0,.7]],8);}
+  if(yb<ya-.05){const hx=big?Math.min(12,Math.max(7,o.W*.3))/2+.4:aw+2.1,z0=big?az-Math.min(12,Math.max(7,o.W*.3))*.43-.4:az-ad-.5,z1=big?az+Math.min(12,Math.max(7,o.W*.3))*.43+.4:az+ad+1.6;g.set(6,.5);box(g,F,0,yb-.25,(z0+z1)/2,hx,ya-yb+.25-.01,(z1-z0)/2,31);}}
 // temple: front faces +z of the frame
-function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:o.podH||3,stairs:o.stairs!==false,name:o.name});   // every temple, for the links to the streets (temple-links.js)
-  const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
-  const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1);
-  g.set(6,o.seed||.3);let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}box(g,F,0,-fd,0,W2,fd+ph,L2,31);
-  g.set(2,.4);box(g,F,0,-.5,0,W2+.3,.9,L2+.3,15);box(g,F,0,ph-.45,0,W2+.25,.45,L2+.25,31);
-  if(o.stairs!==false){const n=Math.max(4,Math.round(ph/.3)),sd=.4,sw=W2-(o.stairInset||0);g.set(2,.45);
-    for(let i=0;i<n;i++){const h=ph*(n-i)/n;box(g,F,0,0,L2+(i+1)*sd/2,sw,h,(i+1)*sd/2,1|2|8|16);}if(W.gy){const gq=F.p(0,0,L2+n*sd+.6),gf=W.gy(gq[0],gq[2])-F.oy;if(gf<-.3){g.set(2,.42);box(g,F,0,gf-1.2,L2+n*sd/2,sw+.6,-gf+1.2,n*sd/2+.3,31);}}}
+function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
+  const rise=o.stairs!==false?templeRise(o.podH||3):null,W2=o.W/2,L2=o.L/2,ph=rise?rise.ph:o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
+  const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1),tH=hash2(o.x*.13,o.z*.29);
+  // A1: podium in tuff (old Republican temples), travertine or marble facing (o.podMat; by default the big ones marble, the rest by place); joints from the part
+  const pm=o.podMat||(o.W>=20?'marble':tH<.3?'tuff':tH<.7?'trav':'marble'),PP=pm==='tuff'?47:pm==='trav'?48:6,PT=pm==='marble'?6:48;
+  const st=rise?templeStair(W,F,o,W2,L2,ph,rise):null,run=st?st.run:0;let zA=0;   // zA: the front of the altar, for the footprint
+  (W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:ph,stairs:!!st,run,front:st?st.front:'none',name:o.name});   // every temple, for the links to the streets (temple-links.js)
+  let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}
+  g.set(PP,o.seed||.3);box(g,F,0,-fd,0,W2,fd+ph-.64,L2,15);g.set(PT,.4);const bodySides=st?2|4|8:15;podMould(g,F,-W2,W2,-L2,L2,POD_BASE,bodySides);podMould(g,F,-W2,W2,-L2,L2,podTop(ph),bodySides,true);
+  if(o.podRooms&&ph>=2.6){const k=Math.max(2,Math.round((o.L-4)/3.5)),dh=Math.min(2.3,ph-1.5),dw=1.3;   // A4: chambers in the podium (loculi): a dark door with an iron grille every 3-4 m along both long sides
+    for(const sx of[-1,1])for(let i=0;i<k;i++){const zc=-L2+2+(o.L-4)*(i+.5)/k,xf=sx*(W2+.012);g.set(20,.3);g.poly([F.p(xf,.62,zc-dw/2),F.p(xf,.62,zc+dw/2),F.p(xf,.62+dh,zc+dw/2),F.p(xf,.62+dh,zc-dw/2)],F.d(sx,0,0));
+      g.set(18,.3);for(let j=0;j<4;j++)box(g,F,sx*(W2+.05),.62,zc+(j-1.5)*dw/4.4,.03,dh,.03,31);box(g,F,sx*(W2+.05),.62+dh*.55,zc,.03,.05,dw/2,31);}}
+  if(st){const{n,r,t,a,Dp,R}=st;let gf=0;if(W.gy){const gq=F.p(0,0,L2+run+.6);gf=Math.min(0,W.gy(gq[0],gq[2])-F.oy);}const yF=gf<-.3?gf-1.2:-.6;   // foundations go down to the ground in front where it falls away
+    const flight=(cx,hw,z0,sides)=>{g.set(PT,.45);for(let i=0;i<n;i++){const h=ph*(n-i)/n,ze=(i+1)*t+(st.land&&i>=st.iL?st.Ld-t:0);box(g,F,cx,0,z0+ze/2,hw,h,ze/2,sides);}
+      if(yF<-.6){g.set(PP,.42);box(g,F,cx,yF,z0+R/2,hw+(sides&2?.3:0),-yF,R/2+.3,31);}};
+    if(st.front==='rostra'){const zN=L2+Dp,rn=Math.min(Dp*.45,W2*.28,3.2),wS=Math.min(4.2,Math.max(2.4,o.W*.17)),xi=W2-wS,zb=zN-R,zm=Math.max(L2,zb),seg=10,cap=[[ph-.2,.2,.2]];   // A3
+      g.set(PP,o.seed||.3);if(zb>L2+.01)box(g,F,0,yF,(L2+zb)/2,W2,ph-.2-yF,(zb-L2)/2,2|8);box(g,F,0,yF,(zm+zN-rn)/2,xi,ph-.2-yF,(zN-rn-zm)/2,2|8);   // behind the flights the full width; between them, behind the niche
+      for(const sx of[-1,1])box(g,F,sx*(rn+xi)/2,yF,zN-rn/2,(xi-rn)/2,ph-.2-yF,rn/2,1|(sx>0?2:8));   // either side of the niche
+      g.set(PT,.4);if(zb>L2+.01){podMould(g,F,-W2,W2,L2,zb,cap,2|8,true);podMould(g,F,-W2,W2,L2,zb,POD_BASE,2|8);}podMould(g,F,-xi,xi,zm,zN-rn,cap,2|8,true);
+      for(const sx of[-1,1]){const x0=sx>0?rn:-xi-.2,x1=sx>0?xi+.2:-rn;box(g,F,(x0+x1)/2,ph-.2,zN-rn/2+.1,(x1-x0)/2,.2,rn/2+.1,63);podMould(g,F,sx>0?rn:-xi,sx>0?xi:-rn,zN-rn,zN,POD_BASE,1);}   // the cap returns into the niche
+      const arc=k=>{const th=Math.PI+Math.PI*k/seg;return[Math.cos(th)*rn,zN+Math.sin(th)*rn];},sq=k=>{const th=Math.PI+Math.PI*k/seg,cx=Math.cos(th),sz=Math.sin(th),tt=Math.min(rn/Math.max(1e-6,Math.abs(cx)),rn/Math.max(1e-6,Math.abs(sz)));return[cx*tt,zN+sz*tt];};
+      const fill=P=>{const q=[];for(const p of P)if(!q.length||Math.hypot(p[0]-q[q.length-1][0],p[1]-q[q.length-1][1])>1e-6)q.push(p);if(q.length>2&&Math.hypot(q[0][0]-q[q.length-1][0],q[0][1]-q[q.length-1][1])<1e-6)q.pop();
+        if(q.length>2)g.poly(q.map(([x,z])=>F.p(x,ph,z)),[0,1,0]);};   // the top between the niche and its square; where the arc meets the square a quad is a triangle (a repeated first point gave a NaN normal: a black, glowing sliver)
+      for(let k=0;k<seg;k++){const[a0,b0]=arc(k),[a1,b1]=arc(k+1),[c0,d0]=sq(k),[c1,d1]=sq(k+1);g.set(PP,o.seed||.3);g.poly([F.p(a0,yF,b0),F.p(a1,yF,b1),F.p(a1,ph,b1),F.p(a0,ph,b0)],F.d(-(a0+a1)/2,0,zN-(b0+b1)/2));
+        g.set(PT,.4);fill([[a0,b0],[a1,b1],[c1,d1],[c0,d0]]);const side=c=>Math.abs(Math.abs(c)-rn)<1e-4;
+        if(side(c0)!==side(c1)){const cs=side(c0)?c0:c1;g.poly([F.p(c0,ph,d0),F.p(c1,ph,d1),F.p(Math.sign(cs)*rn,ph,zN-rn)],[0,1,0]);}}   // the square's back corners
+      for(const sx of[-1,1])flight(sx*(W2-wS/2),wS/2,zb,1|16|(sx>0?2:8));if(o.altar!==false)templeAltar(g,F,o,zN-rn*.5,'small');}
+    else{const sw=W2-Math.max(a,o.stairInset||0);flight(0,sw,L2,a>0?1|16:1|2|8|16);
+      if(a>0)for(const sx of[-1,1]){const x0=sx<0?-W2:W2-a,x1=x0+a,out=sx<0?8:2;g.set(PP,o.seed||.3);box(g,F,(x0+x1)/2,yF,L2+R/2,a/2,ph-.64-yF,R/2,1|2|8);   // the wing walls (antae), mouldings returned round them
+        g.set(PT,.4);podMould(g,F,x0,x1,L2,L2+R,POD_BASE,out|1);podMould(g,F,x0,x1,L2,L2+R,podTop(ph),out|1,true);
+        if(o.W>=10){const x=(x0+x1)/2,z=L2+R-a*.55;g.set(PT,.45);box(g,F,x,ph,z,a*.4,.95,a*.4,31);g.set(37,.3);g.poly([F.p(x-a*.27,ph+.28,z+a*.4+.012),F.p(x+a*.27,ph+.28,z+a*.4+.012),F.p(x+a*.27,ph+.72,z+a*.4+.012),F.p(x-a*.27,ph+.72,z+a*.4+.012)],F.d(0,0,1));   // a pedestal with its inscription, a bronze statue or tripod on it
+          if(hash2(o.x*.71+sx,o.z*.37)<.5)statue(g,F,x,ph+.95,z,Math.min(3.2,Math.max(1.8,o.W*.09)),true);else tripod(g,F,x,z,ph+.95,1.25);}}}}
   const y0=ph,zf=L2-cD*.8,cols=[];
   for(let r=0;r<rows;r++)for(let c=0;c<nf;c++)cols.push([-W2+m+c*ic,zf-r*ic]);
   const zBackCol=-L2+cD*.8;
   if(o.peri){for(let z=zf-rows*ic;z>zBackCol-ic*.3;z-=ic){cols.push([-W2+m,z]);cols.push([W2-m,z]);}for(let c=1;c<nf-1;c++)cols.push([-W2+m+c*ic,zBackCol]);cols.push([-W2+m,zBackCol]);cols.push([W2-m,zBackCol]);}
   const cw=o.peri?o.W-2*m-ic*1.1:o.W-2*m*.55,zc0=o.peri?zBackCol+ic*.6:-L2+m*.3,zc1=zf-(rows-.35)*ic;
   if(!o.peri)for(let z=zc1-ic;z>zc0+ic*.4;z-=ic){cols.push([-cw/2,z]);cols.push([cw/2,z]);}
-  cols.forEach(([x,z])=>W.cols[ord].push([...F.p(x,y0,z),F.rot,cH,o.colTint]));const tH=hash2(o.x*.13,o.z*.29),band=o.band??(o.W<24&&tH<.45);if(band){g.set(35,tH*3.7);cols.forEach(([x,z])=>lathe(g,F,x,y0+.02,z,[[cD*.53,0],[cD*.53,2.1],[cD*.5,2.15]],12));}
+  cols.forEach(([x,z])=>W.cols[ord].push([...F.p(x,y0,z),F.rot,cH,o.colTint]));const band=o.band??(o.W<24&&tH<.45);if(band){g.set(35,tH*3.7);cols.forEach(([x,z])=>lathe(g,F,x,y0+.02,z,[[cD*.53,0],[cD*.53,2.1],[cD*.5,2.15]],12));}
   g.set(o.cellaPart||6,o.seed||.3,0,1);box(g,F,0,y0,(zc0+zc1)/2,cw/2,cH,(zc1-zc0)/2,31);
-  g.set(13,.2);g.poly([F.p(-o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0+cH*.6,zc1+.05),F.p(-o.W*.09,y0+cH*.6,zc1+.05)],F.d(0,0,1));if(o.open??(tH>.5)){g.set(7,.3);g.poly([F.p(-o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0+cH*.58,zc1+.08),F.p(-o.W*.085,y0+cH*.58,zc1+.08)],F.d(0,0,1));statue(g,F,0,y0+.4,zc1+.9,cH*.45,true);}{const nS=Math.max(4,Math.round(ph/.3)),zF=L2+(o.stairs!==false?nS*.4:0);if(o.altar!==false&&o.W>=10){g.set(2,.55);box(g,F,0,0,zF+4.5,1.3,1.15,.75,31);g.set(13,.3);for(const sx of[-1,1])lathe(g,F,sx*W2*.55,0,zF+1.8,[[.08,0],[.08,1.1],[.45,1.25],[.4,1.45],[0,1.45]],8);}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(34,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
+  g.set(34,tH);g.poly([F.p(-W2+.25,y0+.012,zc1),F.p(W2-.25,y0+.012,zc1),F.p(W2-.25,y0+.012,L2-.06),F.p(-W2+.25,y0+.012,L2-.06)],[0,1,0]);g.set(13,.2);g.poly([F.p(-o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0+cH*.6,zc1+.05),F.p(-o.W*.09,y0+cH*.6,zc1+.05)],F.d(0,0,1));if(o.open??(tH>.5)){g.set(7,.3);g.poly([F.p(-o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0+cH*.58,zc1+.08),F.p(-o.W*.085,y0+cH*.58,zc1+.08)],F.d(0,0,1));statue(g,F,0,y0+.4,zc1+.9,cH*.45,true);}{const zF=L2+run;if(o.altar!==false&&o.W>=10&&!(st&&st.front==='rostra')){   // the altar where its ground is free: nearer the stair, then a size smaller, else none (logged)
+    const ew=Math.min(12,Math.max(7,o.W*.3)),ext=z=>z==='big'?[ew/2+.3,ew*.425+.3,ew*.425+.3]:[3.2,1.2,2.1];let al=null;
+    for(const z of o.W>=26?['big','mid']:[o.W>=14?'mid':'small'])for(const d of[z==='big'?7:z==='mid'?5:4.5,3.5,2.5]){const[hx,b0,b1]=ext(z);if(d-b0<1||al||templeHit(W,F,o,hx,zF+d-b0,zF+d+b1))continue;
+      const G=templeGround(W,F,hx,zF+d-b0,zF+d+b1),ya=G?Math.max(0,G.mn):0;if(G&&(ya>2.5||G.mx-ya>1))continue;   // where the ground in front rises it stands on it (lifted, at most 2.5 m, its uphill side sunk at most 1 m)
+      al={z,d,f:zF+d+b1,ya,yb:G&&o.pave===false?Math.min(ya,G.mn):ya};}   // yb: off the paving, the ground that falls away under it (a socle)
+    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
   const eH=cH*.24,ye=y0+cH;g.set(6,o.seed||.3);box(g,F,0,ye,0,W2-m*.25,eH*.62,L2-m*.25,31);g.set(2,.5);box(g,F,0,ye+eH*.33,0,W2-m*.2+.06,eH*.12,L2-m*.2+.06,15);
   g.set(6,o.seed||.3);box(g,F,0,ye+eH*.62,0,W2+.35,eH*.38,L2+.35,31);
   if(o.dentils!==false){g.set(2,.6);for(let x=-W2;x<=W2;x+=.45){box(g,F,x,ye+eH*.55,L2+.12,.12,eH*.08,.15,1|2|8|32);}}
@@ -390,7 +466,7 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temple
     if(o.acro!==false){statue(g,F,0,yb+hP+.7,sz*zr,2.6+o.W*.05,true);for(const sx of[-1,1])statue(g,F,sx*W2,yb+.5,sz*zr,1.8+o.W*.03,true);}}
   g.set(o.roof==='gilt'?12:1,(o.seed||.3)+.2+(tH>.5?.37:0));
   for(const sx of[1,-1])g.poly([F.p(sx*(W2+.55),yb+.35,zr+.2),F.p(0,yb+hP+.55,zr+.2),F.p(0,yb+hP+.55,-zr-.2),F.p(sx*(W2+.55),yb+.35,-zr-.2)],F.d(sx,1,0));
-  W.foot.add(o.x,o.z,W2+1,L2+(ph*1.4)+1,o.rot||0).t=1;return{top:yb+hP};}
+  {const fe=Math.max(L2+run,zA)+1,be=L2+ph*1.4+1,q=F.p(0,0,(fe-be)/2);W.foot.add(q[0],q[2],W2+1,(fe+be)/2,o.rot||0).t=1;}return{top:yb+hP};}   // the stair and the altar are in it
 function tholos(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0),R=o.R||7,ph=o.podH||2.6,cH=o.colH||9,n=o.n||18;
   g.set(6,.35);lathe(g,F,0,-3,0,[[R+.9,0],[R+.9,3+ph],[0,3+ph]],32);g.set(2,.4);lathe(g,F,0,ph-.4,0,[[R+1.05,0],[R+1.05,.4],[0,.4]],32);
   for(let i=0;i<5;i++){g.set(2,.45);box(g,F,0,0,R+.9+(i+.5)*.42,2.6,ph*(5-i)/5,.21,1|2|8|16);}

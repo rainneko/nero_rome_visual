@@ -346,14 +346,18 @@ else if(P>41.5&&P<42.5){S.alb=vec3(.2,.165,.125)*(.85+.3*vn2(vWP.xz*3.));S.rough
 else if(P>39.5&&P<40.5){S.alb=vec3(.061,.065,.038)*(.88+.24*vn2(vWP.xz*3.+vWP.y*2.));S.metal=.35;S.rough=.6;}   // dark bronze statuary (sRGB ~70/72/55)
 else if(P>30.5&&P<31.5){vec2 p=vWP.xz;float n=fbm2(p*.08),pud=smoothstep(.6,.68,fbm2(p*.03+7.)),lime=smoothstep(.74,.8,vn2(p*.11));vec3 c=mix(vec3(.16,.14,.11),vec3(.27,.23,.17),n);c=mix(c,vec3(.6,.58,.52),lime*.45);S.alb=mix(c,vec3(.04,.04,.045),pud*.75);S.rough=mix(.95,.05,pud);}
 else if(P>32.5&&P<33.5){S.alb=stoneC(uv,seed,vec3(.51,.455,.36),1.15,.56,aa);S.rough=.9;}
-else if(P>33.5&&P<34.5){vec2 g2=floor(uv/1.2);float k=h12(g2+seed);vec3 c1=k<.3?vec3(.9,.88,.84):k<.55?vec3(.55,.6,.68):k<.8?vec3(.82,.6,.58):vec3(.86,.76,.5);float jn=max(joint(uv.x,1.2,.01,aa),joint(uv.y,1.2,.01,aa));S.alb=c1*(1.-.25*jn);S.rough=.35;}
+else if(P>33.5&&P<34.5){vec2 g2=floor(uv/1.2);float k=h12(g2+seed);vec3 c1=k<.34?vec3(.86,.84,.8):k<.56?vec3(.74,.63,.42):k<.78?vec3(.84,.8,.79):vec3(.43,.31,.29);   // under porticoes and in porches: low-saturation coloured marble squares (white, giallo antico, pavonazzetto, a dark grey-red)
+ c1=mix(c1,vec3(.5,.36,.46),step(.56,k)*step(k,.78)*(1.-smoothstep(.0,.05,abs(sin(uv.x*2.1+uv.y*1.3+fbm2(uv*.8)*5.)))));float jn=max(joint(uv.x,1.2,.01,aa),joint(uv.y,1.2,.01,aa));S.alb=c1*(1.-.25*jn);S.rough=.35;}
 else if(P>34.5&&P<35.5){float k=fract(seed*7.7);S.alb=k<.5?vec3(.56,.15,.1):k<.8?vec3(.72,.52,.22):vec3(.13,.12,.11);S.rough=.5;}
-else if(P>33.5&&P<34.5){vec2 p=vWP.xz/1.25;vec2 ip=floor(p),fp=fract(p);float h=h12(ip+seed*13.);vec3 c=h<.24?vec3(.76,.6,.3):h<.42?vec3(.56,.38,.5):h<.56?vec3(.46,.13,.1):h<.72?vec3(.22,.38,.3):vec3(.86,.84,.8);float inr=step(.1,fp.x)*step(fp.x,.9)*step(.1,fp.y)*step(fp.y,.9);float dia=step(abs(fp.x-.5)+abs(fp.y-.5),.36);c=mix(vec3(.86,.84,.8),c,inr);c=mix(c,vec3(.84,.8,.72),dia*inr*step(.5,h));S.alb=c*(.9+.15*vn2(p*.4));S.rough=.38;}
 else if(P>37.5&&P<38.5){S.alb=stoneC(uv,seed,vec3(.3,.265,.22),1.3,.5,aa)*(.9+.2*vn2(uv*2.));S.rough=.9;}
 else if(P>36.5&&P<37.5){S.alb=stoneC(uv,seed,vec3(.38,.33,.26),1.6,.75,aa);S.rough=.8;}
 else if(P>35.5&&P<36.5){S.alb=vec3(.427,.389,.31)*(.95+.1*fbm2(vWP.xz*.5));S.rough=.85;}
 else if(P>31.5&&P<32.5){S.alb=vec3(.15,.11,.085)*(.8+.3*vn2(uv*2.));S.rough=.95;}
 else if(P>45.5&&P<46.5){vec2 p=vWP.xz;S.alb=vec3(.36,.26,.19)*(.82+.3*fbm2(p*.4))*(1.-.12*smoothstep(.6,.8,fbm2(p*.08)));S.rough=.9;}   // roof terrace of opus signinum: matte brick-red crushed-tile concrete
+else if(P>46.5&&P<47.5){S.alb=stoneC(uv,seed,vec3(.47,.43,.33),1.2,.6,aa)*(.9+.16*vn2(uv*5.));S.rough=.93;}   // tuff ashlar (opus quadratum): 2 x 4 ft blocks, grey-yellow and porous (old temple podiums)
+else if(P>47.5&&P<48.5){S.alb=stoneC(uv,seed,vec3(.66,.61,.5),1.5,.6,aa)*(1.-.13*smoothstep(.55,.8,vn2(vec2(uv.x*1.6,uv.y*13.))));S.rough=.8;}   // travertine ashlar: warm cream with fine horizontal pits
+else if(P>48.5&&P<49.5){float row=floor(uv.y/.6);vec2 id=vec2(floor(uv.x/1.2+fract(row*.5)),row);float j=max(joint(uv.y,.6,.008,aa),joint(uv.x+fract(row*.5)*1.2,1.2,.008,aa));   // open courts: white marble / travertine slabs 1.2 x 0.6 m, broken joints
+ S.alb=vec3(.7,.675,.61)*(.9+.12*h12(id+seed))*(.94+.08*fbm2(uv*.3))*(1.-.3*j);S.rough=.55-uWet*.3;}
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*uBurn*vC.z;
 `;

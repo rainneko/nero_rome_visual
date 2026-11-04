@@ -7,7 +7,7 @@
 const REVIEW=/[?&]review/.test(location.search);
 const REV_LAYERS=[['ground','地形'],['water','水面'],['streets','街道地面'],['houses','房子'],['squares','小广场'],['stairs','台阶'],['roadDetail','路面细节'],
   ['models','模型'],['columns','柱子'],['trees','树'],['people','人'],['story','故事图层'],['far','城外'],['other','纪念建筑及其他']];
-const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['graph','路网图（节点·边）','#ffffff'],['districts','片区（P1）','#b58cff'],['temples','神庙通路','#3de0e0']];
+const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['graph','路网图（节点·边）','#ffffff'],['districts','片区（P1）','#b58cff'],['fabric','支路与街坊（P2）','#ff9a2e'],['dfield','方向场（P2）','#7fd4ff'],['temples','神庙通路','#3de0e0']];
 const REV_TL={linked:'#3de0e0',stair:'#ffe14a',raised:'#9a9a9a',none:'#ff4040'};
 const REV_FACE={F0:'#9a9a9a',F1:'#59e08a',F2:'#3fd0e0',F3:'#5b8cff',F4:'#ff7ac8',blocked:'#ff4040'};
 const REV_WHAT={tree:'大树祭坛',compitum:'路口神龛',lacus:'水池',temple:'小庙',fountain:'喷泉',garden:'小园林',lane:'双三角'};
@@ -90,6 +90,19 @@ const REV_BUILD={
     for(const d of D.districts){const k=d.access?d.cls:'none';seen[k]=1;const c=new THREE.Color(REV_DIST[k]||'#d0d0d0');for(const P of d.loops)revDrape(a,C,P,true,8,1.1,c);}
     for(const f of D.frags){if(f.use!=='none'&&f.use!=='square')continue;const c=new THREE.Color(REV_DIST[f.use]);for(const P of f.loops)revDrape(a,C,P,true,6,1.1,c);}
     const s=D.stats;return{obj:revLineObj(a,C,0,.95),note:`${s.districts} 片 · 可建 ${s.ha.buildable} 公顷 · 碎块 ${s.frags} · 无用途 ${s.H12}% · `+Object.keys(seen).map(k=>`<i style="color:${REV_DIST[k]||'#d0d0d0'}">■</i>${k}`).join(' ')+` · ${D.ms} ms`};},
+  // P2 (fabric.js): the secondary streets by width (vici red, 3.8-4.2 m orange, semitae yellow), the blocks (light grey), the compita (green),
+  // the fragments (dark grey). Only in the districts round the Y junction for now (FAB.area)
+  fabric(){const W=W0,F=cityFabric(W),a=[],C=[],col=w=>new THREE.Color(w>=4.79?'#ff3b3b':w>=3.79?'#ff9a2e':'#ffd84a'),bl=new THREE.Color('#d8d8d8'),sq=new THREE.Color('#59e08a'),fr=new THREE.Color('#8a8a8a');
+    for(const b of F.blocks)for(const r of b.Y)revDrape(a,C,r.P,true,8,1,bl);
+    for(const o of F.opens)if(o.why==='frag'||o.why==='small')for(const r of o.Y)revDrape(a,C,r.P,true,8,1,fr);
+    for(const s of F.squares)for(const r of s.Y)revDrape(a,C,r.P,true,6,1.2,sq);
+    for(const s of F.streets)revDrape(a,C,s.S,false,6,1.5,col(s.w));
+    const s=F.stats,b=s.blockAreaWindow;return{obj:revLineObj(a,C,0,1),note:`${s.blocks} 街坊 · ${s.cuts} 刀 · 支路 ${s.km} km · 视窗内街坊 p10/p50/p90 ${b.p10}/${b.p50}/${b.p90} m² · H13 ${s.H13}% · ${s.ms} ms`};},
+  // P2: the direction field, a tick every 16 m in the districts it cut, along the field; brighter where it is surer
+  dfield(){const W=W0,F=cityFabric(W),G=F.F,D=cityDistricts(W),sel=new Set(F.districts),a=[],C=[];
+    for(let z=G.z0;z<G.z0+G.nz*G.cs;z+=16)for(let x=G.x0;x<G.x0+G.nx*G.cs;x+=16){const i=Math.floor((x-D.x0)/D.cs),j=Math.floor((z-D.z0)/D.cs);if(i<0||j<0||i>=D.nx||j>=D.nz||!sel.has(D.lab[j*D.nx+i]))continue;
+      const[th,cf]=fbFieldAt(G,x,z),c=new THREE.Color().setHSL(.55,.9,.25+.5*cf),dx=Math.cos(th)*5,dz=Math.sin(th)*5,y=W.gy(x,z)+1.2;a.push(x-dx,y,z-dz,x+dx,y,z+dz);C.push(c.r,c.g,c.b,c.r,c.g,c.b);}
+    return{obj:revLineObj(a,C,0,.9),note:`${F.districts.length} 片区 · 每 16 m 一根 · 越亮越确定`};},
   // the temples' ways down to the streets (temple-links.js): every hill stair at its tread height (the new ones yellow), a square round each temple
   // in the colour of its status, a line to where its walk met a street or a stair; red with a cross: no way found
   temples(){const W=W0,a=[],C=[],cl=k=>new THREE.Color(REV_TL[k]),seg=(x0,y0,z0,x1,y1,z1,c)=>{a.push(x0,y0,z0,x1,y1,z1);C.push(c.r,c.g,c.b,c.r,c.g,c.b);};
