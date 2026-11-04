@@ -784,6 +784,7 @@ async function buildRome(msg){
         else if(rr<.85){gV.set(22,.4);box(gV,F,0,-1,0,3,5.5,3.6,31);roof(gV,F,'gable',0,0,6.2,7.4,4.5,18*DEG,.3,.5);}else{gV.set(22,.45);box(gV,F,0,-1,0,2.2,2.6,2.2,31);gV.set(6,.4);box(gV,F,0,1.6,0,1.6,.6,1.6,31);}
         W.foot.addCircle(ox,oz,rr<.4?1.2:5);if(rr>.4&&R()<.5)W.trees.push([ox+Math.cos(a)*6,y,oz+Math.sin(a)*6,'cyp',1]);}}}
     W.scene.add(gV.mesh(MAT.city));}
+  finishRoadFrontage(W);   // the shop rows opened where the lanes behind them come in (housing.js), then built
   fillPocketSquares(W);
   const aureaGone=(x,z)=>AUREA_GONE(x,z)?'aureaSite':null;   // the houses' porticoes, pools, gardens and street furniture on the Golden House ground go with the fire (states 0-6)
   flushColumnsAt(W,aureaGone);{const sp=gbSplitAt(W.poolG,aureaGone);for(const k in sp){const pm=sp[k].mesh(MAT.pool,false);if(pm)(k?preLayerGroup(W,k):W.scene).add(pm);}}
@@ -794,12 +795,13 @@ async function buildRome(msg){
   /* ---- streets: grown from the buildings (streets.js) ---- */
   {const inR=(F,x,z,x0,x1,z0,z1)=>{const dx=x-F.ox,dz=z-F.oz,u=F.c*dx-F.s*dz,v=F.s*dx+F.c*dz;return u>x0&&u<x1&&v>z0&&v<z1;},FC=frame(-99,0,-143,-30*DEG),FA=frame(110,0,-235,-45*DEG),SUBR=(x,z)=>x>200&&x<1050&&z>-950&&z<-120,VELR=(x,z)=>x>-400&&x<-60&&z>60&&z<480;
    {const ends=(R)=>{const A=R[R.length-2],B=R[R.length-1],l=Math.hypot(B[0]-A[0],B[1]-A[1])||1;return{x:B[0],z:B[1],dx:(B[0]-A[0])/l,dz:(B[1]-A[1])/l};};W.stairFeet=(W.stairFeet||[]).concat([ends(W.palClivus),ends(clCap)]);}
-   buildStreets(W,{feet:W.stairFeet,lanes:W.laneLog,paved:[[-775,-152,-655,-50],[-535,-156,-462,-84],[-461,137,-377,183,'plaza'],[-478,195,-402,236,'plaza'],[-478,181,-377,197,'plaza']],roads:W.roadList,urban:romeUrban,veg:(x,z)=>(romeHorti(x,z)>.35&&Math.hypot(x-1350,z+330)>235)||Math.hypot(gy(x+5,z)-gy(x-5,z),gy(x,z+5)-gy(x,z-5))>3.6,   // hill slopes steeper than ~27 % count as vegetation (no street), except the main roads
+   buildStreets(W,{feet:W.stairFeet,lanes:W.laneLog,lanePath:(x,z)=>romeUrban(x,z)>.45,   // the city's dirt lanes get a narrow flagstone path down the middle (the author, 2026-11-04)
+     paved:[[-775,-152,-655,-50],[-535,-156,-462,-84],[-461,137,-377,183,'plaza'],[-478,195,-402,236,'plaza'],[-478,181,-377,197,'plaza']],roads:W.roadList,urban:romeUrban,veg:(x,z)=>(romeHorti(x,z)>.35&&Math.hypot(x-1350,z+330)>235)||Math.hypot(gy(x+5,z)-gy(x-5,z),gy(x,z+5)-gy(x,z-5))>3.6,   // hill slopes steeper than ~27 % count as vegetation (no street), except the main roads
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
    const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
-   roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
+   roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,

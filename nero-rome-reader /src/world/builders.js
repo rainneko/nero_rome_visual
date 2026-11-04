@@ -102,7 +102,12 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     // dirt ruts: one pair of wheel tracks 1.45 m apart, measured from the street centre of this coarse cell (uStA alpha, streets.js), wandering slowly.
     // (measured from the world origin, any bend of the direction field turned the ruts into rings)
     vec2 cC=uStX.zw/uStN*4.,cI=floor((vWP.xz-uStX.xy)/cC);vec4 ta=texture2D(uStA,(cI+.5)/ceil(uStN/4.));vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);
-    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),across=dot(dC,nv)-(ta.a*2.-1.)*8.+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
+    // the centre line blended over the four nearest coarse cells (each cell's own line, turned to agree with this one; not across a junction, where
+    // the directions part), so the ruts and the lane path run on without a jog at the 10 m cell edges
+    vec2 cN=ceil(uStN/4.),gP=(vWP.xz-uStX.xy)/cC-.5,g0=floor(gP),gf=gP-g0;float sA=0.,sW=0.;
+    for(int k=0;k<4;k++){vec2 o=vec2(mod(float(k),2.),floor(float(k)/2.)),ci=g0+o;vec4 tb=texture2D(uStA,(ci+.5)/cN);vec2 bv=tb.rg*2.-1.;float tth=.5*atan(bv.y,bv.x);vec2 ti=vec2(cos(tth),sin(tth));float al=dot(ti,tv);
+     float w=mix(1.-gf.x,gf.x,o.x)*mix(1.-gf.y,gf.y,o.y)*step(.94,abs(al))*step(.12,tb.b);sA+=w*sign(al)*(dot(vWP.xz-uStX.xy-(ci+.5)*cC,vec2(-ti.y,ti.x))-(tb.a*2.-1.)*8.);sW+=w;}
+    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),acr0=dot(dC,nv)-(ta.a*2.-1.)*8.,across=mix(acr0,sA/max(sW,1e-4),smoothstep(.05,.3,sW))+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
     float trk=(1.-smoothstep(.05,.16+aR,abs(abs(across)-.72)))*mix(1.,.4,smoothstep(.05,.3,aR))*smoothstep(.3,.65,vn2(vec2(along*.07,3.7)))*clamp(texture2D(uStA,q0).b*4.,0.,1.);   // strength filtered, so it fades out at squares instead of stopping at a cell edge
     vec2 rp=vec2(vWP.x*.866+vWP.z*.5,-vWP.x*.5+vWP.z*.866);
     vec3 cM=vec3(.55,.49,.395),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
@@ -115,7 +120,17 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
      cS*=1.+.3*smoothstep(1.4,3.4,dw);cS*=mix(.6,1.,smoothstep(0.,1.4,dw));
      }   // (the crown / drain line / ruts painted from a 2.5 m raster were invisible at street height; they are real strips now: roadKerbs/roadWear in streets.js)
     if(wD>.01){cD=mix(vec3(.38,.27,.155),vec3(.29,.2,.115),fbm2(vWP.xz*.9));cD*=.85+.3*vn2(vWP.xz*5.);cD=mix(cD,vec3(.55,.47,.33),step(.93,vn2(vWP.xz*9.))*.5);
-     cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(vWP.xz*.12+4.)));cD*=1.-.28*trk;cD*=mix(.68,1.,smoothstep(0.,1.2,dw));}
+     cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(vWP.xz*.12+4.)));cD*=1.-.28*trk;cD*=mix(.68,1.,smoothstep(0.,1.2,dw));
+     // a narrow path of flagstones down the middle of a city lane (the author, 2026-11-04): irregular grey-yellow tuff slabs about half a metre across,
+     // 1.1-1.3 m of them, a few missing, dust in the joints. A slab is in when its centre is, so the edge follows the stones. Where the lane is marked
+     // for it (T1 alpha, buildStreets) and has a direction (the rut strength: not on squares); far off, an even strip.
+     float pM=t.a*clamp(texture2D(uStA,q0).b*4.,0.,1.);
+     if(pM>.01&&abs(across)<1.5){vec2 p=vWP.xz*1.9;vec2 ip=floor(p),fp=fract(p);float m1=8.,m2=8.;vec2 id=ip,cc=vec2(0.);
+      for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 g=vec2(i,j);vec2 r=g+vec2(h12(ip+g+5.7),h12(ip+g+23.1))-fp;float d=dot(r,r);if(d<m1){m2=m1;m1=d;id=ip+g;cc=r;}else if(d<m2)m2=d;}
+      float hwP=.6+.08*(vn2(vec2(along*.05,9.1))-.5),inS=step(abs(across+dot(cc/1.9,nv)),hwP)*step(.07,h12(id+1.3)),e=sqrt(m2)-sqrt(m1),far=smoothstep(.15,.6,fwidth(p.x));
+      vec3 cP=vec3(.4,.365,.295)*(.8+.32*h12(id+7.7))*(.92+.12*vn2(vWP.xz*4.));cP*=mix(.6,1.,smoothstep(0.,.09,e));cP=mix(cP,vec3(.36,.33,.265),far);
+      cP=mix(cP,cD,.22+.3*smoothstep(.55,.85,fbm2(vWP.xz*.35)));   // dust and mud from the lane
+      cD=mix(cD,cP,pM*mix(inS,(1.-smoothstep(hwP-.1-aR,hwP+.1+aR,abs(across)))*.8,far));}}
     vec3 stC=cM*wM+cS*wS+cD*wD;stR=.52*wM+.72*wS+.95*wD;
     float ed=smoothstep(.0,.3,cov)*(1.-smoothstep(.55,.95,cov));stC=mix(stC,cD*.92,ed*.55*(1.-wD));
     c=mix(c,stC,cov);}}}
