@@ -5,9 +5,9 @@ class Foot{constructor(cell=64){this.cell=cell;this.map=new Map();this.list=[];}
   add(cx,cz,hw,hd,rot=0,tag){const o={cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd),tag},cs=this.cell;this.list.push(o);
     for(let i=Math.floor((cx-o.r)/cs);i<=Math.floor((cx+o.r)/cs);i++)for(let j=Math.floor((cz-o.r)/cs);j<=Math.floor((cz+o.r)/cs);j++){const k=this.key(i,j);let a=this.map.get(k);if(!a){a=[];this.map.set(k,a);}a.push(o);}return o;}
   addCircle(cx,cz,r,tag){const o=this.add(cx,cz,r,r,0,tag);o.circ=true;return o;}
-  hits(cx,cz,hw,hd,rot,m=0,skip){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell;   // m defaults to 0 (an undefined m made the search radius NaN: every query answered 'free'); skip: a tag to ignore
+  hits(cx,cz,hw,hd,rot,m=0,skip){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell,sf=typeof skip==='function';   // m defaults to 0 (an undefined m made the search radius NaN: every query answered 'free'); skip: a tag to ignore, or a test (footprint => true to ignore it)
     for(let i=Math.floor((cx-q.r)/cs);i<=Math.floor((cx+q.r)/cs);i++)for(let j=Math.floor((cz-q.r)/cs);j<=Math.floor((cz+q.r)/cs);j++){const a=this.map.get(this.key(i,j));if(!a)continue;
-      for(const o of a){if(skip&&o.tag===skip)continue;const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
+      for(const o of a){if(skip&&(sf?skip(o):o.tag===skip))continue;const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
 function obb(a,b){const ax=[[a.c,-a.s],[a.s,a.c],[b.c,-b.s],[b.s,b.c]],dx=b.cx-a.cx,dz=b.cz-a.cz;
   for(const[nx,nz]of ax){const ra=a.hw*Math.abs(a.c*nx-a.s*nz)+a.hd*Math.abs(a.s*nx+a.c*nz),rb=b.hw*Math.abs(b.c*nx-b.s*nz)+b.hd*Math.abs(b.s*nx+b.c*nz);
     if(Math.abs(dx*nx+dz*nz)>ra+rb)return false;}return true;}

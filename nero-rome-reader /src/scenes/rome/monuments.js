@@ -85,7 +85,7 @@ function portico(W,g,F,ax,az,bx,bz,y,h,dep,step,tint,type='simple'){const dx=bx-
   let gm=1e9;for(const q of ROME.porticos[ROME.porticos.length-1])gm=Math.min(gm,W.gy(q[0],q[2]));const fd=Math.min(45,Math.max(12,F.oy+y-gm+1.5));ROME.porticos[ROME.porticos.length-1].fd=fd;   // foundation block: 12 m, or down to the lowest ground under the colonnade where the site falls away (phase 5: the Claudius precinct ones hung 24 m above the slope)
   const S=F.sub((ax+bx)/2,0,(az+bz)/2,Math.atan2(-dz,dx)),ad=Math.abs(dep);g.set(2,.45);box(g,S,0,y-fd,dep/2,L/2+.7,fd,ad/2+.9,31);g.set(2,.5);box(g,S,0,y+h,0,L/2+.5,.9,.6,31);
   g.set(1,.4);g.poly([S.p(-L/2-.6,y+h+.9,0),S.p(L/2+.6,y+h+.9,0),S.p(L/2+.6,y+h+.9+ad*.3,dep),S.p(-L/2-.6,y+h+.9+ad*.3,dep)],[0,1,0]);
-  g.set(22,.4);box(g,S,0,y-1,dep,L/2+.6,h+2+ad*.3,.45,31);}
+  g.set(22,.4);box(g,S,0,y-1,dep,L/2+.6,h+2+ad*.3,.45,31);g.set(34,.4);g.poly([S.p(-L/2-.6,y+.02,0),S.p(L/2+.6,y+.02,0),S.p(L/2+.6,y+.02,dep),S.p(-L/2-.6,y+.02,dep)],[0,1,0]);}   // C2: coloured marble squares under the roof
 function basilica(g,F,o){const L=o.L,D=o.D,h1=o.h1||9.5,h2=o.h2||8,n=o.n||12,pt=o.part||6;
   g.set(2,.45);box(g,F,0,-4,0,L/2+2.5,4.6,D/2+2.5,31);for(let i=0;i<3;i++)box(g,F,0,0,D/2+2.5+i*.45+.22,L/2,.6-i*.2,.22,1|2|8|16);
   for(const s of[1,-1]){const Fa=F.sub(0,0,s*D/2,s>0?0:Math.PI);arcade(g,Fa,0,.6,0,L,h1,n,1.6,pt,{span:.3});arcade(g,Fa,0,.6+h1,0,L,h2,n,1.3,pt,{span:.27});
@@ -158,11 +158,11 @@ async function buildRome(msg){
   {const R=FF.sub(-68,0,-2,Math.PI/2);g.set(6,.4);box(g,R,0,0,0,12,3.6,6,31);g.set(13,.3);for(let i=-9;i<=9;i+=3)box(g,R,i,1.4,6.5,.4,.7,.6,31);
     g.set(2,.5);box(g,R,0,3.6,0,12.3,.4,6.3,31);honorCol(W,g,R,-8,-3,4,9);honorCol(W,g,R,8,-3,4,9);fpw(FF,-68,-2,7,13);}
   const T=(lx,lz,face,o)=>{const q=FF.p(lx,0,lz);temple(W,g,Object.assign({x:q[0],y:yF,z:q[2],rot:FF.rot+face},o));};
-  T(-96,30,Math.PI/2,{W:22,L:40,podH:8,colH:11,order:'ion',nf:6,rows:2,seed:.4});
-  T(-102,-13,Math.PI/2,{W:26,L:24,podH:3,colH:12,nf:6,rows:1,seed:.3});
+  T(-96,30,Math.PI/2,{W:22,L:40,podH:8,colH:11,order:'ion',nf:6,rows:2,seed:.4,podMat:'trav',podRooms:true,altar:false,name:'萨图尔努斯神庙'});   // 【史】the state treasury (aerarium) was in its podium; no altar: the Lacus Servilius (built later, below) stands on its axis
+  T(-102,-13,Math.PI/2,{W:26,L:24,podH:3,colH:12,nf:6,rows:1,seed:.3,name:'和谐女神庙'});
   const TS=(n,lx,lz,face,o)=>{const q=FF.p(lx,0,lz),rot=FF.rot+face;romeStand(W,n,q[0],q[2],yF,rot,g2=>temple(W,g2,Object.assign({x:q[0],y:yF,z:q[2],rot},o)));};
-  TS('rome_castor',84,46,-Math.PI/2,{W:30,L:46,podH:7,colH:12.5,nf:8,rows:2,peri:true,seed:.25});
-  TS('rome_divus_julius',76,-6,-Math.PI/2,{W:24,L:30,podH:5,colH:10,nf:6,rows:2,seed:.35});
+  TS('rome_castor',84,46,-Math.PI/2,{W:30,L:46,podH:7,colH:12.5,nf:8,rows:2,peri:true,seed:.25,front:'rostra',fit:9.9,podRooms:true,name:'卡斯托尔神庙'});   // 【史】the AD 6 rebuilding: a speakers' platform in front reached from the sides, chambers (loculi) in the podium; fit: the GLB's platform is 9.9 m deep
+  TS('rome_divus_julius',76,-6,-Math.PI/2,{W:24,L:30,podH:5,colH:10,nf:6,rows:2,seed:.35,front:'rostra',fit:7.8,name:'神君尤利乌斯神庙'});   // 【史】29 BC: the rostra in front, the altar in a half-round niche, stairs at the sides; the GLB's platform is 7.8 m deep
   {const A=FF.sub(64,0,20,Math.PI/2);romeStand(W,'rome_arch_augustus',A.ox,A.oz,yF,A.rot,(g2,F)=>{arcade(g2,F,0,0,0,18,12,3,6,6,{span:.33,attic:3.5});statue(g2,F,0,12.4,0,3.2,true);statue(g2,F,-5,12.4,0,2.6,true);statue(g2,F,5,12.4,0,2.6,true);});fpw(FF,64,20,4,10);}
   {const q=FF.p(104,0,-14);romeStand(W,'rome_regia',q[0],q[2],yF,FF.rot,(g2,F)=>{rectWalls(g2,F,0,0,18,12,-1,7,0,{part:22,seed:.3,sty:0,fl:1,nSt:1,gH:7,sH:4,lit:0});roof(g2,F,'gable',0,0,18,12,7,20*DEG,.6,.3,{part:22,seed:.3,nSt:1,gH:7,sH:4,floorY:0});});}fpw(FF,104,-14,10,7);
   {const q=FF.p(118,0,18);romeStand(W,'rome_vesta',q[0],q[2],yF,FF.rot,g2=>tholos(W,g2,{x:q[0],y:yF,z:q[2],rot:FF.rot,R:7,podH:3,colH:9,n:20,roofPart:13}),{grot:FF.rot-Math.PI/2});fpw(FF,118,18,10,10);W.foot.addCircle(q[0],q[2],12);}   // the GLB's stair side is +X, the stand-in's +Z
@@ -173,12 +173,12 @@ async function buildRome(msg){
   {const T2=FF.sub(-128,0,0,Math.PI/2);g.set(33,.3);box(g,T2,0,-3,-9,36,21,9,31);arcade(g,T2,0,18,-.5,72,10.5,11,4,33,{span:.3,attic:2.4});for(let k=0;k<=11;k++){g.set(2,.5);lathe(g,T2,-36+k*72/11,18.2,1.6,[[.68,0],[.68,.35],[.56,.45],[.5,8.1],[.66,8.3],[.7,8.6]],10);}g.set(2,.52);box(g,T2,0,26.8,1.9,36.4,1.7,.55,31);g.set(33,.36);for(let k=0;k<=22;k++)box(g,T2,-36+k*72/22,27.2,2.48,.32,1.1,.06,31);g.set(2,.55);box(g,T2,0,28.5,2.1,36.8,.5,.9,31);for(let k=0;k<11;k++)box(g,T2,-36+(k+.5)*72/11,24.3,1.62,.38,.9,.12,31);g.set(33,.32);box(g,T2,0,18,-12,35.6,10.5,5.6,31);g.set(2,.42);box(g,T2,0,28.2,-4.5,35.6,.3,4,48);
     rectWalls(g,T2,0,-9,72,18,28.5,37,28.5,{part:24,seed:.3,sty:1,fl:8|32|4096|8192,nSt:1,gH:8.5,sH:4,lit:.5});roof(g,T2,'hip',0,-9,72,18,37,18*DEG,.8,.3);fpw(T2,0,-5,37,14);}
   /* Forum of Caesar & Augustus */
-  {const F=frame(-99,gy(-99,-143),-143,-30*DEG);g.set(11,.35);g.poly([F.p(-30,.3,30),F.p(62,.3,30),F.p(62,.3,-30),F.p(-30,.3,-30)],[0,1,0]);
-    const q=F.p(-44,0,0);temple(W,g,{x:q[0],y:F.oy,z:q[2],rot:F.rot+Math.PI/2,W:28,L:34,podH:5,colH:14,nf:8,rows:2,seed:.23});
+  {const F=frame(-99,gy(-99,-143),-143,-30*DEG);g.set(49,.35);g.poly([F.p(-30,.3,30),F.p(62,.3,30),F.p(62,.3,-30),F.p(-30,.3,-30)],[0,1,0]);
+    const q=F.p(-44,0,0);temple(W,g,{x:q[0],y:F.oy,z:q[2],rot:F.rot+Math.PI/2,W:28,L:34,podH:5,colH:14,nf:8,rows:2,seed:.23,front:'rostra',name:'维纳斯母亲神庙'});   // 【史】reached by stairs at the sides of its front (reconstructions)
     portico(W,g,F,-28,-32,62,-32,0,7,-7,3.6,[1,.96,.9]);portico(W,g,F,62,32,-28,32,0,7,-7,3.6,[1,.96,.9]);pedestalStatue(g,F,24,0,0,7,{gilt:true});fpw(F,10,0,58,40);
     sqF(F,47,0,.35);honorCol2(W,g,F,4,-17,.35);bigBase(g,F,2,14,.35,4,2.4,2.2,{sh:4.6});cypRow(W,F,-18,-27,56,-27,8,gy);cypRow(W,F,-18,27,56,27,8,gy);}
-  {const F=frame(110,gy(110,-235),-235,-45*DEG);g.set(11,.35);g.poly([F.p(-44,.3,62),F.p(44,.3,62),F.p(44,.3,-10),F.p(-44,.3,-10)],[0,1,0]);
-    temple(W,g,{x:F.p(0,0,-40)[0],y:F.oy,z:F.p(0,0,-40)[2],rot:F.rot,W:36,L:48,podH:4,colH:17,nf:8,rows:2,peri:true,seed:.2});
+  {const F=frame(110,gy(110,-235),-235,-45*DEG);g.set(49,.35);g.poly([F.p(-44,.3,62),F.p(44,.3,62),F.p(44,.3,-10),F.p(-44,.3,-10)],[0,1,0]);
+    temple(W,g,{x:F.p(0,0,-40)[0],y:F.oy,z:F.p(0,0,-40)[2],rot:F.rot,W:36,L:48,podH:4,colH:17,nf:8,rows:2,peri:true,seed:.2,name:'复仇者马尔斯神庙'});
     g.set(22,.35);{const segs=[[-70,-74,-48,-80,26],[-48,-80,-20,-83,31],[-20,-83,12,-82,33],[12,-82,40,-79,30],[40,-79,70,-73,25]];for(const[ax,az,bx,bz,h]of segs){const Lw=Math.hypot(bx-ax,bz-az),S=F.sub((ax+bx)/2,0,(az+bz)/2,Math.atan2(-(bz-az),bx-ax));g.set(22,.34);box(g,S,0,-1,0,Lw/2+.4,h+1,2.2,31);g.set(2,.5);for(let yy=6;yy<h;yy+=6.5)box(g,S,0,yy,0,Lw/2+.5,.45,2.45,31);box(g,S,0,h,0,Lw/2+.6,.7,2.6,31);g.set(22,.3);for(let k=-1;k<=1;k++)box(g,S,k*Lw/3,-1,2.6,1.1,h-2,.6,31);}{const S=F.sub(-24,0,-82.4,0);g.set(7,.2);box(g,S,0,0,0,3.2,9,2.5,31);g.set(2,.55);box(g,S,0,9,0,4.2,1.2,2.7,31);}}g.set(22,.34);box(g,F,-70,-1,-50,2.2,22,24,31);box(g,F,70,-1,-50,2.2,22,24,31);g.set(2,.5);box(g,F,-70,21,-50,2.5,.7,24.3,31);box(g,F,70,21,-50,2.5,.7,24.3,31);
     portico(W,g,F,-46,-58,-46,58,0,9,-7,4,[1,.9,.72],'cor');portico(W,g,F,46,58,46,-58,0,9,-7,4,[1,.9,.72],'cor');fpw(F,0,-10,74,74);
     sqF(F,0,34,.35);honorCol2(W,g,F,-28,16,.35);honorCol2(W,g,F,28,16,.35);bigBase(g,F,-26,48,.35,4,2.6,2.4,{eq:true});bigBase(g,F,26,48,.35,4,2.6,2.4,{eq:true});cypRow(W,F,-39,2,-39,56,7.5,gy);cypRow(W,F,39,2,39,56,7.5,gy);}

@@ -47,7 +47,7 @@ function templeMark(S,N,R,r,Y){const{x0,z0,cs,nx,nz}=S;
       for(let j=Math.max(0,Math.floor((z-r-z0)/cs));j<=Math.min(nz-1,Math.floor((z+r-z0)/cs));j++)for(let i=Math.max(0,Math.floor((x-r-x0)/cs));i<=Math.min(nx-1,Math.floor((x+r-x0)/cs));i++)
         if(Math.hypot(x0+(i+.5)*cs-x,z0+(j+.5)*cs-z)<=r){const k=j*nx+i;N.stair[k]=1;N.stairY[k]=y;}}}}
 // where one goes in or out: the foot of the front stair and the middle of each long side; d points away from the temple
-function templeFeet(t){const s=Math.sin(t.rot),c=Math.cos(t.rot),fd=t.L/2+(t.stairs?Math.max(4,Math.round(t.podH/.3))*.4:0)+1.5,sd=t.W/2+2;
+function templeFeet(t){const s=Math.sin(t.rot),c=Math.cos(t.rot),fd=t.L/2+(t.stairs?(t.run!=null?t.run:Math.max(4,Math.round(t.podH/.3))*.4):0)+1.5,sd=t.W/2+2;   // t.run: the stair's length as temple() built it
   return[{k:'front',x:t.x+s*fd,z:t.z+c*fd,dx:s,dz:c},{k:'left',x:t.x-c*sd,z:t.z+s*sd,dx:-c,dz:s},{k:'right',x:t.x+c*sd,z:t.z-s*sd,dx:c,dz:-s}];}
 // the temple's own ground: the footprints that hold its centre (the temple, its precinct, the terrace or forum it stands in); on it one walks at the temple's floor
 function templeOwn(W,t){const inF=(f,x,z,m)=>{const dx=x-f.cx,dz=z-f.cz;if(f.circ)return Math.hypot(dx,dz)<=f.hw+m;const u=f.c*dx-f.s*dz,v=f.s*dx+f.c*dz;return Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m;},
