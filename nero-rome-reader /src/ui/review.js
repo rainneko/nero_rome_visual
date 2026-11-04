@@ -7,10 +7,12 @@
 const REVIEW=/[?&]review/.test(location.search);
 const REV_LAYERS=[['ground','地形'],['water','水面'],['streets','街道地面'],['houses','房子'],['squares','小广场'],['stairs','台阶'],['roadDetail','路面细节'],
   ['models','模型'],['columns','柱子'],['trees','树'],['people','人'],['story','故事图层'],['far','城外'],['other','纪念建筑及其他']];
-const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['temples','神庙通路','#3de0e0']];
+const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['graph','路网图（节点·边）','#ffffff'],['districts','片区（P1）','#b58cff'],['temples','神庙通路','#3de0e0']];
 const REV_TL={linked:'#3de0e0',stair:'#ffe14a',raised:'#9a9a9a',none:'#ff4040'};
 const REV_FACE={F0:'#9a9a9a',F1:'#59e08a',F2:'#3fd0e0',F3:'#5b8cff',F4:'#ff7ac8',blocked:'#ff4040'};
 const REV_WHAT={tree:'大树祭坛',compitum:'路口神龛',lacus:'水池',temple:'小庙',fountain:'喷泉',garden:'小园林',lane:'双三角'};
+const REV_EDGE={main:'#ff8a3d',join:'#ff3b3b',hill:'#c080ff',fixed:'#ffd84a',bridge:'#ffffff',island:'#8a8a8a',plaza:'#8a8a8a'};
+const REV_DIST={dense:'#ff5a5a',mid:'#ffb347',domus:'#7be07b',ware:'#c99a5b',fixed:'#e05cff',campus:'#5b8cff',horti:'#3fd07a',other:'#d0d0d0',none:'#ff2020',square:'#ffffff'};
 const REV_ZONE={dense:'#ff5a5a',mid:'#ffb347',domus:'#7be07b',ware:'#c99a5b'};
 const REV={scene:null,off:{},lines:{},objs:{},info:{},stats:null,t:0,ti:0,el:null,labels:[],collapsed:false,blank:null,stTex:null};
 const revFmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?Math.round(n/1e3)+'k':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.round(n));
@@ -76,6 +78,18 @@ const REV_BUILD={
         if(kd(i-1,j)!==k)revDrape(a,C,[[x+e,z],[x+e,z+D]],false,D,1,c);if(kd(i+1,j)!==k)revDrape(a,C,[[x+D-e,z],[x+D-e,z+D]],false,D,1,c);
         if(kd(i,j-1)!==k)revDrape(a,C,[[x,z+e],[x+D,z+e]],false,D,1,c);if(kd(i,j+1)!==k)revDrape(a,C,[[x,z+D-e],[x+D,z+D-e]],false,D,1,c);}}
     return{obj:revLineObj(a,C,0,.9),note:Object.keys(seen).map(k=>`<i style="color:${REV_ZONE[k]||'#e05cff'}">■</i>${k}`).join(' ')};},
+  // P1 (roadgraph.js): the network as a graph. Edges by kind (main roads orange, joins red, uphill pieces violet, the clivi yellow, bridges white,
+  // links through the Forum and over the island grey); a white square on each junction (3 roads or more), a red cross on each dead end
+  graph(){const W=W0,G=roadGraph(W),a=[],C=[],sq=(x,z,r,c)=>{const p=[[x-r,z-r],[x+r,z-r],[x+r,z+r],[x-r,z+r]];revDrape(a,C,p,true,r*2,1.6,c);};
+    for(const e of G.edges)revDrape(a,C,e.pts,false,8,1.3,new THREE.Color(REV_EDGE[e.kind]||'#ffffff'));
+    const wj=new THREE.Color('#ffffff'),rd=new THREE.Color('#ff2020');for(const n of G.nodes){if(n.deg>=3)sq(n.x,n.z,3,wj);else if(n.deg===1){revDrape(a,C,[[n.x-4,n.z-4],[n.x+4,n.z+4]],false,8,1.6,rd);revDrape(a,C,[[n.x-4,n.z+4],[n.x+4,n.z-4]],false,8,1.6,rd);}}
+    const s=G.stats;return{obj:revLineObj(a,C,0,1),note:`${revFmt(s.nodes)} 节点 · ${revFmt(s.edges)} 边 · ${s.faces} 面 · 路口 ${s.junctions} · 断头 ${s.deadEnds} · ${s.pieces} 块 · ${s.km} km · ${G.ms} ms`};},
+  // P1: the districts (the land between the roads, precinct rings, cliffs and the river) in the colour of their class; red: no use (no road or ring
+  // along a district, or a fragment with nothing round it: H12); white: fragments that will be small squares
+  districts(){const W=W0,D=cityDistricts(W),a=[],C=[],seen={};
+    for(const d of D.districts){const k=d.access?d.cls:'none';seen[k]=1;const c=new THREE.Color(REV_DIST[k]||'#d0d0d0');for(const P of d.loops)revDrape(a,C,P,true,8,1.1,c);}
+    for(const f of D.frags){if(f.use!=='none'&&f.use!=='square')continue;const c=new THREE.Color(REV_DIST[f.use]);for(const P of f.loops)revDrape(a,C,P,true,6,1.1,c);}
+    const s=D.stats;return{obj:revLineObj(a,C,0,.95),note:`${s.districts} 片 · 可建 ${s.ha.buildable} 公顷 · 碎块 ${s.frags} · 无用途 ${s.H12}% · `+Object.keys(seen).map(k=>`<i style="color:${REV_DIST[k]||'#d0d0d0'}">■</i>${k}`).join(' ')+` · ${D.ms} ms`};},
   // the temples' ways down to the streets (temple-links.js): every hill stair at its tread height (the new ones yellow), a square round each temple
   // in the colour of its status, a line to where its walk met a street or a stair; red with a cross: no way found
   temples(){const W=W0,a=[],C=[],cl=k=>new THREE.Color(REV_TL[k]),seg=(x0,y0,z0,x1,y1,z1,c)=>{a.push(x0,y0,z0,x1,y1,z1);C.push(c.r,c.g,c.b,c.r,c.g,c.b);};

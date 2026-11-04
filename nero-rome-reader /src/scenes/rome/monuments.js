@@ -420,7 +420,8 @@ async function buildRome(msg){
     temple(W,gM,{x:q[0],y,z:q[1],rot:Math.atan2(-ux,-uz)+Math.PI/2,W:14,L:22,podH:2,colH:8,nf:6,rows:1,seed:.5});
     const F=frame(cx,y,cz,Math.atan2(-uz,ux));lathe(gM,F,-20,0,0,[[1.3,0],[1,14],[0,15.4]],4,25);gM.set(2,.4);
     gM.poly([F.p(126,-4,-22),F.p(150,-4,0),F.p(150,3,0),F.p(126,3,-22)],F.d(.7,0,-.7));gM.poly([F.p(150,-4,0),F.p(126,-4,22),F.p(126,3,22),F.p(150,3,0)],F.d(.7,0,.7));
-    bridgeAt(gM,cx-ux*25+lx*46,cz-uz*25+lz*46,ux,uz,52,2,9,11,2,false,gy);bridgeAt(gM,cx+ux*20-lx*46,cz+uz*20-lz*46,ux,uz,52,1,9,11,2,false,gy);}
+    bridgeAt(gM,cx-ux*25+lx*46,cz-uz*25+lz*46,ux,uz,52,2,9,11,2,false,gy);bridgeAt(gM,cx+ux*20-lx*46,cz+uz*20-lz*46,ux,uz,52,1,9,11,2,false,gy);
+    W.bridges=[{name:'Pons Fabricius',x:cx-ux*25+lx*46,z:cz-uz*25+lz*46,ux,uz,len:52,w:9},{name:'Pons Cestius',x:cx+ux*20-lx*46,z:cz+uz*20-lz*46,ux,uz,len:52,w:9}];}   // every bridge: its middle, the river's direction there, deck length and width
   // The island was built up by AD 56 (the author, 2026-11-02: "那边好像也有一些建筑才是"). Island frame: x along the flow (downstream +x, the prow), z across;
   // ground x -106..118, z -17..17, the bridgeheads at (-25,-20) and (20,20), the obelisk at (-20,0), Aesculapius at (55,0). Upstream the two temples of 194 BC
   // and the shrine of Tiberinus at the tip, round Aesculapius the porticoes where the sick slept, houses between, and a deck on the travertine prow.
@@ -439,8 +440,8 @@ async function buildRome(msg){
     rectWalls(gM,S,0,0,w,d,-1.5,yT,0,fac);roof(gM,S,'gable',0,0,w,d,yT,.4,.45,sd,fac);const q=P(hx,hz);W.foot.add(q[0],q[2],w/2,d/2,F.rot);}
    gM.set(2,.42);gM.poly([F.p(126,3.02,22),F.p(150,3.02,0),F.p(126,3.02,-22)],[0,1,0]);{const S=F.sub(141,3,0,Math.PI/2);pedestalStatue(gM,S,0,0,0,4);}   // the prow's deck with a herm of the god
    W.foot.add(cx,cz,108,17,F.rot);}   // nothing else grows on the island (no wild trees through the houses)
-  const brT=(t,len,nA,w,wood)=>{const[x,z]=polyAt(TIBER,t);const i=Math.floor(t),a=TIBER[i],b=TIBER[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);bridgeAt(gM,x,z,(b[0]-a[0])/l,(b[1]-a[1])/l,len,nA,w,12,2,wood,gy);};
-  brT(16.15,150,5,12);brT(16.9,150,0,10,true);brT(12.0,150,5,11);brT(7.1,150,5,12);brT(13.02,150,5,11);{const q=polyAt(TIBER,13.02);poi('阿格里帕桥','Pons Agrippae',q[0],q[1],16,0,99,'【史】阿格里帕修的石桥，连接战神广场和台伯河西岸。',1400);}
+  const brT=(t,len,nA,w,wood,name)=>{const[x,z]=polyAt(TIBER,t);const i=Math.floor(t),a=TIBER[i],b=TIBER[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/l,uz=(b[1]-a[1])/l;bridgeAt(gM,x,z,ux,uz,len,nA,w,12,2,wood,gy);W.bridges.push({name,x,z,ux,uz,len,w});};
+  brT(16.15,150,5,12,false,'Pons Aemilius');brT(16.9,150,0,10,true,'Pons Sublicius');brT(12.0,150,5,11,false,'bridge 12');brT(7.1,150,5,12,false,'Pons Neronianus');brT(13.02,150,5,11,false,'Pons Agrippae');{const q=polyAt(TIBER,13.02);poi('阿格里帕桥','Pons Agrippae',q[0],q[1],16,0,99,'【史】阿格里帕修的石桥，连接战神广场和台伯河西岸。',1400);}
   poi('台伯岛','Insula Tiberina',-630,156,24,0,99,'船形小岛，岛上是医神埃斯库拉庇乌斯神庙，岛头砌成船首。【史】前291年罗马从埃皮道鲁斯请来医神的圣蛇，蛇在这里下船上岛，就在岛上建庙（李维《罗马史》摘要11）；岛尾用石灰华砌成船头的样子，侧面刻着医神缠蛇的手杖。',1600);
   {const q=polyAt(TIBER,7.1);poi('尼禄桥','Pons Neronianus',q[0],q[1],18,0,99,'通往梵蒂冈跑马场的桥。',1800);}
   poi('台伯河','Tiberis',-1650,-760,12,0,99,'',4500);
@@ -495,25 +496,42 @@ async function buildRome(msg){
     [150,-1250,66,40,0],[-300,-2150,62,50,0],[-950,-2200,128,98,.15],[-1300,-860,154,46,-.55],[-735,-1240,97,63,.08],[-610,-330,52],[-880,-1090,56],[890,910,50],[-448,22,72]],   // footprints the dictionary pass adds after the roads (fw/foot.add below): the roads keep off them too
     LATE=LATE0.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)});
   const RO={free:30,cs:6,lim:.14,max:.3,keep:.2,pull:.2,turn:30,avoid:LATE,wet:(x,z,r)=>polyDist(x,z,TIBER)[0]<RTW+r+4};
-  const MAIN=[[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[428,112],[520,180],[700,200]]],   // Via Sacra over the Velia, north of the Colossus base
-    [7,[[40,45],[-60,120],[-185,200],[-235,330],[-262,470]]],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill)
-    [10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]]],   // Via Appia
-    [10,[[-400,605],[-612,1250],[-600,1700],[-500,2400],[-440,2950],[-520,3600]]],   // Via Ostiensis from the Porta Trigemina (it used to start in the river)
-    [12,[[-215,-372],[-480,-1100],[-720,-2300],[-900,-2800]]],   // Via Lata / Flaminia, from the Capitol's north foot by the tomb of Bibulus
-    [8,[[-20,-120],[300,-300],[700,-430],[1100,-330],[1600,-500],[2600,-800]]],   // Argiletum, Subura, Via Tiburtina
-    [9,[[700,200],[1100,250],[1640,52],[1900,52],[2500,20],[2800,0]]],   // Via Labicana: between the east college and the Galba site, under the Claudia arcade north of its terminal
-    [7,[[260,-278],[500,-600],[900,-1000],[1200,-1300]]],   // Vicus Patricius, branching off the Argiletum in the Subura
-    [7,[[100,-500],[500,-1000],[900,-1500]]],   // Alta Semita / Via Salaria
-    [8,[[-1032,134],[-1043,208],[-1300,300],[-1650,600],[-2400,800]]],   // Via Aurelia: off the Pons Agrippae (deck to its Trastevere end), over the Janiculum
-    [7,[[-1235,-44],[-1285,12],[-1743,-923]]],   // off the bridge at Tiber station 12, along the west bank to the Pons Neronianus (it used to run in the river)
-    [7,[[-1674,-894],[-1743,-923],[-2000,-1000],[-2180,-1230],[-2750,-1240]]],   // Via Cornelia: off the Pons Neronianus, along the north side of Nero's circus (it used to run down its middle)
-    [7,[[-1290,2480],[-1400,2200],[-1450,1500],[-1350,1000],[-1060,820],[-1043,208]]]];   // Via Portuensis: from the south-bank works' gate up the right bank, east of the Naumachia, to the Pons Agrippae
+  const MAIN=[[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[428,112],[520,180],[700,200]],'Via Sacra'],   // Via Sacra over the Velia, north of the Colossus base
+    [7,[[40,45],[-60,120],[-185,200],[-235,330],[-262,470]],'Vicus Tuscus'],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill)
+    [10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]],'Via Appia'],   // Via Appia
+    [10,[[-400,605],[-612,1250],[-600,1700],[-500,2400],[-440,2950],[-520,3600]],'Via Ostiensis'],   // Via Ostiensis from the Porta Trigemina (it used to start in the river)
+    [12,[[-215,-372],[-480,-1100],[-720,-2300],[-900,-2800]],'Via Lata'],   // Via Lata / Flaminia, from the Capitol's north foot by the tomb of Bibulus
+    [8,[[-20,-120],[300,-300],[700,-430],[1100,-330],[1600,-500],[2600,-800]],'Argiletum'],   // Argiletum, Subura, Via Tiburtina
+    [9,[[700,200],[1100,250],[1640,52],[1900,52],[2500,20],[2800,0]],'Via Labicana'],   // Via Labicana: between the east college and the Galba site, under the Claudia arcade north of its terminal
+    [7,[[260,-278],[500,-600],[900,-1000],[1200,-1300]],'Vicus Patricius'],   // Vicus Patricius, branching off the Argiletum in the Subura
+    [7,[[100,-500],[500,-1000],[900,-1500]],'Alta Semita'],   // Alta Semita / Via Salaria
+    [8,[[-1032,134],[-1043,208],[-1300,300],[-1650,600],[-2400,800]],'Via Aurelia'],   // Via Aurelia: off the Pons Agrippae (deck to its Trastevere end), over the Janiculum
+    [7,[[-1235,-44],[-1285,12],[-1743,-923]],'west bank road'],   // off the bridge at Tiber station 12, along the west bank to the Pons Neronianus (it used to run in the river)
+    [7,[[-1674,-894],[-1743,-923],[-2000,-1000],[-2180,-1230],[-2750,-1240]],'Via Cornelia'],   // Via Cornelia: off the Pons Neronianus, along the north side of Nero's circus (it used to run down its middle)
+    [7,[[-1290,2480],[-1400,2200],[-1450,1500],[-1350,1000],[-1060,820],[-1043,208]],'Via Portuensis']];   // Via Portuensis: from the south-bank works' gate up the right bank, east of the Naumachia, to the Pons Agrippae
   // the routes are baked into road-network.js (tools/test/bake-roads.mjs); they are routed live with ?reroute, or when the waypoints or obstacles changed since the bake
   const roadKey=JSON.stringify([MAIN,LATE0]),baked=typeof ROME_ROADS_BAKED!=='undefined'&&!!ROME_ROADS_BAKED&&ROME_ROADS_BAKED.key===roadKey&&!/[?&]reroute/.test(location.search);
   if(!baked&&!/[?&]reroute/.test(location.search))console.warn('road-network.js is stale: routing the main roads live (run node tools/test/bake-roads.mjs)');
-  const tR=performance.now(),routed=baked?ROME_ROADS_BAKED.roads.map((P,i)=>[MAIN[i][0],P]):MAIN.map(([w,way])=>[w,routeRoad(W,way,w,RO)]),tG=performance.now();W.roadRouted={key:roadKey,roads:routed.map(r=>r[1])};
-  W.roadBedMoved=gradeRoads(W,routed,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35||Math.hypot(x+560,z-975)<62});   // the river banks; the Aventine ridge of Diana's precinct (placed later, it needs its ground within 6.8 m)W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG)};
-  roads(W,[[6,W.palClivus],[6,clCap],...roadHillSplit(W,routed,{w:5,enter:.10,exit:.07,win:15,min:30,gap:40})],gR);   // uphill stretches are ordinary 5 m streets (author, 2026-10-26)
+  const tR=performance.now(),routed=baked?ROME_ROADS_BAKED.roads.map((P,i)=>[MAIN[i][0],P]):MAIN.map(([w,way])=>[w,routeRoad(W,way,w,RO)]);W.roadRouted={key:roadKey,roads:routed.map(r=>r[1])};
+  // P0 (briefs/rome/road-first-city.md 4.1): roadGraphJoin (roadgraph.js) joins the routes into one network: a branch starts on its parent road, the
+  // routing spikes are cut (a steep chord is marked stair), loose ends and both ends of every bridge are led to the nearest road. Baked with the routes.
+  // LATE_JOIN: monuments placed after the roads that the joins pass (the main roads keep off theirs through LATE): the temple by the Porta Trigemina,
+  // the crossroads shrine at the Meta Sudans, the raised market square of the Forum Holitorium, and the wall stubs either side of each gate (drawn with
+  // the gates below: a join goes through the arch).
+  const GATES=[['Porta Collina',970,-1390,.8],['Porta Viminalis',1260,-1056,0],['Porta Trigemina',-418,598,1.2],['Porta Carmentalis',-338,142,-.6],['Porta Caelimontana',1094,778,.3]],
+    LATE_JOIN=[[-330,560,11,22,Math.PI-30*DEG],[448,176,3],[-418,160,42,24,0],...GATES.flatMap(([,x,z,r])=>[1,-1].map(sd=>[x+sd*36*Math.cos(r),z-sd*36*Math.sin(r),20,3,r]).filter(([x,z])=>polyDist(x,z,TIBER)[0]>RTW+26))],P0={names:MAIN.map(m=>m[2]),fixed:[[6,W.palClivus,{name:'Clivus Palatinus'}],[6,clCap,{name:'Clivus Capitolinus'}]],bridges:W.bridges,island:[['Pons Fabricius','Pons Cestius']],
+    termini:[{name:'Forum Romanum',plaza:true,F:FF,u:[-150,170],v:[-75,75],m:25},{name:'Capitolium',x:clCap[clCap.length-1][0],z:clCap[clCap.length-1][1],r:20},{name:'Palatium',x:W.palClivus[0][0],z:W.palClivus[0][1],r:20},
+      ...GATES.map(([name,x,z])=>({name,x,z,r:35}))],
+    steps:['Argiletum','Vicus Patricius','Vicus Tuscus','Alta Semita','west bank road'],river:{P:TIBER,hw:RTW},   // the city streets that may climb by steps; the consular and processional roads keep their switchbacks
+    ro:Object.assign({},RO,{avoid:LATE.concat(LATE_JOIN.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)}))}),country:(x,z)=>dCity(x,z)<.25};
+  const joinKey=rgHash(JSON.stringify([roadKey,RG,P0.fixed,P0.bridges,P0.termini.map(t=>[t.name,t.x,t.z,t.r,t.u,t.v,t.m]),LATE_JOIN,P0.steps,P0.island])),bakedJ=baked&&ROME_ROADS_BAKED.joinKey===joinKey;
+  if(baked&&!bakedJ)console.warn('road-network.js: the joins are stale, joining the roads live (run node tools/test/bake-roads.mjs)');
+  const joined=bakedJ?ROME_ROADS_BAKED.joined:roadGraphJoin(W,routed,P0),tG=performance.now();W.roadJoined=joined;W.roadJoinKey=joinKey;W.roadOpts=P0;   // P1 (roadGraph, cityDistricts) reads the termini and the island from W.roadOpts
+  if(bakedJ)W.roadJoin={baked:true,stats:ROME_ROADS_BAKED.joinStats,log:[]};
+  W.roadBedMoved=gradeRoads(W,joined,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35||Math.hypot(x+560,z-975)<62});   // the river banks; the Aventine ridge of Diana's precinct (placed later, it needs its ground within 6.8 m)
+  W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG),join:W.roadJoin&&W.roadJoin.ms};   // route: routing and joining (0 when baked)
+  W.footMark={roads:W.foot.list.length};   // footprints before the roads: the monuments and reserved land placed so far (W.footMark.houses: and the dictionary pass)
+  roads(W,[[6,W.palClivus,{name:'Clivus Palatinus',kind:'fixed'}],[6,clCap,{name:'Clivus Capitolinus',kind:'fixed'}],...roadHillSplit(W,joined,{w:5,enter:.10,exit:.07,win:15,min:30,gap:40})],gR);   // uphill stretches are ordinary 5 m streets (author, 2026-10-26)
   W.foot.add(AUREA.lent[0],AUREA.lent[1],17,14,0,'open').siteRole='lentulus-house';for(const[x,z]of AUREA.shrines)W.foot.addCircle(x,z,3,'open').siteRole='crossroads-shrine';   // states 0-6, drawn in domus-aurea.js (after the roads: they do not steer the router)
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
@@ -710,6 +728,8 @@ async function buildRome(msg){
     const core=Math.hypot(x-120,z+160)<1000;if(core&&(SUB||VEL||D>.74))return{kind:'dense',street:3.2,lotW:11.5,depth:12,ringA:1500,ringP:.6,tri:.16,lot:lotP.dense,court:courtFill.dense,ppl:.3,burn};
     if(rel>15&&gd<.3&&hash2(Math.floor(x/60),Math.floor(z/60))<.6)return{kind:'domus',street:5.5,lotW:14,depth:9,ringA:0,ringP:1,tri:.08,lot:lotP.domus,court:courtFill.domus,ppl:.04,burn};
     return{kind:'mid',street:4.8,lotW:16,depth:14,ringA:1300,ringP:.4,tri:.12,lot:lotP.mid,court:courtFill.mid,ppl:.15,burn};};
+  W.footMark.houses=W.foot.list.length;   // the monuments and reserved land are in; houses from here on (cityDistricts: the precincts are the footprints before this)
+  W.cityClass=(x,z)=>{if(inPal(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core')return'fixed';if(CAMPN(x,z))return'campus';if(romeHorti(x,z)>.55)return'horti';const b=bzone(x,z);return b?b.kind:'other';};   // P1 districts: the old zones
   buildScenicEstates(W);
   buildAcademyHousing(W);
   buildNobleQuarter(W);

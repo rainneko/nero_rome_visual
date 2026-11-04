@@ -289,8 +289,8 @@ function roadFoot(W,x,z,r,thin){const F=W.foot,cs=F.cell;   // anything (not a r
       if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}}
   return false;}
 function roadNear(L,x,z,r){for(const o of L){const dx=x-o.cx,dz=z-o.cz;if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}return false;}
-function routeRoad(W,way,w,o){const r=w/2+1.5,gy=W.gy,out=[way[0].slice()],free=o.free||30,av=o.avoid||[];   // o.avoid: footprints placed after the roads that the roads must still keep off
-  const clear=(x,z,m)=>!o.wet(x,z,r+m)&&!roadFoot(W,x,z,r+m)&&!roadNear(av,x,z,r+m),fr=new Map(way.map(p=>[p,clear(p[0],p[1],0)?0:free]));   // only a waypoint that is itself blocked gets the open radius
+function routeRoad(W,way,w,o){const r=w/2+1.5,gy=W.gy,out=[way[0].slice()],free=o.free||30,av=o.avoid||[];   // o.avoid: footprints placed after the roads that the roads must still keep off; o.block(x,z,r): any other obstacle (roadgraph.js: the other roads)
+  const clear=(x,z,m)=>!o.wet(x,z,r+m)&&!roadFoot(W,x,z,r+m)&&!roadNear(av,x,z,r+m)&&!(o.block&&o.block(x,z,r+m)),fr=new Map(way.map(p=>[p,clear(p[0],p[1],0)?0:free]));   // only a waypoint that is itself blocked gets the open radius
   const ok=(x,z,A,B,m=0)=>Math.hypot(x-A[0],z-A[1])<fr.get(A)||Math.hypot(x-B[0],z-B[1])<fr.get(B)||clear(x,z,m);
   const segOK=(a,b,A,B,gmax)=>{const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(2,Math.ceil(L/6)),h=[];
     for(let k=0;k<=n;k++){const x=lerp(a[0],b[0],k/n),z=lerp(a[1],b[1],k/n);if(!ok(x,z,A,B))return false;h.push(gy(x,z));if(k>=2&&Math.abs(h[k]-h[k-2])/(2*L/n)>gmax)return false;}return true;};
