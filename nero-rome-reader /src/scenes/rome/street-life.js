@@ -97,3 +97,77 @@ function avenueFlowers(W,o){const S=W.street;if(!S)return;const g=new GB(1<<14),
           for(let j=0;j<3;j++){const q=F.p(-.85+j*.85,0,0);W.trees.push([q[0],y0+.62,q[2],j===1&&h<.5?'shrub':'flower',.48,null,2]);}}
         spots.push([x,y0,z,rot,w,pots?1:0]);}}}
   const m=g.mesh(MAT.city);if(m)W.scene.add(layTag(m,'roadDetail'));W.avenueFlowers=spots;console.log('avenue flowers',spots.length,JSON.stringify(rej));}
+/* The lanes behind the shop rows (the author, 2026-11-04, on the dark strip behind the row along the Vicus Patricius: stalls along the street, trees,
+   small squares, fill the gaps). Called after streetKit and populateStreetLife. The rows that line the main roads (fillRoadFrontage, opened by
+   finishRoadFrontage) are walked along their backs and fronts; every die is keyed to its place.
+   - a small square where a passage through the row comes out on a wide stretch of the lane behind it (a 4.5-7 m disc clear of the walls): paved
+     like the city's streets (stone written into the street raster), with a public basin or a crossroads shrine and a fig; at most one in 70 m and
+     none within 45 m of another basin or shrine
+   - trees where the back lane is 7 m wide or more, 2.5 m off the walls, one in 18-30 m, none in a passage mouth
+   - against the back walls the workshops' things: counters and awnings (streetWallProp), amphorae, a cart, washing on a line
+   - on the main road a third of the shops put out a counter or amphorae under the eaves (the front is w/2 + 3.6 m from the road's centre line, so
+     a counter keeps more than a metre off the carriageway); none in a passage mouth
+   【史】Pliny counts 265 crossroads shrines (compita) in the city (NH 3.66); Agrippa built 700 basins (lacus) (NH 36.121). Until Domitian's edict
+   the shops had taken over the streets (Martial 7.61). */
+const STREET_SHRINE={hw:1.3,back:.5,front:.6,gap:.05,feet:[[-1.25,.25],[1.25,.25]]};
+function backLanes(W){const S=W.street,rows=W.frontRows||[];if(!S||!rows.length)return null;const t0=performance.now();
+  const st={squares:0,basins:0,shrines:0,trees:0,back:0,front:0,rej:{}},no=k=>{st.rej[k]=(st.rej[k]||0)+1;return false;};
+  const K=(x,z)=>{const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz?j*S.nx+i:-1;};
+  const open=(x,z)=>{const k=K(x,z);return k>=0&&S.st[k]===1&&!S.solid[k]&&!S.court[k]&&!S.water[k]&&!S.road[k];};
+  const wid=(x,z)=>{const k=K(x,z);return k<0?0:S.wid[k];},wall=(x,z)=>{const k=K(x,z);return k<0?0:S.dist[k]*S.cs;};
+  const key=(x,z,a)=>RNG(hash2(Math.round(x*2)+a*131,Math.round(z*2)+a*37+17)*4294967296);
+  // what stands already (the street kit, the daily-life groups) on a 6 m hash; the passages; the basins and shrines
+  const H=new Map(),hk=(i,j)=>i+','+j,addP=(x,z,r)=>{const k=hk(Math.floor(x/6),Math.floor(z/6));let a=H.get(k);if(!a)H.set(k,a=[]);a.push([x,z,r]);};
+  for(const p of ROME.GLB)if(p.o&&p.o.inst)addP(p.x,p.z,1.6);
+  const nearP=(x,z,d)=>{const i0=Math.floor(x/6),j0=Math.floor(z/6);for(let i=i0-1;i<=i0+1;i++)for(let j=j0-1;j<=j0+1;j++)for(const q of H.get(hk(i,j))||[])if(Math.hypot(q[0]-x,q[1]-z)<d+q[2])return true;return false;};
+  const PS=W.passages||[],nearPass=(x,z,d)=>PS.some(p=>{const dx=x-p.x,dz=z-p.z;if(Math.abs(dx)>30||Math.abs(dz)>30)return false;return Math.abs(dx*p.ux+dz*p.uz)<p.w/2+d&&Math.abs(dx*p.nx+dz*p.nz)<p.len/2+d+1;});
+  const basins=ROME.GLB.filter(p=>p.n==='rome_lacus'||p.n==='rome_compitum').map(p=>[p.x,p.z]),props=[],trees=[],squares=[];
+  const put=(n,x,z,rot,opt)=>{const lk=AUREA_GONE(x,z)?'aureaSite':null;ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});addP(x,z,1.6);};
+  const tree=(x,z,R)=>{const k=R();W.trees.push([x,W.gy(x,z),z,k<.55?'fig':k<.75?'pomegr':k<.9?'almond':'broadD',k<.55?.85+.3*R():.9+.3*R()]);trees.push([x,z]);addP(x,z,1.2);st.trees++;};
+  const wallProp=(n,x,z,Kp,R,opt)=>{const a=streetWallProp(W,x,z,props,Kp,wid(x,z));if(!a)return no('wall');if(nearPass(a[0],a[1],Kp.hw*.6)||nearP(a[0],a[1],1.6))return no('near');
+    put(n,a[0],a[1],a[2],Object.assign({dy:a[3]-W.gy(a[0],a[1])},opt));props.push(a);return true;};
+  const TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28]];   // undyed linen, saffron, madder, ochre, faded purple
+  // 1. small squares where the passages come out behind the rows
+  const T1=S.texture;let painted=false;
+  for(const p of PS){const R=key(p.back[0],p.back[1],5);if(R()>.75){no('sqDice');continue;}let best=null;
+    for(const r of[7,6,5,4.5]){for(const d of[r+.5,r+1.5,r+2.5]){const cx=p.back[0]+p.nx*d,cz=p.back[1]+p.nz*d;let ok=open(cx,cz);
+        for(let a=0;ok&&a<16;a++){const t=a/16*TAU;if(!open(cx+Math.cos(t)*r,cz+Math.sin(t)*r)||!open(cx+Math.cos(t)*r*.5,cz+Math.sin(t)*r*.5))ok=false;}
+        if(ok){best={cx,cz,r};break;}}if(best)break;}
+    if(!best){no('sqRoom');continue;}const{cx,cz,r}=best;
+    if(squares.some(q=>Math.hypot(q.x-cx,q.z-cz)<70)||basins.some(q=>Math.hypot(q[0]-cx,q[1]-cz)<45)){no('sqSpacing');continue;}
+    const hs=[];for(let a=0;a<12;a++){const t=a/12*TAU;hs.push(W.gy(cx+Math.cos(t)*r,cz+Math.sin(t)*r));}if(Math.max(...hs)-Math.min(...hs)>1.6){no('sqSlope');continue;}
+    // the ground: stone, as the street raster paints it (grade 2), no lane path
+    const i0=Math.floor((cx-r-1-S.x0)/S.cs),i1=Math.floor((cx+r+1-S.x0)/S.cs),j0=Math.floor((cz-r-1-S.z0)/S.cs),j1=Math.floor((cz+r+1-S.z0)/S.cs);
+    for(let j=Math.max(0,j0);j<=Math.min(S.nz-1,j1);j++)for(let i=Math.max(0,i0);i<=Math.min(S.nx-1,i1);i++){const k=j*S.nx+i;if(!S.st[k]||S.solid[k]||S.road[k]||S.court[k])continue;
+      if(Math.hypot(S.x0+(i+.5)*S.cs-cx,S.z0+(j+.5)*S.cs-cz)>r+.6)continue;S.grd[k]=2;T1[k*4+1]=128;T1[k*4+3]=0;painted=true;}
+    // a basin in the middle, or a shrine on the row's back wall beside the passage (then a basin is not needed)
+    const rot=Math.atan2(p.nx,p.nz),sd=R()<.5?1:-1;let kind=null;
+    if(R()<.55){put('rome_lacus',cx,cz,rot+Math.PI/2);kind='lacus';st.basins++;}
+    else{for(const s of[sd,-sd]){const x=p.back[0]+p.ux*s*(p.w/2+2)+p.nx*1.2,z=p.back[1]+p.uz*s*(p.w/2+2)+p.nz*1.2;if(wallProp('rome_compitum',x,z,STREET_SHRINE,R)){kind='compitum';st.shrines++;break;}}
+      if(!kind){put('rome_lacus',cx,cz,rot+Math.PI/2);kind='lacus';st.basins++;}}
+    basins.push([cx,cz]);
+    {const a=rot+(sd>0?1:-1)*(1+R()*.6),x=cx+Math.sin(a)*(r-1.8),z=cz+Math.cos(a)*(r-1.8);if(open(x,z)&&wall(x,z)>=2&&!nearP(x,z,2.2))tree(x,z,R);}
+    squares.push({x:cx,z:cz,r,kind,passage:PS.indexOf(p)});st.squares++;}
+  if(painted)U.uSt.value.needsUpdate=true;
+  // 2. and 3. along the back of each row: trees where the lane is wide, the workshops' things against the walls; 4. the shops' stalls on the road
+  for(const Rw of rows){let next=-1e9;
+    for(const r of Rw.lots){const ux=r.ux,uz=r.uz,sc=r.l/(r.s1-r.s0);
+      r.pieces.forEach((pc,pi)=>{if(r.stood&&!r.stood[pi])return;const ta=(pc[0]-r.s0)*sc,tb=(pc[1]-r.s0)*sc,L=tb-ta,at=(t,o)=>[r.A[0]+ux*t+r.nx*o,r.A[1]+uz*t+r.nz*o];
+        // trees, 3.2 m behind the back wall (the eaves take .55 m)
+        for(let t=ta+1;t<tb-1;t+=2){const sAbs=pc[0]+(t-ta)/sc;if(sAbs<next)continue;const[x,z]=at(t,r.o1+3.2);
+          if(!open(x,z)||wid(x,z)<7||wall(x,z)<2.5||nearPass(x,z,2.5)||nearP(x,z,2.5)||trees.some(q=>Math.hypot(q[0]-x,q[1]-z)<12))continue;
+          const R=key(x,z,7);if(R()<.5){tree(x,z,R);next=sAbs+18+12*R();}else next=sAbs+6;}
+        if(L<5)return;const m=(ta+tb)/2;
+        // the back wall
+        {const[wx,wz]=at(m,r.o1),R=key(wx,wz,9);if(R()<.42){const k=R(),[x,z]=at(m+(R()-.5)*(L-4),r.o1+1.6);
+          if(!open(x,z)||wid(x,z)<4.5)no('backNarrow');
+          else if(k<.28){if(wallProp('rome_counter',x,z,STREET_COUNTER,R))st.back++;}
+          else if(k<.5){if(wallProp('rome_awning',x,z,STREET_AWNING,R,{tint:TINT[Math.floor(R()*TINT.length)]}))st.back++;}
+          else{const[ax,az]=at(m+(R()-.5)*(L-3),r.o1+(k<.85?1.1:.35)),rot=Math.atan2(-r.nx,-r.nz);
+            if(!open(ax,az)&&k<.85||nearPass(ax,az,1.4)||nearP(ax,az,1.8))no('backNear');
+            else{if(k<.72)put('rome_amphorae',ax,az,rot+(R()-.5)*.5);else if(k<.85)put('rome_cart',ax,az,Math.atan2(ux,uz)+(R()-.5)*.6);else put('rome_laundry',ax,az,rot,{dy:4.4});st.back++;}}}}
+        // the front, on the main road
+        {const[fx,fz]=at(m,r.o0),R=key(fx,fz,13);if(R()<.33){const k=R(),[x,z]=at(m+(R()-.5)*(L-4),r.o0-1.4);
+          if(k<.6){if(wallProp('rome_counter',x,z,STREET_COUNTER,R))st.front++;}
+          else{const[ax,az]=at(m+(R()-.5)*(L-3),r.o0-.9);if(nearPass(ax,az,1.4)||nearP(ax,az,1.8))no('frontNear');else{put('rome_amphorae',ax,az,Math.atan2(r.nx,r.nz)+(R()-.5)*.5);st.front++;}}}}});}}
+  st.ms=Math.round(performance.now()-t0);W.backLanes={squares,stats:st};console.log('back lanes',JSON.stringify(st));return st;}

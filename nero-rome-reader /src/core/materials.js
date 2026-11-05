@@ -358,6 +358,14 @@ else if(P>46.5&&P<47.5){S.alb=stoneC(uv,seed,vec3(.47,.43,.33),1.2,.6,aa)*(.9+.1
 else if(P>47.5&&P<48.5){S.alb=stoneC(uv,seed,vec3(.66,.61,.5),1.5,.6,aa)*(1.-.13*smoothstep(.55,.8,vn2(vec2(uv.x*1.6,uv.y*13.))));S.rough=.8;}   // travertine ashlar: warm cream with fine horizontal pits
 else if(P>48.5&&P<49.5){float row=floor(uv.y/.6);vec2 id=vec2(floor(uv.x/1.2+fract(row*.5)),row);float j=max(joint(uv.y,.6,.008,aa),joint(uv.x+fract(row*.5)*1.2,1.2,.008,aa));   // open courts: white marble / travertine slabs 1.2 x 0.6 m, broken joints
  S.alb=vec3(.7,.675,.61)*(.9+.12*h12(id+seed))*(.94+.08*fbm2(uv*.3))*(1.-.3*j);S.rough=.55-uWet*.3;}
+else if(P>59.5&&P<62.5){float k=floor(vB.z+.5);   // hill palette (hillPal in terrace-edge.js; the author, 2026-11-04: one wall stone and one rock per hill), index in sty: 0 Capitoline, 1 Palatine, 2 the rest
+ vec3 wc=k<.5?vec3(.307,.293,.266):k<1.5?vec3(.366,.328,.274):vec3(.4,.37,.31),rc=k<.5?vec3(.47,.43,.32):k<1.5?vec3(.355,.305,.228):vec3(.42,.38,.3);
+ if(P<60.5){float big=step(.5,vB.w);vec3 c=stoneC(uv,seed,wc,mix(1.2,1.8,big),mix(.6,.9,big),aa);   // 60 terrace wall: opus quadratum, 2 x 4 ft blocks; fl 1 = the plinth course of big blocks
+  c*=1.-.16*step(.8,vn2(uv*9.+seed*7.))*step(k,.5);S.alb=c*(.93+.1*fbm2(vWP.xz*.05+vWP.y*.04));S.rough=.9;}   // peperino ('peppered'): dark specks
+ else if(P<61.5){vec3 p=vWP;float bed=fract((p.y+p.x*.07+p.z*.05+fbm2(p.xz*.07)*1.1)/1.55),jt=abs(fract((p.x*.6+p.z*.8)/3.8+fbm2(p.xz*.05+3.)*.6)-.5);   // 61 rock: bedding a few degrees off level, joints every 3-5 m
+  vec3 c=rc*(.8+.32*fbm2(p.xz*.3+p.y*.25));c*=1.-.3*(1.-smoothstep(0.,.08,bed))-.1*smoothstep(.82,1.,bed);c*=1.-.32*(1.-smoothstep(0.,.035,jt));
+  c=mix(c,vec3(.13,.16,.065)*(.8+.4*fbm2(p.xz*.6)),smoothstep(.6,.9,N.y)*.7);S.alb=c;S.rough=.96;}   // moss on the tops
+ else{vec2 p=vWP.xz;vec3 m=vec3(.115,.145,.06)*(.75+.5*fbm2(p*.8));S.alb=mix(m,rc*.55,smoothstep(.55,.78,fbm2(p*.35+4.))*.45);S.rough=.97;}}   // 62 moss and grass at the wall foot
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*uBurn*vC.z;
 `;

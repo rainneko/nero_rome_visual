@@ -33,6 +33,20 @@ function buildPatch(W,sp,hfn,zoneFn){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-
   const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);
   const pt=W.patch={x0,z0,dx,dz,nx,nz,h:H,x1:x0+nx*dx,z1:z0+nz*dz};
   W.gy=(x,z)=>{const p=pt;if(x<p.x0||x>=p.x1||z<p.z0||z>=p.z1)return gy0(x,z);const fx=(x-p.x0)/p.dx,fz=(z-p.z0)/p.dz,i=Math.min(p.nx-1,Math.floor(fx)),j=Math.min(p.nz-1,Math.floor(fz)),u=fx-i,v=fz-j,N=p.nx+1,a=p.h[j*N+i],b=p.h[j*N+i+1],c=p.h[(j+1)*N+i],d=p.h[(j+1)*N+i+1];return(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);};}
+/* The ground W.gy gives on the desktop tier (coarse grid of n cells, the finer patches as buildPatch makes them), whatever tier this page runs at.
+   For the hill roads that go into the road join key (Clivus Palatinus, Clivus Capitolinus): the low tier's coarser grid moved them, so joins baked
+   at one tier were stale at the other and the page joined the roads live. Nodes are worked out on demand and cached; same float rounding as the grids. */
+function fixedGround(W,ext,n,hfn,patches){const x0=ext[0],z0=ext[1],dx=(ext[2]-x0)/n,dz=(ext[3]-z0)/n,N=n+1,C=new Map(),tri=(a,b,c,d,u,v)=>(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);
+  const ch=(i,j)=>{const k=j*N+i;let v=C.get(k);if(v===undefined){v=Math.fround(hfn(x0+i*dx,z0+j*dz));C.set(k,v);}return v;};
+  let gy=(x,z)=>{const fx=clamp((x-x0)/dx,0,n-1e-3),fz=clamp((z-z0)/dz,0,n-1e-3),i=Math.floor(fx),j=Math.floor(fz);return tri(ch(i,j),ch(i+1,j),ch(i,j+1),ch(i+1,j+1),fx-i,fz-j);};
+  for(const p of patches||[]){const r=p.rect,sub=p.sub||4,i0=Math.max(0,Math.ceil((r[0]-x0)/dx)),i1=Math.min(n,Math.floor((r[2]-x0)/dx)),j0=Math.max(0,Math.ceil((r[1]-z0)/dz)),j1=Math.min(n,Math.floor((r[3]-z0)/dz));
+    const nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,fdx=dx/sub,fdz=dz/sub,px=x0+i0*dx,pz=z0+j0*dz,X1=px+nx*fdx,Z1=pz+nz*fdz,g0=gy,L=[new Map(),new Map(),new Map(),new Map()];
+    const H=(l,i,j)=>{const k=j*NX+i,M=L[l];let v=M.get(k);if(v!==undefined)return v;   // level 0 as buildPatch samples it, then its three smoothing passes
+      if(l===0){const x=px+i*fdx,z=pz+j*fdz,hc=g0(x,z),w=sstep(0,1.6,Math.min(i,nx-i,j,nz-j)/sub);v=Math.fround(w>0?lerp(hc,p.hfn(x,z),w):hc);}
+      else{v=H(l-1,i,j);if(j>=2&&j<NZ-2&&i>=2&&i<NX-2){let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=H(l-1,i+a,j+b);v=Math.fround(lerp(v,s/9,sstep(0,1,Math.min(i,j,NX-1-i,NZ-1-j)/(2*sub))));}}
+      M.set(k,v);return v;};
+    gy=(x,z)=>{if(x<px||x>=X1||z<pz||z>=Z1)return g0(x,z);const fx=(x-px)/fdx,fz=(z-pz)/fdz,i=Math.min(nx-1,Math.floor(fx)),j=Math.min(nz-1,Math.floor(fz));return tri(H(3,i,j),H(3,i+1,j),H(3,i,j+1),H(3,i+1,j+1),fx-i,fz-j);};}
+  return Object.assign(Object.create(W),{gy});}
 function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float32Array(N*N*3),Z=new Float32Array(N*N*4);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
   const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}

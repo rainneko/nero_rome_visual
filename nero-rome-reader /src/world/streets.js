@@ -103,9 +103,13 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     if(sw>0){bx[k]=sx/sw*.5;bz[k]=sz/sw*.5;bw[k]=.5;}}ax.set(bx);az.set(bz);aw.set(bw);}
   // textures
   const sm=stBlur(st,nx,nz,1),T1=new Uint8Array(N*4);
+  // T1 alpha: a city lane's narrow flagstone path down the middle (the terrain shader draws it): dirt streets, not the main roads, squares (> 14 m) or
+  // market squares, and only where o.lanePath(x,z) allows it (tested once per 10 m cell). Other scenes pass none: no path.
+  const pathC=new Uint8Array(nxc*nzc);if(o.lanePath)for(let jc=0;jc<nzc;jc++)for(let ic=0;ic<nxc;ic++)pathC[jc*nxc+ic]=o.lanePath(x0+(ic+.5)*NC*cs,z0+(jc+.5)*NC*cs)?1:0;
   // grade of cells without a street is the nearest street's (so filtering at the edge does not mix in zero)
   const gg=new Float32Array(N);for(let k=0;k<N;k++)gg[k]=grd[k];for(let it=0;it<3;it++){const g2=gg.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(gg[k]>0)continue;const v=gg[k-1]||gg[k+1]||gg[k-nx]||gg[k+nx];if(v)g2[k]=v;}gg.set(g2);}
-  for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);T1[k*4+3]=255;}
+  for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);
+    T1[k*4+3]=visible&&st[k]&&!road[k]&&!plz[k]&&grd[k]===1&&wid[k]<=14&&pathC[Math.floor(Math.floor(k/nx)/NC)*nxc+Math.floor(k%nx/NC)]?255:0;}
   // T2 alpha: where the street centre lies across each coarse cell, measured from the cell centre along the shader's own (quantized) normal, so the
   // dirt ruts run along the street and not in rings around the world origin. dN^4 weights put a two-cell street's centre between its cells.
   // Blue (rut strength) is 0 on squares wider than 14 m.

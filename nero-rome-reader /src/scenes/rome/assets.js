@@ -108,4 +108,19 @@ window.__floatCheck=(opt)=>{const W=W0,out=[],CS=3,tolF=opt&&opt.tolF||.4,tolB=o
   return out;};
 
 // TEST: window.__temple(false) = the old near-white GLB look (colours and grime off), true = the new ivory/grime shading
+/* TEST tool: window.__wallFootCheck() (briefs/rome/podium-stairs-rock.md §5, phase 2). Reads W.wallFeet (terraceEdge, terrace-edge.js): the samples every ~2 m along each
+   terrace wall. Where the wall stands 1 m or more out of the ground (not an opening), a stretch with nothing on the line where wall meets ground (a buttress, a pier,
+   a stair, an arch bay, a rock, a shrub or a cypress: rec.brk, within 1.5 m) whose foot stays within 0.35 m of the straight line between its ends is a straight seam.
+   Where a street runs along the wall foot (q.road, set by terraceFeet) the wall meets a kerb, not the slope: those samples end a run and are counted apart (road).
+   Returns {walls, seams: the ones longer than opt.minL (8 m), long: the number longer than 20 m (must be 0), road: samples along a street, band: the thinnest
+   edge seen from below (coping + parapet, must be 1.2 m or more), bandEdges}. */
+window.__wallFootCheck=(opt)=>{const W=W0,maxL=opt&&opt.maxL||20,minL=opt&&opt.minL||8,seams=[];let long=0,road=0;
+  for(const R of W.wallFeet||[]){const S=R.S,brk=R.brk||[],hit=s=>brk.some(b=>Math.abs(b-s)<=1.5);let run=[];
+    const flush=()=>{let i=0;while(i<run.length-1){let j=i+1;
+        for(;j<run.length;j++){const A=run[i],B=run[j];let ok=true;for(let k=i+1;k<j;k++){const q=run[k],y=A.y+(B.y-A.y)*(q.s-A.s)/(B.s-A.s);if(Math.abs(q.y-y)>.35){ok=false;break;}}if(!ok)break;}
+        const A=run[i],B=run[j-1],len=B.s-A.s;if(len>=minL){seams.push({tag:R.tag,s0:+A.s.toFixed(1),s1:+B.s.toFixed(1),len:+len.toFixed(1),x:+A.x.toFixed(1),z:+A.z.toFixed(1)});if(len>maxL)long++;}
+        i=Math.max(i+1,j-1);}run=[];};
+    for(const q of S){if(q.road&&!q.open&&q.h>=1)road++;if(q.open||q.road||q.h<1||hit(q.s)){flush();continue;}run.push(q);}flush();}
+  const E=(W.terraceEdges||[]).filter(e=>e.band!=null),band=E.length?Math.min(...E.map(e=>e.band)):null;
+  const r={walls:(W.wallFeet||[]).length,seams:seams.sort((a,b)=>b.len-a.len),long,road,band,bandEdges:E.length};console.log('wall feet',JSON.stringify({walls:r.walls,seams:seams.length,long,road,band}));return r;};
 window.__temple=on=>{U.uDbg.value.z=on?0:1;W0.scene.traverse(m=>{if(m.isMesh&&m.material&&m.material.userData.oc){const W={marble:1,travertine:1,plaster:1,plaster2:1,plaster3:1,stone:1,tuff:1}[m.material.name];if(W){if(!m.material.userData.nc)m.material.userData.nc=m.material.color.clone();m.material.color.copy(on?m.material.userData.nc:m.material.userData.oc);}}});};
