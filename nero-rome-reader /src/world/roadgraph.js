@@ -220,15 +220,15 @@ function roadGraph(W){if(W.roads)return W.roads;const t0=performance.now(),o=W.r
 /* cityDistricts(W) -> W.city: the city's land on a 4 m raster. A cell is out (the country: W.roadOpts.country), water, road (the corridors roads()
    reserves: half the width plus 2.6 m on roads 7 m and wider, else 1.2 m; bridges), precinct (the footprints placed before the houses,
    W.foot up to W.footMark.houses), ring (the 4.5 m street round each precinct of 8 m and more that is not reserved open land, road-first-city.md
-   4.2), cliff (slope over 52 %) or buildable. The buildable cells fall into connected pieces: a district when it has 300 m² and is 11 m thick,
+   4.2), cliff (slope over 52 %, on the desktop tier's ground at every tier: W.routeGround) or buildable. The buildable cells fall into connected pieces: a district when it has 300 m² and is 11 m thick,
    else a fragment (F0-F4 later): along a road or a ring it is street (under 8 m thick) or a small square, by a cliff or the river green, else
    precinct ground; a fragment with none of these round it, and a district with no road or ring along it, is land with no use (H12).
-   A district's class is the majority of W.cityClass (the old zones) over its cells. Outlines: the cell edges, chained and simplified. */
+   A district's class is the majority of W.cityClass (the old zones) over its cells on a 16 m world lattice. Outlines: the cell edges, chained and simplified. */
 const CD={cs:4,cliff:.52,ring:4.5,ringMin:8,area:300,thick:11,strip:8};
 function cityDistricts(W){if(W.city)return W.city;const t0=performance.now(),o=W.roadOpts||{},cs=CD.cs,country=o.country||(()=>false);
   let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(let z=-3000;z<=3400;z+=40)for(let x=-3200;x<=3000;x+=40)if(!country(x,z)){x0=Math.min(x0,x);x1=Math.max(x1,x);z0=Math.min(z0,z);z1=Math.max(z1,z);}
   x0-=80;z0-=80;x1+=80;z1+=80;const nx=Math.ceil((x1-x0)/cs),nz=Math.ceil((z1-z0)/cs),N=nx*nz,C=new Uint8Array(N),OUT=0,WATER=1,ROAD=2,PREC=3,RING=4,CLIFF=5,BUILD=6;
-  const Y=new Float32Array((nx+1)*(nz+1));for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++)Y[j*(nx+1)+i]=W.gy(x0+i*cs,z0+j*cs);
+  const Y=new Float32Array((nx+1)*(nz+1)),G=W.routeGround||W;for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++)Y[j*(nx+1)+i]=G.gy(x0+i*cs,z0+j*cs);
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,k=j*nx+i;if(country(x,z)){C[k]=OUT;continue;}
     const a=Y[j*(nx+1)+i],b=Y[j*(nx+1)+i+1],c=Y[(j+1)*(nx+1)+i],d=Y[(j+1)*(nx+1)+i+1];C[k]=Math.hypot(b-a+d-c,c-a+d-b)/(2*cs)>CD.cliff?CLIFF:BUILD;}
   const stamp=(cx,cz,hw,hd,c,s,circ,pad,fn)=>{const r=Math.hypot(hw,hd)+pad;for(let j=Math.max(0,Math.floor((cz-r-z0)/cs));j<=Math.min(nz-1,Math.floor((cz+r-z0)/cs));j++)
@@ -253,7 +253,8 @@ function cityDistricts(W){if(W.city)return W.city;const t0=performance.now(),o=W
     p.cells=cells;pieces.push(p);}
   const cls=W.cityClass||(()=>'other'),districts=[],frags=[],area={district:0,street:0,square:0,green:0,precinct:0,none:0};
   for(const p of pieces){const A=p.n*cs*cs,thick=(2*p.dmax-1)*cs,T=p.touch,cx=x0+(p.sx/p.n+.5)*cs,cz=z0+(p.sz/p.n+.5)*cs;p.area=A;p.thick=+thick.toFixed(1);p.cx=Math.round(cx);p.cz=Math.round(cz);
-    if(A>=CD.area&&thick>=CD.thick){const votes={},step=Math.max(1,Math.floor(p.n/25));for(let m=0;m<p.n;m+=step){const k=p.cells[m],i=k%nx,j=(k-i)/nx;let c='other';try{c=cls(x0+(i+.5)*cs,z0+(j+.5)*cs)||'other';}catch(e){}votes[c]=(votes[c]||0)+1;}
+    if(A>=CD.area&&thick>=CD.thick){const votes={},ox=x0/cs,oz=z0/cs;let lat=p.cells.filter(k=>{const i=k%nx,j=(k-i)/nx;return!((ox+i)&3)&&!((oz+j)&3);});if(!lat.length)lat=p.cells;   // every cell on a 16 m world lattice (25 samples of the cell list flipped a district's class when its outline moved a little)
+      for(const k of lat){const i=k%nx,j=(k-i)/nx;let c='other';try{c=cls(x0+(i+.5)*cs,z0+(j+.5)*cs)||'other';}catch(e){}votes[c]=(votes[c]||0)+1;}
       let best='other',bv=0;for(const c in votes)if(c!=='other'&&votes[c]>bv){best=c;bv=votes[c];}
       p.kind='district';p.cls=best;p.access=!!(T[ROAD]||T[RING]);p.seed=hash2(p.cx,p.cz);districts.push(p);area[p.access?'district':'none']+=A;}
     else{p.kind='frag';p.use=T[ROAD]||T[RING]?(thick<CD.strip?'street':'square'):T[CLIFF]||T[WATER]?'green':T[PREC]?'precinct':'none';frags.push(p);area[p.use]+=A;}}

@@ -37,7 +37,10 @@ function streetCompactUPlan(F0,gy,spans,turns,depthRatio=1.42,maxRelief=1.84,sam
 function streetPrecinctWingColumns(plan,wingIndex,spacing,gy,floorY){const columns=[];let supportMin=Infinity,supportMax=-Infinity,run=0;for(let row=0;row<2;row++){const[ax,az,bx,bz]=plan.wings[wingIndex].lines[row],L=Math.hypot(bx-ax,bz-az),rot=Math.atan2(-(bz-az),bx-ax),S=plan.F.sub((ax+bx)/2,0,(az+bz)/2,rot),n=Math.max(1,Math.ceil(L/spacing));run=Math.max(run,L);
     for(let i=0;i<=n;i++){const t=i/n,q=S.p(-L/2+L*t,0,0),ground=gy(q[0],q[2]),support=floorY-ground;columns.push({x:q[0],y:floorY,z:q[2],ground,support,row,station:i/n});supportMin=Math.min(supportMin,support);supportMax=Math.max(supportMax,support);}}
   return{columns,supportMin,supportMax,run,depth:plan.wingDepth};}
-/* o: {zone(x,z)->1|2|3 grade of ordinary streets, marble(x,z)->bool, veg(x,z)->bool, water(x,z)->bool, roads:[[w,pts],...], urban(x,z)->0..1} */
+/* o: {zone(x,z)->1|2|3 grade of ordinary streets, marble(x,z)->bool, veg(x,z)->bool, water(x,z)->bool, roads:[[w,pts],...], urban(x,z)->0..1,
+   v2: {at(x,z)->bool, box, streets:[[w,centre line],...], front:[[w,centre line],...], squares:[polygon,...], aprons:[polygon,...]} (?city=v2, parcels.js):
+   where at() holds, the streets are its streets, main road frontages and squares, laid from their polygons; the 9 m rule (empty ground near a wall is
+   street) does not apply there. Aprons (before a lot on a precinct's ring, or set back from a main road) are paved wherever they reach} */
 function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,bz0=1e9,bx1=-1e9,bz1=-1e9;
   for(const f of F){if(f.tag==='road'||f.tag==='open'||f.r>400)continue;bx0=Math.min(bx0,f.cx);bx1=Math.max(bx1,f.cx);bz0=Math.min(bz0,f.cz);bz1=Math.max(bz1,f.cz);}
   const cs=Q.name==='low'&&!TEST?3.5:2.5,x0=Math.max(bx0-160,-3000),z0=Math.max(bz0-160,-2700),nx=Math.ceil((Math.min(bx1+160,3000)-x0)/cs),nz=Math.ceil((Math.min(bz1+160,3500)-z0)/cs),N=nx*nz;
@@ -50,8 +53,10 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     for(let j=0;j<lz;j++)for(let i=0;i<lx;i++){const x=x0+(i*lat+lat/2)*cs,z=z0+(j*lat+lat/2)*cs;V[j*lx+i]=o.veg(x,z)?1:0;Wt[j*lx+i]=o.water(x,z)?1:0;}
     for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const kk=K(i,j),k=Math.floor(j/lat)*lx+Math.floor(i/lat);if(V[k]){veg[kk]=1;naturalVeg[kk]=1;}if(Wt[k])wat[kk]=1;}}
   const dist=stChamfer(solid,nx,nz),dens=stBlur(solid,nx,nz,Math.round(16/cs)),dens2=stBlur(solid,nx,nz,Math.round(30/cs));
-  const st=new Uint8Array(N);
-  for(let k=0;k<N;k++){if(solid[k]||veg[k]||wat[k])continue;const d=dist[k]*cs;if(d<=9&&(dens[k]>=.13||(d<=4&&dens2[k]>=.1)))st[k]=1;}   // streets hug buildings: no street more than 9 m from a wall (no highway rings round hills)
+  const st=new Uint8Array(N),v2m=o.v2?new Uint8Array(N):null;
+  if(v2m){const B=o.v2.box||[x0,z0,x0+nx*cs,z0+nz*cs],i0=Math.max(0,Math.floor((B[0]-x0)/cs)),i1=Math.min(nx-1,Math.floor((B[2]-x0)/cs)),j0=Math.max(0,Math.floor((B[1]-z0)/cs)),j1=Math.min(nz-1,Math.floor((B[3]-z0)/cs));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)if(o.v2.at(x0+(i+.5)*cs,z0+(j+.5)*cs))v2m[K(i,j)]=1;}
+  for(let k=0;k<N;k++){if(solid[k]||veg[k]||wat[k]||(v2m&&v2m[k]))continue;const d=dist[k]*cs;if(d<=9&&(dens[k]>=.13||(d<=4&&dens2[k]>=.1)))st[k]=1;}   // streets hug buildings: no street more than 9 m from a wall (no highway rings round hills)
   // drop specks, smooth the edge (majority)
   {const min=Math.round(260/(cs*cs));stComps(st,nx,nz,c=>{if(c.length<min)for(let a=0;a<c.length;a++)st[c[a]]=0;},true);}
   for(let it=0;it<2;it++){const s2=st.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(solid[k]||wat[k]||veg[k]){s2[k]=0;continue;}
@@ -84,6 +89,19 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   for(const P of o.lanes||[]){const a=lp(P[0],P[1],.5),b=lp(P[3],P[2],.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,hw=Math.hypot(P[1][0]-P[0][0],P[1][1]-P[0][1])/2+.5,
       i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((Math.max(a[0],b[0])+hw-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((Math.max(a[1],b[1])+hw-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j),rx=x0+(i+.5)*cs-a[0],rz=z0+(j+.5)*cs-a[1],t=(rx*dx+rz*dz)/l;if(t<0||t>l||Math.abs(rx*dz-rz*dx)/l>hw||wat[k]||court[k])continue;st[k]=1;solid[k]=0;}}
+  // v2: its streets (each cell whose centre is within half the width of the centre line, and at least most of a cell, so a 3.2 m semita stays one
+  // cell wide on the coarse raster) and its squares (paved). Not over a wall, the river or a court.
+  if(v2m){const free=k=>v2m[k]&&!solid[k]&&!wat[k]&&!court[k];
+    for(const[w,S]of o.v2.streets.concat(o.v2.front||[])){const hw=Math.max(w/2,cs*.75);for(let p=1;p<S.length;p++){const a=S[p-1],b=S[p],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(l<1e-6)continue;
+      const i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((Math.max(a[0],b[0])+hw-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((Math.max(a[1],b[1])+hw-z0)/cs));
+      for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!free(k))continue;const rx=x0+(i+.5)*cs-a[0],rz=z0+(j+.5)*cs-a[1],t=clamp((rx*dx+rz*dz)/l,0,l),ex=rx-dx/l*t,ez=rz-dz/l*t;if(ex*ex+ez*ez<=hw*hw){st[k]=1;veg[k]=naturalVeg[k]=0;}}}}   // the street wins over a garden or a slope, as a main road does
+    for(const P of o.v2.squares){let a0=1e9,b0=1e9,a1=-1e9,b1=-1e9;for(const p of P){a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);}
+      for(let j=Math.max(0,Math.floor((b0-z0)/cs));j<=Math.min(nz-1,Math.floor((b1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((a0-x0)/cs));i<=Math.min(nx-1,Math.floor((a1-x0)/cs));i++){const k=K(i,j);
+        if(free(k)&&nobleInside(x0+(i+.5)*cs,z0+(j+.5)*cs,P)){st[k]=1;veg[k]=naturalVeg[k]=0;if(!road[k])road[k]=2;}}}
+    // the paving before a lot on a precinct's ring or set back from a main road (parcels.js aprons): it may reach past v2's own ground
+    for(const P of o.v2.aprons||[]){let a0=1e9,b0=1e9,a1=-1e9,b1=-1e9;for(const p of P){a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);}
+      for(let j=Math.max(0,Math.floor((b0-z0)/cs));j<=Math.min(nz-1,Math.floor((b1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((a0-x0)/cs));i<=Math.min(nx-1,Math.floor((a1-x0)/cs));i++){const k=K(i,j);
+        if(!solid[k]&&!wat[k]&&!court[k]&&nobleInside(x0+(i+.5)*cs,z0+(j+.5)*cs,P)){st[k]=1;veg[k]=naturalVeg[k]=0;}}}}
 
   // width of each street (distance to the nearest non-street, local maximum) -> alleys narrower than ~3 m are dirt
   const nonSt=new Uint8Array(N);for(let k=0;k<N;k++)nonSt[k]=st[k]?0:1;const dN=stChamfer(nonSt,nx,nz),wid=new Float32Array(N);
@@ -119,7 +137,7 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     const off=sw>0?sa/sw:0;T2[k*4+2]=mx*cs>7?0:Math.min(255,aw[k]*40);T2[k*4+3]=Math.round(Math.max(0,Math.min(255,(off/8*.5+.5)*255)));}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
-  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,cen:T2,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
+  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,cen:T2,waterAt:o.water,nxc,NC,region,v2:v2m,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
   W.streetAt=(x,z)=>W.street.at(x,z)>0;
   console.log('streets',nx+'x'+nz,'cs',cs,'dirt',cnt[1],'stone',cnt[2],'marble',cnt[3],Math.round(performance.now()-t0)+' ms');}
 /* Stairs by district (author, 2026-10-26: 大理石、砖石、泥巴). 3 white marble, cheek walls on both sides with a coping; 2 grey stone treads, brick

@@ -10,6 +10,7 @@
     "src/world/streets.js",
     "src/world/roadgraph.js",
     "src/world/fabric.js",
+    "src/world/parcels.js",
     "src/world/temple-links.js",
     "src/world/terrace-edge.js",
     "src/scenes/rome/noble-quarter.js",

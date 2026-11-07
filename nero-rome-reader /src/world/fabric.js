@@ -4,7 +4,8 @@
    1. its raster outline goes back onto the lines it was rastered from: the road corridors (half the width plus 2.6 m on roads 7 m and wider,
       else 1.2 m) and the 4.5 m precinct rings, with the corners where two of them meet put back;
    2. its sharp tips at a road junction become small squares (compita);
-   3. it is cut, again and again, by streets that follow a direction field, until every piece is a block of the size its class wants.
+   3. it is cut, again and again, by streets that follow a direction field, until every piece is a block of the size its class wants: the class of
+      the old zone at the piece's pole (W.cityClass through FAB.map; the district's class where that zone is not cut, as gardens and precincts).
    Nothing is built on the blocks yet; that is P3 (`?city=v2`). The review layers 'fabric' and 'dfield' and tools/test/city-audit.mjs read it
    (H13, block areas). Seeds are keyed to place: the pole of each piece and its level, so changing one district leaves the others as they are.
    Polygons are arrays of rings {P:[[x,z],...],E:[meta of the edge P[i] -> P[i+1]]}. The outer ring comes first, with the region on its left
@@ -127,7 +128,7 @@ function fbField(W,B){const o=FAB.field,cs=o.cs,x0=Math.floor(B[0]/cs)*cs,z0=Mat
   for(const{f}of fbPrecincts(W)){if(f.tag==='open'||f.circ)continue;const R=fbRect(f,FAB.ring);if(4*(f.hw+FAB.ring)*(f.hd+FAB.ring)<900)continue;   // precinct rings: their sides, exp(-(d/32)²)
     for(let k=0;k<4;k++)if(Math.hypot(R[k+1][0]-R[k][0],R[k+1][1]-R[k][1])>12)add(R[k],R[k+1],1,o.prec);}
   const rv=W.roadOpts&&W.roadOpts.river;if(rv&&rv.P)for(let k=1;k<rv.P.length;k++)add(rv.P[k-1],rv.P[k],1,o.river);   // the Tiber's banks
-  const H=new Float32Array((nx+2)*(nz+2));for(let j=0;j<nz+2;j++)for(let i=0;i<nx+2;i++)H[j*(nx+2)+i]=W.gy(x0+(i-1)*cs,z0+(j-1)*cs);
+  const H=new Float32Array((nx+2)*(nz+2)),G=W.routeGround||W;for(let j=0;j<nz+2;j++)for(let i=0;i<nx+2;i++)H[j*(nx+2)+i]=G.gy(x0+(i-1)*cs,z0+(j-1)*cs);   // the desktop tier's ground at every tier (W.routeGround): one network at every tier
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const h=(a,b)=>H[(j+1+b)*(nx+2)+i+1+a],gx=(h(1,0)-h(-1,0))/(2*cs),gz=(h(0,1)-h(0,-1))/(2*cs),g=clamp((Math.hypot(gx,gz)-.1)/.15,0,1)*2;
     if(g<=0)continue;const th=Math.atan2(gz,gx)+Math.PI/2,k=j*nx+i;C[k]+=g*Math.cos(2*th);S[k]+=g*Math.sin(2*th);Wt[k]+=g;}   // slopes over 10 %: the contours
   const b=o.base*DEG;for(let k=0;k<N;k++){C[k]+=.03*Math.cos(2*b);S[k]+=.03*Math.sin(2*b);Wt[k]+=.03;}   // the old grid's -30°, faintly
@@ -197,7 +198,8 @@ function fbForks(ctx,Y,sqMeta){const out={rest:[Y],squares:[]},P=Y[0].P,n=P.leng
 /* ---------- recursive cuts (4.3) ---------- */
 function fbSeed(x,z,lv){return Math.floor(hash2(Math.round(x*10)+lv*1000003,Math.round(z*10))*4294967296)>>>0;}
 function fbWidth(prm,len,lv){return len>170||(lv===0&&len>110)?prm.wB:len>70?prm.wC:prm.wC-.6;}
-function fbSub(ctx,Y,lv,cls,did,out){const prm=FAB.cls[cls],pole=fbPole(Y,null,1),R=RNG(fbSeed(pole.x,pole.z,lv)),A=fbArea(Y),ob=fbOBB(Y[0].P),At=lerp(prm.A[0],prm.A[1],R());
+function fbSub(ctx,Y,lv,cls0,did,out){const pole=fbPole(Y,null,1),cls=FAB.map[ctx.zone(pole.x,pole.z)]||cls0,prm=FAB.cls[cls],R=RNG(fbSeed(pole.x,pole.z,lv)),   // the old zone at the piece's pole (a district mixes them); the district's class in gardens and precincts
+  A=fbArea(Y),ob=fbOBB(Y[0].P),At=lerp(prm.A[0],prm.A[1],R());
   const block=()=>{out.blocks.push({Y,cls,district:did,area:A,lv,x:pole.x,z:pole.z,L:ob.L,S:ob.S});};
   if(lv>30||A<1.15*prm.A[0]||(A<=At&&ob.L<=prm.L)){block();return;}
   const[th,conf]=fbFieldAt(ctx.F,pole.x,pole.z),ex=Y[0].P,n=ex.length,ED=ex.map((p,k)=>{const q=ex[(k+1)%n];return{a:p,b:q,l:Math.hypot(q[0]-p[0],q[1]-p[1]),d:Math.atan2(q[1]-p[1],q[0]-p[0]),m:Y[0].E[k]};});
@@ -229,7 +231,7 @@ function fbSub(ctx,Y,lv,cls,did,out){const prm=FAB.cls[cls],pole=fbPole(Y,null,1
   out.tried+=cands.length;if(!cands.length){block();return;}
   let c=cands[0];for(const k of cands)if(k.sc<c.sc)c=k;c.m.id=out.streets.length;out.cuts++;   // one street per run: a cut across a hole is two streets
   c.runs.forEach((u,i)=>out.streets.push({S:u.S,w:c.w,lv,kind:c.kind,anch:c.anch,ends:c.ends.slice(2*i,2*i+2),district:did,len:+fbLen(u.S).toFixed(1)}));
-  for(const g of c.pieces){const a=fbArea(g);if(a<FAB.frag.area||!fbFat(g,fbMinR(FAB.frag.thick))){out.opens.push({Y:g,area:a,why:'frag',district:did});continue;}fbSub(ctx,g,lv+1,cls,did,out);}}
+  for(const g of c.pieces){const a=fbArea(g);if(a<FAB.frag.area||!fbFat(g,fbMinR(FAB.frag.thick))){out.opens.push({Y:g,area:a,why:'frag',district:did});continue;}fbSub(ctx,g,lv+1,cls0,did,out);}}
 
 /* ---------- the run ---------- */
 function cityFabric(W,o={}){if(W.fabric&&!o.force)return W.fabric;const t0=performance.now(),D=cityDistricts(W),G=roadGraph(W),A=o.area||FAB.area,cs=D.cs;
@@ -238,11 +240,12 @@ function cityFabric(W,o={}){if(W.fabric&&!o.force)return W.fabric;const t0=perfo
   const sel=D.districts.filter(d=>(cnt.get(d.id)||0)*cs*cs>=FAB.minArea);
   let B=[1e9,1e9,-1e9,-1e9];for(const d of sel)for(const p of d.loops[0]){B[0]=Math.min(B[0],p[0]);B[1]=Math.min(B[1],p[1]);B[2]=Math.max(B[2],p[0]);B[3]=Math.max(B[3],p[1]);}
   const ctx=fbCtx(W,D,G,B);ctx.F=fbField(W,[B[0]-8,B[1]-8,B[2]+8,B[3]+8]);const tF=performance.now();
+  ctx.zone=(x,z)=>{try{return W.cityClass?W.cityClass(x,z):'other';}catch(e){return'other';}};
   ctx.cm=[{k:'edge'},{k:'water'},{k:'road',w:0,id:-1},{k:'ring',id:-1},{k:'ring',id:-1},{k:'cliff'},{k:'edge'}];   // what lies outside an edge the snap did not place, by raster class
-  const out={blocks:[],streets:[],squares:[],opens:[],tried:0,cuts:0},per=[],sqMeta={k:'square'};
+  const out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:0,cuts:0},per=[],sqMeta={k:'square'};   // dY: each district's polygon (P3: the area v2 owns, parcels.js)
   for(const d of sel){const cls=FAB.map[d.cls],t1=performance.now(),nb=out.blocks.length,nc=out.cuts;
     if(!cls||!d.access){out.opens.push({Y:d.loops.map(P=>({P,E:P.map(()=>ctx.cm[0])})),area:d.area,why:cls?'noAccess':'class:'+d.cls,district:d.id});per.push({id:d.id,cls:d.cls,skipped:true});continue;}
-    const Y=fbDistrictPoly(ctx,d),fk=fbForks(ctx,Y,sqMeta);for(const s of fk.squares)out.squares.push({...s,district:d.id});
+    const Y=fbDistrictPoly(ctx,d),fk=fbForks(ctx,Y,sqMeta);out.dY.push({id:d.id,Y});for(const s of fk.squares)out.squares.push({...s,district:d.id});
     for(const R of fk.rest){const a=fbArea(R);if(a>FAB.keep)fbSub(ctx,R,0,cls,d.id,out);else out.opens.push({Y:R,area:a,why:'small',district:d.id});}
     per.push({id:d.id,cls:d.cls,as:cls,ha:+(d.area/1e4).toFixed(1),blocks:out.blocks.length-nb,cuts:out.cuts-nc,ms:Math.round(performance.now()-t1)});}
   // H13: street ends that meet a road, a street, a ring or a square outside 60-120°

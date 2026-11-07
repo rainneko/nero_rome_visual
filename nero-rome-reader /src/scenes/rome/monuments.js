@@ -545,7 +545,13 @@ async function buildRome(msg){
   W.roadBedMoved=gradeRoads(W,joined,{lim:.15,cap:4,keep:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+35||Math.hypot(x+560,z-975)<62});   // the river banks; the Aventine ridge of Diana's precinct (placed later, it needs its ground within 6.8 m)
   W.roadTiming={route:Math.round(tG-tR),grade:Math.round(performance.now()-tG),join:W.roadJoin&&W.roadJoin.ms};   // route: routing and joining (0 when baked)
   W.footMark={roads:W.foot.list.length};   // footprints before the roads: the monuments and reserved land placed so far (W.footMark.houses: and the dictionary pass)
-  roads(W,[[6,W.palClivus,{name:'Clivus Palatinus',kind:'fixed'}],[6,clCap,{name:'Clivus Capitolinus',kind:'fixed'}],...roadHillSplit(W,joined,{w:5,enter:.10,exit:.07,win:15,min:30,gap:40})],gR);   // uphill stretches are ordinary 5 m streets (author, 2026-10-26)
+  // uphill stretches are ordinary 5 m streets (author, 2026-10-26). The desktop tier measures them on its graded ground; the low tier's coarser ground would narrow
+  // other stretches, so it cuts where road-network.js says the desktop tier does: one network at every tier (road-first-city.md 4.3)
+  const hillO={w:5,enter:.10,exit:.07,win:15,min:30,gap:40},hillKey=W.roadHillKey=rgHash(JSON.stringify([joinKey,hillO])),hillB=bakedJ&&ROME_ROADS_BAKED.hillKey===hillKey?ROME_ROADS_BAKED.hill:null,ownGround=W.grid.n===GRID_N;
+  const hillJ=roadHillSplit(W,joined,!ownGround&&hillB?Object.assign({runs:hillB},hillO):hillO);W.roadHillBaked=!ownGround&&!!hillB;
+  if(ownGround&&hillB&&JSON.stringify(W.roadHillRuns)!==JSON.stringify(hillB))console.warn('road-network.js: the uphill stretches are stale (the ground under a road changed); the low tier narrows the old ones until node tools/test/bake-roads.mjs is run');
+  if(!ownGround&&!hillB&&baked)console.warn('road-network.js: no uphill stretches baked for these roads, the low tier narrows its own (run node tools/test/bake-roads.mjs)');
+  roads(W,[[6,W.palClivus,{name:'Clivus Palatinus',kind:'fixed'}],[6,clCap,{name:'Clivus Capitolinus',kind:'fixed'}],...hillJ],gR);
   W.foot.add(AUREA.lent[0],AUREA.lent[1],17,14,0,'open').siteRole='lentulus-house';for(const[x,z]of AUREA.shrines)W.foot.addCircle(x,z,3,'open').siteRole='crossroads-shrine';   // states 0-6, drawn in domus-aurea.js (after the roads: they do not steer the router)
   {const x=-356,z=1735,y=gy(x,z),F=frame(x,y,z,Math.PI/4+.1),gX=new GB(1<<13);gX.set(6,.3);lathe(gX,F,0,-2,0,[[21.5,0],[0,38.5]],4);W.foot.addCircle(x,z,26);
     poi('塞斯提乌斯金字塔','Pyramis Cestii',x,z,42,0,99,'约公元前12年的大理石金字塔墓，在奥斯提亚大道旁。',2500);
@@ -760,6 +766,10 @@ async function buildRome(msg){
     return{kind:'mid',street:4.8,lotW:16,depth:14,ringA:1300,ringP:.4,tri:.12,lot:lotP.mid,court:courtFill.mid,ppl:.15,burn};};
   W.footMark.houses=W.foot.list.length;   // the monuments and reserved land are in; houses from here on (cityDistricts: the precincts are the footprints before this)
   W.cityClass=(x,z)=>{if(inPal(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core')return'fixed';if(CAMPN(x,z))return'campus';if(romeHorti(x,z)>.55)return'horti';const b=bzone(x,z);return b?b.kind:'other';};   // P1 districts: the old zones
+  /* road-first city, P3 (briefs/rome/road-first-city.md 10; parcels.js): ?city=v2 builds the houses of the blocks the fabric cut (fabric.js) lot by
+     lot; the old generators below keep out of that area (W.v2At). The Palatine, the valley, the noble core and the Campus stay with their own generators. */
+  const V2=/[?&]city=v2/.test(location.search),v2Skip=(x,z)=>!!W.v2At&&W.v2At(x,z);
+  W.v2Excl=(x,z)=>inPal(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core'||CAMPN(x,z);if(V2)cityParcelsArea(W,{excl:W.v2Excl});   // v2Excl: city-audit.mjs counts the houses of that area without the flag too
   buildScenicEstates(W);
   buildAcademyHousing(W);
   buildNobleQuarter(W);
@@ -768,12 +778,16 @@ async function buildRome(msg){
    for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
+     if(v2Skip(px,pz)){nIn++;W.nInsulaV2=(W.nInsulaV2||0)+1;continue;}   // v2 builds its lots there (the brief: models on lots of their size, P4)
      ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
    W.nInsulaGLB=nIn;}
+  if(V2)cityParcels(W,{zone:(x,z)=>{const Z=bzone(x,z);if(Z||W.cityClass(x,z)!=='other')return Z;   // 'other': thin outskirts of a city district (dCity under .36): lower houses
+      return{kind:'mid',lot:R=>{const p=lotP.mid(R);p.nSt=2+Math.floor(R()*2);p.balc=.15;return p;},court:courtFill.mid,ppl:.08,burn:Math.hypot(x-250,z-300)<950?1:0};},
+    lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600});
   fillRoadFrontage(W);   // the main roads in the centre lined with shop houses first; the blocks, genCity and the repair grid fill in behind them
-  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
-  W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,lanes:outSub,chunk:600});
-  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600});
+  W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
+  W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)&&!v2Skip(x,z)?'valleyCity':null,skip:V2?v2Skip:null,noPpl:true,lanes:outSub,chunk:600});
+  W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,chunk:600});
 
   {const gI=new GB(1<<17),RI=RNG(77);let nI=0,nS=0;const zones=[[-760,-330,-400,190],[-430,-150,90,460],[-330,-160,-330,90],[-665,-515,10,125]];
    for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
@@ -798,7 +812,7 @@ async function buildRome(msg){
     const rot=-30*DEG+.9*(fbm(x*.0006+11,z*.0006,2)-.5),burn=(x,z)=>Math.hypot(x-250,z-300)<950?1:0;
     if(u>=.5)return{d:.8*(1-gd*.8),mix:{shed:.5,tower:.15,insula:.35},st:[2,4],rot,m:.7,step:7,shops:.7,brick:.35,ppl:.05,burn};
     return{d:Math.min(.5,u*1.2)*(1-gd*.9),mix:{hut:.55,shed:.2,insula:.15,domus:.1},st:[1,3],rot,m:2,step:6,shops:.3,brick:.25,ppl:.03,burn};};
-  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)?null:izone(x,z),grp:(x,z)=>AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)?'aureaSite':'',chunk:700});   // none on the Golden House ground; those by the Via Sacra and the vestibule go with the fire (states 0-6)
+  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)||v2Skip(x,z)?null:izone(x,z),grp:(x,z)=>AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)?'aureaSite':'',chunk:700});   // none on the Golden House ground; those by the Via Sacra and the vestibule go with the fire (states 0-6)
   fillCentralHousing(W);
   await msg('郊野：农庄、佃农棚屋、墓道……');
   {const R=RNG(33),gV=new GB(1<<15),Zv={shops:0,brick:.25},MR=[[[555,890],[900,1500],[1500,2600],[2000,3500]],[[-500,2400],[-440,2950],[-520,3600]],[[-480,-1100],[-720,-2300],[-900,-2800]],[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]],[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]];
@@ -825,7 +839,7 @@ async function buildRome(msg){
   /* ---- streets: grown from the buildings (streets.js) ---- */
   {const inR=(F,x,z,x0,x1,z0,z1)=>{const dx=x-F.ox,dz=z-F.oz,u=F.c*dx-F.s*dz,v=F.s*dx+F.c*dz;return u>x0&&u<x1&&v>z0&&v<z1;},FC=frame(-99,0,-143,-30*DEG),FA=frame(110,0,-235,-45*DEG),SUBR=(x,z)=>x>200&&x<1050&&z>-950&&z<-120,VELR=(x,z)=>x>-400&&x<-60&&z>60&&z<480;
    {const ends=(R)=>{const A=R[R.length-2],B=R[R.length-1],l=Math.hypot(B[0]-A[0],B[1]-A[1])||1;return{x:B[0],z:B[1],dx:(B[0]-A[0])/l,dz:(B[1]-A[1])/l};};W.stairFeet=(W.stairFeet||[]).concat([ends(W.palClivus),ends(clCap)]);}
-   buildStreets(W,{feet:W.stairFeet,lanes:W.laneLog,lanePath:(x,z)=>romeUrban(x,z)>.45,   // the city's dirt lanes get a narrow flagstone path down the middle (the author, 2026-11-04)
+   buildStreets(W,{feet:W.stairFeet,lanes:W.laneLog,v2:V2?cityParcelsStreets(W):null,lanePath:(x,z)=>romeUrban(x,z)>.45,   // the city's dirt lanes get a narrow flagstone path down the middle (the author, 2026-11-04); v2 (?city=v2): its streets and squares paved from their polygons, no 9 m rule there
      paved:[[-775,-152,-655,-50],[-535,-156,-462,-84],[-461,137,-377,183,'plaza'],[-478,195,-402,236,'plaza'],[-478,181,-377,197,'plaza']],roads:W.roadList,urban:romeUrban,veg:(x,z)=>(romeHorti(x,z)>.35&&Math.hypot(x-1350,z+330)>235)||Math.hypot(gy(x+5,z)-gy(x-5,z),gy(x,z+5)-gy(x,z-5))>3.6,   // hill slopes steeper than ~27 % count as vegetation (no street), except the main roads
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
