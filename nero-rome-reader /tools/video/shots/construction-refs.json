@@ -1,0 +1,923 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "scale": 1,
+ "defaults": {
+  "season": 1,
+  "tod": 0.3,
+  "weather": "clear",
+  "smog": 0,
+  "page": "rome"
+ },
+ "shots": [
+  {
+   "name": "furnaceA-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "furnaceA",
+     "fit": 1.1,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "furnaceA-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "furnaceA",
+     "fit": 1.1,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "chem-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "chem",
+     "fit": 1.0,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "chem-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "chem",
+     "fit": 1.0,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "furnaceB-34",
+   "state": 5,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "furnaceB",
+     "fit": 1.1,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "furnaceB-plan",
+   "state": 5,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "furnaceB",
+     "fit": 1.1,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "southZone-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "zoneBig",
+     "fit": 0.9,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "southZone-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "zoneBig",
+     "fit": 0.9,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "cathFrame-34",
+   "state": 5,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "cathFrame",
+     "fit": 1.2,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "cathFrame-plan",
+   "state": 5,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "cathFrame",
+     "fit": 1.2,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "cathedral-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "cathedral",
+     "fit": 1.5,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "cathedral-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "cathedral",
+     "fit": 1.5,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda3-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 30,
+     "dist": 190,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda3-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 30,
+     "dist": 190,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda4-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 30,
+     "dist": 190,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda4-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 30,
+     "dist": 190,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda9-34",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 45,
+     "dist": 230,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "pagoda9-plan",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      -1420,
+      2460
+     ],
+     "lift": 45,
+     "dist": 230,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "acad57-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "acad57",
+     "fit": 1.6,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "acad57-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "acad57",
+     "fit": 1.6,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "college-34",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "college1",
+     "fit": 1.1,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "college-plan",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "college1",
+     "fit": 1.1,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "glasshouse-34",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "glasshouse",
+     "fit": 3.0,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "glasshouse-plan",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "glasshouse",
+     "fit": 3.0,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "milSchool-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "milSchool",
+     "fit": 1.3,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "milSchool-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "milSchool",
+     "fit": 1.3,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "baths0-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "baths0",
+     "fit": 1.1,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "baths0-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "baths0",
+     "fit": 1.1,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "baths1-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "baths1",
+     "fit": 1.0,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "baths1-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "baths1",
+     "fit": 1.0,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "vat3-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "vat3",
+     "fit": 0.8,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "vat3-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "vat3",
+     "fit": 0.8,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "neroAmph-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "neroAmph",
+     "fit": 1.3,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "neroAmph-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "neroAmph",
+     "fit": 1.3,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "macellum-34",
+   "state": 7,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "macellum",
+     "fit": 1.4,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "macellum-plan",
+   "state": 7,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "macellum",
+     "fit": 1.4,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "domusAurea-34",
+   "state": 7,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "domusAurea",
+     "fit": 0.8,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "domusAurea-plan",
+   "state": 7,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "domusAurea",
+     "fit": 0.8,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "semaphore-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      254,
+      339
+     ],
+     "lift": 8,
+     "dist": 70,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "semaphore-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "ground": [
+      254,
+      339
+     ],
+     "lift": 8,
+     "dist": 70,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "iron-34",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "iron",
+     "fit": 0.9,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "iron-plan",
+   "state": 8,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "iron",
+     "fit": 0.9,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "arcNero-34",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "arcNero",
+     "fit": 3.0,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "arcNero-plan",
+   "state": 6,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "arcNero",
+     "fit": 3.0,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ]
+  },
+  {
+   "name": "ostiaYard-34",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "ostiaYard",
+     "fit": 1.1,
+     "az": 35,
+     "el": 30
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ],
+   "page": "ostia"
+  },
+  {
+   "name": "ostiaYard-plan",
+   "state": 3,
+   "stills": 1,
+   "seconds": 1,
+   "path": [
+    {
+     "layer": "ostiaYard",
+     "fit": 1.1,
+     "az": 35,
+     "el": 70
+    }
+   ],
+   "hide": [
+    "smokeA",
+    "smokeChem",
+    "smokeB"
+   ],
+   "page": "ostia"
+  }
+ ]
+}

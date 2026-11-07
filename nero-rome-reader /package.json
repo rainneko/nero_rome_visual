@@ -11,7 +11,8 @@
     "serve": "npx --yes http-server dist -p 8080 -c-1",
     "test:boot": "node tools/test/boot.mjs",
     "test:shot": "node tools/test/shot.mjs",
-    "bake:roads": "node tools/test/bake-roads.mjs"
+    "bake:roads": "node tools/test/bake-roads.mjs",
+    "video": "node tools/video/record.mjs"
   },
   "devDependencies": {
     "three": "0.147.0",
