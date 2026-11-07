@@ -1,0 +1,14 @@
+{
+ "about": "Close-ups of the problems the 2026-10-25 audit found (docs/AUDIT-2026-10-25.md on the code team's branch; evidence shots in docs/screenshots/audit-2026-10-25/), on the audit's own cameras: target on the ground, offset converted to distance, azimuth and elevation. Film each era with --site like shots/eras.json. AD 54, mid-morning.",
+ "fps": 30, "width": 1920, "height": 1080, "scale": 1,
+ "defaults": {"page": "rome", "state": 0, "season": 1, "tod": 0.45, "weather": "clear", "smog": 0, "seconds": 6, "push": 0.93},
+ "shots": [
+  {"name": "c-vialata", "note": "houses on the Via Lata, a main road (audit 01)", "path": [{"ground": [-330, -640], "dist": 301, "az": 13, "el": 28}]},
+  {"name": "c-vialata-top", "note": "the same from above", "path": [{"ground": [-300, -560], "dist": 260, "az": 0, "el": 80}]},
+  {"name": "c-trastevere", "note": "the Trastevere roads start in the middle of the river (audit 02)", "path": [{"ground": [-1150, 100], "dist": 500, "az": 0, "el": 70}]},
+  {"name": "c-ostiensis", "note": "the Via Ostiensis runs into the river", "path": [{"ground": [-540, 700], "dist": 380, "az": 0, "el": 72}]},
+  {"name": "c-noble", "note": "triangles cut in the noble quarter, left half-built (audit 03)", "path": [{"ground": [600, 10], "dist": 368, "az": 0, "el": 45}]},
+  {"name": "c-aventine", "note": "the old courtyard houses scattered into small houses (audit 04)", "path": [{"ground": [-430, 820], "dist": 324, "az": 42, "el": 34}]},
+  {"name": "c-subura", "note": "a road running under roofs (audit 05)", "path": [{"ground": [160, -590], "dist": 240, "az": 0, "el": 78}]}
+ ]
+}

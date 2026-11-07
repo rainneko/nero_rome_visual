@@ -1,0 +1,13 @@
+{
+ "about": "The same six cameras on every era of the project, for the before/after cuts of the development story: film each commit with --site (README) into its own folder and dissolve between them. Cameras are explicit positions, not view presets, so that every commit frames the same place. AD 54, summer, mid-morning.",
+ "fps": 30, "width": 1920, "height": 1080, "scale": 1,
+ "defaults": {"page": "rome", "state": 0, "season": 1, "tod": 0.38, "weather": "clear", "smog": 0, "seconds": 6, "push": 0.93},
+ "shots": [
+  {"name": "e-overview", "path": [{"pos": [700, 1900, 3500], "tgt": [-200, 0, 200]}]},
+  {"name": "e-forum", "path": [{"pos": [-250, 118, -205], "tgt": [40, 26, 40]}]},
+  {"name": "e-palatine", "path": [{"pos": [520, 210, 560], "tgt": [120, 70, 290]}]},
+  {"name": "e-circus", "path": [{"pos": [-340, 150, 990], "tgt": [60, 30, 600]}]},
+  {"name": "e-aventine", "path": [{"pos": [-700, 380, 640], "tgt": [-60, 20, 60]}]},
+  {"name": "e-subura", "path": [{"pos": [520, 135, -330], "tgt": [700, 30, -640]}]}
+ ]
+}
