@@ -7,7 +7,7 @@
 const REVIEW=/[?&]review/.test(location.search);
 const REV_LAYERS=[['ground','地形'],['water','水面'],['streets','街道地面'],['houses','房子'],['squares','小广场'],['stairs','台阶'],['roadDetail','路面细节'],
   ['models','模型'],['columns','柱子'],['trees','树'],['people','人'],['story','故事图层'],['far','城外'],['other','纪念建筑及其他']];
-const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['graph','路网图（节点·边）','#ffffff'],['districts','片区（P1）','#b58cff'],['fabric','支路与街坊（P2）','#ff9a2e'],['dfield','方向场（P2）','#7fd4ff'],['temples','神庙通路','#3de0e0']];
+const REV_LINES=[['roads','主路中线','#ff8a3d'],['lots','地块轮廓','#58a8ff'],['lanes','街区小巷','#ff5a7a'],['faces','小广场 F0–F4','#59e08a'],['field','街心线（车辙）','#ffd84a'],['zones','分区边界','#e05cff'],['graph','路网图（节点·边）','#ffffff'],['districts','片区（P1）','#b58cff'],['fabric','支路与街坊（P2）','#ff9a2e'],['dfield','方向场（P2）','#7fd4ff'],['parcels','地块（P3，?city=v2）','#5be0c0'],['temples','神庙通路','#3de0e0']];
 const REV_TL={linked:'#3de0e0',stair:'#ffe14a',raised:'#9a9a9a',none:'#ff4040'};
 const REV_FACE={F0:'#9a9a9a',F1:'#59e08a',F2:'#3fd0e0',F3:'#5b8cff',F4:'#ff7ac8',blocked:'#ff4040'};
 const REV_WHAT={tree:'大树祭坛',compitum:'路口神龛',lacus:'水池',temple:'小庙',fountain:'喷泉',garden:'小园林',lane:'双三角'};
@@ -98,6 +98,15 @@ const REV_BUILD={
     for(const s of F.squares)for(const r of s.Y)revDrape(a,C,r.P,true,6,1.2,sq);
     for(const s of F.streets)revDrape(a,C,s.S,false,6,1.5,col(s.w));
     const s=F.stats,b=s.blockAreaWindow;return{obj:revLineObj(a,C,0,1),note:`${s.blocks} 街坊 · ${s.cuts} 刀 · 支路 ${s.km} km · 视窗内街坊 p10/p50/p90 ${b.p10}/${b.p50}/${b.p90} m² · H13 ${s.H13}% · ${s.ms} ms`};},
+  // P3 (parcels.js, ?city=v2): the built lots (shops on main roads orange, corner houses cyan, fans violet, rows yellow, the rest blue), the lots
+  // dropped (red), the courts (garden green, walled grey, yard sand), the lanes and passages (pink), the squares at acute tips (white)
+  parcels(){const W=W0,P=W.parcels;if(!P)return{obj:revLineObj([],null,'#ffffff',1),note:'只在 ?city=v2 下生成'};const a=[],C=[],c=h=>new THREE.Color(h);
+    const col={shop:c('#ff9a2e'),corner:c('#3fd0e0'),fan:c('#c080ff'),row:c('#ffd84a'),strip:c('#58a8ff'),drop:c('#ff4040'),garden:c('#59e08a'),walled:c('#9a9a9a'),yard:c('#e0c060'),lane:c('#ff5a7a'),tip:c('#ffffff')};
+    for(const l of P.lots)revDrape(a,C,l.L,true,6,1,!l.built?col.drop:l.shop?col.shop:l.corner?col.corner:l.fan?col.fan:l.row?col.row:col.strip);
+    for(const q of P.courts)revDrape(a,C,q.P,true,6,1.3,q.walled?col.walled:q.closed?col.garden:col.yard);
+    for(const q of P.lanes)revDrape(a,C,q.P,true,4,1.4,col.lane);for(const T of P.tips)revDrape(a,C,T,true,4,1.4,col.tip);
+    const S=P.stats,d=Object.entries(S.dropped).map(([k,v])=>k+' '+v).join(' · ');
+    return{obj:revLineObj(a,C,0,1),note:`${S.built}/${S.lots} 地块建成 · ${S.houses} 栋 · 商铺 ${S.shops} · 转角 ${S.corners} · 正面切齐 ${S.aligned} · 退让 ${S.stepBack} · 中庭：花园 ${S.courts.garden} 围墙 ${S.courts.walled} 院子 ${S.courts.yard} · 小巷 ${S.lanes} 穿堂 ${S.passages} · 丢弃：${d} · ${S.ms} ms`};},
   // P2: the direction field, a tick every 16 m in the districts it cut, along the field; brighter where it is surer
   dfield(){const W=W0,F=cityFabric(W),G=F.F,D=cityDistricts(W),sel=new Set(F.districts),a=[],C=[];
     for(let z=G.z0;z<G.z0+G.nz*G.cs;z+=16)for(let x=G.x0;x<G.x0+G.nx*G.cs;x+=16){const i=Math.floor((x-D.x0)/D.cs),j=Math.floor((z-D.z0)/D.cs);if(i<0||j<0||i>=D.nx||j>=D.nz||!sel.has(D.lab[j*D.nx+i]))continue;

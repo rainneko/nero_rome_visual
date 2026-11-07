@@ -121,7 +121,7 @@ function lotFits(L,o,ground,n){const H=ground.min+.15+o.gH+(n-1)*o.sH,roofRise=L
   return!(ground.max>H+roofRise)&&!(ground.max-ground.min>lotSlopeLimit(n||1,o.gH,o.sH,Math.abs(pArea(L))));}
 function lotBuild0(W,g,L,o,R,smk){
   if(typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,L))return false;
-  const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!houseRoadClear(W,eave))return false;
+  const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!(o.v2?pcRoadClear(W,eave):houseRoadClear(W,eave)))return false;   // v2 (parcels.js): a road's round footprints are tested as circles, not as their boxes
   const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
   if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
     if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
@@ -293,7 +293,7 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
   const nd=(i,j)=>N[(i-i0)*NJ+(j-j0)];
   // each block draws from its own dice, keyed to its place in the grid: a change in one block (a lane, a rule) no longer reshuffles every house after it
   for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const R=RNG(hash2(i*7919+(o.seed||11)*65537,j*104729+911)*4294967296);let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
-    const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
+    const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(o.skip&&Qd.every(p=>o.skip(p[0],p[1])))continue;if(dq<1&&R()>.6+dq*.4)continue;   // o.skip: ground another generator owns (?city=v2: parcels.js), the whole block in it
     let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
       if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
     for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
