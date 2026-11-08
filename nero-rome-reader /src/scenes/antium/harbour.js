@@ -19,11 +19,13 @@ function antHarbour(W,g,G){const AX=ANT.AX,AZ=ANT.AZ;
   {const R=[[306,3],[330,2],[360,8],[392,40],[412,90],[430,140]];for(let k=0;k<R.length-1;k++){const a=R[k],b=R[k+1],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/4);for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,x0=lerp(a[0],b[0],t0),z0=lerp(a[1],b[1],t0),x1=lerp(a[0],b[0],t1),z1=lerp(a[1],b[1],t1),r=Math.atan2(-(z1-z0),x1-x0),dx=Math.sin(r)*3,dz=Math.cos(r)*3;
       g.set(5,.5);g.poly([[AX+x0-dx,antH(x0-dx,z0-dz)+.15,AZ+z0-dz],[AX+x1-dx,antH(x1-dx,z1-dz)+.15,AZ+z1-dz],[AX+x1+dx,antH(x1+dx,z1+dz)+.15,AZ+z1+dz],[AX+x0+dx,antH(x0+dx,z0+dz)+.15,AZ+z0+dz]],[0,1,0]);}}W.antRoad2=R;}
   /* the town of Antium on the mainland, densest by the harbour; none on the headland */
-  {const R=RNG(58),homes=[];for(let k=0;k<1400&&homes.length<230;k++){const x=345+R()*430,z=-140+R()*600;if(x<antCoastX(z)+14)continue;const h=antH(x,z);if(h<3||h>70)continue;const dH=Math.hypot(x-440,z-190);if(R()>Math.max(.06,1.15-dH/250))continue;
+  {const tx=470,tz=170;temple(W,g,{x:AX+tx,y:antH(tx,tz),z:AZ+tz,rot:-.4,W:14,L:24,podH:2.5,colH:8,order:'ion',nf:6,rows:1});
+    const tA=W.temples[W.temples.length-1],tc=Math.cos(tA.rot),ts=Math.sin(tA.rot),onT=(x,z)=>{const dx=x-tx,dz=z-tz,u=dx*tc-dz*ts,v=dx*ts+dz*tc;return Math.abs(u)<tA.W/2+10&&v>-tA.L/2-9&&v<tA.L/2+tA.run+17;};   // the temple, its stair and paved court (temple(): 5 m round it, 12 m before the stair) and half a house
+    const R=RNG(58),homes=[];for(let k=0;k<1400&&homes.length<230;k++){const x=345+R()*430,z=-140+R()*600;if(x<antCoastX(z)+14)continue;const h=antH(x,z);if(h<3||h>70)continue;const dH=Math.hypot(x-440,z-190);if(R()>Math.max(.06,1.15-dH/250))continue;
       if(homes.some(p=>Math.abs(p[0]-x)<11.5&&Math.abs(p[1]-z)<9.5))continue;if(Math.abs(z-lerp(3,140,clamp((x-306)/124,0,1)))<8&&x<440)continue;homes.push([x,z]);
+      if(onT(x,z)){R();R();R();continue;}   // no house on the temple's ground (it stood on the stair and in the court); the same dice for the rest of the town
       const F=antF(x,z,Math.sin(k)*.25),tw=R()<.3,top=tw?6.4:3.6;rectWalls(g,F,0,0,10,8,-2,top,0,{part:k%2?0:9,seed:R(),sty:3,fl:2|16|8,nSt:tw?2:1,gH:3.6,sH:2.8,lit:.6});roof(g,F,'gable',0,0,10.8,8.8,top,24*DEG,.4,R());}
-    W.antTown=homes;
-    {const x=470,z=170;temple(W,g,{x:AX+x,y:antH(x,z),z:AZ+z,rot:-.4,W:14,L:24,podH:2.5,colH:8,order:'ion',nf:6,rows:1});}}
+    W.antTown=homes;}
   /* trees: mainland groves; on the headland only shrubs and a few pines outside the walls */
   for(let k=0;k<900;k++){const x=-260+((k*97)%1240)+Math.sin(k)*13,z=-560+((k*61)%1120)+Math.cos(k*1.3)*11,h=antH(x,z);if(h<3)continue;if(antLevel(x,z)!==null)continue;
     if(W.antTown&&W.antTown.some(p=>Math.abs(p[0]-x)<9&&Math.abs(p[1]-z)<8))continue;if(antRockD(x,z)>-4)continue;

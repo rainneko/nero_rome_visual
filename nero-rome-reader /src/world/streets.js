@@ -37,7 +37,10 @@ function streetCompactUPlan(F0,gy,spans,turns,depthRatio=1.42,maxRelief=1.84,sam
 function streetPrecinctWingColumns(plan,wingIndex,spacing,gy,floorY){const columns=[];let supportMin=Infinity,supportMax=-Infinity,run=0;for(let row=0;row<2;row++){const[ax,az,bx,bz]=plan.wings[wingIndex].lines[row],L=Math.hypot(bx-ax,bz-az),rot=Math.atan2(-(bz-az),bx-ax),S=plan.F.sub((ax+bx)/2,0,(az+bz)/2,rot),n=Math.max(1,Math.ceil(L/spacing));run=Math.max(run,L);
     for(let i=0;i<=n;i++){const t=i/n,q=S.p(-L/2+L*t,0,0),ground=gy(q[0],q[2]),support=floorY-ground;columns.push({x:q[0],y:floorY,z:q[2],ground,support,row,station:i/n});supportMin=Math.min(supportMin,support);supportMax=Math.max(supportMax,support);}}
   return{columns,supportMin,supportMax,run,depth:plan.wingDepth};}
-/* o: {zone(x,z)->1|2|3 grade of ordinary streets, marble(x,z)->bool, veg(x,z)->bool, water(x,z)->bool, roads:[[w,pts],...], urban(x,z)->0..1} */
+/* o: {zone(x,z)->1|2|3 grade of ordinary streets, marble(x,z)->bool, veg(x,z)->bool, water(x,z)->bool, roads:[[w,pts],...], urban(x,z)->0..1,
+   v2: {at(x,z)->bool, box, streets:[[w,centre line],...], front:[[w,centre line],...], squares:[polygon,...], aprons:[polygon,...]} (?city=v2, parcels.js):
+   where at() holds, the streets are its streets, main road frontages and squares, laid from their polygons; the 9 m rule (empty ground near a wall is
+   street) does not apply there. Aprons (before a lot on a precinct's ring, or set back from a main road) are paved wherever they reach} */
 function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,bz0=1e9,bx1=-1e9,bz1=-1e9;
   for(const f of F){if(f.tag==='road'||f.tag==='open'||f.r>400)continue;bx0=Math.min(bx0,f.cx);bx1=Math.max(bx1,f.cx);bz0=Math.min(bz0,f.cz);bz1=Math.max(bz1,f.cz);}
   const cs=Q.name==='low'&&!TEST?3.5:2.5,x0=Math.max(bx0-160,-3000),z0=Math.max(bz0-160,-2700),nx=Math.ceil((Math.min(bx1+160,3000)-x0)/cs),nz=Math.ceil((Math.min(bz1+160,3500)-z0)/cs),N=nx*nz;
@@ -50,8 +53,10 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     for(let j=0;j<lz;j++)for(let i=0;i<lx;i++){const x=x0+(i*lat+lat/2)*cs,z=z0+(j*lat+lat/2)*cs;V[j*lx+i]=o.veg(x,z)?1:0;Wt[j*lx+i]=o.water(x,z)?1:0;}
     for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const kk=K(i,j),k=Math.floor(j/lat)*lx+Math.floor(i/lat);if(V[k]){veg[kk]=1;naturalVeg[kk]=1;}if(Wt[k])wat[kk]=1;}}
   const dist=stChamfer(solid,nx,nz),dens=stBlur(solid,nx,nz,Math.round(16/cs)),dens2=stBlur(solid,nx,nz,Math.round(30/cs));
-  const st=new Uint8Array(N);
-  for(let k=0;k<N;k++){if(solid[k]||veg[k]||wat[k])continue;const d=dist[k]*cs;if(d<=9&&(dens[k]>=.13||(d<=4&&dens2[k]>=.1)))st[k]=1;}   // streets hug buildings: no street more than 9 m from a wall (no highway rings round hills)
+  const st=new Uint8Array(N),v2m=o.v2?new Uint8Array(N):null;
+  if(v2m){const B=o.v2.box||[x0,z0,x0+nx*cs,z0+nz*cs],i0=Math.max(0,Math.floor((B[0]-x0)/cs)),i1=Math.min(nx-1,Math.floor((B[2]-x0)/cs)),j0=Math.max(0,Math.floor((B[1]-z0)/cs)),j1=Math.min(nz-1,Math.floor((B[3]-z0)/cs));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)if(o.v2.at(x0+(i+.5)*cs,z0+(j+.5)*cs))v2m[K(i,j)]=1;}
+  for(let k=0;k<N;k++){if(solid[k]||veg[k]||wat[k]||(v2m&&v2m[k]))continue;const d=dist[k]*cs;if(d<=9&&(dens[k]>=.13||(d<=4&&dens2[k]>=.1)))st[k]=1;}   // streets hug buildings: no street more than 9 m from a wall (no highway rings round hills)
   // drop specks, smooth the edge (majority)
   {const min=Math.round(260/(cs*cs));stComps(st,nx,nz,c=>{if(c.length<min)for(let a=0;a<c.length;a++)st[c[a]]=0;},true);}
   for(let it=0;it<2;it++){const s2=st.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(solid[k]||wat[k]||veg[k]){s2[k]=0;continue;}
@@ -84,6 +89,19 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   for(const P of o.lanes||[]){const a=lp(P[0],P[1],.5),b=lp(P[3],P[2],.5),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,hw=Math.hypot(P[1][0]-P[0][0],P[1][1]-P[0][1])/2+.5,
       i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((Math.max(a[0],b[0])+hw-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((Math.max(a[1],b[1])+hw-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j),rx=x0+(i+.5)*cs-a[0],rz=z0+(j+.5)*cs-a[1],t=(rx*dx+rz*dz)/l;if(t<0||t>l||Math.abs(rx*dz-rz*dx)/l>hw||wat[k]||court[k])continue;st[k]=1;solid[k]=0;}}
+  // v2: its streets (each cell whose centre is within half the width of the centre line, and at least most of a cell, so a 3.2 m semita stays one
+  // cell wide on the coarse raster) and its squares (paved). Not over a wall, the river or a court.
+  if(v2m){const free=k=>v2m[k]&&!solid[k]&&!wat[k]&&!court[k];
+    for(const[w,S]of o.v2.streets.concat(o.v2.front||[])){const hw=Math.max(w/2,cs*.75);for(let p=1;p<S.length;p++){const a=S[p-1],b=S[p],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(l<1e-6)continue;
+      const i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-hw-x0)/cs)),i1=Math.min(nx-1,Math.floor((Math.max(a[0],b[0])+hw-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-hw-z0)/cs)),j1=Math.min(nz-1,Math.floor((Math.max(a[1],b[1])+hw-z0)/cs));
+      for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=K(i,j);if(!free(k))continue;const rx=x0+(i+.5)*cs-a[0],rz=z0+(j+.5)*cs-a[1],t=clamp((rx*dx+rz*dz)/l,0,l),ex=rx-dx/l*t,ez=rz-dz/l*t;if(ex*ex+ez*ez<=hw*hw){st[k]=1;veg[k]=naturalVeg[k]=0;}}}}   // the street wins over a garden or a slope, as a main road does
+    for(const P of o.v2.squares){let a0=1e9,b0=1e9,a1=-1e9,b1=-1e9;for(const p of P){a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);}
+      for(let j=Math.max(0,Math.floor((b0-z0)/cs));j<=Math.min(nz-1,Math.floor((b1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((a0-x0)/cs));i<=Math.min(nx-1,Math.floor((a1-x0)/cs));i++){const k=K(i,j);
+        if(free(k)&&nobleInside(x0+(i+.5)*cs,z0+(j+.5)*cs,P)){st[k]=1;veg[k]=naturalVeg[k]=0;if(!road[k])road[k]=2;}}}
+    // the paving before a lot on a precinct's ring or set back from a main road (parcels.js aprons): it may reach past v2's own ground
+    for(const P of o.v2.aprons||[]){let a0=1e9,b0=1e9,a1=-1e9,b1=-1e9;for(const p of P){a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);}
+      for(let j=Math.max(0,Math.floor((b0-z0)/cs));j<=Math.min(nz-1,Math.floor((b1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((a0-x0)/cs));i<=Math.min(nx-1,Math.floor((a1-x0)/cs));i++){const k=K(i,j);
+        if(!solid[k]&&!wat[k]&&!court[k]&&nobleInside(x0+(i+.5)*cs,z0+(j+.5)*cs,P)){st[k]=1;veg[k]=naturalVeg[k]=0;}}}}
 
   // width of each street (distance to the nearest non-street, local maximum) -> alleys narrower than ~3 m are dirt
   const nonSt=new Uint8Array(N);for(let k=0;k<N;k++)nonSt[k]=st[k]?0:1;const dN=stChamfer(nonSt,nx,nz),wid=new Float32Array(N);
@@ -103,9 +121,13 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     if(sw>0){bx[k]=sx/sw*.5;bz[k]=sz/sw*.5;bw[k]=.5;}}ax.set(bx);az.set(bz);aw.set(bw);}
   // textures
   const sm=stBlur(st,nx,nz,1),T1=new Uint8Array(N*4);
+  // T1 alpha: a city lane's narrow flagstone path down the middle (the terrain shader draws it): dirt streets, not the main roads, squares (> 14 m) or
+  // market squares, and only where o.lanePath(x,z) allows it (tested once per 10 m cell). Other scenes pass none: no path.
+  const pathC=new Uint8Array(nxc*nzc);if(o.lanePath)for(let jc=0;jc<nzc;jc++)for(let ic=0;ic<nxc;ic++)pathC[jc*nxc+ic]=o.lanePath(x0+(ic+.5)*NC*cs,z0+(jc+.5)*NC*cs)?1:0;
   // grade of cells without a street is the nearest street's (so filtering at the edge does not mix in zero)
   const gg=new Float32Array(N);for(let k=0;k<N;k++)gg[k]=grd[k];for(let it=0;it<3;it++){const g2=gg.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(gg[k]>0)continue;const v=gg[k-1]||gg[k+1]||gg[k-nx]||gg[k+nx];if(v)g2[k]=v;}gg.set(g2);}
-  for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);T1[k*4+3]=255;}
+  for(let k=0;k<N;k++){if(sm[k]>0&&!wat[k]){const i=k%nx,j=(k-i)/nx;if(o.water(x0+(i+.5)*cs,z0+(j+.5)*cs)){wat[k]=1;grd[k]=0;road[k]=0;}}const visible=streetTextureVisible(solid[k],veg[k],wat[k],naturalVeg[k],openLand[k],court[k],road[k]);T1[k*4]=visible?Math.min(255,sm[k]*255*1.15):0;T1[k*4+1]=visible?(gg[k]===1?64:gg[k]===2?128:gg[k]===3?192:0):0;T1[k*4+2]=Math.min(255,dist[k]*cs/8*255);
+    T1[k*4+3]=visible&&st[k]&&!road[k]&&!plz[k]&&grd[k]===1&&wid[k]<=14&&pathC[Math.floor(Math.floor(k/nx)/NC)*nxc+Math.floor(k%nx/NC)]?255:0;}
   // T2 alpha: where the street centre lies across each coarse cell, measured from the cell centre along the shader's own (quantized) normal, so the
   // dirt ruts run along the street and not in rings around the world origin. dN^4 weights put a two-cell street's centre between its cells.
   // Blue (rut strength) is 0 on squares wider than 14 m.
@@ -115,7 +137,7 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     const off=sw>0?sa/sw:0;T2[k*4+2]=mx*cs>7?0:Math.min(255,aw[k]*40);T2[k*4+3]=Math.round(Math.max(0,Math.min(255,(off/8*.5+.5)*255)));}
   const mk=(d,w,h,mip)=>{const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat,THREE.UnsignedByteType);t.magFilter=THREE.LinearFilter;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;t.generateMipmaps=!!mip;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;return t;};
   U.uSt.value=mk(T1,nx,nz,true);U.uStA.value=mk(T2,nxc,nzc,false);U.uStX.value.set(x0,z0,nx*cs,nz*cs);U.uStN.value.set(nx,nz);
-  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,cen:T2,waterAt:o.water,nxc,NC,region,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
+  W.street={x0,z0,cs,nx,nz,st,grd,solid,veg,openLand,naturalVeg,court,water:wat,wid,dist,road,ax,az,texture:T1,cen:T2,waterAt:o.water,nxc,NC,region,v2:v2m,at:(x,z)=>{const i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?0:grd[j*nx+i];}};
   W.streetAt=(x,z)=>W.street.at(x,z)>0;
   console.log('streets',nx+'x'+nz,'cs',cs,'dirt',cnt[1],'stone',cnt[2],'marble',cnt[3],Math.round(performance.now()-t0)+' ms');}
 /* Stairs by district (author, 2026-10-26: 大理石、砖石、泥巴). 3 white marble, cheek walls on both sides with a coping; 2 grey stone treads, brick
@@ -141,8 +163,9 @@ function streetStairFit(S,cx,cz,dx,dz,t0,t1,maxW,wmin){const{x0,z0,cs,nx,nz}=S,n
    to its street (streetStairFit): the longest straight stretch along the patch's fall line that is at least 2.4 m clear, as wide as it is clear less 0.3 m
    a side (at most 7 m, 9 m in marble), opening onto street at both ends (straight on, or to a side where the street bends). A climb longer than 36 m becomes several flights. Each tread sits on the ground
    under it, at least 5 cm below the one above. Patches wider than 12 m are street networks on a hillside and stay ramps. Main-road cells are left to
-   roadStairs, and so is anything within 12 m of one of its flights. S.stair marks the cells the flights cover (no stalls or carts there). */
-function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g=new GB(1<<16),RS=W.roadStairs||[];let nSt=0;const nMat={1:0,2:0,3:0},why={};
+   roadStairs, and so is anything within 12 m of one of its flights. S.stair marks the cells the flights cover (no stalls or carts there).
+   o.layerAt(x,z): a story-state group for a flight there (the streets the Golden House takes), or null. */
+function streetStairs(W,o={}){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy,steep=new Uint8Array(N),gxA=new Float32Array(N),gzA=new Float32Array(N),g0=new GB(1<<16),gl={},RS=W.roadStairs||[];let nSt=0,g=g0;const nMat={1:0,2:0,3:0},why={};
   const no=r=>{why[r]=(why[r]||0)+1;};S.stair=new Uint8Array(N);
   for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=j*nx+i;if(!grd[k]||S.road[k])continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,dx=(gy(x+cs,z)-gy(x-cs,z))/(2*cs),dz=(gy(x,z+cs)-gy(x,z-cs))/(2*cs);
     const m2=dx*dx+dz*dz;if(m2>(grd[k]===3?.0121:grd[k]===2?.0256:.04)){   // marble streets turn to stairs from ~11 %, stone ones from ~16 %, earth lanes from 20 %
@@ -170,11 +193,12 @@ function streetStairs(W){const S=W.street,{x0,z0,cs,nx,nz,grd}=S,N=nx*nz,gy=W.gy
     const opens=sg=>{for(let a=.6;a<=4;a+=.7)for(let o=-hw-3;o<=hw+3;o+=1){const x=mid[0]+dx*sg*(run/2+a)+px*o,z=mid[1]+dz*sg*(run/2+a)+pz*o,i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);if(i<0||j<0||i>=nx||j>=nz)continue;const kk=j*nx+i;if(S.st[kk]&&!S.solid[kk]&&!S.water[kk])return true;}return false;};
     if(!opens(-1)||!opens(1)){no('ends');continue;}
     if(RS.some(r=>Math.hypot(r.x-mid[0],r.z-mid[1])<r.len/2+run/2+12)){no('road');continue;}
+    const lk=o.layerAt&&o.layerAt(mid[0],mid[1]);g=lk?(gl[lk]||(gl[lk]=new GB(1<<13))):g0;
     const k=Math.ceil(run/36),seg=run/k;let built=0;
     for(let q=0;q<k;q++){const ta=fit.ta+q*seg,ax=ox+dx*ta,az=oz+dz*ta,bx=ax+dx*seg,bz=az+dz*seg,n=flight(M,ax,az,dx,dz,seg,hw,gy(bx,bz));
       if(n){(W.stairList=W.stairList||[]).push({x:ax,z:az,dx,dz,w:hw*2,run:seg,mat,marble:mat===3,drop:gy(ax,az)-gy(bx,bz),n});nSt++;nMat[mat]++;built++;}}
     if(!built)no('slope');}
-  const m=layTag(g.mesh(MAT.city),'stairs');if(m){m.name='streetStairs';W.scene.add(m);}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
+  const m=layTag(g0.mesh(MAT.city),'stairs');if(m){m.name='streetStairs';W.scene.add(m);}for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city),'stairs');if(mk){mk.name='streetStairs_'+k;preLayerGroup(W,k).add(mk);}}W.nStairs=nSt;W.stairMat=nMat;W.stairWhy=why;console.log('street stairs',nSt,'from',comps.length,'steep street patches',JSON.stringify(nMat),JSON.stringify(why));}
 /* main-road stairs: where a road's graded bed still climbs more than 30 % (gradeRoads caps its cut and fill at 4 m) the paint stops and a flight follows
    the road, as wide as the road, in its district's material (S.region). A run is where the signed grade over +-2.5 m passes 30 %, grown while it stays
    above 18 % the same way; same-way runs less than 5 m apart are one flight; a flight needs 1 m of drop and treads of at least 26 cm.
@@ -225,10 +249,30 @@ function roadKerbs(W,list,o={}){const g0=new GB(1<<16),S=W.street,gl={};let g=g0
           s0=s1+2.5+R()*R()*12;ri++;}}}
     const mw=layTag(gW.mesh(MAT.cityDecal,false),'roadDetail');if(mw){mw.renderOrder=2;W.scene.add(mw);}for(const k in glW){const mk=layTag(glW[k].mesh(MAT.cityDecal,false),'roadDetail');if(mk){mk.renderOrder=2;preLayerGroup(W,k).add(mk);}}W.nRoadWear=nW;}
   const m=layTag(g0.mesh(MAT.city,false),'roadDetail');if(m)W.scene.add(m);for(const k in gl){const mk=layTag(gl[k].mesh(MAT.city,false),'roadDetail');if(mk)preLayerGroup(W,k).add(mk);}}
+/* A prop that stands with its back to a house wall (the shop awning, the counter), stood against the nearest straight stretch of wall found from the footprints themselves: the raster cell is
+   up to 3.8 m from the wall and its gradient only knows eight directions (they used to float mid-street, turned round and askew). The model opens to +z with its wall side at local z -back, reaches
+   `front` m past the origin and is 2*hw wide; feet: [u,v] (u along the wall, v from it) where it stands on the ground. done: the props already placed [x,z,rot,y]; w: the street's width here.
+   Returns [x,z,rot,y] with the back `gap` m off the wall and the open side to the street, or null when there is no wall stretch long enough within 4.2 m, the wall is a noble house's (its front has
+   its own shop roofs), the street is too narrow to pass in front, anything would stand over another footprint, another prop is within 4.4 m, or the ground under the feet differs by more than .6 m. */
+const STREET_AWNING={hw:2,back:.8,front:.8,gap:.12,feet:[[-1.9,1.72],[1.9,1.72]]},STREET_COUNTER={hw:1.53,back:1.83,front:.33,gap:.1,feet:[[-1.5,.1],[1.5,.1],[-1.5,2.2],[1.5,2.2]]};   // the awning rests on its two poles; the counter on its four corners
+function streetWallProp(W,x,z,done,K,w){const F=W.foot,cs=F.cell,seen=new Set(),obst=[],depth=K.gap+K.back+K.front,need=2*K.hw+.4;let best=null;if(w<depth+1.5)return null;
+  for(let i=Math.floor((x-8)/cs);i<=Math.floor((x+8)/cs);i++)for(let j=Math.floor((z-8)/cs);j<=Math.floor((z+8)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){
+    if(seen.has(f)||f.tag&&f.tag!=='road'&&f.tag!=='court')continue;seen.add(f);const P=f.blkLot||f.poly||footBox(f);obst.push(P);if(f.tag||f.circ)continue;
+    for(let e=0;e<P.length;e++){const a=P[e],b=P[(e+1)%P.length],dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz);if(L<need)continue;
+      const t=((x-a[0])*dx+(z-a[1])*dz)/(L*L);if(t<=0||t>=1)continue;const qx=a[0]+dx*t,qz=a[1]+dz*t,d=Math.hypot(x-qx,z-qz);   // not the corner wedge: two walls meet there
+      if(d>.2&&d<4.2&&(!best||d<best.d))best={d,f,a,ex:dx/L,ez:dz/L,L,s:t*L,sg:(x-qx)*-dz+(z-qz)*dx>0?1:-1};}}
+  if(!best||best.f.nobleHome)return null;
+  const nx=-best.ez*best.sg,nz=best.ex*best.sg,s=Math.max(K.hw+.2,Math.min(best.L-K.hw-.2,best.s)),wx=best.a[0]+best.ex*s,wz=best.a[1]+best.ez*s,ox=wx+nx*(K.gap+K.back),oz=wz+nz*(K.gap+K.back);   // (nx,nz) points to the street
+  const at=(u,v)=>[wx+best.ex*u+nx*v,wz+best.ez*u+nz*v];
+  for(const u of[-K.hw+.05,-K.hw/2,0,K.hw/2,K.hw-.05])for(const v of[K.gap+.15,(K.gap+depth)/2,depth]){const p=at(u,v);if(obst.some(P=>nobleInside(p[0],p[1],P)))return null;}
+  if(done.some(q=>Math.hypot(q[0]-ox,q[1]-oz)<4.4))return null;
+  const g=K.feet.map(([u,v])=>W.gy(...at(u,v)));if(Math.max(...g)-Math.min(...g)>.6)return null;   // a street that climbs along the wall: one foot would sink into the ground
+  return[ox,oz,Math.atan2(nx,nz),Math.min(...g)];}   // turned to face the street; it stands on the lowest foot, never hangs
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
-   props stand against the walls of dirt and stone streets (back to the wall, found from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed */
-function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
-  let nP=0,nS=0,nC=0;const plaza=[];
+   props stand against the walls of dirt and stone streets (awnings and counters back to a house wall, found from the footprints by streetWallProp; the rest from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed.
+   o.layerAt(x,z): a story-state group for a prop there (parentLayer; the streets the Golden House takes), or null. */
+function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
+  let nP=0,nS=0,nC=0;const plaza=[],props=[];
   for(let j=3;j<nz-3;j+=2)for(let i=3;i<nx-3;i+=2){const k=j*nx+i,g=grd[k];if(!g||g===3)continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,u=o.urban(x,z);if(u<.25)continue;
     const w=wid[k];
     if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35)plaza.push([x,z,w]);
@@ -236,8 +280,8 @@ function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(1
     const gx=dist[k+1]-dist[k-1],gz=dist[k+nx]-dist[k-nx],l=Math.hypot(gx,gz);if(l<.3)continue;const wx=gx/l,wz=gz/l;   // direction away from the wall
     if(R()>(g===2?.075:.045)*(u>.6?1:.6))continue;if(W.gy(x,z)>o.maxY)continue;
     const r=R(),rot=Math.atan2(-wx,-wz),tint=TINT[Math.floor(R()*TINT.length)];
-    if(r<.3)put('rome_awning',x,z,rot,{tint,dy:2.4});
-    else if(r<.55)put('rome_counter',x,z,rot);
+    if(r<.3){const a=streetWallProp(W,x,z,props,STREET_AWNING,w);if(!a)continue;put('rome_awning',a[0],a[1],a[2],{tint,dy:a[3]-W.gy(a[0],a[1])});props.push(a);}   // the dice above are drawn either way: the other props keep their places
+    else if(r<.55){const a=streetWallProp(W,x,z,props,STREET_COUNTER,w);if(!a)continue;put('rome_counter',a[0],a[1],a[2],{dy:a[3]-W.gy(a[0],a[1])});props.push(a);}
     else if(r<.75)put('rome_amphorae',x,z,rot);
     else if(r<.85)put('rome_cart',x,z,rot+(R()-.5)*1.2);
     else put('rome_laundry',x-wx*(d-.3),z-wz*(d-.3),rot,{dy:4.4});nP++;}
@@ -267,8 +311,8 @@ function roadFoot(W,x,z,r,thin){const F=W.foot,cs=F.cell;   // anything (not a r
       if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}}
   return false;}
 function roadNear(L,x,z,r){for(const o of L){const dx=x-o.cx,dz=z-o.cz;if(o.circ){if(Math.hypot(dx,dz)<o.hw+r)return true;continue;}const u=Math.abs(o.c*dx-o.s*dz)-o.hw,v=Math.abs(o.s*dx+o.c*dz)-o.hd;if(Math.hypot(Math.max(u,0),Math.max(v,0))<r)return true;}return false;}
-function routeRoad(W,way,w,o){const r=w/2+1.5,gy=W.gy,out=[way[0].slice()],free=o.free||30,av=o.avoid||[];   // o.avoid: footprints placed after the roads that the roads must still keep off
-  const clear=(x,z,m)=>!o.wet(x,z,r+m)&&!roadFoot(W,x,z,r+m)&&!roadNear(av,x,z,r+m),fr=new Map(way.map(p=>[p,clear(p[0],p[1],0)?0:free]));   // only a waypoint that is itself blocked gets the open radius
+function routeRoad(W,way,w,o){const r=w/2+1.5,gy=W.gy,out=[way[0].slice()],free=o.free||30,av=o.avoid||[];   // o.avoid: footprints placed after the roads that the roads must still keep off; o.block(x,z,r): any other obstacle (roadgraph.js: the other roads)
+  const clear=(x,z,m)=>!o.wet(x,z,r+m)&&!roadFoot(W,x,z,r+m)&&!roadNear(av,x,z,r+m)&&!(o.block&&o.block(x,z,r+m)),fr=new Map(way.map(p=>[p,clear(p[0],p[1],0)?0:free]));   // only a waypoint that is itself blocked gets the open radius
   const ok=(x,z,A,B,m=0)=>Math.hypot(x-A[0],z-A[1])<fr.get(A)||Math.hypot(x-B[0],z-B[1])<fr.get(B)||clear(x,z,m);
   const segOK=(a,b,A,B,gmax)=>{const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(2,Math.ceil(L/6)),h=[];
     for(let k=0;k<=n;k++){const x=lerp(a[0],b[0],k/n),z=lerp(a[1],b[1],k/n);if(!ok(x,z,A,B))return false;h.push(gy(x,z));if(k>=2&&Math.abs(h[k]-h[k-2])/(2*L/n)>gmax)return false;}return true;};

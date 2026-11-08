@@ -28,8 +28,12 @@ class GB{
     G.setAttribute('aA',new THREE.BufferAttribute(this.a.slice(0,nv*4),4));G.setAttribute('aB',new THREE.BufferAttribute(this.b.slice(0,nv*4),4));
     G.setAttribute('aC',new THREE.BufferAttribute(this.c.slice(0,nv*4),4));G.setIndex(new THREE.BufferAttribute(this.ix.slice(0,this.ni),1));
     G.computeBoundingSphere();G.computeBoundingBox();return G;}
-  mesh(mat,shadow=true){if(!this.nv)return null;const m=new THREE.Mesh(this.geometry(),mat);m.castShadow=shadow;m.receiveShadow=true;return m;}
+  // a mesh of its own: once its buffers are on the GPU the JS copies are let go (gbFree; the bounds and counts stay). Nothing reads a built mesh back;
+  // geometry() (templates such as COLGEO, read again by addGeo and instancing) keeps its arrays.
+  mesh(mat,shadow=true){if(!this.nv)return null;const G=this.geometry();for(const k in G.attributes)G.attributes[k].onUpload(gbFree);G.index.onUpload(gbFree);
+    const m=new THREE.Mesh(G,mat);m.castShadow=shadow;m.receiveShadow=true;return m;}
 }
+function gbFree(){this.array=null;}
 function nrm(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
   let x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx;const l=Math.hypot(x,y,z)||1;return[x/l,y/l,z/l];}
 function autoUV(p,n){if(Math.abs(n[1])>.97)return[p[0],p[2]];let tx=-n[2],tz=n[0];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;
@@ -46,6 +50,12 @@ function box(g,F,cx,y0,cz,hx,h,hz,faces=31){const y1=y0+h,P=(x,y,z)=>F.p(cx+x,y,
   if(faces&8)g.poly([P(-hx,y0,-hz),P(-hx,y0,hz),P(-hx,y1,hz),P(-hx,y1,-hz)],F.d(-1,0,0));
   if(faces&16)g.poly([P(-hx,y1,hz),P(hx,y1,hz),P(hx,y1,-hz),P(-hx,y1,-hz)],[0,1,0]);
   if(faces&32)g.poly([P(-hx,y0,-hz),P(hx,y0,-hz),P(hx,y0,hz),P(-hx,y0,hz)],[0,-1,0]);}
+// Tenement storeys get lower toward the top (the author, 2026-11-02: above the third floor the rooms are low, and lower again on the 5th and 6th).
+// Upper storey si (1 = the first above the ground floor) is sH high up to the 2nd, then .86, .76, .7 of it, never under 2.25 m. Walls of such a house
+// carry STOREY_TAPER in fl, so wallS finds the same storey lines (stHs there); stUp(k,sH,tap) = the height of the first k upper storeys.
+const STOREY_TAPER=1048576;
+function stH(si,sH,tap){return tap&&si>2.5?Math.min(sH,Math.max(2.25,sH*(si<3.5?.86:si<4.5?.76:.7))):sH;}
+function stUp(k,sH,tap){let s=0;for(let i=1;i<=k;i++)s+=stH(i,sH,tap);return s;}
 // facade wall from local A to B (outward = cross(up,AB)), world y0..y1, facade v from floorY
 function wall(g,F,ax,az,bx,bz,y0,y1,floorY,sH){const A0=F.p(ax,y0,az),B0=F.p(bx,y0,bz),B1=F.p(bx,y1,bz),A1=F.p(ax,y1,az);
   const L=Math.hypot(bx-ax,bz-az),dx=B0[0]-A0[0],dz=B0[2]-A0[2],va=y0-floorY,vb=y1-floorY;
@@ -94,12 +104,12 @@ function roof(g,F,type,cx,cz,w,d,yT,pitch,over,seed,wallFac){if(!wallFac&&type.i
     if(alongX){const yR=yT+(d/2)*t,gx=w/2+over*.5;
       g.poly([P(-gx,yE,ez),P(gx,yE,ez),P(gx,yR+.1,0),P(-gx,yR+.1,0)],D(0,1,1));g.poly([P(gx,yE,-ez),P(-gx,yE,-ez),P(-gx,yR+.1,0),P(gx,yR+.1,0)],D(0,1,-1));
       g.set(4,seed);ridgeCap(g,P(-gx,yR+.1,0),P(gx,yR+.1,0));
-      if(wallFac){g.set(wallFac.part,wallFac.seed,0,1,wallFac.nSt,wallFac.gH,wallFac.burn||0,1);
+      if(wallFac){g.set(wallFac.part,wallFac.seed,0,1|((wallFac.fl||0)&STOREY_TAPER),wallFac.nSt,wallFac.gH,wallFac.burn||0,1);
         wallTri(g,F,cx+w/2,cz+d/2,cx+w/2,cz-d/2,yT,yR,wallFac.floorY,wallFac.sH);wallTri(g,F,cx-w/2,cz-d/2,cx-w/2,cz+d/2,yT,yR,wallFac.floorY,wallFac.sH);}
     }else{const yR=yT+(w/2)*t,gz=d/2+over*.5;
       g.poly([P(ex,yE,gz),P(ex,yE,-gz),P(0,yR+.1,-gz),P(0,yR+.1,gz)],D(1,1,0));g.poly([P(-ex,yE,-gz),P(-ex,yE,gz),P(0,yR+.1,gz),P(0,yR+.1,-gz)],D(-1,1,0));
       g.set(4,seed);ridgeCap(g,P(0,yR+.1,-gz),P(0,yR+.1,gz));
-      if(wallFac){g.set(wallFac.part,wallFac.seed,0,1,wallFac.nSt,wallFac.gH,wallFac.burn||0,1);
+      if(wallFac){g.set(wallFac.part,wallFac.seed,0,1|((wallFac.fl||0)&STOREY_TAPER),wallFac.nSt,wallFac.gH,wallFac.burn||0,1);
         wallTri(g,F,cx-w/2,cz+d/2,cx+w/2,cz+d/2,yT,yR,wallFac.floorY,wallFac.sH);wallTri(g,F,cx+w/2,cz-d/2,cx-w/2,cz-d/2,yT,yR,wallFac.floorY,wallFac.sH);}}
   }else if(type==='ring'){ // courtyard ring roof: wallFac.cw, cd = court size
     const cw=wallFac.cw/2-over,cd=wallFac.cd/2-over,rx=(w/2+wallFac.cw/2)/2,rz=(d/2+wallFac.cd/2)/2,yR=yE+(w/2-wallFac.cw/2)/2*t;
@@ -178,6 +188,7 @@ vec3 shopGoods(vec2 qb,float tr,float seed,float dq){
    it=mix(it,wd*1.15,step(abs(qb.y-.85),.05)*dq);it=mix(it,wd*.7,step(qb.y,.8)*step(.42,abs(fract(qb.x/.9)-.5))*dq);
    it=mix(it,mix(vec3(.45,.36,.2),vec3(.33,.3,.27),step(.5,th)),step(abs(tx),.06+.08*th)*step(1.35,qb.y)*step(qb.y,1.75+.35*th)*dq);}
   return it;}
+float stHs(float si,float sH){return si>2.5?min(sH,max(2.25,sH*(si<3.5?.86:si<4.5?.76:.7))):sH;}   // stH in JS
 void wallS(inout PS S,vec3 N,float P,float aa){
  float u=vA.x,v=vA.y,L=max(vA.z,.5),sH=max(vA.w,2.4);float seed=floor(vB.x*4096.+.5)/4096.,sty=floor(vB.z+.5),fl=floor(vB.w+.5);float nSt=max(floor(vC.x+.5),1.),gH=max(vC.y,2.5),litB=vC.w;
  vec3 base;
@@ -191,8 +202,10 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  float big=fbm2(vec2(u,v)*.07+seed*13.),streak=fbm2(vec2(u*1.1,v*.11)+seed*7.);
  vec3 alb=base*(.9+.2*big);alb*=mix(1.,.82,smoothstep(.55,.8,streak)*.6);alb*=mix(.76,1.,smoothstep(0.,1.8,v));
  float bBlank=mod(fl,2.),bDoor=mod(floor(fl/2.),2.),bQuoin=mod(floor(fl/4.),2.),bBands=mod(floor(fl/8.),2.),bShut=mod(floor(fl/16.),2.),bFrame=mod(floor(fl/32.),2.),bRed=mod(floor(fl/64.),2.),bLog=mod(floor(fl/256.),2.),bArc=mod(floor(fl/512.),2.);float bNiche=mod(floor(fl/1024.),2.),bMed=mod(floor(fl/2048.),2.),bRust=mod(floor(fl/4096.),2.),bFriz=mod(floor(fl/8192.),2.);float bGar=mod(floor(fl/16384.),2.),bShr=mod(floor(fl/32768.),2.),bVou=mod(floor(fl/65536.),2.),bGAr=mod(floor(fl/131072.),2.);   // phase 4: painted garland frieze, blue shrine panel by the door, voussoirs+quoins, red base storey with an arcade
- float si,sv;if(v<gH){si=0.;sv=v;}else{si=1.+floor((v-gH)/sH);sv=(v-gH)-(si-1.)*sH;}
- float topV=gH+(nSt-1.)*sH;
+ float bTap=mod(floor(fl/1048576.),2.);float si,sv,sHl=sH,topV=gH+(nSt-1.)*sH;   // STOREY_TAPER: the upper storeys of a tenement get lower (stH in JS)
+ if(v<gH){si=0.;sv=v;}else if(bTap<.5){si=1.+floor((v-gH)/sH);sv=(v-gH)-(si-1.)*sH;}
+ else{float w=v-gH,b=0.;si=1.;for(int k=0;k<8;k++){sHl=stHs(si,sH);if(w<b+sHl||k==7)break;b+=sHl;si+=1.;}sv=w-b;}
+ if(bTap>.5){topV=gH;for(int k=1;k<8;k++){if(float(k)>nSt-.5)break;topV+=stHs(float(k),sH);}}
  vec3 bandC=(fract(seed*3.7)<.55)?vec3(.52,.2,.12):vec3(.58,.54,.46);
  float hA=fract(seed*17.31),hB=fract(seed*29.7),hC=fract(seed*41.9);
  if(bBands>.5&&nSt>1.5&&hA<.55){float bm=1.-smoothstep(.2-aa,.2+aa,abs(v-gH-.05));alb=mix(alb,bandC*(.9+.12*big),bm*.9);float top=smoothstep(.0,.05,v-gH-.22)*(1.-smoothstep(.1,.15,v-gH-.22));alb=mix(alb,bandC*1.1,top*.7*step(hB,.4));}
@@ -227,10 +240,10 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  // Keep legacy analytic arches for non-residential facades only.
  bool arcLevel=bArc>.5&&!residential;
  float bayW=arcLevel?4.8:(!residential&&bGAr>.5)?4.6:inwardTown?4.5+fract(seed*5.1)*1.5:3.+fract(seed*5.1);float nb=max(1.,floor(L/bayW+.3));float bay=L/nb;float bi=floor(u/bay);float bu=u-(bi+.5)*bay;
- if(!inwardTown&&nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sH,.1,aa),joint(sv+sH*.5,sH,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
+ if(!inwardTown&&nSt>2.5&&(P<.5||(P>8.5&&P<9.5))&&v<topV&&v>gH){if(si>nSt-1.5&&nSt<4.5&&fract(seed*3.1)<.1){float fu=joint(u+fract(seed*9.)*1.7,1.6,.07,aa),fv=max(joint(sv,sHl,.1,aa),joint(sv+sHl*.5,sHl,.05,aa));vec3 mud=vec3(.82,.74,.6)*(.88+.2*big);S.alb=mix(mud,vec3(.46,.33,.2),max(fu,fv)*.72);}else if(si<1.5&&fract(seed*7.7)<.45){float bb=1.-step(.95,sv);float bal=step(.5,fract(u/.28));S.alb=mix(S.alb,mix(vec3(.5,.36,.22),vec3(.62,.47,.3),bal),bb*.8);}}
  float hw=0.,oh=0.,sill=0.,ar=0.,dep=.25,kind=-1.,shopHw=0.,shopOh=0.;
  float wsd=h12(vec2(bi+seed*97.,si+seed*31.)),wsdS=wsd;if(mod(floor(fl/524288.),2.)>.5&&si>.5)wsd=1.;   // geometric-window wall (romanFrontRelief): every upper bay has its window
- if(arcLevel){kind=2.;hw=bay*.31;float hh=si<.5?gH:sH;oh=hh*.8;ar=1.;dep=2.4;}
+ if(arcLevel){kind=2.;hw=bay*.31;float hh=si<.5?gH:sHl;oh=hh*.8;ar=1.;dep=2.4;}
  else if(si<.5){float doorBay=floor(fract(seed*11.3)*nb);bool isDoor=bDoor>.5&&abs(bi-doorBay)<.5;
   if(bGAr>.5&&!residential){kind=2.;hw=min(bay*.32,1.7);oh=min(gH-.5,2.9);ar=1.;dep=2.2;}
   else if(grT>.5&&grT<1.5){kind=2.;hw=min(bay*.34,1.6);oh=min(gH-.45,2.1+hw);ar=1.;dep=1.4;}
@@ -238,7 +251,7 @@ void wallS(inout PS S,vec3 N,float P,float aa){
    if(ar<.5&&gH-oh>1.3){shopHw=hw;shopOh=oh;if(sv>oh+.3){kind=0.;hw=.3;sill=oh+.45;oh=.55;dep=.3;}}}   // 【史】a small window over the lintel lights the pergula, the shopkeeper's loft (Ostia, Herculaneum, Trajan's Market)
   else if(grT>2.5){if(isDoor){kind=1.;hw=.75;oh=2.7;ar=1.;dep=.5;}}
   else{if(isDoor){kind=1.;hw=.6;oh=2.3;ar=step(.5,fract(seed*8.7));dep=.45;}else if(wsd>.35){kind=0.;hw=.3;oh=.6;sill=gH-1.25;}}}
- else{if(bLog>.5&&top&&!residential){kind=4.;float sb=bay*.5;bu=u-(floor(u/sb)+.5)*sb;hw=min(sb*.36,1.1);sill=.85;oh=sH-1.2;ar=1.;dep=1.8;}
+ else{if(bLog>.5&&top&&!residential){kind=4.;float sb=bay*.5;bu=u-(floor(u/sb)+.5)*sb;hw=min(sb*.36,1.1);sill=.85;oh=sHl-1.2;ar=1.;dep=1.8;}
   else if(wsd>.15){kind=0.;hw=.36+.12*fract(seed*5.3);oh=1.05+.3*fract(seed*1.9);sill=.95;
    ar=((winT>.5&&winT<1.5)||(winT>3.5&&winT<4.5)||winT>6.5)?1.:0.;
    if((winT>2.5&&winT<3.5)||top){hw=.3;oh=.75;sill=1.;ar=0.;}
@@ -250,6 +263,7 @@ void wallS(inout PS S,vec3 N,float P,float aa){
   float ring=smoothstep(Rr-aa,Rr+aa,r)*(1.-smoothstep(Rr+.22-aa,Rr+.22+aa,r))*step(spz,sv);
   S.alb=mix(S.alb,vec3(.42,.23,.15)*(.82+.2*h12(vec2(floor(an),bi)+seed))*(1.-.4*step(.86,fract(an))),ring*.95*dfar);}
  if(kind<0.||(uDbg.w>.5&&uDbg.w<1.5))return;
+ if(bTap>.5&&si>2.5&&kind>-.5&&kind<.5){float kh=sHl/sH;sill*=kh;oh=min(oh*kh,sHl-sill-.4);hw*=si<3.5?.88:si<4.5?.78:.7;}   // the low top storeys: smaller, narrower windows
  vec2 q=vec2(bu,sv-sill);float ins=openM(q,hw,oh,ar,aa);
  if(bVou>.5&&ar>.5&&si<.5){float ro=clamp(openM(q+vec2(0.,.03),hw+.3,oh+.3,ar,aa)-openM(q,hw+.015,oh+.015,ar,aa),0.,1.);float an=atan(q.x,q.y-(oh-hw));float vs=step(.5,fract(an*5.7))*.14;float onA=smoothstep(oh-hw-.05,oh-hw+.05,q.y);S.alb=mix(S.alb,vec3(.74,.68,.56)*(1.-vs*onA),ro*.95*dfar);}
  if(kind<.5){if(bFrame>.5||winT>6.5||(winT>1.5&&winT<2.5)){float fr=clamp(openM(q+vec2(0.,.13),hw+.14,oh+.26,ar,aa)-ins,0.,1.);vec3 frc=P<.5?vec3(.66,.38,.25):vec3(.58,.54,.46);S.alb=mix(S.alb,frc*(.9+.1*big),fr*.9);}if(bFrame>.5&&si>.5){float py=q.y-(oh+.16);float pw=(hw+.24)*(1.-py/.4);vec3 frc2=P<.5?vec3(.68,.4,.27):vec3(.85,.8,.7);S.alb=mix(S.alb,frc2,step(0.,py)*step(py,.4)*step(abs(q.x),pw)*.85);}
@@ -353,9 +367,9 @@ else if(P>41.5&&P<42.5){S.alb=vec3(.2,.165,.125)*(.85+.3*vn2(vWP.xz*3.));S.rough
 else if(P>39.5&&P<40.5){S.alb=vec3(.061,.065,.038)*(.88+.24*vn2(vWP.xz*3.+vWP.y*2.));S.metal=.35;S.rough=.6;}   // dark bronze statuary (sRGB ~70/72/55)
 else if(P>30.5&&P<31.5){vec2 p=vWP.xz;float n=fbm2(p*.08),pud=smoothstep(.6,.68,fbm2(p*.03+7.)),lime=smoothstep(.74,.8,vn2(p*.11));vec3 c=mix(vec3(.16,.14,.11),vec3(.27,.23,.17),n);c=mix(c,vec3(.6,.58,.52),lime*.45);S.alb=mix(c,vec3(.04,.04,.045),pud*.75);S.rough=mix(.95,.05,pud);}
 else if(P>32.5&&P<33.5){S.alb=stoneC(uv,seed,vec3(.51,.455,.36),1.15,.56,aa);S.rough=.9;}
-else if(P>33.5&&P<34.5){vec2 g2=floor(uv/1.2);float k=h12(g2+seed);vec3 c1=k<.3?vec3(.9,.88,.84):k<.55?vec3(.55,.6,.68):k<.8?vec3(.82,.6,.58):vec3(.86,.76,.5);float jn=max(joint(uv.x,1.2,.01,aa),joint(uv.y,1.2,.01,aa));S.alb=c1*(1.-.25*jn);S.rough=.35;}
+else if(P>33.5&&P<34.5){vec2 g2=floor(uv/1.2);float k=h12(g2+seed);vec3 c1=k<.34?vec3(.86,.84,.8):k<.56?vec3(.74,.63,.42):k<.78?vec3(.84,.8,.79):vec3(.43,.31,.29);   // under porticoes and in porches: low-saturation coloured marble squares (white, giallo antico, pavonazzetto, a dark grey-red)
+ c1=mix(c1,vec3(.5,.36,.46),step(.56,k)*step(k,.78)*(1.-smoothstep(.0,.05,abs(sin(uv.x*2.1+uv.y*1.3+fbm2(uv*.8)*5.)))));float jn=max(joint(uv.x,1.2,.01,aa),joint(uv.y,1.2,.01,aa));S.alb=c1*(1.-.25*jn);S.rough=.35;}
 else if(P>34.5&&P<35.5){float k=fract(seed*7.7);S.alb=k<.5?vec3(.56,.15,.1):k<.8?vec3(.72,.52,.22):vec3(.13,.12,.11);S.rough=.5;}
-else if(P>33.5&&P<34.5){vec2 p=vWP.xz/1.25;vec2 ip=floor(p),fp=fract(p);float h=h12(ip+seed*13.);vec3 c=h<.24?vec3(.76,.6,.3):h<.42?vec3(.56,.38,.5):h<.56?vec3(.46,.13,.1):h<.72?vec3(.22,.38,.3):vec3(.86,.84,.8);float inr=step(.1,fp.x)*step(fp.x,.9)*step(.1,fp.y)*step(fp.y,.9);float dia=step(abs(fp.x-.5)+abs(fp.y-.5),.36);c=mix(vec3(.86,.84,.8),c,inr);c=mix(c,vec3(.84,.8,.72),dia*inr*step(.5,h));S.alb=c*(.9+.15*vn2(p*.4));S.rough=.38;}
 else if(P>37.5&&P<38.5){S.alb=stoneC(uv,seed,vec3(.3,.265,.22),1.3,.5,aa)*(.9+.2*vn2(uv*2.));S.rough=.9;}
 else if(P>36.5&&P<37.5){S.alb=stoneC(uv,seed,vec3(.38,.33,.26),1.6,.75,aa);S.rough=.8;}
 else if(P>35.5&&P<36.5){S.alb=vec3(.427,.389,.31)*(.95+.1*fbm2(vWP.xz*.5));S.rough=.85;}
@@ -374,6 +388,18 @@ else if(P>50.5&&P<51.5){float w=max(vA.z,.5),h=max(vA.w,1.),hw=w*.5;vec2 q=vec2(
  if(!shut){S.nw=-N;S.useN=1.;}   // the room is in shade: no direct sun on what is seen through the door
  S.alb=c;S.rough=.95;S.emit=shut?vec3(0.):c*vec3(1.7,.95,.42)*step(h12(vec2(seed*7.7,1.3)),uLit*.6)*uNight*(.82+.18*sin(uTime*7.+seed*30.));}   // a lamp inside lights the room's own colours
 else if(P>45.5&&P<46.5){vec2 p=vWP.xz;S.alb=vec3(.36,.26,.19)*(.82+.3*fbm2(p*.4))*(1.-.12*smoothstep(.6,.8,fbm2(p*.08)));S.rough=.9;}   // roof terrace of opus signinum: matte brick-red crushed-tile concrete
+else if(P>46.5&&P<47.5){S.alb=stoneC(uv,seed,vec3(.47,.43,.33),1.2,.6,aa)*(.9+.16*vn2(uv*5.));S.rough=.93;}   // tuff ashlar (opus quadratum): 2 x 4 ft blocks, grey-yellow and porous (old temple podiums)
+else if(P>47.5&&P<48.5){S.alb=stoneC(uv,seed,vec3(.66,.61,.5),1.5,.6,aa)*(1.-.13*smoothstep(.55,.8,vn2(vec2(uv.x*1.6,uv.y*13.))));S.rough=.8;}   // travertine ashlar: warm cream with fine horizontal pits
+else if(P>48.5&&P<49.5){float row=floor(uv.y/.6);vec2 id=vec2(floor(uv.x/1.2+fract(row*.5)),row);float j=max(joint(uv.y,.6,.008,aa),joint(uv.x+fract(row*.5)*1.2,1.2,.008,aa));   // open courts: white marble / travertine slabs 1.2 x 0.6 m, broken joints
+ S.alb=vec3(.7,.675,.61)*(.9+.12*h12(id+seed))*(.94+.08*fbm2(uv*.3))*(1.-.3*j);S.rough=.55-uWet*.3;}
+else if(P>59.5&&P<62.5){float k=floor(vB.z+.5);   // hill palette (hillPal in terrace-edge.js; the author, 2026-11-04: one wall stone and one rock per hill), index in sty: 0 Capitoline, 1 Palatine, 2 the rest
+ vec3 wc=k<.5?vec3(.307,.293,.266):k<1.5?vec3(.366,.328,.274):vec3(.4,.37,.31),rc=k<.5?vec3(.47,.43,.32):k<1.5?vec3(.355,.305,.228):vec3(.42,.38,.3);
+ if(P<60.5){float big=step(.5,vB.w);vec3 c=stoneC(uv,seed,wc,mix(1.2,1.8,big),mix(.6,.9,big),aa);   // 60 terrace wall: opus quadratum, 2 x 4 ft blocks; fl 1 = the plinth course of big blocks
+  c*=1.-.16*step(.8,vn2(uv*9.+seed*7.))*step(k,.5);S.alb=c*(.93+.1*fbm2(vWP.xz*.05+vWP.y*.04));S.rough=.9;}   // peperino ('peppered'): dark specks
+ else if(P<61.5){vec3 p=vWP;float bed=fract((p.y+p.x*.07+p.z*.05+fbm2(p.xz*.07)*1.1)/1.55),jt=abs(fract((p.x*.6+p.z*.8)/3.8+fbm2(p.xz*.05+3.)*.6)-.5);   // 61 rock: bedding a few degrees off level, joints every 3-5 m
+  vec3 c=rc*(.8+.32*fbm2(p.xz*.3+p.y*.25));c*=1.-.3*(1.-smoothstep(0.,.08,bed))-.1*smoothstep(.82,1.,bed);c*=1.-.32*(1.-smoothstep(0.,.035,jt));
+  c=mix(c,vec3(.13,.16,.065)*(.8+.4*fbm2(p.xz*.6)),smoothstep(.6,.9,N.y)*.7);S.alb=c;S.rough=.96;}   // moss on the tops
+ else{vec2 p=vWP.xz;vec3 m=vec3(.115,.145,.06)*(.75+.5*fbm2(p*.8));S.alb=mix(m,rc*.55,smoothstep(.55,.78,fbm2(p*.35+4.))*.45);S.rough=.97;}}   // 62 moss and grass at the wall foot
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*uBurn*vC.z;
 `;

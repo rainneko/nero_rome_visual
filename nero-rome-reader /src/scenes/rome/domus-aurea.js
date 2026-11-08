@@ -12,21 +12,29 @@ const AUREA={vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[3
 // the ground the fire and the Golden House take: the valley, the Velia shoulder, the Carinae's south edge down to the slope, the dining hall's corner of the Palatine
 function AUREA_SITE(x,z){return Math.hypot(x-572,z-200)<150||(x>380&&x<520&&z>20&&z<200)||(x>450&&x<1000&&z>-20&&z<120)||Math.hypot(x-AUREA.dine[0],z-AUREA.dine[1])<38;}
 // the vestibule court in the frame of the Via Sacra's last straight (via; +x up the road to the ESE, +z to the SW), centred on the colossus: court x0..x1, -hz..hz
-const VEST={x:430,z:140,rot:Math.atan2(-80,89),x0:-50,x1:38,hz:21,via:[[291,12],[380,92]]};
+const VEST={x:430,z:140,rot:Math.atan2(-80,89),x0:-50,x1:38,hz:21,via:[[291,12],[380,92]],door:-40};   // door: u of the emperor's door in the south wall
 function vestUV(x,z){const c=Math.cos(VEST.rot),s=Math.sin(VEST.rot),dx=x-VEST.x,dz=z-VEST.z;return[dx*c-dz*s,dx*s+dz*c];}
 // the ground the vestibule (with its stair) and the porticoes of the Via Sacra take after the fire, 16 m either side of the straight: the houses there are shown in states 0-6 only
-function AUREA_VEST_SITE(x,z){const[u,v]=vestUV(x,z);if(u>VEST.x0-16&&u<VEST.x1+4&&Math.abs(v)<VEST.hz+4)return true;
+function AUREA_VEST_COURT(x,z){const[u,v]=vestUV(x,z);return u>VEST.x0-16&&u<VEST.x1+4&&Math.abs(v)<VEST.hz+4;}   // the court and its stair only
+function AUREA_VEST_SITE(x,z){if(AUREA_VEST_COURT(x,z))return true;
   const[a,b]=VEST.via,dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz),t=((x-a[0])*dx+(z-a[1])*dz)/L;return t>8&&t<L+12&&Math.abs((z-a[1])*dx-(x-a[0])*dz)/L<16;}
+// the park's east end, between the valley and its east wall (x 772): the houses there go with the fire too (the colonnade's east leg and the lake's east shore stand on it)
+function AUREA_EAST(x,z){return x>660&&x<776&&z>118&&z<326;}
+// everything shown in states 0-6 only (preLayers 'aureaSite'): the Golden House ground, the vestibule and the Via Sacra's porticoes, the park's east end
+function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z);}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
-// dist/aurea-assets.js sets window.AUREA_GLB={coenatio: base64 GLB} and calls aureaAssetsLoaded(); the hall goes into its layer G at frame F, S (the stand-in) hides
-function aureaLoad(G,F,S){AUREA.glb=1;
-  const go=()=>{const D=window.AUREA_GLB;if(!D||!D.coenatio)return;
-    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D.coenatio),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name='coenatioGLB';
+// dist/aurea-assets.js sets window.AUREA_GLB={coenatio, colossus, colossus_works: base64 GLBs} and calls aureaAssetsLoaded(); the file is fetched
+// once, by the first layer that shows. Model n goes into its layer G at frame F, S (the stand-in) hides, then cb(model).
+const AUREA_WAIT=[];
+function aureaLoad(n,G,F,S,cb){
+  const go=()=>{const D=window.AUREA_GLB;if(!D||!D[n])return;
+    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name=n+'GLB';
       o.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});o.position.set(F.ox,F.oy,F.oz);o.rotation.y=F.rot;G.add(o);S.visible=false;
-      AUREA.spin=o.getObjectByName('ROTATING_CEILING');},e=>console.warn('coenatio glb',e));};
-  if(window.AUREA_GLB){go();return;}window.aureaAssetsLoaded=go;const s=document.createElement('script');s.src='aurea-assets.js';
-  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural dining hall stays');document.head.appendChild(s);}
+      if(cb)cb(o);},e=>console.warn(n+' glb',e));};
+  if(window.AUREA_GLB){go();return;}AUREA_WAIT.push(go);if(AUREA_WAIT.length>1)return;
+  window.aureaAssetsLoaded=()=>AUREA_WAIT.forEach(f=>f());const s=document.createElement('script');s.src='aurea-assets.js';
+  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural stand-ins stay');document.head.appendChild(s);}
 function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   const lakeRing=(m,n=56,u0=0,u1=1)=>{const c=Math.cos(LK.rot),s=Math.sin(LK.rot),P=[];for(let i=0;i<=n;i++){const a=(u0+(u1-u0)*i/n)*TAU,u=Math.cos(a)*(LK.rx+m),v=Math.sin(a)*(LK.rz+m);P.push([LK.x+c*u+s*v,LK.z-s*u+c*v]);}return P;};
   const yw=gy(LK.x,LK.z)+.25;
@@ -95,7 +103,10 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
       g.set(2,.5);box(g,S,0,H+.35,D,L/2,.95,.5,31);g.set(12,.4);box(g,S,0,H+.7,D+.52,L/2,.22,.04,31);if(o.open){g.set(2,.5);box(g,S,0,H+.35,.3,L/2,2.3,.5,31);}
       g.set(4,.5);g.poly([S.p(-L/2,H+1.3,D+.7),S.p(L/2,H+1.3,D+.7),S.p(L/2,H+2.65,-.8),S.p(-L/2,H+2.65,-.8)],S.d(0,1,.18));};
     const wl=2*(hz-D-1);   // the west and east wings fit between the long ones
-    wall(Sd,-hx,hx,WH);wing(Sd,2*hx);   // the south wing (towards the Palatine) is the first one finished
+    {const rd=cx-VEST.door,dw=1.7,dh=4.4;wall(Sd,-hx,rd-dw,WH);wall(Sd,rd+dw,hx,WH);g.set(24,.86);box(g,Sd,rd,dh,-.35,dw,WH-dh,.4,31);g.set(2,.5);box(g,Sd,rd,WH-.5,-.55,dw,.5,.25,31);   // the emperor's door, onto his walk from the dining hall
+      g.set(6,.5);for(const s of[-1,1])box(g,Sd,rd+s*(dw+.15),0,-.8,.2,dh,.12,31);box(g,Sd,rd,dh,-.8,dw+.35,.35,.12,31);   // its marble frame
+      const q=Sd.p(rd,0,-2),r=Math.max(.3,F.oy-gy(q[0],q[2])),n=Math.max(1,Math.ceil(r/.3)),rh=r/n;g.set(2,.5);for(let k=1;k<=n;k++)box(g,Sd,rd,-r-1,-.75-(k-.5)*.42,dw+.3,r+1-k*rh,.21,31);}   // steps down to the ground
+    wing(Sd,2*hx);   // the south wing (towards the Palatine) is the first one finished
     wall(N,-hx,hx,done?WH:4);if(done)wing(N,2*hx);
     else{g.set(3,.35);for(let x=-hx;x<=hx;x+=3)for(const z of[-1.3,-2.5])box(g,N,x,-.5,z,.08,9,.08,31);for(let y=2.5;y<9;y+=2.5)for(const z of[-1.3,-2.5])box(g,N,0,y,z,hx,.08,.08,31);   // scaffolding outside the half-high north wall
       g.set(6,.5);for(let k=0;k<7;k++){const x=-30+k*7.5;for(let j=0;j<1+k%3;j++)box(g,N,x+(j%2)*1.6,j*.9,10.5+j*.4,.45,.85,.45,31);}}   // column drums waiting on the floor
@@ -142,30 +153,62 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     else{g.set(22,.9);for(const[ox,oz,h]of[[-.35,0,2.6],[.3,.2,3.2],[0,-.3,2.2],[.5,-.2,1.8]])box(g,F,ox*u,y+7.6*u,oz*u,.06*u,h,.06*u,31);
       g.set(3,.8);lathe(g,F,.3*u,y+7.6*u+3.2,.2*u,[[.9,0],[1,.35],[.6,.45],[0,.35]],8);   // iron bars out of the neck, a bird's nest on the tallest
       g.set(3,.6);for(const s of[-1,1])for(const t of[-1,1])box(g,F.sub(s*8,0,t*8,s*t*.6),0,-1,0,.18,10,.18,31);}};   // casting timbers round the base (the court round it is still bare earth)
-  L('colossus7',0,(g)=>colossus(g,false));L('colossus8',0,(g)=>colossus(g,true));
+  /* the model is assets/models/aurea/colossus.glb (version C, "long legs", of renders/domus-aurea/proportion-20261028, its head put on the chest's
+     midline by tools/models/rome/colossus_centre_head.mjs): a 13 m stone base 6.7 m high, the figure to 36.6 m, the crown's rays to 39.4 m, facing down
+     the Via Sacra. 59-68 the same body without its head, neck, curls and crown, with colossus_works.glb (tools/models/rome/colossus_works.mjs, from
+     Kimi's construction model): iron bars out of the neck, a nest on the tallest, timber props and casting debris round the base. Both come in
+     dist/aurea-assets.js with the dining hall; the procedural statue stands in until then, or for good without the file. */
+  const COLOSSUS_HEAD=['Sol_Head_Continuous_Neck','Original_A3_Curls_And_Ears','Seven_Ray_Crown'];
+  const colossusGLB=(G,head)=>{const F=VF.sub(0,0,0,-Math.PI/2),S=new THREE.Group(),g2=new GB(1<<13);S.name='colossusStand';G.add(S);colossus(g2,head);const m=g2.mesh(MAT.city);if(m)S.add(m);
+    W.anim.push(()=>{if(!G.visible||S.userData.asked)return;S.userData.asked=1;
+      if(head){aureaLoad('colossus',G,F,S);return;}
+      aureaLoad('colossus',G,F,S,o=>{for(const n of COLOSSUS_HEAD){const h=o.getObjectByName(n);if(h)h.removeFromParent();}});aureaLoad('colossus_works',G,F,S);});};
+  L('colossus7',0,(g,G)=>colossusGLB(G,false));L('colossus8',0,(g,G)=>colossusGLB(G,true));
+
+  /* ---- the walks: from 68 a gravel ring round the lake, a walk along the colonnade's front (from the vestibule's foot to the east end), links from the
+     ring to it, the paved way in from the gate; the emperor's walk from the dining hall's back to a door in the vestibule's south wall, round the two
+     houses that outlived the fire (dirt 59-68, paved later); 59-68 the carts' tracks from the spoil heaps in the mud half round the colonnade's south end and out of a gate in the east wall onto the lanes ---- */
+  const walk=(g,pts,w,part,seed=.5,dy=.15)=>{const P=densify(pts,3),n=P.length,k=Math.max(1,Math.ceil(w/4));g.set(part,seed);   // a strip on the ground, split across every 4 m
+    const N=P.map((p,i)=>{const a=P[Math.max(0,i-1)],b=P[Math.min(n-1,i+1)],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1;return[-dz/l,dx/l];}),V=(i,s)=>{const x=P[i][0]+N[i][0]*s,z=P[i][1]+N[i][1]*s;return[x,gy(x,z)+dy,z];};
+    for(let i=1;i<n;i++)for(let j=0;j<k;j++){const s0=-w/2+w*j/k,s1=-w/2+w*(j+1)/k;g.poly([V(i-1,s0),V(i-1,s1),V(i,s1),V(i,s0)],[0,1,0]);}};
+  const offsetLine=(P,d)=>P.map((p,i)=>{const nr=(a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);return[-dz/l,dx/l];},n0=i>0?nr(P[i-1],p):nr(p,P[i+1]),n1=i<P.length-1?nr(p,P[i+1]):n0,mx=n0[0]+n1[0],mz=n0[1]+n1[1],l=Math.hypot(mx,mz),k=d/Math.max(.5,(mx*n0[0]+mz*n0[1])/l);return[p[0]+mx/l*k,p[1]+mz/l*k];});   // d > 0: the colonnade's open (front) side
+  const nearest=(P,q)=>densify(P,2).reduce((b,p)=>Math.hypot(p[0]-q[0],p[1]-q[1])<Math.hypot(b[0]-q[0],b[1]-q[1])?p:b);
+  const RDF=(()=>{const cx=(VEST.x0+VEST.x1)/2;return{S:VF.sub(cx,0,VEST.hz,Math.PI),rd:cx-VEST.door};})();   // the south wall's frame (+z into the court) and the door's x in it
+  const WALK=(()=>{const ring=lakeRing(6,72),front=offsetLine(AUREA.route,6.6),gp=ring.filter(p=>p[1]>LK.z).reduce((b,p)=>Math.abs(p[0]-620)<Math.abs(b[0]-620)?p:b),
+      E=lakeRing(6,1,0,0)[0],N=lakeRing(6,1,.75,.75)[0],Wp=lakeRing(6,1,.5,.5)[0],cF=frame(AUREA.dine[0],0,AUREA.dine[1],-30*DEG),bk=r=>{const a=290*DEG,q=cF.p(Math.cos(a)*r,0,Math.sin(a)*r);return[q[0],q[2]];},df=RDF.S.p(RDF.rd,0,-3.4);
+    return{ring,front,links:[[E,nearest(front,E)],[N,nearest(front,N)],[Wp,front[0]]],gate:[[620,318],[620,gp[1]-1]],royal:[bk(18.5),bk(27.5),[381,146.5],[df[0],df[2]]],
+      haul:[[[688,212],[712,238],[713,262],[715,292],[740,309],[772,310],[795,309]],[[668,284],[713,276]]]};})();   // from the heaps in the pit, past the colonnade's south end, out of the east gate onto the lanes
+  const nearWalk=(x,z,m,state)=>{const L=state===7?[WALK.royal,...WALK.haul]:[WALK.ring,WALK.front,...WALK.links,WALK.gate,WALK.royal];for(const P of L)for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<m)return true;return false;};
 
   /* ---- the wood: planted thick from the Velia across the valley, no lamp in it; the same trees grown tall by the time the park is open ---- */
   const grovePts=[];{const R=RNG(6401);for(let x=380;x<760;x+=7.5)for(let z=140;z<340;z+=7.5){const px=x+(R()-.5)*5,pz=z+(R()-.5)*5;
       if(!(Math.hypot(px-572,pz-200)<146||(px>385&&px<515&&pz>145&&pz<195)))continue;if(aureaInLake(px,pz,9)||aureaNearRoute(px,pz,11)||Math.hypot(px-AUREA.vest[0],pz-AUREA.vest[1])<20)continue;
       if(Math.hypot(px-455,pz-300)<14)continue;grovePts.push([px,pz,R(),R()]);}}   // (the houses' footprints here are gone by 59: no Foot test)
   const kinds=r=>r<.35?'broad':r<.55?'plane':r<.72?'pine':r<.85?'cyp':'broadD';
-  L('grove7',0,()=>{for(const[x,z,r,s]of grovePts){if(inVest(x,z,6))continue;W.trees.push([x,gy(x,z),z,kinds(r),.5+s*.2]);}});   // (none on the vestibule's platform or against its walls)
-  L('grove8',0,()=>{for(const[x,z,r,s]of grovePts){if(s<.3&&aureaInLake(x,z,30)||inVest(x,z,6))continue;W.trees.push([x,gy(x,z),z,kinds(r),1+s*.35]);}});   // clearings of lawn open on the shore
+  L('grove7',0,()=>{for(const[x,z,r,s]of grovePts){if(inVest(x,z,6)||nearWalk(x,z,4.5,7)||z>318)continue;W.trees.push([x,gy(x,z),z,kinds(r),.5+s*.2]);}});   // (none on the vestibule's platform or against its walls, on the paths or outside the south wall)
+  L('grove8',0,()=>{for(const[x,z,r,s]of grovePts){if(s<.3&&aureaInLake(x,z,30)||inVest(x,z,6)||nearWalk(x,z,4.5,8)||z>318||Math.abs(x-620)<33&&z>310)continue;W.trees.push([x,gy(x,z),z,kinds(r),1+s*.35]);}});   // clearings of lawn open on the shore
 
   /* ---- 59-68: the building site round the wood: a wall with a breach (children outside), refugee huts by the lake ---- */
   L('aureaBuild7',0,(g)=>{const wall=(a,b,gap)=>{const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/6);for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,m=(t0+t1)/2;if(gap&&m>gap[0]&&m<gap[1])continue;const p=lp(a,b,t0),q=lp(a,b,t1),F=frame((p[0]+q[0])/2,Math.min(gy(...p),gy(...q))-.4,(p[1]+q[1])/2,Math.atan2(-(q[1]-p[1]),q[0]-p[0]));g.set(24,.6);box(g,F,0,0,0,Math.hypot(q[0]-p[0],q[1]-p[1])/2+.2,3.6,.35,31);}};
-    wall([470,322],[770,322],[.46,.54]);wall([772,140],[772,322]);
+    wall([470,322],[770,322],[.46,.54]);wall([772,140],[772,322],[.89,.97]);g.set(3,.5);for(const z of[304.4,316.1])box(g,frame(772,gy(772,z),z,0),0,-.3,0,.18,4.6,.18,31);   // the carts' gate in the east wall, south of the colonnade
     for(let i=0;i<5;i++)W.people.push([608+i*3,gy(608+i*3,330),330]);   // children squatting outside the breach
     const R=RNG(31);for(let i=0;i<9;i++){const x=500+R()*30,z=250+R()*45;if(aureaInLake(x,z,3))continue;hut(g,x,z,R()*3);}});
 
   /* ---- from 68: the park, open: half for everyone, a quarter the inner court, a quarter the emperor's (the Palatine slope, the Claudian water front) ---- */
   L('aureaPark8',0,(g)=>{const wall=(a,b,gap,h=3.6)=>{const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/6);for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,m=(t0+t1)/2;if(gap&&m>gap[0]&&m<gap[1])continue;const p=lp(a,b,t0),q=lp(a,b,t1),F=frame((p[0]+q[0])/2,Math.min(gy(...p),gy(...q))-.4,(p[1]+q[1])/2,Math.atan2(-(q[1]-p[1]),q[0]-p[0]));g.set(24,.6);box(g,F,0,0,0,Math.hypot(q[0]-p[0],q[1]-p[1])/2+.2,h,.35,31);}};
     wall([470,322],[770,322],[.4,.6]);wall([772,140],[772,322]);   // the breach widened into the gate
-    {const F=frame(620,gy(620,322),322,0);g.set(2,.5);for(const s of[-1,1])box(g,F,s*30,-.4,0,1.1,5.4,1.1,31);g.set(22,.9);box(g,F,0,.02,2.4,29,.04,.12,31);   // gate piers; the line cut in the paving
+    {const F=frame(620,gy(620,322),322,0);g.set(2,.5);for(const s of[-1,1])box(g,F,s*30,-.4,0,1.1,5.4,1.1,31);walk(g,[[620,330],[620,316]],58,11,.5,.1);walk(g,[[591,324.4],[649,324.4]],.2,41,.5,.13);   // gate piers; the paving and the line cut in it
       g.set(6,.6);box(g,F,34,-.2,4,.55,2.4,.25,31);}   // the stone with the garden's rules beside the gate
     wall([395,142],[395,250],[.34,.46],1.3);for(const z of[180,190])W.people.push([398,gy(398,z),z]);   // the royal quarter: a low wall and guards, not a fortress
     {const F=frame(680,gy(680,140),140,0);g.set(3,.5);box(g,F,0,0,0,2.2,1,1,31);for(let i=0;i<14;i++)W.people.push([680-3-i*1.6,gy(677-i*1.6,146),146]);}   // the hearing table under the colonnade and its queue
     const R=RNG(68);for(let i=0;i<160;i++){const x=470+R()*270,z=150+R()*170;if(aureaInLake(x,z,-4)){if(aureaInLake(x,z,-14))continue;}else if(aureaInLake(x,z,6)||aureaNearRoute(x,z,9))continue;W.people.push([x,gy(x,z),z]);}});   // on the grass, under the trees, children in the shallows
+
+  L('aureaWalks8',0,(g)=>{walk(g,WALK.ring,3.2,27,.4);walk(g,WALK.front,4,27,.45);for(const P of WALK.links)walk(g,P,2.6,27,.42);walk(g,WALK.gate,7,11,.5,.12);walk(g,WALK.royal,3,11,.55);
+    const B=lakeRing(9.6,44);B.forEach(([x,z],i)=>{if(i%2||WALK.links.concat([WALK.gate]).some(P=>segD(x,z,P[0][0],P[0][1],P[1][0],P[1][1])<6))return;   // not across a path
+      const F=frame(x,gy(x,z),z,Math.atan2(LK.x-x,LK.z-z));g.set(6,.5);for(const s of[-1,1])box(g,F,s*1.05,-.2,0,.13,.62,.24,31);box(g,F,0,.42,0,1.3,.09,.3,31);   // marble benches facing the water
+      if(i%6===0)W.people.push([...F.p(1.8,.05,.2)]);});   // an old man by every third
+    for(const s of[-1,1]){const q=RDF.S.p(RDF.rd+s*2.6,0,-4);W.people.push([q[0],gy(q[0],q[2]),q[2]]);}});   // two guards at the emperor's door
+  L('aureaTracks7',0,(g)=>{walk(g,WALK.royal,2.6,21,.5,.12);for(const P of WALK.haul){walk(g,P,4.4,21,.35,.2);for(const s of[-1,1])walk(g,offsetLine(P,s*.8),.28,42,.5,.23);}});   // dirt; wheel ruts on the carts' tracks
 
   /* ---- the round dining hall on the Palatine's north-east corner (standing from 64; 【史】a round structure found there in 2009) ----
      The hall is K5 (finished) of the six-stage model closed on 2026-10-28 (renders/domus-aurea/coenatio-phase2-fixed-20261028): assets/models/aurea/coenatio.glb,
@@ -183,7 +226,8 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     const S=new THREE.Group();S.name='coenatioStand';G.add(S);const g2=new GB(1<<13);flushColumns(W);W.colGroup=S;   // the stand-in: drum, dome open at the top, 16 columns
     g2.set(2,.45);lathe(g2,F,0,0,0,[[17.5,T],[17.5,0],[0,0]],24);g2.set(24,.86);lathe(g2,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g2.set(2,.55);lathe(g2,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);
     for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
-    W.anim.push(t=>{if(!G.visible)return;if(!AUREA.glb)aureaLoad(G,F,S);if(AUREA.spin)AUREA.spin.rotation.y=t*.03;});});   // the starry timber ceiling turns under the fixed dome (about 3½ minutes a turn)
+    W.anim.push((t,dt)=>{if(!G.visible)return;if(!S.userData.asked){S.userData.asked=1;aureaLoad('coenatio',G,F,S,o=>AUREA.spin=o.getObjectByName('ROTATING_CEILING'));}if(AUREA.spin&&W.ev&&W.ev.dineSpin)AUREA.spin.rotation.y+=dt*.03;});});   // the starry timber ceiling under the fixed dome (about 3½ minutes a turn) stands still: vol 17 "转了一个月", then one night
+  // in 68 ("快到半夜，轴动了" ... "以后再也没有转过"), which the reader's excerpt turns on (W.ev.dineSpin, app.js TRIG)
 
   /* ---- the Oppian halls (the inner court, the octagon): half-built in 59-68, finished later; the old placeholder wing ---- */
   const halls=(g,scaff)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});if(scaff)for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
@@ -193,6 +237,11 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   L('aureaHalls7',16,(g)=>halls(g,true));L('aureaHalls8',0,(g)=>halls(g,false));
 
   W.views.aurea={n:'金宫谷地',pos:[300,gy(300,380)+150,380],tgt:[620,gy(620,170),170]};   // the copy team's fixed camera: above the Palatine's north-east corner, looking north-east
+  // where the reader's Golden House excerpts fly (app.js AUREA_EX, TRIG): the colossus from the Via Sacra, the colonnade's bend at Lentulus's site
+  // from over the lake, the lake from the east end, the park gate from inside, the round hall from the valley
+  W.views.aureaVest={n:'金宫前庭·铜巨人',pos:[355,62,72],tgt:[430,55,140]};W.views.aureaBend={n:'金柱廊拐弯处',pos:[515,62,235],tgt:[592,14,108]};
+  W.views.aureaLake={n:'金宫的湖',pos:[748,55,318],tgt:[600,9,222]};W.views.aureaGate={n:'园门·阿波罗的林子',pos:[660,34,280],tgt:[618,9,330]};
+  W.views.aureaDine={n:'旋转圆厅',pos:[392,62,222],tgt:[330,36,160]};
   /* ---- labels ---- */
   const poi=(n,l,x,z,s0,s1,info,d=1600,h=30)=>W.pois.push({n,l,x,z,y:gy(x,z)+h,s0,s1,d,info});
   poi('伦图卢斯家','【设】',AUREA.lent[0],AUREA.lent[1],0,6,'【书中】第9份：数地契那夜他说"差这几块"，伦图卢斯不卖房，神龛和住户也拆不得。门口一棵老悬铃木。64年大火后，这里成了金柱廊拐弯的地方。',900,18);

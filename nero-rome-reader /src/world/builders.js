@@ -102,7 +102,12 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     // dirt ruts: one pair of wheel tracks 1.45 m apart, measured from the street centre of this coarse cell (uStA alpha, streets.js), wandering slowly.
     // (measured from the world origin, any bend of the direction field turned the ruts into rings)
     vec2 cC=uStX.zw/uStN*4.,cI=floor((vWP.xz-uStX.xy)/cC);vec4 ta=texture2D(uStA,(cI+.5)/ceil(uStN/4.));vec2 av=ta.rg*2.-1.;float th=.5*atan(av.y,av.x);vec2 tv=vec2(cos(th),sin(th)),nv=vec2(-tv.y,tv.x);
-    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),across=dot(dC,nv)-(ta.a*2.-1.)*8.+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
+    // the centre line blended over the four nearest coarse cells (each cell's own line, turned to agree with this one; not across a junction, where
+    // the directions part), so the ruts and the lane path run on without a jog at the 10 m cell edges
+    vec2 cN=ceil(uStN/4.),gP=(vWP.xz-uStX.xy)/cC-.5,g0=floor(gP),gf=gP-g0;float sA=0.,sW=0.;
+    for(int k=0;k<4;k++){vec2 o=vec2(mod(float(k),2.),floor(float(k)/2.)),ci=g0+o;vec4 tb=texture2D(uStA,(ci+.5)/cN);vec2 bv=tb.rg*2.-1.;float tth=.5*atan(bv.y,bv.x);vec2 ti=vec2(cos(tth),sin(tth));float al=dot(ti,tv);
+     float w=mix(1.-gf.x,gf.x,o.x)*mix(1.-gf.y,gf.y,o.y)*step(.94,abs(al))*step(.12,tb.b);sA+=w*sign(al)*(dot(vWP.xz-uStX.xy-(ci+.5)*cC,vec2(-ti.y,ti.x))-(tb.a*2.-1.)*8.);sW+=w;}
+    vec2 dC=vWP.xz-uStX.xy-(cI+.5)*cC;float along=dot(vWP.xz,tv),acr0=dot(dC,nv)-(ta.a*2.-1.)*8.,across=mix(acr0,sA/max(sW,1e-4),smoothstep(.05,.3,sW))+(vn2(vec2(along*.035,1.3))-.5)*.9;float aR=fwidth(across);
     float trk=(1.-smoothstep(.05,.16+aR,abs(abs(across)-.72)))*mix(1.,.4,smoothstep(.05,.3,aR))*smoothstep(.3,.65,vn2(vec2(along*.07,3.7)))*clamp(texture2D(uStA,q0).b*4.,0.,1.);   // strength filtered, so it fades out at squares instead of stopping at a cell edge
     vec2 rp=vec2(vWP.x*.866+vWP.z*.5,-vWP.x*.5+vWP.z*.866);
     vec3 cM=vec3(.55,.49,.395),cS=vec3(.17,.15,.125),cD=vec3(.36,.26,.15);
@@ -115,12 +120,22 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
      cS*=1.+.3*smoothstep(1.4,3.4,dw);cS*=mix(.6,1.,smoothstep(0.,1.4,dw));
      }   // (the crown / drain line / ruts painted from a 2.5 m raster were invisible at street height; they are real strips now: roadKerbs/roadWear in streets.js)
     if(wD>.01){cD=mix(vec3(.38,.27,.155),vec3(.29,.2,.115),fbm2(vWP.xz*.9));cD*=.85+.3*vn2(vWP.xz*5.);cD=mix(cD,vec3(.55,.47,.33),step(.93,vn2(vWP.xz*9.))*.5);
-     cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(vWP.xz*.12+4.)));cD*=1.-.28*trk;cD*=mix(.68,1.,smoothstep(0.,1.2,dw));}
+     cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(vWP.xz*.12+4.)));cD*=1.-.28*trk;cD*=mix(.68,1.,smoothstep(0.,1.2,dw));
+     // a narrow path of flagstones down the middle of a city lane (the author, 2026-11-04): irregular grey-yellow tuff slabs about half a metre across,
+     // 1.1-1.3 m of them, a few missing, dust in the joints. A slab is in when its centre is, so the edge follows the stones. Where the lane is marked
+     // for it (T1 alpha, buildStreets) and has a direction (the rut strength: not on squares); far off, an even strip.
+     float pM=t.a*clamp(texture2D(uStA,q0).b*4.,0.,1.);
+     if(pM>.01&&abs(across)<1.5){vec2 p=vWP.xz*1.9;vec2 ip=floor(p),fp=fract(p);float m1=8.,m2=8.;vec2 id=ip,cc=vec2(0.);
+      for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 g=vec2(i,j);vec2 r=g+vec2(h12(ip+g+5.7),h12(ip+g+23.1))-fp;float d=dot(r,r);if(d<m1){m2=m1;m1=d;id=ip+g;cc=r;}else if(d<m2)m2=d;}
+      float hwP=.6+.08*(vn2(vec2(along*.05,9.1))-.5),inS=step(abs(across+dot(cc/1.9,nv)),hwP)*step(.07,h12(id+1.3)),e=sqrt(m2)-sqrt(m1),far=smoothstep(.15,.6,fwidth(p.x));
+      vec3 cP=vec3(.4,.365,.295)*(.8+.32*h12(id+7.7))*(.92+.12*vn2(vWP.xz*4.));cP*=mix(.6,1.,smoothstep(0.,.09,e));cP=mix(cP,vec3(.36,.33,.265),far);
+      cP=mix(cP,cD,.22+.3*smoothstep(.55,.85,fbm2(vWP.xz*.35)));   // dust and mud from the lane
+      cD=mix(cD,cP,pM*mix(inS,(1.-smoothstep(hwP-.1-aR,hwP+.1+aR,abs(across)))*.8,far));}}
     vec3 stC=cM*wM+cS*wS+cD*wD;stR=.52*wM+.72*wS+.95*wD;
     float ed=smoothstep(.0,.3,cov)*(1.-smoothstep(.55,.95,cov));stC=mix(stC,cD*.92,ed*.55*(1.-wD));
     c=mix(c,stC,cov);}}}
  if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
-  float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),1.-smoothstep(32.,40.,length(p-vec2(330.,160.)))));
+  float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),max(1.-smoothstep(32.,40.,length(p-vec2(330.,160.))),1.-smoothstep(-6.,2.,max(max(660.-p.x,p.x-776.),max(118.-p.y,p.y-326.))))));   // (+ AUREA_EAST)
   mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
@@ -235,69 +250,101 @@ MAT.lamp=new THREE.MeshBasicMaterial({color:new THREE.Color(1,.6,.28)});
 MAT.dark=new THREE.MeshBasicMaterial({color:0x000000});
 
 /* ---------- columns (instanced) ---------- */
-function colGeo(type){ // height 1, base at 0
-  const g=new GB(4096),F=frame(0,0,0);const R=type==='cor'?.05:type==='ion'?.055:type==='dor'?.068:.042;
+function colGeo(type,lo){ // height 1, base at 0. lo: the far copy (LOD): plain 8-sided shaft, 6-sided mouldings, no leaves or volutes
+  const g=new GB(4096),F=frame(0,0,0),ls=lo?6:16;const R=type==='cor'?.05:type==='ion'?.055:type==='dor'?.068:.042;
   g.set(6,.5);const capH=type==='cor'?.11:type==='ion'?.065:.05,baseH=type==='dor'?0:.05,sh=1-capH-baseH;
-  if(baseH){box(g,F,0,0,0,R*1.45,baseH*.35,R*1.45,31);lathe(g,F,0,baseH*.35,0,[[R*1.35,0],[R*1.35,baseH*.25],[R*1.15,baseH*.4],[R*1.25,baseH*.5],[R*1.05,baseH*.65]],16);}
-  const fl=type==='simple'?0:20,seg=type==='simple'?10:40,rings=type==='simple'?2:6;
+  if(baseH){box(g,F,0,0,0,R*1.45,baseH*.35,R*1.45,31);lathe(g,F,0,baseH*.35,0,[[R*1.35,0],[R*1.35,baseH*.25],[R*1.15,baseH*.4],[R*1.25,baseH*.5],[R*1.05,baseH*.65]],ls);}
+  const fl=type==='simple'||lo?0:20,seg=lo?8:type==='simple'?10:40,rings=lo?1:type==='simple'?2:6;
   for(let j=0;j<rings;j++){const t0=j/rings,t1=(j+1)/rings,r0=R*(1-.14*Math.pow(t0,1.3)),r1=R*(1-.14*Math.pow(t1,1.3)),y0=baseH*.65+sh*t0,y1=baseH*.65+sh*t1;
     for(let s=0;s<seg;s++){const a0=s/seg*TAU,a1=(s+1)/seg*TAU;const f0=fl?1-.07*Math.max(0,Math.cos(a0*fl)):1,f1=fl?1-.07*Math.max(0,Math.cos(a1*fl)):1;
       g.poly([F.p(Math.cos(a0)*r0*f0,y0,Math.sin(a0)*r0*f0),F.p(Math.cos(a1)*r0*f1,y0,Math.sin(a1)*r0*f1),F.p(Math.cos(a1)*r1*f1,y1,Math.sin(a1)*r1*f1),F.p(Math.cos(a0)*r1*f0,y1,Math.sin(a0)*r1*f0)],F.d(Math.cos((a0+a1)/2),0,Math.sin((a0+a1)/2)));}}
   const yc=1-capH,rt=R*.86;
-  if(type==='cor'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.12,capH*.25],[rt*1.28,capH*.55],[rt*1.5,capH*.8],[rt*1.55,capH*.86]],16);
-    for(let k=0;k<8;k++){const a=k/8*TAU;const L=frame(Math.cos(a)*rt*1.18,yc+capH*.08,Math.sin(a)*rt*1.18,-a);box(g,L,0,0,0,rt*.32,capH*.42,rt*.12,31);}
+  if(type==='cor'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.12,capH*.25],[rt*1.28,capH*.55],[rt*1.5,capH*.8],[rt*1.55,capH*.86]],ls);
+    if(!lo)for(let k=0;k<8;k++){const a=k/8*TAU;const L=frame(Math.cos(a)*rt*1.18,yc+capH*.08,Math.sin(a)*rt*1.18,-a);box(g,L,0,0,0,rt*.32,capH*.42,rt*.12,31);}
     box(g,F,0,1-capH*.14,0,R*1.62,capH*.14,R*1.62,31);}
-  else if(type==='ion'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.25,capH*.45],[rt*1.1,capH*.7]],16);box(g,F,0,yc+capH*.35,0,R*1.55,capH*.35,R*1.1,31);
-    for(const sx of[-1,1])lathe(frame(0,0,0).p?g:g,frame(sx*R*1.45,yc+capH*.5,0,Math.PI/2),0,-R*.9,0,[[0,0],[R*.38,0],[R*.38,R*1.8],[0,R*1.8]],10);
+  else if(type==='ion'){lathe(g,F,0,yc,0,[[rt,0],[rt*1.25,capH*.45],[rt*1.1,capH*.7]],ls);box(g,F,0,yc+capH*.35,0,R*1.55,capH*.35,R*1.1,31);
+    if(!lo)for(const sx of[-1,1])lathe(frame(0,0,0).p?g:g,frame(sx*R*1.45,yc+capH*.5,0,Math.PI/2),0,-R*.9,0,[[0,0],[R*.38,0],[R*.38,R*1.8],[0,R*1.8]],10);
     box(g,F,0,1-capH*.25,0,R*1.45,capH*.25,R*1.45,31);}
-  else{lathe(g,F,0,yc,0,[[rt,0],[rt*1.35,capH*.55],[rt*1.4,capH*.6]],16);box(g,F,0,1-capH*.4,0,R*1.45,capH*.4,R*1.45,31);}
+  else{lathe(g,F,0,yc,0,[[rt,0],[rt*1.35,capH*.55],[rt*1.4,capH*.6]],ls);box(g,F,0,1-capH*.4,0,R*1.45,capH*.4,R*1.45,31);}
   return g.geometry();
 }
-const COLGEO={};['cor','ion','dor','simple'].forEach(k=>COLGEO[k]=colGeo(k));
-function flushColumns(W){for(const k in W.cols){const L=W.cols[k];if(!L.length)continue;
+const COLGEO={},COLGEO_LO={};['cor','ion','dor','simple'].forEach(k=>{COLGEO[k]=colGeo(k);COLGEO_LO[k]=colGeo(k,true);});
+// r147 makes every InstancedMesh with frustumCulled=false (its bounds would be one copy at the origin), so a city's worth of trees or columns was drawn
+// every frame, in the shadow pass too, wherever the camera looked. instTiles cuts a list of copies into INST_CELL squares (one mesh each); instCull gives
+// a mesh its own geometry object (the same buffers) with a sphere round all its copies and turns culling back on.
+const INST_CELL=400;
+function instTiles(n,xz,cell=INST_CELL){const T=new Map();for(let i=0;i<n;i++){const[x,z]=xz(i),k=Math.floor(x/cell)+','+Math.floor(z/cell);let a=T.get(k);if(!a)T.set(k,a=[]);a.push(i);}return[...T.values()];}
+function instCull(m){const g=m.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const s0=g.boundingSphere,M=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),B=new THREE.Box3();let r=0;
+  for(let i=0;i<m.count;i++){m.getMatrixAt(i,M);M.decompose(p,q,sc);B.expandByPoint(p);r=Math.max(r,(s0.radius+s0.center.length())*Math.max(sc.x,sc.y,sc.z));}
+  const g2=new THREE.BufferGeometry();for(const a in g.attributes)g2.setAttribute(a,g.attributes[a]);if(g.index)g2.setIndex(g.index);g2.boundingSphere=B.getBoundingSphere(new THREE.Sphere());g2.boundingSphere.radius+=r;g2.boundingBox=B.expandByScalar(r);
+  m.geometry=g2;m.frustumCulled=true;return m;}
+// Far copies (LOD): a tile of trees or columns also gets a plainer InstancedMesh on the same instance buffers (matrices, colours, season attribute: nothing
+// new on the GPU but the template). lodUpdate, each frame before the render, shows one of the two by the camera's distance to the tile's box (instCull):
+// the far copy beyond `far` metres on a 720 px high canvas (further on a bigger one, so a copy switches at the same size on screen; Q.lod scales it).
+const LODS=[],LODV=new THREE.Vector3();
+function instLod(m,geo,far){if(!geo)return null;const lo=new THREE.InstancedMesh(geo,m.material,m.count),g=new THREE.BufferGeometry(),h=m.geometry;
+  for(const a in geo.attributes)g.setAttribute(a,geo.attributes[a]);if(geo.index)g.setIndex(geo.index);if(h.attributes.aI)g.setAttribute('aI',h.attributes.aI);
+  g.boundingSphere=h.boundingSphere;g.boundingBox=h.boundingBox;lo.geometry=g;lo.instanceMatrix=m.instanceMatrix;lo.instanceColor=m.instanceColor;lo.frustumCulled=true;
+  lo.customDepthMaterial=m.customDepthMaterial;lo.castShadow=m.castShadow;lo.receiveShadow=m.receiveShadow;lo.userData.lay=m.userData.lay;lo.userData.kind=m.userData.kind;lo.visible=false;
+  m.parent.add(lo);LODS.push({hi:m,lo,far,near:true});return lo;}
+function lodUpdate(cam){cam.getWorldPosition(LODV);const k=(Q.lod||1)*Math.max(1,renderer.domElement.height/720);
+  for(const L of LODS){const near=L.hi.geometry.boundingBox.distanceToPoint(LODV)<L.far*k*(L.near?1.1:1);if(near!==L.near){L.near=near;L.hi.visible=near;L.lo.visible=!near;}}}   // 10 % slack against flicker at the edge
+function flushColumns(W){for(const k in W.cols){const A=W.cols[k];if(!A.length)continue;
+  for(const T of instTiles(A.length,i=>[A[i][0],A[i][2]])){const L=T.map(i=>A[i]);
   const m=new THREE.InstancedMesh(COLGEO[k],MAT.city,L.length);const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),col=new THREE.Color();
   L.forEach((c,i)=>{q.setFromAxisAngle(new THREE.Vector3(0,1,0),c[3]||0);S.set(c[4],c[4],c[4]);Pp.set(c[0],c[1],c[2]);M.compose(Pp,q,S);m.setMatrixAt(i,M);
     col.setRGB(...(c[5]||[1,1,1]));m.setColorAt(i,col);});
-  layTag(m,'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);W.cols[k]=[];}}
+  layTag(instCull(m),'columns');m.castShadow=true;m.receiveShadow=true;(W.colGroup||W.scene).add(m);instLod(m,COLGEO_LO[k],200);}W.cols[k]=[];}}
+// layerAt(x,z): a story-state group key for the columns there (preLayerGroup), or null for the usual place
+function flushColumnsAt(W,layerAt){const C=W.cols,G0=W.colGroup,by={};
+  for(const k in C)C[k]=C[k].filter(c=>{const lk=layerAt(c[0],c[2]);if(!lk)return true;const b=by[lk]||(by[lk]={});(b[k]||(b[k]=[])).push(c);return false;});
+  flushColumns(W);for(const lk in by){Object.assign(C,by[lk]);W.colGroup=preLayerGroup(W,lk);flushColumns(W);}W.colGroup=G0;}
+// a GB's triangles split by where they lie (layerAt(x,z) at each triangle's centre): {key: GB}, '' for the rest
+function gbSplitAt(g,layerAt){const out={},map={};
+  for(let t=0;t<g.ni;t+=3){const T=[g.ix[t],g.ix[t+1],g.ix[t+2]],k=layerAt((g.p[T[0]*3]+g.p[T[1]*3]+g.p[T[2]*3])/3,(g.p[T[0]*3+2]+g.p[T[1]*3+2]+g.p[T[2]*3+2])/3)||'',o=out[k]||(out[k]=new GB(1<<10)),mp=map[k]||(map[k]=new Map());o.grow(o.nv+3,o.ni+3);
+    for(const i of T){let j=mp.get(i);if(j===undefined){j=o.nv++;o.p.set(g.p.subarray(i*3,i*3+3),j*3);o.n.set(g.n.subarray(i*3,i*3+3),j*3);for(const a of['a','b','c'])o[a].set(g[a].subarray(i*4,i*4+4),j*4);mp.set(i,j);}o.ix[o.ni++]=j;}}
+  return out;}
 
 /* ---------- trees (instanced) ---------- */
-function treeGeo(type){const P=[],N=[],F=[],I=[];let base=0;
+function treeGeo(type,lo){const P=[],N=[],F=[],I=[];let base=0;const e=lo?1.1:1,dt=lo?0:1;   // lo: the far copy (LOD): the same blobs from the same dice, unsubdivided (a tenth larger: an icosahedron's faces sit inside its corners)
   const add=(geo,fol,cy,rad)=>{const g=geo.index?geo.toNonIndexed():geo;g.computeVertexNormals();const p=g.attributes.position,n=g.attributes.normal;
     for(let i=0;i<p.count;i++){P.push(p.getX(i),p.getY(i),p.getZ(i));N.push(n.getX(i),n.getY(i),n.getZ(i));
       const r=rad?Math.min(1,Math.hypot(p.getX(i),p.getZ(i))/rad):1;F.push(fol,clamp(p.getY(i)/cy,0,1),fol?.35+.65*r:0);I.push(base+i);}base+=p.count;};
   const rnd=RNG(type==='cyp'?3:type==='pine'?7:11);
   const bump=(geo,amt,sc)=>{const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const k=1+amt*(vnoise(x*sc+9,y*sc+z*sc*.7)-.5)*2;p.setXYZ(i,x*k,y,z*k);}return geo;};
-  if(type==='cyp'){add(new THREE.CylinderGeometry(.18,.28,2,5),0,10,0);
-    const prof=[];for(let i=0;i<=9;i++){const t=i/9;prof.push(new THREE.Vector2(t>=1?0:1.15*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.05+.02)),.75)*(1-t*.55),1+t*10.5));}
-    add(bump(new THREE.LatheGeometry(prof,9),.28,1.4),1,11.5,1.2);}
-  else if(type==='pine'){const tr=new THREE.CylinderGeometry(.22,.38,12,6);tr.translate(0,6,0);add(tr,0,16,0);
-    for(let k=0;k<5;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(3.6+rnd()*1.6,1.3+rnd()*.5,3.4+rnd()*1.6);s.translate((rnd()-.5)*4.5,12.6+rnd()*1.6,(rnd()-.5)*4.5);add(bump(s,.2,.8),1,15,7);}}
+  if(type==='cyp'){add(new THREE.CylinderGeometry(.18,.28,2,lo?3:5,1,!!lo),0,10,0);const n=lo?5:9;
+    const prof=[];for(let i=0;i<=n;i++){const t=i/n;prof.push(new THREE.Vector2(t>=1?0:1.15*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.05+.02)),.75)*(1-t*.55),1+t*10.5));}
+    add(bump(new THREE.LatheGeometry(prof,lo?6:9),.28,1.4),1,11.5,1.2);}
+  else if(type==='pine'){const tr=new THREE.CylinderGeometry(.22,.38,12,lo?3:6,1,!!lo);tr.translate(0,6,0);add(tr,0,16,0);
+    for(let k=0;k<5;k++){const s=new THREE.IcosahedronGeometry(1,dt);s.scale((3.6+rnd()*1.6)*e,(1.3+rnd()*.5)*e,(3.4+rnd()*1.6)*e);s.translate((rnd()-.5)*4.5,12.6+rnd()*1.6,(rnd()-.5)*4.5);add(bump(s,.2,.8),1,15,7);}}
   else if(type==='palm'){const tr=new THREE.CylinderGeometry(.2,.34,9,6);tr.translate(0,4.5,0);add(tr,0,13,0);   // date palm (one, at the House of Augustus): trunk and nine arching fronds
     for(let k=0;k<9;k++){const f=new THREE.IcosahedronGeometry(1,0);f.scale(2.9,.09,.5);f.translate(2.7,0,0);f.rotateZ(.55-.25*(k%3)/2);f.rotateY(k/9*TAU+rnd()*.3);f.translate(0,9.2,0);add(f,1,13,3.4);}}
-  else{const tr=new THREE.CylinderGeometry(.2,.32,3.2,5);tr.translate(0,1.6,0);add(tr,0,9,0);
-    for(let k=0;k<4;k++){const s=new THREE.IcosahedronGeometry(1,1);s.scale(2.4+rnd(),2.2+rnd(),2.4+rnd());s.translate((rnd()-.5)*2.6,4.6+rnd()*2.2,(rnd()-.5)*2.6);add(bump(s,.25,.9),1,8,4);}}
+  else{const tr=new THREE.CylinderGeometry(.2,.32,3.2,lo?3:5,1,!!lo);tr.translate(0,1.6,0);add(tr,0,9,0);
+    for(let k=0;k<4;k++){const s=new THREE.IcosahedronGeometry(1,dt);s.scale((2.4+rnd())*e,(2.2+rnd())*e,(2.4+rnd())*e);s.translate((rnd()-.5)*2.6,4.6+rnd()*2.2,(rnd()-.5)*2.6);add(bump(s,.25,.9),1,8,4);}}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
   G.setAttribute('aF',new THREE.Float32BufferAttribute(F,3));G.computeBoundingSphere();return G;}
-const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad'),palm:treeGeo('palm')};
+const TREEGEO={cyp:treeGeo('cyp'),pine:treeGeo('pine'),broad:treeGeo('broad'),palm:treeGeo('palm')},TREEGEO_LO={cyp:treeGeo('cyp',1),pine:treeGeo('pine',1),broad:treeGeo('broad',1)};TREEGEO_LO.olive=TREEGEO_LO.broad;   // palm, shrub and flower have no far copy (one palm; a shrub is 20 triangles)
 const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive:[.08,.088,.058]};TREEGEO.olive=TREEGEO.broad;TREEGEO.shrub=(()=>{const g=new THREE.IcosahedronGeometry(1,0).toNonIndexed();g.scale(1.25,.8,1.25);g.translate(0,.62,0);g.computeVertexNormals();const p=g.attributes.position,a=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){a[i*3]=1;a[i*3+1]=Math.min(1,p.getY(i)/1.4);a[i*3+2]=.85;}g.setAttribute('aF',new THREE.BufferAttribute(a,3));return g;})();TREEGEO.flower=TREEGEO.shrub;TREECOL.shrub=[.055,.085,.03];TREECOL.palm=[.06,.095,.03];TREECOL.flower=[.3,.1,.16];
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
-function flushTrees(W,list,parent){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
+function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
-  for(const k in by){const L=by[k];if(!L.length)continue;const kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
+  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree keeps its index in its kind's list for its size and colour
+  for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});
+   for(const lk in parts)for(const T of instTiles(parts[lk].length,j=>{const t=all[parts[lk][j]];return[t[0],t[2]];})){const I=T.map(j=>parts[lk][j]),kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
-    const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,L.length);
-    const aI=kd.m?new Float32Array(L.length*4):null;
+    const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,I.length);
+    const aI=kd.m?new Float32Array(I.length*4):null;
     const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),c=new THREE.Color();
-    L.forEach((t,i)=>{const s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
-      M.compose(Pp,q,S);m.setMatrixAt(i,M);const v=.75+.5*hash2(i,3);
-      if(kd.m){c.setRGB(v,v,v);aI[i*4]=kd.t;aI[i*4+1]=hash2(t[0]*.37,t[2]*.53);aI[i*4+2]=t[6]||0;aI[i*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
+    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
+      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*hash2(i,3);
+      if(kd.m){c.setRGB(v,v,v);aI[j*4]=kd.t;aI[j*4+1]=hash2(t[0]*.37,t[2]*.53);aI[j*4+2]=t[6]||0;aI[j*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
       else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
-      m.setColorAt(i,c);});
+      m.setColorAt(j,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
-    layTag(m,'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out;}
+    layTag(instCull(m),'trees').userData.kind=k;m.castShadow=true;m.receiveShadow=true;(lk?preLayerGroup(W,lk):(parent||W.scene)).add(m);out.push(m);instLod(m,TREEGEO_LO[kd.g],250);}}return out;}
 // watered ground (palace and domus gardens): discs the terrain shader keeps green all year (uWat)
 const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.uWat.value[this.n++].set(x,z,r,hd);}}};   // circle (x,z,r) or rectangle (x,z,half-width,half-depth,rot as in Foot)
 
@@ -305,9 +352,10 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const m=new THREE.InstancedMesh(PPLGEO,MAT.people,list.length);const M=new THREE.Matrix4(),c=new THREE.Color();   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
-  list.forEach((p,i)=>{M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(i,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(i,c);});
-  layTag(m,'people');m.castShadow=false;m.receiveShadow=true;m.frustumCulled=false;(parent||W.scene).add(m);return m;}   // r147 culls an InstancedMesh by one figure's bounds at the origin: a crowd far from the origin vanished
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
+  for(const T of instTiles(list.length,i=>[list[i][0],list[i][2]])){const m=new THREE.InstancedMesh(PPLGEO,MAT.people,T.length),M=new THREE.Matrix4(),c=new THREE.Color();
+    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
+    layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
 
 /* ---------- monument generators (into GB g) ---------- */
 function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand
@@ -329,23 +377,99 @@ function bigBase(g,F,x,z,y,w,d,h,o={}){g.set(2,.5);box(g,F,x,y,z,w/2+.9,.3,d/2+.
   const yt=y+.9+h;if(o.eq){g.set(40,.4);box(g,F,x,yt+.9,z,d*.18,1.0,d*.42,31);box(g,F,x+d*.14,yt+1.9,z-d*.34,.28,1.1,.3,31);statue(g,F,x-.2,yt+1.8,z,1.9,true);}else statue(g,F,x,yt,z,1.9,o.gilt!==false,false);}
 // a row of cypresses between two local points (y from the ground); trees go in W.trees (the instanced tree pass)
 function cypRow(W,F,ax,az,bx,bz,step,gyF,sc=1){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<=n;i++){const q=F.p(ax+(bx-ax)*i/n,0,az+(bz-az)*i/n);W.trees.push([q[0],gyF(q[0],q[2]),q[2],'cyp',sc*(.92+.16*((i*37)%7)/7)]);}}
+// ---- temple podiums, stairs and altars (briefs/rome/podium-stairs-rock.md, part A) ----
+// A2: Vitruvius 3.4.4, an odd number of steps (one sets off and arrives on the right foot), risers of 9-10 Roman inches (0.22-0.25 m), treads of
+// 1.5-2 ft (0.44-0.59 m). An odd count of risers within 0.22-0.26 m whose total is nearest the podium height asked for (the podium is moved to that total:
+// at most 0.14 m for the heights in use), then the riser nearest 0.235 m.
+function templeRise(ph){let b=null;for(let n=1;n<301;n+=2){const r=Math.min(.26,Math.max(.22,ph/n)),q=n*r,e=Math.abs(q-ph)+Math.abs(r-.235)*.01;if(!b||e<b.e)b={n,r,ph:q,e};if(ph/n<.2)break;}return b;}
+// the stair in front of a temple: wing walls (antae) either side, a landing halfway up a podium over 3.6 m. Longer than the old 0.30/0.40 stair, so the
+// ground it gains is checked first: where something else stands there, the fewest steps (risers up to 0.26 m), treads of 0.44 m and no landing (W.templeStairLog).
+// front 'rostra' (A3): a platform as wide as the temple, a flight cut into each end of it climbing toward the temple, a half-round niche for the altar in the
+// middle of its front (as the GLBs do it, tools/models/rome/rk.py stair='sides'). o.fit: a GLB stand-in keeps to the depth of the GLB's stair (treads shortened).
+// is the strip [-hw,hw] x [z0,z1] before the temple taken (W.foot)? Its own ground (precinct, forum, terrace: footprints holding its centre, 'open', 'court') is no
+// obstacle; a round footprint is a circle, not its square
+// the terrain under a strip in front of the temple, relative to its foot: {mn,mx}; null off the Rome terrain grid (Ostia and Antium have their own ground)
+function templeGround(W,F,hw,z0,z1){const G=W.grid;if(!W.gy||!G)return null;let mn=1e9,mx=-1e9;
+  for(const sx of[-1,0,1])for(const t of[0,.5,1]){const q=F.p(sx*hw,0,z0+(z1-z0)*t);if(q[0]<G.x0||q[0]>G.x1||q[2]<G.z0||q[2]>G.z1)return null;const h=W.gy(q[0],q[2])-F.oy;mn=Math.min(mn,h);mx=Math.max(mx,h);}
+  return{mn,mx};}
+function templeHit(W,F,o,hw,z0,z1){if(!W.foot)return false;const hd=(z1-z0)/2,q=F.p(0,0,(z0+z1)/2),rot=o.rot||0,c=Math.cos(rot),s=Math.sin(rot);
+  const off=f=>{if(f.tag==='open'||f.tag==='court')return true;let dx=o.x-f.cx,dz=o.z-f.cz;if(f.circ){if(Math.hypot(dx,dz)<=f.hw)return true;}else{const u=f.c*dx-f.s*dz,v=f.s*dx+f.c*dz;if(Math.abs(u)<=f.hw&&Math.abs(v)<=f.hd)return true;}
+    if(!f.circ)return false;dx=f.cx-q[0];dz=f.cz-q[2];const u=dx*c-dz*s,v=dx*s+dz*c;return Math.hypot(Math.max(0,Math.abs(u)-hw),Math.max(0,Math.abs(v)-hd))>=f.hw;};
+  return W.foot.hits(q[0],q[2],hw,hd,rot,0,off);}
+function templeStair(W,F,o,W2,L2,ph,rise){const front=o.front==='rostra'&&o.W>=12?'rostra':'stair',a=front==='stair'&&o.W>=8?Math.min(2.2,Math.max(.8,o.W*.07)):0;
+  const plan=(t,fewest)=>{let s={n:rise.n,r:rise.r};if(fewest){let n=Math.ceil(ph/.26-1e-9);if(n%2===0)n++;if(ph/n>=.22-1e-9)s={n,r:ph/n};}const land=!fewest&&front==='stair'&&ph>3.6,Ld=land?Math.min(2,1.5+(ph-3.6)*.1):0;
+    return{n:s.n,r:s.r,t,land,Ld,iL:land?Math.floor(s.n/2):-1,R:s.n*t+(land?Ld-t:0)};};
+  const Dp0=front==='rostra'?Math.min(9,Math.max(5,o.W*.3)):0,depth=P=>front==='rostra'?Math.max(Dp0,P.R):P.R,R0=Math.max(4,Math.round(ph/.3))*.4;
+  const blocked=D=>D>R0+.05&&templeHit(W,F,o,W2,L2+R0,L2+D+.5);   // only the ground beyond the old stair is new
+  let P=plan(.48),why='';
+  if(o.fit){P=plan(.44,true);if(P.R>o.fit)P=plan(o.fit/P.n,true);why='glb';}
+  else if(blocked(depth(P))){P=plan(.44,true);why=blocked(depth(P))?'overlap':'tight';}
+  const Dp=front==='rostra'?(o.fit?Math.max(P.R,Math.min(o.fit,Dp0)):depth(P)):0,st={...P,a,front,Dp,run:front==='rostra'?Dp:P.R,why};
+  (W.templeStairLog||(W.templeStairLog=[])).push({x:Math.round(o.x),z:Math.round(o.z),name:o.name||'',ph:+ph.toFixed(3),n:P.n,r:+P.r.toFixed(3),t:+P.t.toFixed(3),run:+st.run.toFixed(2),land:P.land,front,why});return st;}
+// A1: podium mouldings (Vitruvius 3.4.5: the spira below, corona and lysis on top) as boxes round the plan block [x0,x1] x [z0,z1]: the sides in the mask
+// (1 +z, 2 +x, 4 -z, 8 -x) get the overhang and their faces; [y, height, overhang] per layer
+const POD_BASE=[[-.6,.8,.36],[.2,.18,.27],[.38,.12,.16],[.5,.08,.08]],podTop=ph=>[[ph-.64,.12,.1],[ph-.52,.32,.3],[ph-.2,.2,.2]];
+function podMould(g,F,x0,x1,z0,z1,L,sides,under){for(const[y,h,ov]of L){const X0=x0-(sides&8?ov:0),X1=x1+(sides&2?ov:0),Z0=z0-(sides&4?ov:0),Z1=z1+(sides&1?ov:0);box(g,F,(X0+X1)/2,y,(Z0+Z1)/2,(X1-X0)/2,h,(Z1-Z0)/2,sides|16|(under?32:0));}}
+// A5: bronze tripod (three legs and a bowl)
+function tripod(g,F,x,z,y,h){g.set(13,.3);for(let k=0;k<3;k++){const a=k/3*TAU;box(g,F,x+Math.cos(a)*.28,y,z+Math.sin(a)*.28,.035,h,.035,31);}lathe(g,F,x,y+h-.05,z,[[.08,0],[.42,.14],[.5,.3],[.45,.32],[0,.18]],10);}
+// A5: the altar before a temple. Small: a block with a cornice and bolsters (pulvini) at both ends; middle: on two steps; large (state temples, W >= 26):
+// inside a court of low screen walls with a door in front (the Ara Pacis type), on three steps. Bronze tripods either side, a brazier (foculus) before the small one.
+function templeAltar(g,F,o,az,size,ya=0,yb=ya){const big=size==='big',mid=size==='mid',aw=big?1.5:mid?1.2:.9,ad=aw*.62;let y=ya;   // ya: on ground that rises in front; yb<ya: a socle down to the ground
+  if(big){const ew=Math.min(12,Math.max(7,o.W*.3)),ed=ew*.85,hW=1.7,th=.35,gw=ew/4-.7;g.set(6,.5);
+    for(const[cx,cz,hx,hz]of[[0,az-ed/2,ew/2,th/2],[-ew/2,az,th/2,ed/2],[ew/2,az,th/2,ed/2],[-(ew/4+.7),az+ed/2,gw,th/2],[ew/4+.7,az+ed/2,gw,th/2]]){box(g,F,cx,ya,cz,hx,hW,hz,31);box(g,F,cx,ya+hW,cz,hx+.06,.12,hz+.06,31);}
+    for(let k=0;k<3;k++)box(g,F,0,ya+k*.22,az,aw+1.6-k*.5,.22,ad+1.6-k*.5,31);y=ya+.66;}
+  else if(mid){g.set(6,.5);box(g,F,0,ya,az,aw+1,.24,ad+1,31);box(g,F,0,ya+.24,az,aw+.55,.24,ad+.55,31);y=ya+.48;}
+  g.set(6,.45);box(g,F,0,y,az,aw,1.05,ad,31);box(g,F,0,y+1.05,az,aw+.08,.12,ad+.08,31);for(const sx of[-1,1])box(g,F,sx*(aw-.16),y+1.17,az,.16,.26,ad,31);
+  for(const sx of[-1,1])tripod(g,F,sx*(aw+(big?2.4:1.6)),az+(big?0:.4),ya,big?1.6:1.3);
+  if(!mid&&!big){g.set(13,.3);lathe(g,F,0,ya,az+ad+1.1,[[.12,0],[.12,.55],[.32,.62],[.36,.78],[0,.7]],8);}
+  if(yb<ya-.05){const hx=big?Math.min(12,Math.max(7,o.W*.3))/2+.4:aw+2.1,z0=big?az-Math.min(12,Math.max(7,o.W*.3))*.43-.4:az-ad-.5,z1=big?az+Math.min(12,Math.max(7,o.W*.3))*.43+.4:az+ad+1.6;g.set(6,.5);box(g,F,0,yb-.25,(z0+z1)/2,hx,ya-yb+.25-.01,(z1-z0)/2,31);}}
 // temple: front faces +z of the frame
-function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:o.podH||3,stairs:o.stairs!==false});   // every temple, for the links to the streets (temple-links.js)
-  const W2=o.W/2,L2=o.L/2,ph=o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
-  const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1);
-  g.set(6,o.seed||.3);let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}box(g,F,0,-fd,0,W2,fd+ph,L2,31);
-  g.set(2,.4);box(g,F,0,-.5,0,W2+.3,.9,L2+.3,15);box(g,F,0,ph-.45,0,W2+.25,.45,L2+.25,31);
-  if(o.stairs!==false){const n=Math.max(4,Math.round(ph/.3)),sd=.4,sw=W2-(o.stairInset||0);g.set(2,.45);
-    for(let i=0;i<n;i++){const h=ph*(n-i)/n;box(g,F,0,0,L2+(i+1)*sd/2,sw,h,(i+1)*sd/2,1|2|8|16);}if(W.gy){const gq=F.p(0,0,L2+n*sd+.6),gf=W.gy(gq[0],gq[2])-F.oy;if(gf<-.3){g.set(2,.42);box(g,F,0,gf-1.2,L2+n*sd/2,sw+.6,-gf+1.2,n*sd/2+.3,31);}}}
+function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
+  const rise=o.stairs!==false?templeRise(o.podH||3):null,W2=o.W/2,L2=o.L/2,ph=rise?rise.ph:o.podH||3,cH=o.colH||12,ord=o.order||'cor',nf=o.nf||6,rows=o.rows??2;
+  const cD=cH/(ord==='cor'?10:ord==='ion'?9:7),m=cD*.9,ic=(o.W-2*m)/(nf-1),tH=hash2(o.x*.13,o.z*.29);
+  // A1: podium in tuff (old Republican temples), travertine or marble facing (o.podMat; by default the big ones marble, the rest by place); joints from the part
+  const pm=o.podMat||(o.W>=20?'marble':tH<.3?'tuff':tH<.7?'trav':'marble'),PP=pm==='tuff'?47:pm==='trav'?48:6,PT=pm==='marble'?6:48;
+  const st=rise?templeStair(W,F,o,W2,L2,ph,rise):null,run=st?st.run:0;let zA=0;   // zA: the front of the altar, for the footprint
+  (W.temples||(W.temples=[])).push({x:o.x,y:o.y,z:o.z,rot:o.rot||0,W:o.W,L:o.L,podH:ph,stairs:!!st,run,front:st?st.front:'none',name:o.name});   // every temple, for the links to the streets (temple-links.js)
+  let fd=6;if(W.gy){for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const q=F.p(sx*W2,0,sz*L2);fd=Math.max(fd,F.oy-W.gy(q[0],q[2])+1.5);}}
+  g.set(PP,o.seed||.3);box(g,F,0,-fd,0,W2,fd+ph-.64,L2,15);g.set(PT,.4);const bodySides=st?2|4|8:15;podMould(g,F,-W2,W2,-L2,L2,POD_BASE,bodySides);podMould(g,F,-W2,W2,-L2,L2,podTop(ph),bodySides,true);
+  if(o.podRooms&&ph>=2.6){const k=Math.max(2,Math.round((o.L-4)/3.5)),dh=Math.min(2.3,ph-1.5),dw=1.3;   // A4: chambers in the podium (loculi): a dark door with an iron grille every 3-4 m along both long sides
+    for(const sx of[-1,1])for(let i=0;i<k;i++){const zc=-L2+2+(o.L-4)*(i+.5)/k,xf=sx*(W2+.012);g.set(20,.3);g.poly([F.p(xf,.62,zc-dw/2),F.p(xf,.62,zc+dw/2),F.p(xf,.62+dh,zc+dw/2),F.p(xf,.62+dh,zc-dw/2)],F.d(sx,0,0));
+      g.set(18,.3);for(let j=0;j<4;j++)box(g,F,sx*(W2+.05),.62,zc+(j-1.5)*dw/4.4,.03,dh,.03,31);box(g,F,sx*(W2+.05),.62+dh*.55,zc,.03,.05,dw/2,31);}}
+  if(st){const{n,r,t,a,Dp,R}=st;let gf=0;if(W.gy){const gq=F.p(0,0,L2+run+.6);gf=Math.min(0,W.gy(gq[0],gq[2])-F.oy);}const yF=gf<-.3?gf-1.2:-.6;   // foundations go down to the ground in front where it falls away
+    const flight=(cx,hw,z0,sides)=>{g.set(PT,.45);for(let i=0;i<n;i++){const h=ph*(n-i)/n,ze=(i+1)*t+(st.land&&i>=st.iL?st.Ld-t:0);box(g,F,cx,0,z0+ze/2,hw,h,ze/2,sides);}
+      if(yF<-.6){g.set(PP,.42);box(g,F,cx,yF,z0+R/2,hw+(sides&2?.3:0),-yF,R/2+.3,31);}};
+    if(st.front==='rostra'){const zN=L2+Dp,rn=Math.min(Dp*.45,W2*.28,3.2),wS=Math.min(4.2,Math.max(2.4,o.W*.17)),xi=W2-wS,zb=zN-R,zm=Math.max(L2,zb),seg=10,cap=[[ph-.2,.2,.2]];   // A3
+      g.set(PP,o.seed||.3);if(zb>L2+.01)box(g,F,0,yF,(L2+zb)/2,W2,ph-.2-yF,(zb-L2)/2,2|8);box(g,F,0,yF,(zm+zN-rn)/2,xi,ph-.2-yF,(zN-rn-zm)/2,2|8);   // behind the flights the full width; between them, behind the niche
+      for(const sx of[-1,1])box(g,F,sx*(rn+xi)/2,yF,zN-rn/2,(xi-rn)/2,ph-.2-yF,rn/2,1|(sx>0?2:8));   // either side of the niche
+      g.set(PT,.4);if(zb>L2+.01){podMould(g,F,-W2,W2,L2,zb,cap,2|8,true);podMould(g,F,-W2,W2,L2,zb,POD_BASE,2|8);}podMould(g,F,-xi,xi,zm,zN-rn,cap,2|8,true);
+      for(const sx of[-1,1]){const x0=sx>0?rn:-xi-.2,x1=sx>0?xi+.2:-rn;box(g,F,(x0+x1)/2,ph-.2,zN-rn/2+.1,(x1-x0)/2,.2,rn/2+.1,63);podMould(g,F,sx>0?rn:-xi,sx>0?xi:-rn,zN-rn,zN,POD_BASE,1);}   // the cap returns into the niche
+      const arc=k=>{const th=Math.PI+Math.PI*k/seg;return[Math.cos(th)*rn,zN+Math.sin(th)*rn];},sq=k=>{const th=Math.PI+Math.PI*k/seg,cx=Math.cos(th),sz=Math.sin(th),tt=Math.min(rn/Math.max(1e-6,Math.abs(cx)),rn/Math.max(1e-6,Math.abs(sz)));return[cx*tt,zN+sz*tt];};
+      const fill=P=>{const q=[];for(const p of P)if(!q.length||Math.hypot(p[0]-q[q.length-1][0],p[1]-q[q.length-1][1])>1e-6)q.push(p);if(q.length>2&&Math.hypot(q[0][0]-q[q.length-1][0],q[0][1]-q[q.length-1][1])<1e-6)q.pop();
+        if(q.length>2)g.poly(q.map(([x,z])=>F.p(x,ph,z)),[0,1,0]);};   // the top between the niche and its square; where the arc meets the square a quad is a triangle (a repeated first point gave a NaN normal: a black, glowing sliver)
+      for(let k=0;k<seg;k++){const[a0,b0]=arc(k),[a1,b1]=arc(k+1),[c0,d0]=sq(k),[c1,d1]=sq(k+1);g.set(PP,o.seed||.3);g.poly([F.p(a0,yF,b0),F.p(a1,yF,b1),F.p(a1,ph,b1),F.p(a0,ph,b0)],F.d(-(a0+a1)/2,0,zN-(b0+b1)/2));
+        g.set(PT,.4);fill([[a0,b0],[a1,b1],[c1,d1],[c0,d0]]);const side=c=>Math.abs(Math.abs(c)-rn)<1e-4;
+        if(side(c0)!==side(c1)){const cs=side(c0)?c0:c1;g.poly([F.p(c0,ph,d0),F.p(c1,ph,d1),F.p(Math.sign(cs)*rn,ph,zN-rn)],[0,1,0]);}}   // the square's back corners
+      for(const sx of[-1,1])flight(sx*(W2-wS/2),wS/2,zb,1|16|(sx>0?2:8));if(o.altar!==false)templeAltar(g,F,o,zN-rn*.5,'small');}
+    else{const sw=W2-Math.max(a,o.stairInset||0);flight(0,sw,L2,a>0?1|16:1|2|8|16);
+      if(a>0)for(const sx of[-1,1]){const x0=sx<0?-W2:W2-a,x1=x0+a,out=sx<0?8:2;g.set(PP,o.seed||.3);box(g,F,(x0+x1)/2,yF,L2+R/2,a/2,ph-.64-yF,R/2,1|2|8);   // the wing walls (antae), mouldings returned round them
+        g.set(PT,.4);podMould(g,F,x0,x1,L2,L2+R,POD_BASE,out|1);podMould(g,F,x0,x1,L2,L2+R,podTop(ph),out|1,true);
+        if(o.W>=10){const x=(x0+x1)/2,z=L2+R-a*.55;g.set(PT,.45);box(g,F,x,ph,z,a*.4,.95,a*.4,31);g.set(37,.3);g.poly([F.p(x-a*.27,ph+.28,z+a*.4+.012),F.p(x+a*.27,ph+.28,z+a*.4+.012),F.p(x+a*.27,ph+.72,z+a*.4+.012),F.p(x-a*.27,ph+.72,z+a*.4+.012)],F.d(0,0,1));   // a pedestal with its inscription, a bronze statue or tripod on it
+          if(hash2(o.x*.71+sx,o.z*.37)<.5)statue(g,F,x,ph+.95,z,Math.min(3.2,Math.max(1.8,o.W*.09)),true);else tripod(g,F,x,z,ph+.95,1.25);}}}}
   const y0=ph,zf=L2-cD*.8,cols=[];
   for(let r=0;r<rows;r++)for(let c=0;c<nf;c++)cols.push([-W2+m+c*ic,zf-r*ic]);
   const zBackCol=-L2+cD*.8;
   if(o.peri){for(let z=zf-rows*ic;z>zBackCol-ic*.3;z-=ic){cols.push([-W2+m,z]);cols.push([W2-m,z]);}for(let c=1;c<nf-1;c++)cols.push([-W2+m+c*ic,zBackCol]);cols.push([-W2+m,zBackCol]);cols.push([W2-m,zBackCol]);}
   const cw=o.peri?o.W-2*m-ic*1.1:o.W-2*m*.55,zc0=o.peri?zBackCol+ic*.6:-L2+m*.3,zc1=zf-(rows-.35)*ic;
   if(!o.peri)for(let z=zc1-ic;z>zc0+ic*.4;z-=ic){cols.push([-cw/2,z]);cols.push([cw/2,z]);}
-  cols.forEach(([x,z])=>W.cols[ord].push([...F.p(x,y0,z),F.rot,cH,o.colTint]));const tH=hash2(o.x*.13,o.z*.29),band=o.band??(o.W<24&&tH<.45);if(band){g.set(35,tH*3.7);cols.forEach(([x,z])=>lathe(g,F,x,y0+.02,z,[[cD*.53,0],[cD*.53,2.1],[cD*.5,2.15]],12));}
+  cols.forEach(([x,z])=>W.cols[ord].push([...F.p(x,y0,z),F.rot,cH,o.colTint]));const band=o.band??(o.W<24&&tH<.45);if(band){g.set(35,tH*3.7);cols.forEach(([x,z])=>lathe(g,F,x,y0+.02,z,[[cD*.53,0],[cD*.53,2.1],[cD*.5,2.15]],12));}
   g.set(o.cellaPart||6,o.seed||.3,0,1);box(g,F,0,y0,(zc0+zc1)/2,cw/2,cH,(zc1-zc0)/2,31);
-  g.set(13,.2);g.poly([F.p(-o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0+cH*.6,zc1+.05),F.p(-o.W*.09,y0+cH*.6,zc1+.05)],F.d(0,0,1));if(o.open??(tH>.5)){g.set(7,.3);g.poly([F.p(-o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0+cH*.58,zc1+.08),F.p(-o.W*.085,y0+cH*.58,zc1+.08)],F.d(0,0,1));statue(g,F,0,y0+.4,zc1+.9,cH*.45,true);}{const nS=Math.max(4,Math.round(ph/.3)),zF=L2+(o.stairs!==false?nS*.4:0);if(o.altar!==false&&o.W>=10){g.set(2,.55);box(g,F,0,0,zF+4.5,1.3,1.15,.75,31);g.set(13,.3);for(const sx of[-1,1])lathe(g,F,sx*W2*.55,0,zF+1.8,[[.08,0],[.08,1.1],[.45,1.25],[.4,1.45],[0,1.45]],8);}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(34,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
+  g.set(34,tH);g.poly([F.p(-W2+.25,y0+.012,zc1),F.p(W2-.25,y0+.012,zc1),F.p(W2-.25,y0+.012,L2-.06),F.p(-W2+.25,y0+.012,L2-.06)],[0,1,0]);g.set(13,.2);g.poly([F.p(-o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0,zc1+.05),F.p(o.W*.09,y0+cH*.6,zc1+.05),F.p(-o.W*.09,y0+cH*.6,zc1+.05)],F.d(0,0,1));if(o.open??(tH>.5)){g.set(7,.3);g.poly([F.p(-o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0,zc1+.08),F.p(o.W*.085,y0+cH*.58,zc1+.08),F.p(-o.W*.085,y0+cH*.58,zc1+.08)],F.d(0,0,1));statue(g,F,0,y0+.4,zc1+.9,cH*.45,true);}{const zF=L2+run;if(o.altar!==false&&o.W>=10&&!(st&&st.front==='rostra')){   // the altar where its ground is free: nearer the stair, then a size smaller, else none (logged)
+    const ew=Math.min(12,Math.max(7,o.W*.3)),ext=z=>z==='big'?[ew/2+.3,ew*.425+.3,ew*.425+.3]:[3.2,1.2,2.1];let al=null;
+    for(const z of o.W>=26?['big','mid']:[o.W>=14?'mid':'small'])for(const d of[z==='big'?7:z==='mid'?5:4.5,3.5,2.5]){const[hx,b0,b1]=ext(z);if(d-b0<1||al||templeHit(W,F,o,hx,zF+d-b0,zF+d+b1))continue;
+      const G=templeGround(W,F,hx,zF+d-b0,zF+d+b1),ya=G?Math.max(0,G.mn):0;if(G&&(ya>2.5||G.mx-ya>1))continue;   // where the ground in front rises it stands on it (lifted, at most 2.5 m, its uphill side sunk at most 1 m)
+      al={z,d,f:zF+d+b1,ya,yb:G&&o.pave===false?Math.min(ya,G.mn):ya};}   // yb: off the paving, the ground that falls away under it (a socle)
+    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
   const eH=cH*.24,ye=y0+cH;g.set(6,o.seed||.3);box(g,F,0,ye,0,W2-m*.25,eH*.62,L2-m*.25,31);g.set(2,.5);box(g,F,0,ye+eH*.33,0,W2-m*.2+.06,eH*.12,L2-m*.2+.06,15);
   g.set(6,o.seed||.3);box(g,F,0,ye+eH*.62,0,W2+.35,eH*.38,L2+.35,31);
   if(o.dentils!==false){g.set(2,.6);for(let x=-W2;x<=W2;x+=.45){box(g,F,x,ye+eH*.55,L2+.12,.12,eH*.08,.15,1|2|8|32);}}
@@ -357,7 +481,7 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);(W.temples||(W.temple
     if(o.acro!==false){statue(g,F,0,yb+hP+.7,sz*zr,2.6+o.W*.05,true);for(const sx of[-1,1])statue(g,F,sx*W2,yb+.5,sz*zr,1.8+o.W*.03,true);}}
   g.set(o.roof==='gilt'?12:1,(o.seed||.3)+.2+(tH>.5?.37:0));
   for(const sx of[1,-1])g.poly([F.p(sx*(W2+.55),yb+.35,zr+.2),F.p(0,yb+hP+.55,zr+.2),F.p(0,yb+hP+.55,-zr-.2),F.p(sx*(W2+.55),yb+.35,-zr-.2)],F.d(sx,1,0));
-  W.foot.add(o.x,o.z,W2+1,L2+(ph*1.4)+1,o.rot||0).t=1;return{top:yb+hP};}
+  {const fe=Math.max(L2+run,zA)+1,be=L2+ph*1.4+1,q=F.p(0,0,(fe-be)/2);W.foot.add(q[0],q[2],W2+1,(fe+be)/2,o.rot||0).t=1;}return{top:yb+hP};}   // the stair and the altar are in it
 function tholos(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0),R=o.R||7,ph=o.podH||2.6,cH=o.colH||9,n=o.n||18;
   g.set(6,.35);lathe(g,F,0,-3,0,[[R+.9,0],[R+.9,3+ph],[0,3+ph]],32);g.set(2,.4);lathe(g,F,0,ph-.4,0,[[R+1.05,0],[R+1.05,.4],[0,.4]],32);
   for(let i=0;i<5;i++){g.set(2,.45);box(g,F,0,0,R+.9+(i+.5)*.42,2.6,ph*(5-i)/5,.21,1|2|8|16);}
@@ -372,8 +496,8 @@ function arcade(g,F,cx,y0,cz,len,h,nArch,thick,part,o={}){const s=new THREE.Shap
   const bay=len/nArch,r=bay*(o.span||.32),spring=o.spring??Math.max(.6,h-r-(o.attic??h*.22));
   for(let i=0;i<nArch;i++){const x=-len/2+bay*(i+.5);const p=new THREE.Path();p.moveTo(x-r,0);p.lineTo(x+r,0);p.lineTo(x+r,spring);p.absarc(x,spring,r,0,Math.PI,false);p.lineTo(x-r,0);s.holes.push(p);}
   const geo=new THREE.ExtrudeGeometry(s,{depth:thick,bevelEnabled:false,curveSegments:5});geo.translate(0,0,-thick/2);
-  const M=new THREE.Matrix4().makeRotationY(F.rot);const pp=F.p(cx,y0,cz);M.setPosition(pp[0],pp[1],pp[2]);g.set(part,o.seed||.4);g.addGeo(geo,M);
-  if(o.pilasters!==false){g.set(part,o.seed||.4);for(let i=0;i<=nArch;i++){const x=-len/2+bay*i;box(g,F,cx+x,y0,cz+thick/2+.18,.32,h*.94,.18,1|2|8);}}
+  const M=new THREE.Matrix4().makeRotationY(F.rot);const pp=F.p(cx,y0,cz);M.setPosition(pp[0],pp[1],pp[2]);g.set(part,o.seed||.4,o.sty||0);g.addGeo(geo,M);
+  if(o.pilasters!==false){g.set(part,o.seed||.4,o.sty||0);for(let i=0;i<=nArch;i++){const x=-len/2+bay*i;box(g,F,cx+x,y0,cz+thick/2+.18,.32,h*.94,.18,1|2|8);}}
   if(o.cornice!==false){g.set(2,.5);box(g,F,cx,y0+h-.35,cz,len/2+.15,.35,thick/2+.35,31);}}
 /* Roman substructure face (phase 5b): a blind-arcade wall along a plain block wall. S = frame whose local x runs along the wall (centred on it); the existing wall face is the plane z=zf and `out` (+1/-1)
    is the local z direction that points away from the building. Between pilaster buttresses every 6-8 m: two or three storeys of recessed, darker blind arches (each with a moulded ring and sill),
@@ -385,21 +509,21 @@ function _archGeo(aw,ah,depth,ring){const k=[aw.toFixed(2),ah.toFixed(2),depth,r
   let s;if(ring){s=arch(aw+1.0,ah+.5,-.45,new THREE.Shape());s.holes.push(arch(aw,ah,0,new THREE.Path()));}else s=arch(aw,ah,0,new THREE.Shape());
   return _subGeo[k]=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false,curveSegments:6});}
 function substructure(W,g,S,L,yTop,zf,out,o={}){
-  const gy=W.gy,nb=Math.max(1,Math.round(L/(o.bay||7))),bw=L/nb,hs=o.hs||9.5,pil=o.pil??2,dk=o.dark??38,Z=d=>zf+out*d,x0=-L/2,uf=o.unfinished,
+  const sty=o.sty||0,gy=W.gy,nb=Math.max(1,Math.round(L/(o.bay||7))),bw=L/nb,hs=o.hs||9.5,pil=o.pil??2,dk=o.dark??38,Z=d=>zf+out*d,x0=-L/2,uf=o.unfinished,
     fin=x=>!(uf&&x>uf.x0&&x<uf.x1),yc=yTop-1.0;
   const gAt=(x,w=0)=>{let m=1e9;for(const dx of[-w,0,w])for(const d of[-1.5,0,2,5]){const q=S.p(x+dx,0,Z(d));m=Math.min(m,gy(q[0],q[2]));}return m;};
   const B=(cx,y0,cz,hx,h,hz,f)=>box(g,S,cx,y0-S.oy,cz,hx,h,hz,f);
-  const rot=S.rot+(out<0?Math.PI:0),addX=(geo,x,y,part,seed)=>{const M=new THREE.Matrix4().makeRotationY(rot),p=S.p(x,y-S.oy,zf);M.setPosition(p[0],p[1],p[2]);g.set(part,seed);g.addGeo(geo,M);};
-  for(const[ca,cb]of uf?[[x0-.4,Math.max(x0-.4,uf.x0)],[Math.min(-x0+.4,uf.x1),-x0+.4]]:[[x0-.4,-x0+.4]]){if(cb-ca<.5)continue;g.set(pil,.5);B((ca+cb)/2,yTop-1.0,Z(.6),(cb-ca)/2,1.0,.6,31&~32);B((ca+cb)/2,yTop-1.35,Z(.3),(cb-ca)/2-.2,.4,.3,31&~32);}   // cornice and its soffit course
+  const rot=S.rot+(out<0?Math.PI:0),addX=(geo,x,y,part,seed)=>{const M=new THREE.Matrix4().makeRotationY(rot),p=S.p(x,y-S.oy,zf);M.setPosition(p[0],p[1],p[2]);g.set(part,seed,part===pil?sty:0);g.addGeo(geo,M);};
+  for(const[ca,cb]of uf?[[x0-.4,Math.max(x0-.4,uf.x0)],[Math.min(-x0+.4,uf.x1),-x0+.4]]:[[x0-.4,-x0+.4]]){if(cb-ca<.5)continue;g.set(pil,.5,sty);B((ca+cb)/2,yTop-1.0,Z(.6),(cb-ca)/2,1.0,.6,31&~32);B((ca+cb)/2,yTop-1.35,Z(.3),(cb-ca)/2-.2,.4,.3,31&~32);}   // cornice and its soffit course
   let nA=0;
   for(let j=0;j<nb;j++){const xa=x0+j*bw,xc=xa+bw/2,gB=gAt(xc,bw*.4);
-    if(!fin(xc)){g.set(pil,.5);continue;}
+    if(!fin(xc)){g.set(pil,.5,sty);continue;}
     for(let k=0;k<4;k++){const yt=yc-k*hs,yb=yt-hs;if(yt<gB+2.5)break;
       const y0=Math.max(yb+.9,gB+.15),ah=yt-.9-y0,aw=Math.min(bw-2.5,6);if(ah<.5*(hs-1.8)||aw<1.8)continue;   // a storey the ground cuts to less than half is left as plain wall
       addX(_archGeo(aw,ah,.5,true),xc,y0,pil,.5);addX(_archGeo(aw,ah,.2,false),xc,y0,dk,.5);nA++;
-      g.set(pil,.5);B(xc,yb-.1,Z(.2),bw/2-.55,.55,.2,31&~32);}   // string course under every storey, between the buttresses
-    g.set(pil,.5);B(xc,yc-.25,Z(.2),bw/2-.55,.55,.2,31&~32);}
-  for(let i=0;i<=nb;i++){const x=x0+i*bw;if(uf&&x>uf.x0+.1&&x<uf.x1-.1)continue;const b=gAt(x,.7)-1.5;g.set(pil,.5);B(x,b,Z(.35),.62,yTop-1.0-b,.35,31&~32);B(x,yc-1.1,Z(.45),.82,.55,.45,31&~32);}   // buttress pilasters with a capital
+      g.set(pil,.5,sty);B(xc,yb-.1,Z(.2),bw/2-.55,.55,.2,31&~32);}   // string course under every storey, between the buttresses
+    g.set(pil,.5,sty);B(xc,yc-.25,Z(.2),bw/2-.55,.55,.2,31&~32);}
+  for(let i=0;i<=nb;i++){const x=x0+i*bw;if(uf&&x>uf.x0+.1&&x<uf.x1-.1)continue;const b=gAt(x,.7)-1.5;g.set(pil,.5,sty);B(x,b,Z(.35),.62,yTop-1.0-b,.35,31&~32);B(x,yc-1.1,Z(.45),.82,.55,.45,31&~32);}   // buttress pilasters with a capital
   if(uf){const xa=Math.max(x0,uf.x0),xb=Math.min(-x0,uf.x1),n=Math.max(2,Math.round((xb-xa)/2.4)),P=(x,y,d)=>S.p(x,y,Z(d));   // scaffolding: poles, ledgers, putlogs and two plank decks
     for(let i=0;i<=n;i++){const x=xa+(xb-xa)*i/n,b=gAt(x)-.4,h=yTop+2.5-b;g.set(32,.5);B(x,b,Z(1.5),.07,h,.07,31&~32);B(x,b,Z(2.9),.07,h,.07,31&~32);
       for(let l=0;l<=Math.floor(h/3.2);l++){const y=b+1.5+l*3.2;if(y>yTop+2)break;g.set(32,.4);B(x,y,Z(2.2),.04,.1,1.5,31);}}

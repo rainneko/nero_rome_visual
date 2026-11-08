@@ -125,7 +125,7 @@ function placeShopWares(W){const S=W.street,Ls=W.rdWares||[];if(!S)return;let n=
   const at=(x,z)=>{const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz?j*S.nx+i:-1;};
   for(const w of Ls){if(w.w!==W||n>=1800)continue;const fx=w.x+Math.sin(w.r)*1.1,fz=w.z+Math.cos(w.r)*1.1,k=at(fx,fz);
     if(k<0||!S.grd[k]||S.grd[k]===3||S.road[k]||S.solid[k]||S.court[k]||S.stair?.[k])continue;
-    if((typeof AUREA_SITE==='function'&&(AUREA_SITE(w.x,w.z)||AUREA_VEST_SITE(w.x,w.z)))||(typeof VAL==='function'&&VAL(w.x,w.z)))continue;
+    if((typeof AUREA_GONE==='function'?AUREA_GONE(w.x,w.z):typeof AUREA_SITE==='function'&&(AUREA_SITE(w.x,w.z)||AUREA_VEST_SITE(w.x,w.z)))||(typeof VAL==='function'&&VAL(w.x,w.z)))continue;   // not on the Golden House ground (it goes with the fire)
     const gy=W.gy(fx,fz);if(Math.abs(gy-w.y)>.45)continue;
     const nm=N[Math.min(4,Math.floor(w.k*5))];romePlace(nm,w.x,Math.min(gy,w.y)-.03,w.z,w.r,{inst:1});cnt[nm]=(cnt[nm]||0)+1;n++;}
   W.nShopWares=n;console.log('shop wares',n,JSON.stringify(cnt));}

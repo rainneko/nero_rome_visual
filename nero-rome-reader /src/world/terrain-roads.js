@@ -5,9 +5,9 @@ class Foot{constructor(cell=64){this.cell=cell;this.map=new Map();this.list=[];}
   add(cx,cz,hw,hd,rot=0,tag){const o={cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd),tag},cs=this.cell;this.list.push(o);
     for(let i=Math.floor((cx-o.r)/cs);i<=Math.floor((cx+o.r)/cs);i++)for(let j=Math.floor((cz-o.r)/cs);j<=Math.floor((cz+o.r)/cs);j++){const k=this.key(i,j);let a=this.map.get(k);if(!a){a=[];this.map.set(k,a);}a.push(o);}return o;}
   addCircle(cx,cz,r,tag){const o=this.add(cx,cz,r,r,0,tag);o.circ=true;return o;}
-  hits(cx,cz,hw,hd,rot,m=0,skip){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell;   // m defaults to 0 (an undefined m made the search radius NaN: every query answered 'free'); skip: a tag to ignore
+  hits(cx,cz,hw,hd,rot,m=0,skip){const q={cx,cz,hw:hw+m,hd:hd+m,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(hw,hd)+m},cs=this.cell,sf=typeof skip==='function';   // m defaults to 0 (an undefined m made the search radius NaN: every query answered 'free'); skip: a tag to ignore, or a test (footprint => true to ignore it)
     for(let i=Math.floor((cx-q.r)/cs);i<=Math.floor((cx+q.r)/cs);i++)for(let j=Math.floor((cz-q.r)/cs);j<=Math.floor((cz+q.r)/cs);j++){const a=this.map.get(this.key(i,j));if(!a)continue;
-      for(const o of a){if(skip&&o.tag===skip)continue;const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
+      for(const o of a){if(skip&&(sf?skip(o):o.tag===skip))continue;const dx=o.cx-cx,dz=o.cz-cz;if(dx*dx+dz*dz>(o.r+q.r)**2)continue;if(obb(o,q))return true;}}return false;}}
 function obb(a,b){const ax=[[a.c,-a.s],[a.s,a.c],[b.c,-b.s],[b.s,b.c]],dx=b.cx-a.cx,dz=b.cz-a.cz;
   for(const[nx,nz]of ax){const ra=a.hw*Math.abs(a.c*nx-a.s*nz)+a.hd*Math.abs(a.s*nx+a.c*nz),rb=b.hw*Math.abs(b.c*nx-b.s*nz)+b.hd*Math.abs(b.s*nx+b.c*nz);
     if(Math.abs(dx*nx+dz*nz)>ra+rb)return false;}return true;}
@@ -33,6 +33,20 @@ function buildPatch(W,sp,hfn,zoneFn){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-
   const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);
   const pt=W.patch={x0,z0,dx,dz,nx,nz,h:H,x1:x0+nx*dx,z1:z0+nz*dz};
   W.gy=(x,z)=>{const p=pt;if(x<p.x0||x>=p.x1||z<p.z0||z>=p.z1)return gy0(x,z);const fx=(x-p.x0)/p.dx,fz=(z-p.z0)/p.dz,i=Math.min(p.nx-1,Math.floor(fx)),j=Math.min(p.nz-1,Math.floor(fz)),u=fx-i,v=fz-j,N=p.nx+1,a=p.h[j*N+i],b=p.h[j*N+i+1],c=p.h[(j+1)*N+i],d=p.h[(j+1)*N+i+1];return(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);};}
+/* The ground W.gy gives on the desktop tier (coarse grid of n cells, the finer patches as buildPatch makes them), whatever tier this page runs at.
+   For the hill roads that go into the road join key (Clivus Palatinus, Clivus Capitolinus): the low tier's coarser grid moved them, so joins baked
+   at one tier were stale at the other and the page joined the roads live. Nodes are worked out on demand and cached; same float rounding as the grids. */
+function fixedGround(W,ext,n,hfn,patches){const x0=ext[0],z0=ext[1],dx=(ext[2]-x0)/n,dz=(ext[3]-z0)/n,N=n+1,C=new Map(),tri=(a,b,c,d,u,v)=>(u+v<=1)?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);
+  const ch=(i,j)=>{const k=j*N+i;let v=C.get(k);if(v===undefined){v=Math.fround(hfn(x0+i*dx,z0+j*dz));C.set(k,v);}return v;};
+  let gy=(x,z)=>{const fx=clamp((x-x0)/dx,0,n-1e-3),fz=clamp((z-z0)/dz,0,n-1e-3),i=Math.floor(fx),j=Math.floor(fz);return tri(ch(i,j),ch(i+1,j),ch(i,j+1),ch(i+1,j+1),fx-i,fz-j);};
+  for(const p of patches||[]){const r=p.rect,sub=p.sub||4,i0=Math.max(0,Math.ceil((r[0]-x0)/dx)),i1=Math.min(n,Math.floor((r[2]-x0)/dx)),j0=Math.max(0,Math.ceil((r[1]-z0)/dz)),j1=Math.min(n,Math.floor((r[3]-z0)/dz));
+    const nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,fdx=dx/sub,fdz=dz/sub,px=x0+i0*dx,pz=z0+j0*dz,X1=px+nx*fdx,Z1=pz+nz*fdz,g0=gy,L=[new Map(),new Map(),new Map(),new Map()];
+    const H=(l,i,j)=>{const k=j*NX+i,M=L[l];let v=M.get(k);if(v!==undefined)return v;   // level 0 as buildPatch samples it, then its three smoothing passes
+      if(l===0){const x=px+i*fdx,z=pz+j*fdz,hc=g0(x,z),w=sstep(0,1.6,Math.min(i,nx-i,j,nz-j)/sub);v=Math.fround(w>0?lerp(hc,p.hfn(x,z),w):hc);}
+      else{v=H(l-1,i,j);if(j>=2&&j<NZ-2&&i>=2&&i<NX-2){let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=H(l-1,i+a,j+b);v=Math.fround(lerp(v,s/9,sstep(0,1,Math.min(i,j,NX-1-i,NZ-1-j)/(2*sub))));}}
+      M.set(k,v);return v;};
+    gy=(x,z)=>{if(x<px||x>=X1||z<pz||z>=Z1)return g0(x,z);const fx=(x-px)/fdx,fz=(z-pz)/fdz,i=Math.min(nx-1,Math.floor(fx)),j=Math.min(nz-1,Math.floor(fz));return tri(H(3,i,j),H(3,i+1,j),H(3,i,j+1),H(3,i+1,j+1),fx-i,fz-j);};}
+  return Object.assign(Object.create(W),{gy});}
 function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float32Array(N*N*3),Z=new Float32Array(N*N*4);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
   const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
@@ -82,20 +96,24 @@ function gradeRoads(W,list,o){const g=W.grid,n=g.n,N=n+1,tgt=new Float32Array(N*
 /* Uphill stretches (author, 2026-10-26: "没有那么宽的上山道路"): where a graded main road climbs more than o.enter over a 2*o.win m window it is an
    ordinary street, o.w m wide (no kerbs, no ruts), until the grade falls below o.exit. Climbs shorter than o.min are left wide, unless they pass 28 %
    over 6 m (a flight of roadStairs goes there: it is a street with 6 m of street before and after it); flat gaps shorter than o.gap are joined. Each road is cut into pieces; a narrowed piece carries {hill:true,w0} as a third entry, so the street raster can pave it by
-   district (marble, stone or earth). Run after gradeRoads (it reads the graded bed) and before roads() (the narrow pieces reserve a narrow corridor). */
-function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0};
-  for(const R of list){const[w,P]=R;if(w<=HW+.5){out.push(R);continue;}
+   district (marble, stone or earth). Run after gradeRoads (it reads the graded bed) and before roads() (the narrow pieces reserve a narrow corridor).
+   W.roadHillRuns: per road of the list, the narrowed stretches as [from, to] metres along it (null: a road no wider than o.w). o.runs: such a list to cut by
+   instead of the ground (the desktop tier's, baked in road-network.js: the low tier's coarser ground would narrow other stretches, road-first-city.md 4.3). */
+function roadHillSplit(W,list,o){const out=[],HW=o.w||5,st={pieces:0,metres:0},RUNS=[];
+  for(let ri=0;ri<list.length;ri++){const R=list[ri],[w,P]=R;if(w<=HW+.5){out.push(R);RUNS.push(null);continue;}
     const cum=[0];for(let i=1;i<P.length;i++)cum.push(cum[i-1]+Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]));const L=cum[cum.length-1];
     const at=s=>{let i=1;while(i<P.length-1&&cum[i]<s)i++;const t=clamp((s-cum[i-1])/Math.max(1e-6,cum[i]-cum[i-1]),0,1);return[lerp(P[i-1][0],P[i][0],t),lerp(P[i-1][1],P[i][1],t)];};
+    let runs=o.runs&&o.runs[ri];if(!runs){
     const n=Math.max(1,Math.ceil(L/3)),S=[],Y=[];for(let k=0;k<=n;k++){const p=at(L*k/n);S.push(L*k/n);Y.push(W.gy(p[0],p[1]));}
     const grade=r=>S.map((s,i)=>{let a=i,b=i;while(a>0&&s-S[a-1]<=r)a--;while(b<n&&S[b+1]-s<=r)b++;return Math.abs(Y[b]-Y[a])/Math.max(1,S[b]-S[a]);}),gr=grade(o.win||15),loc=grade(3);
-    let on=false,runs=[];for(let i=0;i<=n;i++){const was=on,stp=loc[i]>.28;on=stp||(on?gr[i]>o.exit:gr[i]>o.enter);if(on&&!was)runs.push([S[i],S[i],false]);if(on){const r=runs[runs.length-1];r[1]=S[i];r[2]=r[2]||stp;}}
+    let on=false;runs=[];for(let i=0;i<=n;i++){const was=on,stp=loc[i]>.28;on=stp||(on?gr[i]>o.exit:gr[i]>o.enter);if(on&&!was)runs.push([S[i],S[i],false]);if(on){const r=runs[runs.length-1];r[1]=S[i];r[2]=r[2]||stp;}}
     for(const r of runs)if(r[2]){r[0]=Math.max(0,r[0]-6);r[1]=Math.min(L,r[1]+6);}
     const M=[];for(const r of runs){const q=M[M.length-1];if(q&&r[0]-q[1]<o.gap){q[1]=Math.max(q[1],r[1]);q[2]=q[2]||r[2];}else M.push(r);}
-    runs=M.filter(r=>r[2]||r[1]-r[0]>=o.min);if(runs.length){if(runs[0][0]<o.gap)runs[0][0]=0;if(L-runs[runs.length-1][1]<o.gap)runs[runs.length-1][1]=L;}
-    const piece=(a,b,ww,hill)=>{if(b-a<1)return;const pts=[at(a)];for(let i=1;i<P.length-1;i++)if(cum[i]>a+.5&&cum[i]<b-.5)pts.push(P[i].slice());pts.push(at(b));out.push(hill?[ww,pts,{hill:true,w0:w}]:[ww,pts]);};
+    runs=M.filter(r=>r[2]||r[1]-r[0]>=o.min);if(runs.length){if(runs[0][0]<o.gap)runs[0][0]=0;if(L-runs[runs.length-1][1]<o.gap)runs[runs.length-1][1]=L;}}
+    RUNS.push(runs.map(r=>[r[0],r[1]]));
+    const piece=(a,b,ww,hill)=>{if(b-a<1)return;const pts=[at(a)];for(let i=1;i<P.length-1;i++)if(cum[i]>a+.5&&cum[i]<b-.5)pts.push(P[i].slice());pts.push(at(b));out.push(hill?[ww,pts,Object.assign({},R[2],{hill:true,w0:w})]:R[2]?[ww,pts,R[2]]:[ww,pts]);};   // a piece keeps its road's meta (name, kind, stairs)
     let s0=0;for(const[a,b]of runs){piece(s0,a,w,false);piece(a,b,HW,true);st.pieces++;st.metres+=b-a;s0=b;}piece(s0,L,w,false);}
-  st.metres=Math.round(st.metres);W.roadHill=st;return out;}
+  st.metres=Math.round(st.metres);W.roadHill=st;W.roadHillRuns=RUNS;return out;}
 
 /* ---------- city fabric ---------- */
 function genCity(W,o){const R=RNG(o.seed||7),chunks=new Map(),cs=o.chunk||700;let n=0;
@@ -133,7 +151,8 @@ function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R(
   const F=frame(x,0,z,rot),seed=R(),res=['insula','tower','domus','shed','hut','slum'].includes(typ),floorY=(res?y0:y1)+.15,winT=Math.floor(R()*8);let grT=0;
   if(typ==='insula'&&R()<Z.shops)grT=R()<.55?1:2;if(typ==='domus')grT=R()<.5?2:0;if(typ==='ware')grT=3;
   let fl=2;if(R()<.7)fl|=8;if(R()<.55)fl|=16;if(R()<.3)fl|=32;if(R()<.22)fl|=64;if(R()<.18)fl|=4;if(typ==='tower'||(typ==='insula'&&R()<.13))fl|=256;
-  const part=R()<(Z.brick||0)?9:0,yT=floorY+gH+(nSt-1)*sH,lit=.4+R()*.6;
+  const tap=(typ==='insula'||typ==='tower')&&nSt>=4;if(tap)fl|=STOREY_TAPER;   // the low top storeys of a tenement (materials.js stH)
+  const part=R()<(Z.brick||0)?9:0,yT=floorY+gH+stUp(nSt-1,sH,tap),lit=.4+R()*.6;
   const fac={part,seed,sty:winT+8*grT,fl,nSt,gH,sH,lit,shopMask:R()<.5?1:5,doorSide:Math.floor(R()*4),burn:Z.burn?Z.burn(x,z)*(R()<.65?1:0):0};
   const yB=res?y0-.25:y0-2.5;
   if(typ==='hut'){const hp=R()<.6?22:30,hf={part:hp,seed,sty:3,fl:16|2,nSt:1,gH:3,sH:3,lit:.4,burn:0},yT2=floorY+3;rectWalls(g,F,0,0,w,d,yB,yT2,floorY,hf);const t0=g.nv;roof(g,F,'gable',0,0,w,d,yT2,(24+R()*10)*DEG,.35,seed+.2,{part:hp,seed,nSt:1,gH:3,sH:3,floorY});if(R()<.5)retag(g,1,21,t0);return;}
@@ -159,8 +178,8 @@ function emitBuilding(W,g,typ,x,z,rot,w,d,nSt,y0,y1,R,Z,gH=4.1+R()*.9,sH=3.05+R(
   const rr=R();const rt=typ==='tower'?'pyr':typ==='ware'?'gable':rr<.48?'hip':rr<.86?'gable':'flat';
   const wf=Object.assign({},fac,{floorY});
   roof(g,F,rt,0,0,w,d,yT,(typ==='tower'?24:19+R()*6)*DEG,typ==='tower'?1.2:.75,seed+.2,wf);
-  if(typ==='insula'&&R()<.22){const tw=Math.min(w,d)*.45,tx=(R()<.5?-1:1)*(w/2-tw/2),tz=(R()<.5?-1:1)*(d/2-tw/2),tn=nSt+1+(R()<.3?1:0),tY=floorY+gH+(tn-1)*sH;
-    houseRectWalls(W,g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256,shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
+  if(typ==='insula'&&R()<.22){const tw=Math.min(w,d)*.45,tx=(R()<.5?-1:1)*(w/2-tw/2),tz=(R()<.5?-1:1)*(d/2-tw/2),tn=nSt+1+(R()<.3?1:0),tY=floorY+gH+stUp(tn-1,sH,tn>=4);
+    houseRectWalls(W,g,F,tx,tz,tw,tw,floorY,tY,floorY,Object.assign({},fac,{nSt:tn,fl:fl|256|(tn>=4?STOREY_TAPER:0),shopMask:0}));roof(g,F,'hip',tx,tz,tw,tw,tY,24*DEG,1.,seed+.4);}
   if(typ==='insula'&&nSt>=3&&R()<.28){const by=floorY+gH+sH,bw=w*.7;g.set(3,seed);box(g,F,0,by-.2,d/2+.55,bw/2,.2,.55,31);box(g,F,0,by,d/2+1.05,bw/2,.95,.05,31);
     for(let k=-bw/2;k<=bw/2;k+=1.8)box(g,F,k,by-1.6,d/2+1.05,.06,1.6,.06,15);}
   if(grT>0&&R()<.55){const n=Math.max(1,Math.floor(w/3.4));for(let i=0;i<n;i++){if(R()<.35)continue;const bx=-w/2+(i+.5)*w/n,aw=w/n*.42,ay=floorY+gH-.75;g.set(8,R());

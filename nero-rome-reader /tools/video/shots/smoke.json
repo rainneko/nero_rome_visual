@@ -1,0 +1,10 @@
+{
+  "fps": 30, "width": 1920, "height": 1080, "scale": 1,
+  "defaults": {"state": 0, "season": 1, "tod": 0.3, "weather": "clear", "smog": 0},
+  "shots": [
+    {"name": "smoke-forum-seasons", "seconds": 6, "path": [{"view": "forum"}], "orbit": 8, "season": [0, 1, 2, 3]},
+    {"name": "smoke-palatine-dusk", "seconds": 4, "path": [{"view": "palatine"}, {"view": "palatine", "zoom": 0.8, "yaw": 12}], "tod": [0.62, 0.8]},
+    {"name": "smoke-antium", "seconds": 3, "page": "antium", "path": [{"view": "antium"}, {"view": "antTower"}], "tod": 0.72},
+    {"name": "smoke-story-rise", "seconds": 4, "page": "rome", "path": [{"view": "south"}], "events": [{"t": 0, "state": 2}, {"t": 1, "state": 3, "rise": true}]}
+  ]
+}

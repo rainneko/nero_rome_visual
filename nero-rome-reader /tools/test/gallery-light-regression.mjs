@@ -25,12 +25,14 @@ const autoUV=block(materials,'function autoUV');
 const frame=block(materials,'function frame');
 const box=block(materials,'function box');
 const wall=block(materials,'function wall');
+const taper=(materials.match(/const STOREY_TAPER=[^;]+;/)||[''])[0]+'\n'+block(materials,'function stH(')+'\n'+block(materials,'function stUp(');   // the storey taper the house shell reads (2026-11-02)
+assert(taper.startsWith('const STOREY_TAPER='),'production storey taper exists');
 const arcade=block(builders,'function arcade(');
 const lotStart=lots.indexOf('function pArea(');
 const lotEnd=lots.indexOf('// one lot = one building');
 assert(lotStart>=0&&lotEnd>lotStart,'production house shell source exists');
 const context={THREE,Math};vm.createContext(context);
-vm.runInContext([gb,nrm,autoUV,frame,box,wall,arcade,lots.slice(lotStart,lotEnd),
+vm.runInContext([gb,nrm,autoUV,frame,box,wall,taper,arcade,lots.slice(lotStart,lotEnd),
   'globalThis.api={GB,frame,houseGalleryPlan,houseShell,houseRectWalls};'].join('\n'),context);
 const {GB,frame:makeFrame,houseGalleryPlan,houseShell,houseRectWalls}=context.api;
 const planSeed=Array.from({length:100},(_,i)=>.01+i*.01).find(seed=>

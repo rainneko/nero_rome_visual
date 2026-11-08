@@ -4,7 +4,7 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:1,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:1,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
+const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 vec3 romePat(vec3 c,vec3 wp,float pat){
@@ -24,6 +24,13 @@ vec3 romePat(vec3 c,vec3 wp,float pat){
  else if(pat<6.5){c*=(.9+.14*fbm2(uv*vec2(.25,.12)))*mix(1.,.85,smoothstep(.55,.8,fbm2(vec2(uv.x*1.3,uv.y*.15))));}
  else if(pat<7.5){c*=.88+.2*vn2(uv*vec2(2.1,1.));}
  else if(pat<8.5)c*=.8+.35*fbm2(wp.xz*.4);
+ else if(pat>9.5){   // natural rock (the hills' tufa and limestone): wavy bedding planes 1.5-3 m apart, each bed its own tone, dark vertical joints, ochre and grey stains,
+  // moss and grass on the up-facing ledges (rock and rock2 used the ashlar courses of pattern 1, so the hill bases read as cut stone or concrete; the author, 2026-11-03)
+  float st=wp.y+2.4*fbm2(wp.xz*.03)+.6*vn2(uv*vec2(.08,.3));float bed=floor(st/2.3),lay=h12(vec2(bed,7.3));
+  float seam=rpJ(st,2.3,.06+.05*lay);float jx=uv.x*.21+.9*vn2(vec2(uv.x*.04,bed*.7)),jd=abs(fract(jx)-.5);float jt=(1.-smoothstep(.015,.05,jd))*step(.35,h12(vec2(floor(jx),bed)));
+  c*=(.78+.34*lay)*(.82+.32*fbm3(wp*.19))*mix(1.-.42*seam-.5*jt*(1.-n.y*n.y),1.,far*.7);
+  c=mix(c,c*vec3(1.16,.97,.74),smoothstep(.56,.78,fbm2(wp.xz*.045+vec2(wp.y*.05,0.))));c=mix(c,vec3(dot(c,vec3(.33)))*1.05,smoothstep(.6,.8,fbm2(wp.zx*.06+3.7))*.35);
+  c=mix(c,vec3(.19,.22,.085)*(.8+.4*fbm2(wp.xz*.5)),smoothstep(.6,.85,n.y)*smoothstep(.38,.62,fbm2(wp.xz*.22))*.85);}
  else if(n.y>.25&&n.y<.985){vec3 ac=normalize(cross(vec3(0.,1.,0.),n));vec3 dn=normalize(cross(n,ac));float u=dot(wp,ac)/.47,v=dot(wp,dn)/.42;
   float cu=clamp(1.-fwidth(u)*1.1,0.,1.),cv=clamp(1.-fwidth(v)*1.1,0.,1.);       // band-limited: stripes fade only when finer than a pixel
   float rib=.5+.5*cos(6.2832*u),crs=smoothstep(0.,.25,fract(v)),th=h12(vec2(floor(u),floor(v)));
@@ -35,7 +42,7 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
   if(mt.name==='dark'||mt.name==='gallery_wall'){mt.color.setRGB(.40,.35,.28);mt.roughness=.92;mt.userData.galleryInterior=true;}
   if(mt.name==='gallery_floor'){mt.color.setRGB(.47,.42,.34);mt.userData.galleryInterior=true;}
-  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.36,.31,.23],rock2:[.27,.23,.165],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
@@ -47,15 +54,28 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   mt.customProgramCacheKey=()=>'romeglb'+pat+(mt.name==='moss'?'m':'')+(mt.userData.galleryInterior?'gi':'');mt.needsUpdate=true;}
 // register a placement; fn(g,F) draws the stand-in (optional). o: {parent: group, sx, sy, sz: scale}
 function romeStand(W,n,x,z,y,rot,fn,o){const G=layTag(new THREE.Group(),'models');G.name='stand_'+n;
-  if(fn){flushColumns(W);const g=new GB(1<<14);W.colGroup=G;fn(g,frame(x,y,z,rot||0));const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=null;}
+  if(fn){const pend=W.cols,G0=W.colGroup;W.cols={};for(const k in pend)W.cols[k]=[];   // the stand-in's own columns only: the ones still waiting (e.g. a peristyle the Golden House takes) go where their builder flushes them
+    const g=new GB(1<<14);W.colGroup=G;fn(g,frame(x,y,z,rot||0));const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=G0;W.cols=pend;}
   ((o&&o.parent)||W.scene).add(G);ROME.GLB.push({n,x,y:y+((o&&o.dy)||0),z,r:(o&&o.grot!==undefined)?o.grot:(rot||0),stand:G,o:o||{}});return G;}   // o: {dy: GLB height offset, grot: GLB turn if it differs from the stand-in's, hide, parent, sx/sy/sz}
 // a GLB without a stand-in; o.inst = true draws many copies as one InstancedMesh per part (street kit)
 function romePlace(n,x,y,z,rot,o){ROME.GLB.push({n,x,y,z,r:rot||0,o:o||{}});}
+// A model placed three times or more is drawn as one InstancedMesh per part, per parent group and per ROME_INST_CELL square (instTiles/instCull, builders.js):
+// a clone per placement cost a draw call per part (170 insulae of 13-18 parts were ~2500 calls a frame). p.ghost() makes that placement's clone on demand (__floatCheck).
+const ROME_INST_CELL=1000;
 function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});
-  const inst=[];for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const o=layTag(scene.clone(true),'models');p.obj=o;o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;
-    if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);(p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene).add(o);if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
-  if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
-    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.21,.18,.127],rock2:[.165,.138,.096],moss:[.188,.216,.08]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn)mt.color.setRGB(...RK);if(RK&&m.material.name==='moss'){mt.userData.rome=0;romeMat(mt);}const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;W0.scene.add(im);});}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
+  const inst=[],share=ROME.GLB.filter(p=>p.n===n&&!p.o.inst).length>=3,byPar=new Map();
+  for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const par=p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene;
+    const mk=()=>{const o=layTag(scene.clone(true),'models');o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);return o;};
+    if(share){p.ghost=mk;if(!byPar.has(par))byPar.set(par,[]);byPar.get(par).push(p);}else{p.obj=mk();par.add(p.obj);}
+    if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
+  if(byPar.size){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
+    for(const[par,L]of byPar)for(const I of instTiles(L.length,i=>[L[i].x,L[i].z],ROME_INST_CELL))scene.traverseVisible(m=>{if(!m.isMesh)return;const im=new THREE.InstancedMesh(m.geometry,m.material,I.length);
+      I.forEach((j,i)=>{const p=L[j],sc=p.o.sx||p.o.sy||p.o.sz;S.set(sc?p.o.sx||1:1,sc?p.o.sy||1:1,sc?p.o.sz||p.o.sx||1:1);M.compose(T.set(p.x,p.y,p.z),Q.setFromEuler(E.set(0,p.r,0)),S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});   // the clone's own transform, as mk()
+      im.castShadow=im.receiveShadow=true;par.add(layTag(instCull(im),'models'));});}
+  if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler(),byL={};   // one set of InstancedMeshes per story-state group (o.parentLayer), the rest in the scene
+    for(const p of inst)(byL[p.o.parentLayer||'']||(byL[p.o.parentLayer||'']=[])).push(p);
+    for(const lk in byL){const inst=byL[lk],par=(lk&&W0.preLayers&&W0.preLayers[lk])||W0.scene;
+    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.27,.23,.17],rock2:[.2,.17,.12],moss:[.13,.155,.06]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn){mt.userData.rome=0;romeMat(mt);mt.color.setRGB(...RK);}/* a clone loses onBeforeCompile: the instanced rocks had no rock pattern or haze */const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
   const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
     const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;
@@ -70,7 +90,7 @@ function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return
    1 m above the floor level (the model's y) = buried. Returns [{n,x,z,y,floatN,floatMax,at,buriedN,buriedMax}], logs the ones with problems. */
 window.__floatCheck=(opt)=>{const W=W0,out=[],CS=3,tolF=opt&&opt.tolF||.4,tolB=opt&&opt.tolB||1,A=new THREE.Vector3(),B=new THREE.Vector3(),C=new THREE.Vector3(),sup=ROME.supports||[];
   const supported=(x,z)=>sup.some(q=>{const dx=x-q.x,dz=z-q.z,u=q.c*dx-q.s*dz,v=q.s*dx+q.c*dz;return Math.abs(u)<q.hw+1&&Math.abs(v)<q.hd+1;});   // ROME.supports: footprints of hand-built foundations (palBlocks) that carry a model where the ground is far below
-  for(const p of ROME.GLB){const o=p.obj;if(!o||!o.visible)continue;o.updateMatrixWorld(true);const cells=new Map();
+  for(const p of ROME.GLB){const o=p.obj||(p.ghost&&p.ghost());if(!o||!o.visible)continue;o.updateMatrixWorld(true);const cells=new Map();
     const put=(x,y,z)=>{const i=Math.floor(x/CS),j=Math.floor(z/CS),k=i+','+j;let c=cells.get(k);if(!c){c={y:1e9,x:0,z:0,i,j};cells.set(k,c);}if(y<c.y){c.y=y;c.x=x;c.z=z;}};
     o.traverse(m=>{if(!m.isMesh||!m.visible)return;const P=m.geometry.attributes.position,I=m.geometry.index,nT=I?I.count/3:P.count/3;
       for(let t=0;t<nT;t++){const a=I?I.getX(t*3):t*3,b=I?I.getX(t*3+1):t*3+1,c=I?I.getX(t*3+2):t*3+2;A.fromBufferAttribute(P,a).applyMatrix4(m.matrixWorld);B.fromBufferAttribute(P,b).applyMatrix4(m.matrixWorld);C.fromBufferAttribute(P,c).applyMatrix4(m.matrixWorld);
@@ -88,4 +108,19 @@ window.__floatCheck=(opt)=>{const W=W0,out=[],CS=3,tolF=opt&&opt.tolF||.4,tolB=o
   return out;};
 
 // TEST: window.__temple(false) = the old near-white GLB look (colours and grime off), true = the new ivory/grime shading
+/* TEST tool: window.__wallFootCheck() (briefs/rome/podium-stairs-rock.md §5, phase 2). Reads W.wallFeet (terraceEdge, terrace-edge.js): the samples every ~2 m along each
+   terrace wall. Where the wall stands 1 m or more out of the ground (not an opening), a stretch with nothing on the line where wall meets ground (a buttress, a pier,
+   a stair, an arch bay, a rock, a shrub or a cypress: rec.brk, within 1.5 m) whose foot stays within 0.35 m of the straight line between its ends is a straight seam.
+   Where a street runs along the wall foot (q.road, set by terraceFeet) the wall meets a kerb, not the slope: those samples end a run and are counted apart (road).
+   Returns {walls, seams: the ones longer than opt.minL (8 m), long: the number longer than 20 m (must be 0), road: samples along a street, band: the thinnest
+   edge seen from below (coping + parapet, must be 1.2 m or more), bandEdges}. */
+window.__wallFootCheck=(opt)=>{const W=W0,maxL=opt&&opt.maxL||20,minL=opt&&opt.minL||8,seams=[];let long=0,road=0;
+  for(const R of W.wallFeet||[]){const S=R.S,brk=R.brk||[],hit=s=>brk.some(b=>Math.abs(b-s)<=1.5);let run=[];
+    const flush=()=>{let i=0;while(i<run.length-1){let j=i+1;
+        for(;j<run.length;j++){const A=run[i],B=run[j];let ok=true;for(let k=i+1;k<j;k++){const q=run[k],y=A.y+(B.y-A.y)*(q.s-A.s)/(B.s-A.s);if(Math.abs(q.y-y)>.35){ok=false;break;}}if(!ok)break;}
+        const A=run[i],B=run[j-1],len=B.s-A.s;if(len>=minL){seams.push({tag:R.tag,s0:+A.s.toFixed(1),s1:+B.s.toFixed(1),len:+len.toFixed(1),x:+A.x.toFixed(1),z:+A.z.toFixed(1)});if(len>maxL)long++;}
+        i=Math.max(i+1,j-1);}run=[];};
+    for(const q of S){if(q.road&&!q.open&&q.h>=1)road++;if(q.open||q.road||q.h<1||hit(q.s)){flush();continue;}run.push(q);}flush();}
+  const E=(W.terraceEdges||[]).filter(e=>e.band!=null),band=E.length?Math.min(...E.map(e=>e.band)):null;
+  const r={walls:(W.wallFeet||[]).length,seams:seams.sort((a,b)=>b.len-a.len),long,road,band,bandEdges:E.length};console.log('wall feet',JSON.stringify({walls:r.walls,seams:seams.length,long,road,band}));return r;};
 window.__temple=on=>{U.uDbg.value.z=on?0:1;W0.scene.traverse(m=>{if(m.isMesh&&m.material&&m.material.userData.oc){const W={marble:1,travertine:1,plaster:1,plaster2:1,plaster3:1,stone:1,tuff:1}[m.material.name];if(W){if(!m.material.userData.nc)m.material.userData.nc=m.material.color.clone();m.material.color.copy(on?m.material.userData.nc:m.material.userData.oc);}}});};

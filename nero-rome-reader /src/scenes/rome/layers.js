@@ -88,10 +88,46 @@ function movingPath(W,pts,y){const P=densify(pts,4),cum=[0];for(let i=1;i<P.leng
 
 async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeLayer(W,n,r,f);
   W.lights={expl:new THREE.PointLight(0xff8a3a,0,0,2),arc:new THREE.PointLight(0xd8ecff,0,0,2)};for(const k in W.lights)W.scene.add(W.lights[k]);
-  /* balloon */
-  L('balloon',0,(g,G)=>{const F=frame(0,gy(0,667)+92,667,0);g.set(8,.2);lathe(g,F,0,0,0,[[0,-14],[3,-12.5],[8.5,-6],[11,1],[10,8],[6.5,13],[0,14.6]],18);
+  /* balloon (ch.3, 501: “一个朱红色的大球慢慢鼓起来……策诺多鲁斯做了一个双层铜环的炉子，吊在球口下面，烧的是酒精浸过的浮石，几乎没有烟”;
+     505: “吊篮里两个学徒披着白袍”). The envelope is its own mesh hung from its crown, so that W.fx.balloonFill (0–1, default 1) swells it from a
+     hanging drape. W.fx is written per frame by the video recorder (tools/video/record.mjs) and stays empty in the reader. With W.fx.rig the
+     mooring line gives way to the gantry of balloonRig (the launch in the arena). */
+  W.fx=W.fx||{};
+  const CFB=W.circF||frame(0,gy(0,667),667,-29*DEG),BP=CFB.p(0,0,-22),[bx,,bz]=BP;   // on the track in front of the pulvinar: the middle of the Circus is the spina
+  L('balloon',0,(g,G)=>{const y0=gy(bx,bz),F=frame(bx,y0+92,bz,0),E=new GB(1<<13);
+    E.set(8,.2);lathe(E,frame(0,0,0,0),0,0,0,[[0,-28.6],[1.6,-28.2],[3,-27.1],[5,-25],[7,-22.6],[8.5,-20.6],[9.9,-17.8],[10.8,-15.2],[11,-13.6],[10.9,-11.2],
+      [10.5,-8.8],[10,-6.6],[8.9,-4.3],[7.6,-2.5],[6.5,-1.6],[4.6,-.7],[2.4,-.18],[0,0]],36);
+    const env=E.mesh(MAT.city);env.position.set(bx,y0+92+14.6,bz);G.add(env);
+    g.set(40,.35);for(const[r,y]of[[1.25,-16.6],[.95,-17.2]])lathe(g,F,0,y,0,[[r,0],[r+.16,0],[r+.16,.22],[r,.22],[r,0]],20);   // the double bronze ring
+    for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;box(g,F,Math.cos(a)*1.3,-17.2,Math.sin(a)*1.3,.04,3.2,.04,31);}   // and its hangers up to the mouth
     g.set(3,.4);box(g,F,0,-21,0,1.3,1.4,1.3,31);for(const[sx,sz]of[[1,1],[1,-1],[-1,1],[-1,-1]])box(g,F,sx*1.6,-19.6,sz*1.6,.05,6,.05,31);
-    const gt=new GB(256);gt.set(3,.4);box(gt,frame(0,gy(0,667),667,0),0,0,0,.06,71,.06,31);G.add(gt.mesh(MAT.city,false));W.anim.push(t=>{G.position.y=Math.sin(t*.6)*1.8;});});
+    g.set(6,.5);for(const sx of[-.55,.55]){box(g,F,sx,-19.8,0,.24,1.15,.18,31);lathe(g,F,sx,-18.62,0,[[0,0],[.16,.05],[.17,.2],[0,.36]],8);}   // the two apprentices
+    const fl=new THREE.Mesh(new THREE.ConeGeometry(.55,1.6,10),new THREE.MeshBasicMaterial({color:new THREE.Color(1,.62,.22)}));fl.position.set(bx,y0+92-16.1,bz);G.add(fl);   // a small clean flame, no light: every material would pay for one
+    const gt=new GB(256);gt.set(3,.4);box(gt,frame(bx,y0,bz,0),0,0,0,.06,71,.06,31);const tether=gt.mesh(MAT.city,false);G.add(tether);
+    W.anim.push(t=>{G.position.y=Math.sin(t*.6)*1.8;const f=W.fx.balloonFill??1;env.scale.set(.2+.8*f,1,.2+.8*f);fl.visible=f>.15;tether.visible=!W.fx.rig;});});
+  // the launch gantry in the middle of the arena: two masts and the beam the crown hangs from while the envelope fills (W.fx.rig)
+  L('balloonRig',0,(g,G)=>{const F=frame(bx,gy(bx,bz),bz,CFB.rot);g.set(3,.45);   // masts along the track
+    for(const sx of[-15,15]){box(g,F,sx,0,0,.35,37,.35,31);box(g,F,sx,0,0,1.4,.6,1.4,31);}box(g,F,0,36,0,15.6,.6,.4,31);box(g,F,0,34.6,0,.05,1.4,.05,31);
+    W.anim.push(()=>{for(const c of G.children)c.visible=!!W.fx.rig;});});
+  /* the crowd in the Circus on the day of the balloon (ch.3: “人从四面八方涌进来，挤满了每一层。红队、白队、蓝队、绿队的人挥着布条”).
+     The Forum's people (PPLGEO) seated on the cavea of monuments.js: seats rise from 3 m at 42 m off the axis to 24 m at 77 m, straight
+     sides from the carceres to the curve, the curve round x 222; the pulvinar and the three pavilions stay clear. About 50k figures in one draw,
+     in random order so that the quality setting can draw a share of them (fine all, balanced 60 %, smooth 35 %). */
+  L('circusCrowd',0,(g,G)=>{const CF=W.circF||frame(0,gy(0,667),667,-29*DEG),R=RNG(54),P=[],C=[],sp=.62,
+      FAC=[[.7,.1,.07],[.93,.91,.86],[.12,.26,.62],[.14,.45,.18]],pav=x=>[-126.8,0,138.6].some(p=>Math.abs(x-p)<7),
+      add=(lx,lz,r)=>{if(R()<.22)return;P.push(CF.p(lx,3+(r-42)*.6+.12,lz));C.push(R()<.18?FAC[(R()*4)|0]:PPLCOL[(R()*PPLCOL.length)|0]);};
+    for(let r=43.5;r<76.5;r+=.9){
+      for(const s of[1,-1])for(let x=-238;x<218;x+=sp){if((s<0&&x>-41&&x<-13)||pav(x))continue;add(x+(R()-.5)*.12,s*r,r);}
+      const n=Math.floor(Math.PI*r/sp);for(let i=0;i<n;i++){const a=-Math.PI/2+(i+.5)/n*Math.PI;add(222+Math.cos(a)*r,Math.sin(a)*r,r);}}
+    for(let i=P.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[P[i],P[j]]=[P[j],P[i]];[C[i],C[j]]=[C[j],C[i]];}
+    const m=new THREE.InstancedMesh(PPLGEO,MAT.people,P.length),M=new THREE.Matrix4(),c=new THREE.Color(),share={fine:1,balanced:.6,smooth:.35};
+    P.forEach((p,i)=>{M.makeScale(1,.82,1).setPosition(p[0],p[1],p[2]);m.setMatrixAt(i,M);c.setRGB(...C[i]);m.setColorAt(i,c);});
+    m.frustumCulled=false;m.receiveShadow=true;G.add(m);   // r147 InstancedMesh culls on the one figure's bounds at the origin
+    // W.fx.crowdCheer (0–1): everyone stands and jumps, each on their own beat (509: “然后十五万人一起喊了起来”)
+    const ph=P.map(()=>R()*TAU);let was=0;
+    W.anim.push(t=>{const n=Math.round(P.length*(share[perfMode]??.6)),k=W.fx.crowdCheer||0;m.count=n;if(!k&&!was)return;was=k;
+      for(let i=0;i<n;i++){const p=P[i];M.makeScale(1,.82+.18*k,1).setPosition(p[0],p[1]+k*Math.max(0,Math.sin(t*7+ph[i]))*.45,p[2]);m.setMatrixAt(i,M);}
+      m.instanceMatrix.needsUpdate=true;});});
   await msg('建造南岸特区：高炉、平炉、玻璃、肥皂、硫酸……');
   /* south bank industrial zone */
   const ZF=frB(-1190,2760,230,gy(-1190,2760)),Zr=RNG(4),em={A:[],chem:[],steam:[],B:[]};
@@ -416,8 +452,18 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     rectWalls(g,ZF,40,130,56,22,-1,10,0,{part:9,seed:.55,sty:1,fl:8|2,nSt:2,gH:5,sH:5,lit:1});roof(g,ZF,'gableX',40,130,57,23,10,22*DEG,.5,.45,{part:9,seed:.55,nSt:2,gH:5,sH:5,floorY:0});
     g.set(9,.45,0,1);lathe(g,ZF,85,-1,150,[[2.2,0],[1.8,34],[2.1,34.5],[2.1,35.5],[1.6,35.5]],12);g.set(14,.5);for(let k=0;k<4;k++)box(g,ZF,0,0,60+k*4,240,.25,.18,31);
     rectWalls(g,ZF,170,80,40,30,-1,8,0,{part:22,seed:.4,sty:0,fl:1,nSt:1,gH:8,sH:4,lit:0});roof(g,ZF,'gable',170,80,40,30,8,24*DEG,.6,.4,{part:22,seed:.4,nSt:1,gH:8,sH:4,floorY:0});});
-  const farm=(g,x0,z0,x1,z1,nh)=>{for(let x=x0;x<x1;x+=24){{const q=Math.floor((x-x0)/24)%3;g.set(q===2?23:21,q===0?.32:q===1?.55:.12);}g.poly([ZF.p(x,.12,z0),ZF.p(Math.min(x1,x+23),.12,z0),ZF.p(Math.min(x1,x+23),.12,z1),ZF.p(x,.12,z1)],[0,1,0]);}
-    for(let k=0;k<nh;k++){const x=lerp(x0+15,x1-15,(k+.5)/nh),z=lerp(z0,z1,.3+.4*((k*37)%10)/10),F=ZF.sub(x,0,z,k*.7);g.set(30,.3+k*.07);box(g,F,0,-.5,0,3.4,3.4,2.6,31);const t0=g.nv;roof(g,F,'gable',0,0,7.4,5.8,2.9,26*DEG,.3,.4,{part:30,seed:.4,nSt:1,gH:3,sH:3,floorY:0});retag(g,1,21,t0);}};
+  // The farms the works will take (zoneFarm1 states 0-2, zoneFarm2 0-5). No ground of their own: the crop map's fields (farmland.js, painted in the terrain with ragged
+  // edges and the season) run on under them, as all round the zone (the author, 2026-11-03: the even 24 m stripes of grey and green looked unnatural). Here only the
+  // farmsteads: a house (tile or thatch), an open thatched shed, a round threshing floor, straw stacks, a fig or an olive by the door and a row of poplars or elms
+  // along the lane (vines were trained on them, the arbustum). Each keyed to its place, turned a little, on its own ground.
+  const farm=(g,x0,z0,x1,z1,nh)=>{for(let k=0;k<nh;k++){const h=j=>hash2(x0*.37+k*7.13+j*1.31,z0*.29+k*3.71+j*2.93),x=lerp(x0+20,x1-20,(k+.25+.5*h(0))/nh),z=lerp(z0+18,z1-18,.15+.7*h(1)),q0=ZF.p(x,0,z),
+      F=ZF.sub(x,gy(q0[0],q0[2])-ZF.oy,z,(h(2)-.5)*1.4),tile=h(3)<.5;
+    g.set(30,.3+h(4)*.3);box(g,F,0,-.5,0,4.2,3.6,3,31);let t0=g.nv;roof(g,F,'gable',0,0,9,6.6,3.1,26*DEG,.35,.4,{part:30,seed:.4,nSt:1,gH:3.1,sH:3,floorY:0});if(!tile)retag(g,1,21,t0);
+    g.set(3,.35);for(const[px,pz]of[[-3.6,-2],[3.6,-2],[-3.6,2],[3.6,2]])box(g,F,px+9,-.3,pz+1,.15,2.7,.15,31);t0=g.nv;roof(g,F,'gable',9,1,8,5,2.4,22*DEG,.4,.5,{part:30,seed:.5,nSt:1,gH:2.4,sH:2.4,floorY:0});retag(g,1,21,t0);
+    g.set(30,.55);lathe(g,F,-1,-.2,-11,[[5.2,0],[5.2,.28],[0,.28]],14);
+    g.set(21,.35);for(let j=0;j<1+Math.floor(h(5)*3);j++)lathe(g,F,7+j*4.5,-.2,-9-h(6+j)*3,[[2,0],[2.2,1.4],[1.6,2.6],[0,3.6]],8);
+    for(const[px,pz]of[[-6,3.5],[-7.5,-4]].slice(0,1+(h(7)<.5?1:0))){const q=F.p(px,0,pz);W.trees.push([q[0],gy(q[0],q[2]),q[2],h(8)<.55?'fig':'olive',.6+h(9)*.3]);}
+    const ang=h(10)*TAU,ca=Math.cos(ang),sa=Math.sin(ang),pop=h(11)<.6,nT=5+Math.floor(h(12)*5);for(let i=0;i<nT;i++){const d=14+i*(6.5+h(13)*2),q=F.p(ca*d,0,sa*d);W.trees.push([q[0],gy(q[0],q[2]),q[2],pop?'poplar':'broadD',.7+.3*hash2(q[0]*.3,q[2]*.7)]);}}};
   L('zoneFarm1',0,(g)=>farm(g,-10,-175,200,-20,3));L('zoneFarm2',0,(g)=>farm(g,-245,30,245,210,6));
   for(const[a,b,t]of[[2,2,'第一批地：栅栏围起来的一小块，三座高炉和几排木棚。旁边还是农田。'],[3,5,'地往下游扩了一段：平炉、窑、玻璃、肥皂、铅室。'],[6,99,'【待写·第9–13卷】工业用地越来越大，吞掉了旁边的农田和几户人家。']])W.pois.push({n:'南岸工坊',l:'神机公社',x:ZF.ox,z:ZF.oz,y:gy(ZF.ox,ZF.oz)+30,s0:a,s1:b,d:2400,info:t});
   L('cathFrame',8,(g)=>{const len=84,nw=16;g.set(3,.38);for(let z=-len/2;z<=len/2+.01;z+=7){for(const sd of[1,-1]){box(g,CT,sd*(nw/2+8),-1,z,.35,17,.35,31);box(g,CT,sd*nw/2,-1,z,.4,34,.4,31);}

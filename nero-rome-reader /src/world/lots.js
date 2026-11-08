@@ -61,25 +61,25 @@ function houseGallery(W,g,F,L,y,h,o,wrap=true){
   return true;
 }
 function houseShell(W,g,F,L,yB,H,floorY,o){
-  const plan=houseGalleryPlan(L,o),gH=o.gH,sH=o.sH,flags=o.fl||0,two=o.up!==undefined&&o.up!==o.part;
-  const at=k=>floorY+gH+(k-1)*sH;
+  const plan=houseGalleryPlan(L,o),gH=o.gH,sH=o.sH,flags=o.fl||0,two=o.up!==undefined&&o.up!==o.part,tap=!!(flags&STOREY_TAPER);
+  const at=k=>floorY+gH+stUp(k-1,sH,tap),hk=k=>stH(k,sH,tap);
   for(let e=0;e<L.length;e++){
     const A=L[e],B=L[(e+1)%L.length],front=e===0;
     const draw=(a,b,lo,hi)=>{if(hi-lo<.001)return;
       const upper=two&&lo>=floorY+gH-.001,pt=upper?o.up:o.part;
-      const fl=(two?(upper?(o.flUp||16):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072)))|(front&&o.geoWin?524288:0);   // 524288: every bay has its window, for the sills and shutters of romanFrontRelief
+      const fl=(two?(upper?(o.flUp||16)|(flags&STOREY_TAPER):(front?(2|(o.shr?32768:0)):0)):(front?flags:flags&~(2|32768|131072)))|(front&&o.geoWin?524288:0);   // 524288: every bay has its window, for the sills and shutters of romanFrontRelief
       g.set(pt,o.seed,upper?3:front?o.sty:o.sty%8,fl,upper||!two?o.nSt:1,gH,o.burn||0,o.lit);
       wall(g,F,a[0],a[1],b[0],b[1],lo,hi,floorY,sH);};
     const cuts=[yB,H];if(two)cuts.push(floorY+gH);
     const active=plan.filter(t=>t.wrap||front);
-    for(const t of active)cuts.push(at(t.level),at(t.level)+sH);
+    for(const t of active)cuts.push(at(t.level),at(t.level)+hk(t.level));
     const ys=[...new Set(cuts)].sort((a,b)=>a-b);
-    for(let j=0;j<ys.length-1;j++){const lo=ys[j],hi=ys[j+1],gap=active.find(t=>lo>=at(t.level)-.001&&hi<=at(t.level)+sH+.001);
+    for(let j=0;j<ys.length-1;j++){const lo=ys[j],hi=ys[j+1],gap=active.find(t=>lo>=at(t.level)-.001&&hi<=at(t.level)+hk(t.level)+.001);
       if(!gap)draw(A,B,lo,hi);else if(!gap.wrap){draw(A,lp(A,B,gap.t0),lo,hi);draw(lp(A,B,gap.t1),B,lo,hi);}}
   }
-  for(const t of plan){if(t.wrap)houseGallery(W,g,F,L,at(t.level),sH,o,true);else{
+  for(const t of plan){if(t.wrap)houseGallery(W,g,F,L,at(t.level),hk(t.level),o,true);else{
     const a=lp(L[0],L[1],t.t0),b=lp(L[0],L[1],t.t1),dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),depth=1.1;
-    houseGallery(W,g,F,[a,b,[b[0]-dz/len*depth,b[1]+dx/len*depth],[a[0]-dz/len*depth,a[1]+dx/len*depth]],at(t.level),sH,o,false);}}
+    houseGallery(W,g,F,[a,b,[b[0]-dz/len*depth,b[1]+dx/len*depth],[a[0]-dz/len*depth,a[1]+dx/len*depth]],at(t.level),hk(t.level),o,false);}}
   return plan;
 }
 
@@ -115,16 +115,19 @@ function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.h
     if(typeof nobleOverlap==='function'?nobleOverlap(P,f):obb({...o,c:Math.cos(o.rot),s:Math.sin(o.rot)},f))return false;}return true;
 }
 // a house of n storeys stands on this ground: its roof clears the uphill side, and the slope is no more than its lower storeys can take in
+// The fit and the storey caps use the full storey height, as before the taper: the same houses with the same storeys, only lower (the author, 2026-11-02:
+// the low top storeys are there to make some buildings lower, not to fit another floor under the same limit).
 function lotFits(L,o,ground,n){const H=ground.min+.15+o.gH+(n-1)*o.sH,roofRise=L.length===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
   return!(ground.max>H+roofRise)&&!(ground.max-ground.min>lotSlopeLimit(n||1,o.gH,o.sH,Math.abs(pArea(L))));}
 function lotBuild0(W,g,L,o,R,smk){
   if(typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,L))return false;
-  const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!houseRoadClear(W,eave))return false;
+  const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!(o.v2?pcRoadClear(W,eave):houseRoadClear(W,eave)))return false;   // v2 (parcels.js): a road's round footprints are tested as circles, not as their boxes
   const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
   if(W.storeyCut&&!(o.fl&262144)){const n=W.storeyCut(...pCen(L),o.nSt,k=>lotFits(L,o,ground,k)&&(o.minRoofY===undefined||ground.min+.15+o.gH+(k-1)*o.sH>=o.minRoofY));
     if(n!==o.nSt)o=Object.assign({},o,{nSt:n});}   // the height limit outside the Subura (monuments.js), after the lot is placed: no dice drawn, the layout stays
   if(o.up===30&&(o.nSt>4||hash2(Math.round(pCen(L)[0]*3)+4729,Math.round(pCen(L)[1]*3))<.65))o=Object.assign({},o,{up:0});   // timber frame on about a third of the drawn houses, only <= 4 storeys (facades.md); keyed to the place, no dice drawn
-  const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+(o.nSt-1)*sH,n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
+  if(!(o.fl&262144)&&o.nSt>=4)o=Object.assign({},o,{fl:(o.fl||0)|STOREY_TAPER});   // the low top storeys of a tenement (materials.js stH)
+  const groundMin=ground.min,groundMax=ground.max,floorY=groundMin+.15,gH=o.gH,sH=o.sH,H=floorY+gH+stUp(o.nSt-1,sH,!!(o.fl&STOREY_TAPER)),n=L.length,two=o.up!==undefined&&o.up!==o.part,bn=o.burn||0,P=(p,y)=>[p[0],y,p[1]],wp=two?o.up:o.part;
   const yB=groundMin-.25;
   o=Object.assign({},o,{geoWin:true});houseShell(W,g,IDF,L,yB,H,floorY,o);
   const sl=groundMax-groundMin;(W.lotLog=W.lotLog||[]).push({L,yB,floorY,groundMin,groundMax,embeddedRise:sl,terrace:false,storeys:o.nSt,gH,sH,elite:!!(o.fl&262144)});
@@ -132,7 +135,7 @@ function lotBuild0(W,g,L,o,R,smk){
       dep=Math.hypot((A[0]+B[0]-C[0]-D[0])/2,(A[1]+B[1]-C[1]-D[1])/2),tp=Math.tan(o.pitch),yR=H+Math.min(dep*.5*tp,6.5),yE=H-.55*tp;
     g.set(1,o.seed+.2);g.poly([P(E[0],yE),P(E[1],yE),P(e1,yR),P(e0,yR)],[0,1,0]);g.poly([P(e0,yR),P(e1,yR),P(E[2],yE),P(E[3],yE)],[0,1,0]);g.set(4,o.seed);ridgeCap(g,P(e0,yR),P(e1,yR));
     g.set(2,o.seed);for(const[a,b]of[[E[0],E[1]],[E[2],E[3]]])g.poly([P(a,yE-.24),P(b,yE-.24),P(b,yE),P(a,yE)],[b[1]-a[1],0,-(b[0]-a[0])]);
-    g.set(wp,o.seed,0,1,o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
+    g.set(wp,o.seed,0,1|(o.fl&STOREY_TAPER),o.nSt,gH,bn,1);for(const[a,b,m]of[[B,C,m1],[D,A,m0]])g.poly([P(a,H),P(b,H),P(m,yR)],[b[1]-a[1],0,-(b[0]-a[0])]);
     if(smk&&R()<.03)smk.push([(e0[0]+e1[0])/2,yR+.6,(e0[1]+e1[1])/2]);}
   else{const ar=pArea(L),cy=ar>260&&R()<.55?pInset(L,Math.min(5.5,Math.sqrt(ar)*.27)):null,tp=R()<.6?46:11;
     // flat roof terrace (opus signinum or slabs); big blocks get a real light-well court cut through them
@@ -290,12 +293,18 @@ function genBlocks(W,o){(W.blockZones||(W.blockZones=[])).push({zone:o.zone,ext:
   const nd=(i,j)=>N[(i-i0)*NJ+(j-j0)];
   // each block draws from its own dice, keyed to its place in the grid: a change in one block (a lane, a rule) no longer reshuffles every house after it
   for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const R=RNG(hash2(i*7919+(o.seed||11)*65537,j*104729+911)*4294967296);let Qd=[nd(i,j),nd(i+1,j),nd(i+1,j+1),nd(i,j+1)];if(pArea(Qd)<0)Qd=[Qd[0],Qd[3],Qd[2],Qd[1]];
-    const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(dq<1&&R()>.6+dq*.4)continue;
+    const cc=pCen(Qd),Z=o.zone(cc[0],cc[1]);if(!Z)continue;if(o.skip&&Qd.every(p=>o.skip(p[0],p[1])))continue;if(dq<1&&R()>.6+dq*.4)continue;   // o.skip: ground another generator owns (?city=v2: parcels.js), the whole block in it
     let polys=[Qd];if(R()<Z.tri){const diag=R()<.5,key=o.grp?o.grp(cc[0],cc[1]):'';   // spec 5.2: no random triangles of houses; now and then the diagonal lane makes one double-triangle square (F3), at least 240 m apart
       if(key===''&&Z.kind!=='ware'&&typeof faceDoubleTriangle==='function'&&!(W.faceF3||[]).some(p=>Math.hypot(p[0]-cc[0],p[1]-cc[1])<240)){const B3=pInset(Qd,Z.street*.5);if(B3&&faceDoubleTriangle(W,G(cc[0],cc[1],'','squares'),B3,diag,R)){(W.faceF3||(W.faceF3=[])).push(cc);continue;}}}
     for(const P0 of polys){const B=P0.inset?P0:pInset(P0,Z.street*(.8+.4*R())/2);if(!B)continue;
       // a block a main road crosses is cut along the road's corridor; each piece is judged on its own (faces.js): a whole block (F5) goes on below, the rest become squares
-      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(const P of pieces){const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
+      if(!P0.inset&&Z.kind!=='ware'&&typeof faceRoadCut==='function'){const pieces=faceRoadCut(W,B);if(pieces){faceStat(W,'cutBlocks');for(let P of pieces){
+          if((Z.kind==='mid'||Z.kind==='dense')&&typeof faceFrontage==='function'){const fr=faceFrontage(W,P,R,Z.lotW/Math.sqrt(dq)*.85,Math.min(16,Math.max(11,Z.depth||13)),L=>!lotHits(W,L,mg+.8));   // the row of shop houses on the road (faces.js)
+            if(fr){faceStat(W,'frontTried',null,fr.tried);const row=[];for(const L of fr.lots){const ob=lotOBB(L);if(o.lotOK&&!o.lotOK(ob.cx,ob.cz))continue;if(lotHits(W,L,mg+.8)){faceStat(W,'frontHit');continue;}const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined)continue;
+                const p=Z.lot(R);p.burn=Z.burn&&R()<.4?1:0;if(lotBuild(W,G(ob.cx,ob.cz,key),L,p,R,key===''?smk:null)){row.push([ob,L]);faceStat(W,'front');nL++;}else faceStat(W,'frontFail');}
+              for(const[ob,L]of row)W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot).blkLot=L;   // after the row, as a block's lots: neighbours share a party wall
+              P=fr.rest;if(!P)continue;}}
+          const f=faceClass(P),pc=pCen(P),key=o.grp?o.grp(pc[0],pc[1]):'';
           if(f.kind==='F5'){P.inset=true;polys.push(P);}else if(f.kind!=='F0'&&key==='')nL+=facePlace(W,G(pc[0],pc[1],'','squares'),P,f,R,Z.kind);else faceStat(W,'F0',P);}continue;}}
       if(o.pave===true){const pk=o.grp?o.grp(cc[0],cc[1]):'';if(pk!==null&&pk!==undefined)paveBlock(W,G(cc[0],cc[1],pk),P0,B,Z);}const area=pArea(B);if(area<60)continue;if(Z.kind==='ware'){nL+=warehouseBlock(W,G(cc[0],cc[1],''),B,R,mg);continue;}const built=[],lw=Z.lotW/Math.sqrt(dq);
       const ring=Z.kind==='domus'||Z.kind==='ware'||B.length!==4||(area>Z.ringA&&R()<Z.ringP);let lots=[],court=null;   // a piece that is not a quadrilateral (cut by a road) can only take a ring

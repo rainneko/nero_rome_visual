@@ -1,0 +1,17 @@
+{
+  "fps": 30, "width": 1920, "height": 1080, "scale": 2,
+  "defaults": {"state": 0, "season": 1, "tod": 0.3, "weather": "clear", "smog": 0},
+  "shots": [
+    {"name": "p1-01-forum-four-seasons", "seconds": 14, "path": [{"view": "forum"}], "orbit": 14, "season": [0, 1, 2, 3]},
+    {"name": "p1-02-capitol", "seconds": 7, "path": [{"view": "jupiter"}, {"view": "capitol"}], "season": 1, "tod": 0.28},
+    {"name": "p1-03-palatine-autumn", "seconds": 8, "path": [{"view": "palatine"}], "orbit": 10, "push": 0.8, "season": 2, "tod": 0.36},
+    {"name": "p1-04-circus", "seconds": 7, "path": [{"view": "circus"}], "orbit": 12, "season": 1, "tod": 0.42},
+    {"name": "p1-05-tiber-spring", "seconds": 7, "path": [{"view": "boarium"}, {"view": "boarium", "zoom": 0.85, "yaw": -10}], "season": 0, "tod": 0.22},
+    {"name": "p1-06-claudius-dusk", "seconds": 8, "state": 7, "path": [{"view": "claudius"}], "orbit": 8, "tod": [0.7, 0.88]},
+    {"name": "p1-07-city-winter", "seconds": 8, "path": [{"view": "overview"}], "push": 0.85, "season": 3, "tod": 0.34},
+    {"name": "p1-08-antium-sunset", "seconds": 10, "page": "antium", "path": [{"view": "antium"}, {"view": "antTower"}], "season": 1, "tod": 0.74},
+    {"name": "p1-09-ostia", "seconds": 7, "page": "ostia", "path": [{"view": "ostia"}], "orbit": 10, "season": 1, "tod": 0.4},
+    {"name": "p1-10-night-city", "seconds": 8, "page": "rome", "state": 8, "path": [{"view": "birdNight"}], "orbit": 10, "tod": 0.9},
+    {"name": "p1-11-story-54-to-68", "seconds": 16, "path": [{"view": "south"}], "orbit": 6, "events": [{"t": 0, "state": 2}, {"t": 4, "state": 3, "rise": true}, {"t": 9, "state": 6, "rise": true}, {"t": 13, "state": 8, "rise": true}]}
+  ]
+}

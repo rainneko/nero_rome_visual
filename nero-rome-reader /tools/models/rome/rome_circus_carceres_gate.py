@@ -159,8 +159,10 @@ def _street():
         statue(F, sx * 11.5, 9.2, ST_Z + 1.6, 2.8, 'bronze', pedestal=0.0)     # bronze: reads against the white wall
 
 
-def build_gate(F_in):
-    """Add the whole central gate to the scene (Frame F_in is the asset frame)."""
+def build_gate(F_in, street=True):
+    """Add the whole central gate to the scene (Frame F_in is the asset frame).
+    street=False leaves out the street face (+Y) with its steps and statues: rome_circus_carceres.py builds its own
+    street front (arch block, loggia) against y = +8. The arena side is the same either way."""
     global F
     F = F_in
     box(F, 0.0, 0.0, ST_Z, 2 * AR, 2 * GD, -ST_Z, 'marble')                # passage floor (z -1 .. 0)
@@ -174,10 +176,13 @@ def build_gate(F_in):
         _leaf(x, -7.9, -5.9)
         _leaf(x, 5.9, 7.9)
     for yf, s in ((-GD, -1.0), (GD, 1.0)):
+        if s > 0 and not street:
+            continue
         _face(yf, s)
     for sx in (-1, 1):                                                       # gilded Victories on the attic
         box(F, sx * 6.2, 0.0, CAP_Z, 1.4, 1.4, 1.0, 'marble')
         statue(F, sx * 6.2, 0.0, CAP_Z + 1.0, 2.4, 'gold', pedestal=0.0)
     quadriga(F, 0.0, 0.0, CAP_Z, 1.0, 'gold', '-Y')
     _loggia()
-    _street()
+    if street:
+        _street()
