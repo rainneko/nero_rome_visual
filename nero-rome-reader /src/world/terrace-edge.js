@@ -20,7 +20,8 @@ function terraceReserve(W,F,P,o={}){const Q=P.map(p=>{const q=F.p(p[0],0,p[1]);r
       is higher than 2.5 m, blind arches (substructure()) over 9 m, piers at the corners. B4 half-round projections at the rock-spur corners in o.spur (a
       reconstruction). B5 at each opening the wall ends in a pier with a statue or a bronze tripod and turns back into the slope in a stepped wing wall.
    o.skip: edges with no wall (shared with a higher terrace); o.footY[i]: the edge stands on a lower floor at that level (local), not on the ground;
-   o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms).
+   o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms). o.wing=false: no wing walls at the openings (a stair
+   with its own cheek walls comes through).
    Records: W.wallFeet (the samples and what breaks the line of the wall foot: read by terraceFeet and __wallFootCheck) and W.terraceEdges (the band). */
 function terraceEdge(W,g,P,yTop,o={}){
   const F=o.F,top=F.oy+yTop,yW=top-.35,gy=W.gy,n=P.length,Q=P.map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];});let A2=0;
@@ -63,7 +64,7 @@ function terraceEdge(W,g,P,yTop,o={}){
       if(o.rooms&&o.rooms[e.i]){const[r0,r1]=o.rooms[e.i];arcadeRooms(W,g,e,Math.max(r0,sA),Math.min(r1,sB),S[k0].gF,yW,pal,o.roomOpt||{});}
       // B5 ends at the openings: a pier with a statue or a tripod, a stepped wing wall back into the slope
       for(const[end,k,dir]of[[!cA,k0,1],[!cB,k1,-1]]){if(!end)continue;const q=S[k],kind=S[k-dir]&&S[k-dir].open;if(kind==='arch')continue;const s=q.s+dir*.45;endPier(W,g,e,s,q.gF,top,pal,seed,kind);e.brk.push(q.s);out.ends.push([q.x,q.z]);
-        if(top-q.gF>1.5)wingWall(W,g,e,s,top,pal,seed);}}
+        if(o.wing!==false&&top-q.gF>1.5)wingWall(W,g,e,s,top,pal,seed);}}
     W.wallFeet.push({tag:tag+':'+e.i,pal,ax:e.a[0],az:e.a[1],ux:e.ux,uz:e.uz,nx,nz,L:e.L,top,S:S.map(q=>({s:q.s,x:q.x,z:q.z,y:q.gF,h:top+.1-q.gF,open:q.open,sub:q.sub,room:q.room})),brk:e.brk});
     const rl=(o.rail&&o.rail[e.i])==='transenna'?1.12:1.08;let band=9;for(const q of S)if(!q.open&&top-q.gF>=.6)band=Math.min(band,.45+rl);W.terraceEdges.push({tag:tag+':'+e.i,L:+e.L.toFixed(1),band:band<9?band:null,maxH:+Math.max(0,...S.map(q=>q.h)).toFixed(1)});}   // band: the edge seen from below, coping + parapet (or the grille piers)
   // corners: a pier where two walls meet at an outer corner, a half-round projection at the rock spurs

@@ -332,7 +332,7 @@ async function buildRome(msg){
         for(let t=-7;t<=7.1;t+=2.33){box(gS,CW,t,24.6,s*86+7.7,.5,1.2,.3,31);box(gS,CW,t,24.6,s*86-7.7,.5,1.2,.3,31);box(gS,CW,7.7,24.6,s*86+t,.3,1.2,.5,31);box(gS,CW,-7.7,24.6,s*86+t,.3,1.2,.5,31);}
         rectWalls(gS,CW,-2,s*46,14,20,-2,18,0,{part:24,seed:.6,sty:9,fl:8|32|128,nSt:2,gH:8.5,sH:8,lit:1});roof(gS,CW,'gableX',-2,s*46,15,21,18,24*DEG,.4,.5,{part:24,seed:.6,nSt:2,gH:8.5,sH:8,floorY:0});statue(gS,CW,-9.5,18.6,s*46,2.6,true);}
       statue(gS,CW,-9.4,26.5,0,3.4,true);}
-    const q=CF.p(10,14,-60);temple(W,gS,{x:q[0],y:q[1],z:q[2],rot:CF.rot,W:12,L:8,podH:1,colH:6,nf:4,rows:1,stairs:false,sculpt:false,seed:.6});
+    const q=CF.p(10,14,-60);temple(W,gS,{x:q[0],y:q[1],z:q[2],rot:CF.rot,W:12,L:8,podH:1,colH:6,nf:4,rows:1,stairs:false,sculpt:false,seed:.6,pave:false});
     for(const s of[1,-1]){gS.set(2,.4);gS.poly([P(-268,s*42,0),P(-268,s*84,0),P(-268,s*84,27),P(-268,s*42,3)],CF.d(-1,0,0));}
     for(const s of[1,-1]){portico(W,gS,CF,-268,s*77,222,s*77,24,6.5,s*5,3.6,[1,.96,.9]);ROME.porticos[ROME.porticos.length-1].carried='stands of the Circus Maximus (rome_cavea GLBs, top at +24 m)';}
     for(const x of[-120,95]){const q=CF.p(x,1.7,0);tholos(W,gS,{x:q[0],y:q[1],z:q[2],R:2.6,podH:.8,colH:4,n:8,roofPart:13});}
@@ -364,7 +364,7 @@ async function buildRome(msg){
     gM.set(9,.4,0,1);lathe(gM,F,0,0,-40,[[13,-2],[13,19]],20);lathe(gM,F,0,19,-40,[[13.6,0],[11,5],[6,9],[0,10]],20,16);W.foot.add(-740,-660,47,44,0);}
   {const F=frame(-540,gy(-540,-760),-760,0);gM.set(22,.4);for(const s of[1,-1]){box(gM,F,s*47,-1,0,1,11,150,31);box(gM,F,0,-1,s*150,47,11,1,31);}
     portico(W,gM,F,-40,-145,-40,145,0,8,-6,5,[1,.97,.9]);portico(W,gM,F,40,145,40,-145,0,8,-6,5,[1,.97,.9]);W.foot.add(-540,-760,49,152,0);}
-  {const F=frB(-1036,-356,90,gy(-1036,-356));theatre(W,gM,F,{R:78,h:30});const q=F.p(0,28,-72);temple(W,gM,{x:q[0],y:q[1],z:q[2],rot:F.rot,W:16,L:20,podH:1.5,colH:8,nf:6,rows:1,seed:.4});
+  {const F=frB(-1036,-356,90,gy(-1036,-356));theatre(W,gM,F,{R:78,h:30});const q=F.p(0,28,-72);temple(W,gM,{x:q[0],y:q[1],z:q[2],rot:F.rot,W:16,L:20,podH:1.5,colH:8,nf:6,rows:1,seed:.4,pave:false});
     for(const[ax,az,bx,bz]of[[-62,20,-62,190],[62,190,62,20],[-62,190,62,190]])portico(W,gM,F,ax,az,bx,bz,0,7,6,4,[1,.97,.9]);
     const R=RNG(9);for(let i=0;i<60;i++){const q2=F.p((R()-.5)*100,0,40+R()*140);W.trees.push([q2[0],gy(q2[0],q2[2]),q2[2],'broad',.8+R()*.3]);}fpw(F,0,105,66,90);
     W.pompey=F;}
@@ -581,7 +581,7 @@ async function buildRome(msg){
     poi('神君奥古斯都神庙','Templum Divi Augusti',q[0],q[2],30,0,99,'卡利古拉时建成，在尤利亚巴西利卡背后、帕拉蒂尼山脚下。',1400);}
    {const A=FF.sub(-60,0,16,Math.PI/2);arcade(gN,A,0,0,0,9,10,1,5,6,{span:.34,attic:3});statue(gN,A,0,10.2,0,2.6,true);}
    {const S=FF.sub(-66,0,-20,0);gN.set(13,.3);box(gN,S,0,0,0,2.4,4,3.2,31);roof(gN,S,'gableZ',0,0,4.8,6.4,4,15*DEG,.2,.3,{part:13,seed:.3,nSt:1,gH:4,sH:4,floorY:0});}
-   T2(-30,392,210,{W:18,L:30,podH:4,colH:10,nf:6,rows:1,seed:.45});
+   // (the stand-in for the Temple of Victoria that stood at (-30, 392) is gone: the rome_victoria model on the Palatine is the temple, palatine.js PAL_ASSETS)
    {const[cx,cz]=palW(-190,40),F=frame(cx,gy(cx,cz),cz,0);gN.set(21,.6);lathe(gN,F,0,0,0,[[3.4,0],[3.4,2.2],[2.6,3.6],[1.2,5],[0,5.6]],12);gN.set(3,.3);box(gN,F,0,0,3.3,.6,1.8,.15,1);fw(cx,cz,5,5);poi('罗慕路斯草屋','Casa Romuli',cx,cz,10,0,99,'传说中罗慕路斯住过的茅草屋，一直被保存。',700);}
    for(let k=0;k<3;k++)T2(-388,70+k*24,80,{W:14,L:24,podH:2.5,colH:8,order:k===1?'ion':'dor',nf:6,rows:1,seed:.4+k*.05,sculpt:false});poi('蔬菜广场三神庙','Forum Holitorium',-388,94,24,0,99,'雅努斯、希望女神、救护者朱诺三座神庙并排。',1200);
    {const HF=frame(-418,gy(-418,160),160,0),gq=(x,z)=>{const q=HF.p(x,0,z);return gy(q[0],q[2])-HF.oy;};W.foot.add(-418,160,42,24,0,'road').marketSquare=true;   // the market square south of the three temples (the ground east of them is the Capitoline slope)
@@ -692,7 +692,7 @@ async function buildRome(msg){
     romeStand(W,'rome_trigarium',F.ox,F.oz,F.oy+.25,F.rot,(g3,F3)=>{g3.set(3,.4);for(let x=-150;x<=150;x+=6){box(g3,F3,x,0,-40,.12,1.2,.12,31);box(g3,F3,x,0,40,.12,1.2,.12,31);}g3.set(6,.4);box(g3,F3,-130,0,0,3,2.2,4,31);});   // GLB: wall, stand, starting building, barrier, sheds
     for(let i=0;i<24;i++){const q=F.p(-150+i*13,0,i%2?52:-52);W.trees.push([q[0],gy(q[0],q[2]),q[2],i%3?'pine':'cyp',1]);}W.scene.add(g2.mesh(MAT.city));W.foot.add(-1300,-860,154,46,-.55);
     poi('特里加里乌姆练车场','Trigarium',-1300,-860,10,0,99,'战神广场靠河的一片空地，赛车手在这里练车。旁边的塔伦图姆祭坛每百年举行一次世纪祭。',1600);}
-{const q=FF.p(-96,0,30);poi('土星神庙（国库）','Aedes Saturni',q[0],q[2],26,0,99,'萨图尔努斯神庙，台基下的地窖就是国库（Aerarium）。屋顶上立着吹号角的特里同像。',1200);}{const q=FF.p(-102,0,-13);poi('和谐女神庙','Aedes Concordiae',q[0],q[2],26,0,99,'提比略重建的和谐女神庙，横向宽大的内殿，用了彩色大理石。',1200);}{const q=FF.p(76,0,-6);poi('神君凯撒神庙','Aedes Divi Iulii',q[0],q[2],26,0,99,'在凯撒火化处建起的神庙，前方讲坛上装着阿克提姆海战缴获的船首。',1200);}{const q=[-200,0,-210];poi('警戒朱诺神庙（铸币厂）','Aedes Iunonis Monetae',q[0],q[2],26,0,99,'卫城上的朱诺神庙，旁边是铸币工坊。这里养着圣鹅。',1200);}{const q=[-340,0,378];poi('胜利者赫丘利圆庙','Aedes Herculis Victoris',q[0],q[2],26,0,99,'河边的圆形神庙，二十根潘泰列克大理石柱。',1200);}{const q=[-373,0,311];poi('港口神波尔图努斯神庙','Aedes Portuni',q[0],q[2],26,0,99,'四柱爱奥尼式小神庙，凝灰岩外抹灰泥。',1200);}{const q=[-55,0,338];poi('众神之母神庙（库柏勒）','Aedes Matris Deum',q[0],q[2],26,0,99,'奥古斯都重建的六柱科林斯式神庙，供奉从小亚细亚运来的黑色圣石。',1200);}{const q=[-30,0,392];poi('胜利女神神庙','Aedes Victoriae',q[0],q[2],26,0,99,'帕拉蒂尼山西南角，俯瞰大竞技场的起点。',1200);}{const q=[-765,0,-330];poi('神圣区共和国神庙群','Area Sacra',q[0],q[2],26,0,99,'四座共和时代的小神庙并排而立（今银塔广场）。',1200);}{const gW=new GB(1<<14);
+{const q=FF.p(-96,0,30);poi('土星神庙（国库）','Aedes Saturni',q[0],q[2],26,0,99,'萨图尔努斯神庙，台基下的地窖就是国库（Aerarium）。屋顶上立着吹号角的特里同像。',1200);}{const q=FF.p(-102,0,-13);poi('和谐女神庙','Aedes Concordiae',q[0],q[2],26,0,99,'提比略重建的和谐女神庙，横向宽大的内殿，用了彩色大理石。',1200);}{const q=FF.p(76,0,-6);poi('神君凯撒神庙','Aedes Divi Iulii',q[0],q[2],26,0,99,'在凯撒火化处建起的神庙，前方讲坛上装着阿克提姆海战缴获的船首。',1200);}{const q=[-200,0,-210];poi('警戒朱诺神庙（铸币厂）','Aedes Iunonis Monetae',q[0],q[2],26,0,99,'卫城上的朱诺神庙，旁边是铸币工坊。这里养着圣鹅。',1200);}{const q=[-340,0,378];poi('胜利者赫丘利圆庙','Aedes Herculis Victoris',q[0],q[2],26,0,99,'河边的圆形神庙，二十根潘泰列克大理石柱。',1200);}{const q=[-373,0,311];poi('港口神波尔图努斯神庙','Aedes Portuni',q[0],q[2],26,0,99,'四柱爱奥尼式小神庙，凝灰岩外抹灰泥。',1200);}{const q=(([lx,lz])=>[lx,0,lz])(palW(-154,100));poi('众神之母神庙（库柏勒）','Aedes Matris Deum',q[0],q[2],26,0,99,'奥古斯都重建的六柱科林斯式神庙，供奉从小亚细亚运来的黑色圣石。',1200);}{const q=(([lx,lz])=>[lx,0,lz])(palW(-110,132));poi('胜利女神神庙','Aedes Victoriae',q[0],q[2],26,0,99,'帕拉蒂尼山西南角，俯瞰大竞技场的起点。',1200);}{const q=[-765,0,-330];poi('神圣区共和国神庙群','Area Sacra',q[0],q[2],26,0,99,'四座共和时代的小神庙并排而立（今银塔广场）。',1200);}{const gW=new GB(1<<14);
    {const q=FF.p(102,0,36);fountain(W,gW,q[0],q[2],{hx:2.8,hz:2.8,rot:FF.rot,statue:2.4});poi('尤图尔纳泉','Lacus Iuturnae',q[0],q[2],8,0,99,'【史】卡斯托尔神庙旁的圣泉水池，池中立着双子神像。',700);}
    {const q=FF.p(-56,0,30);fountain(W,gW,q[0],q[2],{hx:3,hz:1.8,rot:FF.rot});poi('塞尔维利乌斯泉','Lacus Servilius',q[0],q[2],8,0,99,'【史】广场西南角的公共水池。',700);}
    {let mx=455,mz=300;for(const r of[0,14,28,42]){let hit=false;for(let k=0;k<(r?8:1);k++){const X=455+Math.cos(k/8*TAU)*r,Z=300+Math.sin(k/8*TAU)*r;if(!W.foot.hits(X,Z,7,7,0,2)){mx=X;mz=Z;hit=true;break;}}if(hit)break;}
@@ -712,8 +712,8 @@ async function buildRome(msg){
     W.scene.add(g3.mesh(MAT.city));W.foot.add(-735,-1240,97,63,.08);poi('战神广场练兵草坪','Campus Martius',-735,-1240,10,0,99,'北部保留的开阔草坪和沙地跑道，市民在这里锻炼、骑马、投枪；第10卷军校的骑射也在这一带。',1800);}
   {const grandStair=(x0,z0,x1,z1,w,top,half)=>hillStair(W,hillRoute(W,[x0,z0],[x1,z1],{lim:.3,half:half||16,step:2}),w,top);   // a stair that follows the hill: flights of at most ~30 % between landings, turning at each landing (hillRoute), never one straight run (temple-links.js)
    {const F=frame(-275,W.capY,10,0),t=F.p(CAP_SCIP.x+CAP_SCIP.nx*2.3,0,CAP_SCIP.z+CAP_SCIP.nz*2.3),R=hillRoute(W,[t[0],t[2]],[-140,150],{lim:.3,half:12,step:2});W.capCG=R;hillStair(W,R,3.2,W.capY);}   // the Centum Gradus, from the Scipio arch down to the Velabrum
-   grandStair(-42,424,-92,500,4.5,gy(-30,392),14);grandStair(78,432,42,498,7,gy(95,382),16);grandStair(-530,962,-445,900,5,gy(-560,975),16);
-   {const m=W.capCG[Math.floor(W.capCG.length/2)];poi('百级台阶','Centum Gradus',m[0],m[1],10,0,99,'从卡比托利欧山圣域走下去的大理石台阶，上端穿过西庇阿拱门进圣域。【史】塔西佗《历史》3.71：从塔尔佩亚岩上去走一百级台阶。',800);}poi('卡库斯台阶','Scalae Caci',-67,462,10,0,99,'帕拉蒂尼山西南角最古老的上山路，通到罗慕路斯草屋。',800);}
+   palScalae(W);palTibFeet(W);grandStair(78,432,42,498,7,gy(95,382),16);grandStair(-530,962,-445,900,5,gy(-560,975),16);
+   {const m=W.capCG[Math.floor(W.capCG.length/2)];poi('百级台阶','Centum Gradus',m[0],m[1],10,0,99,'从卡比托利欧山圣域走下去的大理石台阶，上端穿过西庇阿拱门进圣域。【史】塔西佗《历史》3.71：从塔尔佩亚岩上去走一百级台阶。',800);}{const m=W.palSC[Math.round(W.palSC.length*.55)];poi('卡库斯台阶','Scalae Caci',m[0],m[1],10,0,99,'从赛车场谷地上帕拉蒂尼山西南角的古道，上端接胜利女神神庙下的前院。【史】索利努斯 1.18：卡库斯台阶顶上是浮士德卢斯（养大罗慕路斯的牧人）的草屋。',800);}}
   // Capitoline terrace edges (podium brief B, phase 2, 2026-11-04): the retaining walls round Jupiter's terrace (PLY) and the paired-temple terrace (LOW), built
   // here, once the Clivus Capitolinus and the Centum Gradus exist, so that each opening is where the way comes in. PLY: piers and stone grilles where it looks
   // down on the lower terrace, rooms in its wall there (B8), two flights down along it from a landing in the middle (B7); half-round projections at the two
@@ -847,6 +847,7 @@ async function buildRome(msg){
    const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
+   palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,
    // not a boulder lying on the slope; the author 2026-11-03 found them odd) and sunk half their height below the ground. At most 40.
