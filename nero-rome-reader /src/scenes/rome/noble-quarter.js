@@ -60,7 +60,11 @@ function decorateNobleLot(W,g,L,o){
   box(g,F,0,3.54,z+.025,1.55,.09,.06,31);
   // Long fronts let out tabernae either side of the door (【史】Pompeii, Herculaneum; the Ostia front in refs/arch):
   // brick piers, timber lintels, counters; a tiled pent roof only over a street at least 4.4 m wide.
-  if(l>=11){const roof=rdStreetWidth(W,L,1.3)>=4.4;rdShopRow(g,F,z,1.95,l/2-.3,0,o.seed,0,roof);rdShopRow(g,F,z,-l/2+.3,-1.95,0,o.seed,0,roof);}
+  // 【史】In Rome the great houses on the Sacra Via had shops along their fronts (the north slope of the Palatine), as at
+  // Pompeii the Casa di Pansa let shops on two streets; their goods stand out by a pier (placeShopWares).
+  if(l>=11){const roof=rdStreetWidth(W,L,1.3)>=4.4,d=F.d(0,0,-1),fy=F.p(0,0,0)[1];
+    for(const[a0,a1,k]of[[1.95,l/2-.3,1],[-l/2+.3,-1.95,2]]){const piers=rdShopRow(g,F,z,a0,a1,0,o.seed,0,roof),h=hash2(o.seed*977+k,l*13);if(piers)W.nNobleShops=(W.nNobleShops||0)+piers.length-1;
+      if(piers&&piers.length>2&&h<.6){const P=F.p(piers[1+Math.floor(h*1.66*(piers.length-2))%(piers.length-2)],0,z-.02);(W.rdWares||(W.rdWares=[])).push({x:P[0],z:P[2],y:fy,r:Math.atan2(d[0],d[2]),w:W,k:hash2(o.seed*331+k,7.3)%1});}}}
   // Broad red-ochre painted fields flank the entrance without a dense stripe motif.
   else if(l>=8.5){
     const hx=Math.min(1.05,(l*.5-1.65)*.42),cx=1.65+(l*.5-1.65)*.5;

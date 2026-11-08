@@ -76,6 +76,27 @@ The book: "一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐
   - Low-poly wares, instanced, stand outside some shop fronts in side streets, never on main roads or in burnt or
     later layers.
 
+## Second set (2026-11-08, after the author's note that the great houses in the centre also had shops on the street)
+* **Houses that let their fronts.** In Rome the aristocratic houses on the north slope of the Palatine faced the Sacra Via
+  behind a row of tabernae (Carandini's excavation, 1985 on; [15]); at Pompeii the Casa di Pansa (VI.6) let shops on its
+  street faces independently of the house, and its upper flats had their own entrances [6][16]. Wallace-Hadrill: no clear
+  line between houses and shops in these towns [17]. The Severan marble plan shows the same in Rome: courts and houses
+  behind rows of shops (fragments 557, 312) [18].
+* **Separate stairs.** Rented upper floors were reached by their own stair from the street, often an outside one: Pirson
+  counts about 450 small independent dwellings at Pompeii (Casa del Primo Cenacolo, IX.12.2) [16][19].
+* **Fuller (fullonica).** Stephanus (Pompeii I.6.7): the impluvium turned into a washing tank, treading stalls, a cloth press
+  by the entrance, a flat roof terrace for drying; his name is known from the election notices on the front [20].
+* **Inn (stabulum).** Inns that stabled animals had a cart entrance and a stable (Pompeii VI.1.4 on the Via Consolare; a cart
+  still stands in I.10.14) [21]. The inn of Sittius had an elephant on its sign (CIL IV 806).
+* **Smith.** Tyrsus, faber ferrarius (Pompeii I.6.1): a shop with a forge and back rooms [22].
+* **Fruit sellers and barbers.** The fruit sellers (pomarii) signed election notices together (CIL IV 202); barbers worked in
+  the street until Domitian's edict (Martial 7.61) [5].
+* **What we make.**
+  - Five more blocks i–m (see `insulae.md`).
+  - Procedural great houses (noble quarter and central repairs): the shop rows already set into fronts of 11 m or more
+    now show a room behind each door by parallax (city shader part 48, the same goods as the house shader through
+    `shopGoods`), boards at night, and goods set out by a pier in front of some of them.
+
 ## Sources
 1. Ostia Antica, "Shops and bars": https://ostia-antica.org/dict/topics/shops/shops-intro.htm
 2. Holleran, "Finding commerce: the taberna and the identification of Roman commercial space", PBSR 2017;
@@ -96,3 +117,15 @@ The book: "一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐
     https://pompeii.pictures/R5/5%2003%20balconi.htm
 13. Casa a Graticcio: https://pompeiiinpictures.com/herculaneum/Ins 3/Herculaneum 3 14.htm
 14. Tacitus, Annals 15.43: https://sacred-texts.com/cla/tac/a15040.htm
+15. Carandini's houses on the Sacra Via: BMCR 2005.08.18, https://bmcr.brynmawr.edu/?p=24075 ; Eichengreen 2024,
+    https://doi.org/10.1017/S1047759423000417
+16. Casa di Pansa as rental property (after Pirson): https://pompeii.iath.virginia.edu/cti/region-vi/pansa/rent.html
+17. Wallace-Hadrill, Houses and Society in Pompeii and Herculaneum (1994):
+    https://press.princeton.edu/books/ebook/9780691244150/houses-and-society-in-pompeii-and-herculaneum
+18. Stanford Digital Forma Urbis Romae, fragments 557abc and 312: https://formaurbis.stanford.edu/fragment_557abc.html ,
+    https://formaurbis.stanford.edu/fragment_312.html
+19. Casa del Primo Cenacolo, IX.12.1–2: https://pompeiiinpictures.com/pompeiiinpictures/R9/9 12 04.htm
+20. Fullonica of Stephanus: https://pompeiisites.org/en/?p=3262 ; https://www.italyguides.it/en/campania/pompeii/fullonica-of-stephanus
+21. Inns and stables at Pompeii: https://pompeii.pictures/R6/6%2001%2004.htm ; https://pompeii.pictures/R1/1%2010%2014.htm ;
+    Ruiz de Arbulo and Gris, https://recercat.cat/handle/2072/294280
+22. Workshop of Tyrsus, I.6.1: https://pompeii.pictures/R1/1%2006%2001.htm

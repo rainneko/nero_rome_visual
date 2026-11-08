@@ -162,6 +162,22 @@ void roofS(inout PS S,vec3 N,float gilt,float aa){vec2 uv=vA.xy;float seed=floor
  c*=.9+.2*fbm2(vec2(uv.x*.05,uv.y*.08)+seed*3.);vec3 cf=base*(.84+.26*th)*mix(.78,1.08,stp*fcx+(1.-fcx)*.6)*mix(.82,1.,crs*fry+(1.-fry)*.62);cf*=.86+.28*vn2(uv*vec2(.45,.55)+seed*7.);if(gilt<.5){float li2=smoothstep(.72-.14*age,.9-.1*age,fbm2(uv*.6+seed*5.));cf=mix(cf,vec3(.42,.4,.32),li2*(.15+.12*age));}
  cf=mix(cf,mix(vec3(dot(cf,vec3(.3,.59,.11))),cf,.72)*.88,age*.3)*rsk;S.alb=mix(cf,c,det);
  S.rough=gilt>.5?.3:.74-uWet*.45;S.metal=gilt>.5?1.:0.;S.ao=mix(1.,.82,(1.-cov)*det);}
+// The back wall of an open shop seen through its door (briefs/rome/ground-floor.md): qb = point on the back wall
+// (x across the door, y up from the floor), tr = which trade. Shared by the house shader and the shop-front quads (part 48).
+vec3 shopGoods(vec2 qb,float tr,float seed,float dq){
+  vec3 it=vec3(.16,.12,.08)*(.8+.35*smoothstep(-.3,1.8,qb.y));vec3 wd=vec3(.3,.18,.09);
+  if(tr<-1.){}
+  else if(tr<.3){float sy=mod(qb.y,.6),sh=step(.55,qb.y)*step(qb.y,2.1),jx=fract(qb.x/.3+floor(qb.y/.6)*.41)-.5;   // shelves of jars (potter, oil seller)
+   it=mix(it,wd,step(sy,.05)*sh*dq);it=mix(it,vec3(.42,.17,.08)*(.85+.3*h12(vec2(floor(qb.x/.3),floor(qb.y/.6))+seed)),step(length(vec2(jx*3.,(sy-.21)/.16)),1.)*sh*dq);}
+  else if(tr<.5){float ax=abs(fract(qb.x/.36)-.5)*.36,y=qb.y,pr=y<.95?.15*sin(3.1416*clamp(y/.95,0.,1.))+.02:.05;it=mix(it,vec3(.4,.17,.08),step(ax,pr)*step(y,1.05)*dq);}   // amphorae along the wall
+  else if(tr<.66){float sy=mod(qb.y,.5),sh=step(.6,qb.y)*step(qb.y,2.),lx=fract(qb.x/.26)-.5;   // shelves of loaves
+   it=mix(it,wd,step(sy,.04)*sh*dq);it=mix(it,vec3(.55,.36,.14),step(length(vec2(lx*2.6,(sy-.08)/.05)),1.)*sh*dq);}
+  else if(tr<.78){float cx=floor(qb.x/.42),cl=h12(vec2(cx,seed*5.));vec3 cc=cl<.3?vec3(.62,.56,.43):cl<.55?vec3(.46,.1,.06):cl<.8?vec3(.5,.34,.07):vec3(.12,.16,.3);   // dyed cloth hung from a rod
+   it=mix(it,cc*.8,step(1.25-.6*cl,qb.y)*step(qb.y,2.25)*step(.08,fract(qb.x/.42))*dq);it=mix(it,wd,step(abs(qb.y-2.28),.03)*dq);}
+  else{float tx=fract(qb.x/.55)-.5,th=h12(vec2(floor(qb.x/.55),seed*9.));   // a workshop: bench along the back wall, tools and baskets hung above it
+   it=mix(it,wd*1.15,step(abs(qb.y-.85),.05)*dq);it=mix(it,wd*.7,step(qb.y,.8)*step(.42,abs(fract(qb.x/.9)-.5))*dq);
+   it=mix(it,mix(vec3(.45,.36,.2),vec3(.33,.3,.27),step(.5,th)),step(abs(tx),.06+.08*th)*step(1.35,qb.y)*step(qb.y,1.75+.35*th)*dq);}
+  return it;}
 void wallS(inout PS S,vec3 N,float P,float aa){
  float u=vA.x,v=vA.y,L=max(vA.z,.5),sH=max(vA.w,2.4);float seed=floor(vB.x*4096.+.5)/4096.,sty=floor(vB.z+.5),fl=floor(vB.w+.5);float nSt=max(floor(vC.x+.5),1.),gH=max(vC.y,2.5),litB=vC.w;
  vec3 base;
@@ -275,18 +291,9 @@ void wallS(inout PS S,vec3 N,float P,float aa){
  else if(kind<2.5){inter=S.alb*.44;em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<3.5){   // a square-headed shop: closed with its boards in the threshold groove, or a trade on the back wall (briefs/rome/ground-floor.md)
   float tr=h12(vec2(bi*5.3+seed*17.,seed*3.7)),tc=h12(vec2(bi*2.9+seed*7.,seed*11.)),dq=1.-smoothstep(.015,.045,aa);bool shut=tc<.14+.55*uNight;
-  vec3 it=vec3(.16,.12,.08)*(.8+.35*smoothstep(-.3,1.8,qb.y));vec3 wd=vec3(.3,.18,.09);
-  if(shut){float pk=(q.x+hw)/.3;it=wd*(.8+.3*h12(vec2(floor(pk),seed)))*(1.-.6*step(.42,abs(fract(pk)-.5))*dq);it*=1.-.45*step(abs(q.y-1.1),.06);back=1.;}
-  else if(tr<.3){float sy=mod(qb.y,.6),sh=step(.55,qb.y)*step(qb.y,2.1),jx=fract(qb.x/.3+floor(qb.y/.6)*.41)-.5;   // shelves of jars (potter, oil seller)
-   it=mix(it,wd,step(sy,.05)*sh*dq);it=mix(it,vec3(.42,.17,.08)*(.85+.3*h12(vec2(floor(qb.x/.3),floor(qb.y/.6))+seed)),step(length(vec2(jx*3.,(sy-.21)/.16)),1.)*sh*dq);}
-  else if(tr<.5){float ax=abs(fract(qb.x/.36)-.5)*.36,y=qb.y,pr=y<.95?.15*sin(3.1416*clamp(y/.95,0.,1.))+.02:.05;it=mix(it,vec3(.4,.17,.08),step(ax,pr)*step(y,1.05)*dq);}   // amphorae along the wall
-  else if(tr<.66){float sy=mod(qb.y,.5),sh=step(.6,qb.y)*step(qb.y,2.),lx=fract(qb.x/.26)-.5;   // shelves of loaves
-   it=mix(it,wd,step(sy,.04)*sh*dq);it=mix(it,vec3(.55,.36,.14),step(length(vec2(lx*2.6,(sy-.08)/.05)),1.)*sh*dq);}
-  else if(tr<.78){float cx=floor(qb.x/.42),cl=h12(vec2(cx,seed*5.));vec3 cc=cl<.3?vec3(.62,.56,.43):cl<.55?vec3(.46,.1,.06):cl<.8?vec3(.5,.34,.07):vec3(.12,.16,.3);   // dyed cloth hung from a rod
-   it=mix(it,cc*.8,step(1.25-.6*cl,qb.y)*step(qb.y,2.25)*step(.08,fract(qb.x/.42))*dq);it=mix(it,wd,step(abs(qb.y-2.28),.03)*dq);}
-  else{float tx=fract(qb.x/.55)-.5,th=h12(vec2(floor(qb.x/.55),seed*9.));   // a workshop: bench along the back wall, tools and baskets hung above it
-   it=mix(it,wd*1.15,step(abs(qb.y-.85),.05)*dq);it=mix(it,wd*.7,step(qb.y,.8)*step(.42,abs(fract(qb.x/.9)-.5))*dq);
-   it=mix(it,mix(vec3(.45,.36,.2),vec3(.33,.3,.27),step(.5,th)),step(abs(tx),.06+.08*th)*step(1.35,qb.y)*step(qb.y,1.75+.35*th)*dq);}
+  vec3 it;vec3 wd=vec3(.3,.18,.09);
+  if(shut){it=vec3(.16,.12,.08);float pk=(q.x+hw)/.3;it=wd*(.8+.3*h12(vec2(floor(pk),seed)))*(1.-.6*step(.42,abs(fract(pk)-.5))*dq);it*=1.-.45*step(abs(q.y-1.1),.06);back=1.;}
+  else it=shopGoods(qb,tr,seed,dq);
   inter=it;em=shut?vec3(0.):lamp*lit*uNight*1.5*flk*back*step(fract(rnd*7.3),.22);}
  else{inter=S.alb*.46;em=lamp*lit*uNight*.8*flk*back;}
  vec3 revN=N;if(back<.5){float tx=((vt>0.?hw:-hw)-q.x)/(abs(vt)>1e-4?vt:1e-4);float ty=((vu>0.?oh:0.)-q.y)/(abs(vu)>1e-4?vu:1e-4);revN=(tx<ty)?(vt>0.?-T:T):(vu>0.?-Up:Up);}
@@ -357,6 +364,15 @@ else if(P>46.5&&P<47.5){vec2 p=uv;float pw=vA.z,ph=vA.w,t=ph-p.y;   // 【史】
  vec3 c=vec3(.7,.67,.6)*(.9+.12*vn2(p*5.+seed*9.));float r0=t<.24?0.:floor((t-.24)/.15)+1.,ry=t<.24?(t-.05)/.15:fract((t-.24)/.15)/.7,cw=r0<.5?.075:.055,cx=p.x-.06,fx=fract(cx/cw),hh=h12(vec2(floor(cx/cw),r0)+seed*31.);
  float g=max(step(abs(fx-.3),.1),step(.55,fract(hh*7.))*step(abs(ry-(fract(hh*3.)<.5?.1:.9)),.12)*step(fx,.75));
  float m=step(.14,hh)*step(0.,cx)*step(cx,pw-.12)*step(0.,ry)*step(ry,1.)*step(r0,2.5)*g;c=mix(c,vec3(.5,.08,.05),m*(1.-smoothstep(.01,.03,aa)));c=mix(c,c*vec3(1.,.86,.83),smoothstep(.01,.03,aa)*.5);S.alb=c;S.rough=.85;}
+else if(P>47.5&&P<48.5){float w=max(vA.z,.5),h=max(vA.w,1.),hw=w*.5;vec2 q=vec2(uv.x-hw,uv.y);   // 【史】a shop let in a house front (taberna): the room behind the door by parallax, or its night boards
+ vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4),V=normalize(vWP-cameraPosition);float vt=dot(V,T),vu=V.y,vnn=min(dot(V,N),-.06),tb=3.2/(-vnn);vec2 qb=q+vec2(vt,vu)*tb;
+ float dq=1.-smoothstep(.015,.045,aa),tr=h12(vec2(seed*41.3,7.1)),tc=h12(vec2(seed*13.1,2.3));bool shut=tc<.14+.55*uNight;vec3 wd=vec3(.3,.18,.09),c;
+ if(shut){float pk=(q.x+hw)/.3;c=wd*(.8+.3*h12(vec2(floor(pk),seed)))*(1.-.6*step(.42,abs(fract(pk)-.5))*dq);c*=1.-.45*step(abs(q.y-1.1),.06);S.ao=1.;}
+ else if(abs(qb.x)<hw&&qb.y>0.&&qb.y<h){c=shopGoods(qb,tr,seed,dq);S.ao=.8;}
+ else{float tx=((vt>0.?hw:-hw)-q.x)/(abs(vt)>1e-4?vt:1e-4),ty=((vu>0.?h:0.)-q.y)/(abs(vu)>1e-4?vu:1e-4),f=clamp(min(tx,ty)/tb,0.,1.);
+  c=tx<ty?vec3(.3,.25,.18):(vu>0.?vec3(.16,.11,.07):vec3(.28,.25,.2));c*=1.-.45*f;S.ao=.8;}
+ if(!shut){S.nw=-N;S.useN=1.;}   // the room is in shade: no direct sun on what is seen through the door
+ S.alb=c;S.rough=.95;S.emit=shut?vec3(0.):c*vec3(1.7,.95,.42)*step(h12(vec2(seed*7.7,1.3)),uLit*.6)*uNight*(.82+.18*sin(uTime*7.+seed*30.));}   // a lamp inside lights the room's own colours
 else if(P>45.5&&P<46.5){vec2 p=vWP.xz;S.alb=vec3(.36,.26,.19)*(.82+.3*fbm2(p*.4))*(1.-.12*smoothstep(.6,.8,fbm2(p*.08)));S.rough=.9;}   // roof terrace of opus signinum: matte brick-red crushed-tile concrete
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*uBurn*vC.z;

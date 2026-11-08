@@ -94,14 +94,15 @@ function romanFrontRelief(W,g,L,o,floorY,H,plan,awning){
 function rdShopRow(g,F,zw,x0,x1,y,seed,bn=0,roof=true){const span=x1-x0,n=Math.floor(span/3.2);if(n<1)return false;
   const bay=span/n,hw=Math.min(1.35,bay*.36),oh=2.55,yT=y+oh,z=zw-.015;
   for(let i=0;i<n;i++){const c=x0+(i+.5)*bay;
-    g.set(39,seed,0,0,1,4,bn,1);g.poly([F.p(c-hw,y,z),F.p(c+hw,y,z),F.p(c+hw,yT,z),F.p(c-hw,yT,z)],F.d(0,0,-1));   // the dark shop interior
+    // the shop room behind the door: part 48 draws its back wall, side walls and goods by parallax, or the night boards
+    g.set(48,(seed+i*.137+x0*.071)%1,0,0,1,4,bn,1);g.poly([F.p(c-hw,y,z),F.p(c+hw,y,z),F.p(c+hw,yT,z),F.p(c-hw,yT,z)],F.d(0,0,-1),[[0,0],[2*hw,0],[2*hw,oh],[0,oh]],2*hw,oh);
     g.set(3,seed,0,0,1,4,bn,1);box(g,F,c,yT,z-.06,hw+.22,.22,.08,4|16|32);   // timber lintel
     if(i%2===0){g.set(2,seed,0,0,1,4,bn,1);box(g,F,c-hw+.62,y-.1,z-.2,.58,1.02,.2,4|16|2|8);}}   // counter
   for(let i=0;i<=n;i++){const c=x0+i*bay,a=Math.max(x0,c-(bay/2-hw)),b=Math.min(x1,c+(bay/2-hw));if(b-a<.15)continue;
     g.set(9,.07,0,1,1,4,bn,1);wall(g,F,a,z-.08,b,z-.08,y-.3,yT,y,3);
     g.poly([F.p(a,y-.3,z),F.p(a,y-.3,z-.08),F.p(a,yT,z-.08),F.p(a,yT,z)],F.d(-1,0,0));g.poly([F.p(b,y-.3,z-.08),F.p(b,y-.3,z),F.p(b,yT,z),F.p(b,yT,z-.08)],F.d(1,0,0));}
   if(roof){const Fz=F.sub(0,0,zw);rdPentRoof(g,Fz,x0+.1,x1-.1,yT+.55,1.1,.38,seed,bn);}
-  return true;}
+  const piers=[];for(let i=0;i<=n;i++)piers.push(x0+i*bay);return piers;}   // the piers' local x, for goods set out in the street
 // The peristyle of a courtyard house: a narrow lean-to tile roof from the wing walls I down to just past the column
 // line J, a dark underside, antefixes facing the court. Skipped where the wings are too low to take it.
 // 【史】Herculaneum and Pompeii peristyles; the court stays open to the sky in the middle.

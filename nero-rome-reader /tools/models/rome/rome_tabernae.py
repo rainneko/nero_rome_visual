@@ -98,8 +98,8 @@ def loft_stair(S, ux, D, h=CEIL, toward=1):
                 S.p(ux + 0.35, D - 0.05, h - 0.01), S.p(ux - 0.35, D - 0.05, h - 0.01)], S.p(ux, D / 2, 0.0))
 
 
-def dark_panel(S, u, zb, w, h, y=0.03):
-    """A dark back panel behind an opening that has no room behind it (inner=None skins)."""
+def dark_panel(S, u, zb, w, h, y=-0.004):
+    """A dark back panel behind an opening that has no room behind it (inner=None skins), just in front of the core."""
     q4('dark', [S.p(u - w / 2, y, zb), S.p(u + w / 2, y, zb), S.p(u + w / 2, y, zb + h), S.p(u - w / 2, y, zb + h)],
        S.p(u, y - 5.0, zb + h / 2))
 
@@ -279,8 +279,108 @@ def trade_mill(S, u, ow, u0, u1, D, yf):
         cyl(S, u0 + 0.35 + 0.42 * k, D - 0.3, 0.0, 0.2, 0.55, 'linen', 7, r_top=0.14)
 
 
+def basin(S, x, y, w, d, h=0.62, mat='stone', water='water', rim=0.1):
+    """A masonry tank: a solid base, four low rim walls and a water surface 12 cm under the rim."""
+    box(S, x, y, 0.0, w, d, h - 0.2, mat)
+    box(S, x, y, h - 0.2, w - 2 * rim, d - 2 * rim, 0.08, water)
+    for sx in (-1, 1):
+        box(S, x + sx * (w - rim) / 2, y, h - 0.2, rim, d, 0.2, mat)
+        box(S, x, y + sx * (d - rim) / 2, h - 0.2, w - 2 * rim, rim, 0.2, mat)
+
+
+def trade_fuller(S, u, ow, u0, u1, D, yf):
+    """【史】A fullonica (Stephanus, Pompeii I.6.7): treading stalls (saltus) along the back wall, a large rinsing tank,
+    the cloth press against the left wall by the door, a wicker frame for bleaching cloth over sulphur, folded cloth."""
+    n = max(2, int((u1 - u0 - 1.6) / 0.95))
+    for k in range(n):
+        basin(S, u1 - 0.6 - k * 0.95, D - 0.5, 0.9, 0.85, 0.7, water='mud')        # cloth trodden in fuller's earth
+    basin(S, u + 0.3, D * 0.42, 2.0, 1.1, 0.75)
+    px, py = u0 + 0.45, 1.0                                       # the press (pressa): two posts, a screw, boards of cloth
+    for dy in (-0.42, 0.42):
+        box(S, px, py + dy, 0.0, 0.14, 0.14, 2.0, 'wood')
+    box(S, px, py, 1.9, 0.18, 1.0, 0.14, 'wood')
+    cyl(S, px, py, 1.2, 0.05, 0.7, 'wood', 6)
+    box(S, px, py, 0.55, 0.5, 0.75, 0.06, 'wood')
+    for k in range(4):
+        box(S, px, py, 0.61 + k * 0.1, 0.42, 0.66, 0.09, 'linen' if k % 2 else 'awning')
+    box(S, px, py, 1.1, 0.5, 0.75, 0.06, 'wood')
+    box(S, px, py, 0.0, 0.5, 0.75, 0.55, 'stone')
+    sphere(S, u - ow / 2 + 0.9, 0.7, 0.0, 0.55, 'linen', 8, 4, z_scale=1.2)      # cloth over the wicker bleaching frame
+    for k, m in enumerate(('linen', 'red', 'linen')):
+        box(S, u + ow / 2 - 0.5, yf - 0.35, 0.0 + 0.12 * k, 0.6, 0.45, 0.11, m)       # folded cloth for collection
+
+
+def trade_smith(S, u, ow, u0, u1, D, yf):
+    """【史】A smith's shop (faber ferrarius; Tyrsus, Pompeii I.6.1): a raised brick hearth with a hood and glowing coals,
+    an anvil on a block of wood, a quenching tub, tools on the wall, iron and bronze goods set out by the door."""
+    hx = u1 - 0.95
+    box(S, hx, D - 0.6, 0.0, 1.3, 1.0, 0.8, 'brick')
+    box(S, hx, D - 0.65, 0.8, 0.8, 0.55, 0.05, 'flame')
+    box(S, hx, D - 0.55, 1.75, 1.5, 1.1, 0.22, 'brick')
+    box(S, hx, D - 0.3, 1.97, 0.6, 0.6, CEIL - 1.97, 'brick')
+    cyl(S, u - 0.2, D * 0.45, 0.0, 0.24, 0.55, 'wood', 8)
+    box(S, u - 0.2, D * 0.45, 0.55, 0.42, 0.16, 0.16, 'iron')
+    cyl(S, hx - 1.1, D - 0.45, 0.0, 0.3, 0.5, 'wood', 8)
+    cyl(S, hx - 1.1, D - 0.45, 0.46, 0.26, 0.02, 'water', 8)
+    for k in range(5):
+        box(S, u0 + 0.5 + k * 0.28, D - 0.03, 1.3, 0.05, 0.03, 0.5 + 0.12 * (k % 2), 'iron')
+    cyl(S, u - 0.75, yf - 0.4, 0.0, 0.28, 0.32, 'bronze', 10, r_top=0.33)            # a cauldron
+    box(S, u + 0.55, yf - 0.35, 0.0, 0.7, 0.4, 0.3, 'wood')
+    for k in range(4):                                            # sickles, hoe blades and nails on a low crate
+        box(S, u + 0.3 + k * 0.17, yf - 0.35, 0.3, 0.12, 0.3, 0.03, 'iron', rot=10 * k)
+
+
+PRODUCE = ('hedge', 'red', 'flowerY', 'ochre', 'flowerP', 'hedge', 'flowerR')
+
+
+def trade_green(S, u, ow, u0, u1, D, yf):
+    """【史】A fruit and vegetable seller (pomarius; the fruit-sellers signed election notices at Pompeii, CIL IV 202):
+    a stepped stand of baskets in the street, sacks and strings of onions inside."""
+    n = max(3, int((ow + 0.2) / 0.45))
+    for k in range(3):
+        y = yf - 0.95 + k * 0.32
+        box(S, u, y, 0.0, ow + 0.2, 0.34, 0.3 + 0.24 * k, 'wood')
+        for j in range(n):
+            x = u - (ow + 0.2) / 2 + (j + 0.5) * (ow + 0.2) / n
+            cyl(S, x, y, 0.3 + 0.24 * k, 0.17, 0.1, 'wood', 7, r_top=0.2)
+            sphere(S, x, y, 0.4 + 0.24 * k, 0.15, PRODUCE[(j + 3 * k) % len(PRODUCE)], 6, 3, z_scale=0.6)
+    for k in range(3):
+        cyl(S, u0 + 0.4 + 0.45 * k, D - 0.3, 0.0, 0.22, 0.6, 'linen', 7, r_top=0.15)
+    for k in range(4):                                            # strings of onions and garlic from a pole
+        box(S, u - 0.6 + k * 0.4, D * 0.5, CEIL - 0.95, 0.12, 0.12, 0.75, 'ochre' if k % 2 else 'linen')
+    beam(S, u0 + 0.2, D * 0.5, CEIL - 0.18, u1 - 0.2, D * 0.5, CEIL - 0.18, 0.06, 0.06, 'wood')
+
+
+def trade_barber(S, u, ow, u0, u1, D, yf):
+    """【史】A barber (tonstrina): a bench along the wall for those waiting, a stool, a basin on a stand, a bronze mirror;
+    before Domitian's edict barbers also shaved in the street (Martial 7.61), so a second stool stands outside."""
+    box(S, (u0 + u1) / 2, D - 0.25, 0.0, u1 - u0 - 0.3, 0.4, 0.45, 'wood')
+    for x, y in ((u - 0.2, D * 0.45), (u + 0.6, yf - 0.6)):
+        box(S, x, y, 0.42, 0.42, 0.42, 0.05, 'wood')
+        for dx in (-0.16, 0.16):
+            for dy in (-0.16, 0.16):
+                box(S, x + dx, y + dy, 0.0, 0.05, 0.05, 0.42, 'wood')
+    cyl(S, u + 0.55, D * 0.45, 0.0, 0.08, 0.8, 'stone', 6)
+    cyl(S, u + 0.55, D * 0.45, 0.8, 0.25, 0.12, 'bronze', 10, r_top=0.3)
+    box(S, u, D - 0.03, 1.2, 0.36, 0.02, 0.45, 'bronze')
+    bench(S, u - ow / 2 - 0.9, yf, w=1.2)
+
+
+def cart(S, x, y, rot=0.0):
+    """A two-wheeled cart (carrus) with its shafts on the ground, body along local y (shafts towards -y)."""
+    C = S.sub(x, y, 0.0, rot)
+    box(C, 0, 0.2, 0.75, 1.2, 1.8, 0.12, 'wood')
+    for sx in (-1, 1):
+        box(C, sx * 0.57, 0.2, 0.87, 0.06, 1.8, 0.35, 'wood')
+        vdisc(C, sx * 0.72, 0.3, 0.55, 0.55, 0.1, 'wood', 10)
+        beam(C, sx * 0.35, -0.7, 0.75, sx * 0.3, -1.9, 0.08, 0.08, 0.1, 'wood')
+    box(C, 0, 0.3, 0.5, 1.6, 0.1, 0.1, 'wood')
+    box(C, 0, 1.12, 0.87, 1.2, 0.06, 0.35, 'wood')
+
+
 TRADES = {'bread': trade_bread, 'fish': trade_fish, 'oil': trade_oil, 'pottery': trade_pottery, 'bar': trade_bar,
-          'cloth': trade_cloth, 'mill': trade_mill}
+          'cloth': trade_cloth, 'mill': trade_mill, 'fuller': trade_fuller, 'smith': trade_smith, 'green': trade_green,
+          'barber': trade_barber}
 
 
 def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', ceil=CEIL):
@@ -302,6 +402,8 @@ def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', c
             ow = it.get('w', 1.8); ops.append((u, 0.0, ow, OH, 'rect'))
         elif k == 'win':
             ops.append((u, it['zb'], it['w'], it['h'], 'rect'))
+        elif k == 'gate':
+            ops.append((u, 0.0, it.get('w', 2.8), it.get('h', 3.5), 'arch'))
     opening_skin(S, 0, 0, L, 0, 0.0, h, ops, mat, depth=depth, inner=None)
     for it in items:
         k = it['kind']; u = it['u']
@@ -333,4 +435,16 @@ def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', c
             threshold(S, u, ow, yf)
         elif k == 'win':
             dark_panel(S, u, it['zb'], it['w'], it['h'])
+        elif k == 'gate':                                         # 【史】a cart entrance into an inn's yard (stabulum)
+            gw, gh, Dg = it.get('w', 2.8), it.get('h', 3.5), it.get('D', 7.0)
+            room(S, u - gw / 2 - 0.1, u + gw / 2 + 0.1, Dg, gh, floor='basalt', joists=False)
+            box(S, u, yf + 0.2, -0.02, gw + 0.1, 0.5, 0.06, 'travertine')
+            for sd in (-1, 1):
+                box(S, u + sd * (gw / 2 - 0.05), 0.75, 0.0, 0.07, 1.4, gh - gw / 2 - 0.05, 'wood')   # the leaves, open
+                box(S, u + sd * gw * 0.28, yf + 0.2, 0.035, 0.12, 0.5, 0.01, 'dark')                  # wheel ruts
+            if it.get('cart', True):
+                cart(S, u - 0.2, Dg * 0.5)
+            basin(S, u + gw / 2 - 0.45, Dg - 0.4, 0.7, 0.6, 0.6)                                    # a trough
+            box(S, u - gw / 2 + 0.45, Dg - 0.35, 1.0, 0.7, 0.6, 0.4, 'wood')                        # a manger with hay
+            box(S, u - gw / 2 + 0.45, Dg - 0.35, 1.38, 0.6, 0.5, 0.12, 'awning')
     return S, L

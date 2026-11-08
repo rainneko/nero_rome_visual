@@ -652,7 +652,7 @@ async function buildRome(msg){
   buildAcademyHousing(W);
   buildNobleQuarter(W);
   // each placement slot keeps its footprint; the variants drawn in it (tools/models/rome/rome_insulae2.py, briefs/rome/ground-floor.md)
-  const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f'],rome_insula_b:['rome_insula_b','rome_insula_e'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h']};
+  const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l']};   // tools/models/rome/rome_insulae{,2,3}.py
   /* ---- GLB apartment blocks (rome_insula_a/b/c) as variety among the procedural houses: dropped into free ground of the dense districts BEFORE the lots are laid out ---- */
   {const RI2=RNG(2024),spec={rome_insula_a:[15.3,13.7],rome_insula_b:[14.7,13.4],rome_insula_c:[8.9,14.3]},names=Object.keys(spec);let nIn=0;
    for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;

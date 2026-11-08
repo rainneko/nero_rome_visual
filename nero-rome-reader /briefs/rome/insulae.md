@@ -32,6 +32,22 @@ Each fits an older block's placement slot; `monuments.js` picks the variant from
 * All eight blocks stand on a tuff plinth (1.6 m); the page sets the floor at the street in front, at most 0.5 m above
   the lowest ground of the footprint.
 
+## Second set of five (2026-11-08, `tools/models/rome/rome_insulae3.py`; evidence in `ground-floor.md`, "Second set")
+Same slots and place hash: slot a = a/d/f/i/k, slot b = b/e/j/m, slot c = c/g/h/l.
+* rome_insula_i (slot a, 3 storeys and a flat roof terrace): a fuller's workshop after the Fullonica of Stephanus:
+  treading stalls, a rinsing tank, the cloth press and a bleaching frame behind a wide door, election notices on the front,
+  a cloth shop; cloth drying on lines on the roof, a stair house. 4 006 triangles.
+* rome_insula_j (slot b, 3 storeys): an inn (stabulum): an arched cart gate into the yard (cart, manger, trough, wheel
+  ruts in the threshold), a food bar, an elephant sign as at the inn of Sittius, a timber gallery before the guest
+  rooms, a tethering stone, stable windows on the side. 5 277.
+* rome_insula_k (slot a, 2 storeys): an atrium house with four shops let on its front (bread, greengrocer, oil, food
+  bar) either side of the house door; a flat over the shops with a balcony and its own stair door on the side street;
+  the atrium wing has a compluviate roof sloping in to the opening over the impluvium. 6 069.
+* rome_insula_l (slot c, 4 storeys): narrow smith's house in tuff with brick bands and quoins; hearth, anvil, tub, tools,
+  iron goods in the street. 3 560.
+* rome_insula_m (slot b, 4 storeys): a masonry stair up the outside of the side wall to the first-floor flat's door;
+  greengrocer with a stepped stand of baskets, a barber (stool outside, awning), an oil shop. 5 762.
+
 ## Roman style pass (2026-11-01; this overrides the per-asset lists below where they differ)
 Learnt from `refs/arch/trajan_market_LATE.jpg` (Trajan's Market, about AD 110: materials and construction only, not its
 plan) and the Ostia/Herculaneum shop rows; mood from `refs/houses_ai_watercolour.jpg`.
