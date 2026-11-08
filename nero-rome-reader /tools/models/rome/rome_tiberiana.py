@@ -1,4 +1,4 @@
-import os, sys, math; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys, math, json; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rk import *
 import bpy
 from mathutils import Vector
@@ -150,14 +150,93 @@ colonnade(F, -28.8, 52.0, 28.8, 52.0, 11.0, 11, 3.4, None, 'marble', 'ionic', en
 box(F, 0, 53.0, 11.0, 60, 0.5, 1.0, 'marble')
 lean_roof(F, 30, 50.2, -30, 50.2, 16.0, 5.0, 1.3)
 
-# ---- rock at the foot of the hill base (the lowest walls rise out of it)
-tN = rock_mass(F, [(-79, 50), (79, 50), (79, 109), (-79, 109)], -41.0, -21.8, seed=3, strata=2, split=(0.6, 0.4), step=6.0, dip=0.0, tilt=lambda x, y: -0.14 * max(0.0, y - 66.0), relief=2.0, jitter=3.0, rock2=0.4, batter=18.0, band=4.5, boulders=8, grid=7.0, moss_cover=0.5, top_mat='grass')
-tW = rock_mass(F, [(-79, -66), (-56, -66), (-56, 84), (-79, 84)], -31, -13.5, seed=5, strata=2, split=(0.6, 0.4), step=6.0, dip=0.0, tilt=lambda x, y: -0.07 * (y + 56.0) + 0.12 * min(0.0, x + 71.0), relief=1.8, jitter=3.0, rock2=0.4, batter=18.0, band=4.5, boulders=6, grid=7.0, moss_cover=0.5, top_mat='grass')
-tE = rock_mass(F, [(66, -72), (82, -72), (82, 72), (66, 72)], -36, -13.5, seed=6, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0)
-tS = rock_mass(F, [(-76, -72), (76, -72), (76, -50), (-76, -50)], -36, -13.5, seed=7, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0)
-foot_rocks(F, [(-71, 66), (-71, -56)], (-14.5, -13.0), top_z=tW, seed=11, blocks=3)     # chunks along the west foot
-foot_rocks(F, [(-71, -56), (71, -56)], (-14.5, -13.0), top_z=tS, seed=12, blocks=4)     # ... south foot
-foot_rocks(F, [(71, -56), (71, 66)], (-14.5, -13.0), top_z=tE, seed=13, blocks=3)       # ... east foot
+# ---- the north ledge: the palace's terrace garden (round 3, 2026-11-08; Livia's garden room at Prima Porta and the
+#      Pompeian peristyle gardens: box-framed beds, gravel walks, a fountain basin, statues on pedestals, a pergola,
+#      trees behind the parapet). It lies at the arcade floor, so the arches open onto it as a portico.
+ZG = -19.6                                                         # garden walks (the arcade floor is -19.0)
+PLANTS = []                                                        # (x, y, z, kind, scale): planted by the page
+box(F, 4.3, 81.0, -22.0, 139.4, 28.2, 2.4, 'gravel')               # gravel over the whole terrace, x -65.4..74, y 66.9..95.1
+box(F, 4.6, 95.5, -26.5, 140.0, 0.8, ZG + 1.0 + 26.5, 'tuff')      # terrace wall on the cliff edge, 1 m parapet
+box(F, 4.6, 95.5, ZG + 1.0, 140.4, 1.0, 0.18, 'travertine')
+box(F, 74.4, 85.1, -26.5, 0.8, 21.6, ZG + 1.0 + 26.5, 'tuff')      # east end
+box(F, 74.4, 85.1, ZG + 1.0, 1.0, 21.8, 0.18, 'travertine')
+box(F, 71.55, 73.3, -26.0, 14.1, 2.0, 12.9, 'tuff')                # retaining wall against the higher east rock (tE)
+box(F, 71.55, 73.3, -13.1, 14.3, 2.2, 0.25, 'travertine')
+box(F, 0, 67.3, ZG, 32.5, 0.8, 0.3, 'travertine')                  # a step up into the four middle bays: the portico
+box(F, 0, 63.0, -19.0, 32.4, 5.8, 0.06, 'paving')
+for (bx0, bx1) in ((-59.0, -38.2), (-34.6, -12.0), (12.0, 34.6), (38.2, 59.0)):
+    for r, (by0, by1) in enumerate(((72.4, 81.2), (84.2, 91.0))):
+        box(F, (bx0 + bx1) / 2, (by0 + by1) / 2, ZG, bx1 - bx0 - 0.6, by1 - by0 - 0.6, 0.18, 'turf')
+        for (ax, ay, cx_, cy_) in ((bx0, by0, bx1, by0), (bx1, by0, bx1, by1), (bx1, by1, bx0, by1), (bx0, by1, bx0, by0)):
+            hedge(F, ax, ay, cx_, cy_, ZG, 0.7, 0.55)               # clipped box round each bed
+        mx_, my_ = (bx0 + bx1) / 2, (by0 + by1) / 2
+        PLANTS.append((mx_, my_, ZG + 0.18, 'pomegr' if r == 0 else 'fig', 0.8))
+        for (px, py) in ((bx0 + 2.6, by0 + 2.2), (bx1 - 2.6, by0 + 2.2), (bx0 + 2.6, by1 - 2.2), (bx1 - 2.6, by1 - 2.2)):
+            PLANTS.append((px, py, ZG + 0.18, 'flower' if (px + py) % 3 < 1.0 else 'shrub', 0.6))
+round_pool(F, 0, 82.7, ZG, 3.6, 'water', 'marble', 0.45, 24)       # the fountain basin on the axis
+cyl(F, 0, 82.7, ZG - 0.1, 0.45, 1.5, 'marble', 10)
+statue(F, 0, 82.7, ZG + 1.4, 1.9, 'marble', pedestal=0.0)
+for (sx, sy) in ((-10.0, 73.6), (10.0, 73.6), (-10.0, 89.8), (10.0, 89.8), (-36.4, 82.7), (36.4, 82.7)):
+    statue(F, sx, sy, ZG, 2.2, 'marble', pedestal=1.0, ped_mat='marble')
+pergola(F, 63.0, 76.0, 72.6, 93.0, ZG, 2.7, 'wood', 'hedge', 2.4)  # vine pergola at the east end, a bench under it
+box(F, 71.4, 84.5, ZG, 0.8, 11.0, 0.5, 'marble')
+for (tx0, tx1) in ((-60.5, -4.0), (4.0, 62.0)):                     # a strip of grass behind the parapet with the trees
+    box(F, (tx0 + tx1) / 2, 93.4, ZG, tx1 - tx0, 2.6, 0.12, 'turf')
+for k, tx in enumerate((-57, -50, -43, -36, -29, -22, -15, -8, 8, 15, 22, 29, 36, 43, 50, 57)):
+    PLANTS.append((tx, 93.4, ZG + 0.12, 'pine' if abs(tx) in (22, 50) else 'broad' if abs(tx) == 36 else 'cyp', 0.75))
+stair_flight(F, -59.4, 85.5, -65.4, 85.5, ZG, -16.0, width=2.6, mat='travertine', cheek_mat='tuff')   # garden up to the NW stair landing
+
+# ---- rock: the north and west sides are one natural cliff round the garden and the west terrace (cliff_band); its toe
+#      sits on the old foot outline (palrock.js), so the footprint the page places before the houses stays as it was
+TOE = [(-82.7, -75.2), (-82.7, -91.5), (-82.7, -96.6), (-82.0, -107.6), (-80.5, -110.3), (-4.9, -112.7), (0.0, -112.7),
+       (15.2, -112.4), (76.4, -110.4), (81.6, -108.0), (82.6, -103.5), (82.6, -99.6), (82.7, -80.0), (82.4, 12.6),
+       (82.0, 69.4), (80.3, 72.7), (65.9, 72.7), (-5.4, 72.7), (-76.7, 72.1), (-79.5, 48.4), (-79.8, 44.3),
+       (-82.1, -11.8), (-82.6, -52.6), (-82.7, -71.8)]
+TOE = [(x, -z) for x, z in TOE]                                     # palrock.js gives glTF (x, z); model y = -z
+RIM = [(-76.6, -66), (-76.4, -54), (-76.0, -42), (-76.5, -28), (-75.9, -14), (-76.6, 2), (-75.8, 18), (-76.4, 32),
+       (-77.6, 44), (-79.0, 51), (-79.4, 58), (-78.2, 64), (-76.3, 72), (-76.6, 82), (-75.8, 90),          # west, round both towers
+       (-74.2, 95.6), (-71.0, 98.4), (-67.0, 99.2), (-62.5, 98.2),                                         # NW: the stair goes down here
+       (-52, 98.9), (-41, 97.6), (-30, 98.7), (-19, 97.7), (-8, 98.9), (3, 97.8), (14, 98.8), (25, 97.6), (36, 98.7),
+       (47, 97.8), (58, 98.6), (67, 97.9), (73.0, 96.4), (76.4, 92.5), (77.6, 86), (77.2, 79), (77.8, 72), (78.0, 66)]
+z_west = lambda y: -14.1 - 0.07 * (y + 56.0)                         # the old west ledge's fall to the north
+zN = lambda x: -20.6 + 0.5 * math.sin(0.21 * x + 0.7) + 0.35 * math.sin(0.53 * x)   # 0.15-1.9 m under the garden
+
+
+def z_rim(x, y):
+    if x < -70.5 and y < 93.0:
+        return z_west(y) + 0.6 * math.sin(0.17 * y + 1.0) * min(1.0, (93.0 - y) / 6.0)
+    if x < -64.0:
+        return -24.4                                                   # the NW stair passes the rim here, on the rock
+    if x < -56.0:
+        return -24.4 + (zN(x) + 24.4) * (x + 64.0) / 8.0
+    return zN(x)
+
+
+def z_toe(x, y):                                                       # the old feet: valley floor north, the west slope
+    zn = -41.0 - 0.14 * max(0.0, y - 66.0); zw = -32.3 - 0.07 * (y + 56.0)
+    return max(-47.1, zn if x > -77.0 else (min(zw, zn) if y > 66.0 else zw))
+
+
+def z_mid(x, y):                                                       # the mid bench rises and falls along the cliff
+    if x < -70.5 and y < 93.0:
+        return z_west(y) - 5.5 - 4.0 * (0.5 + 0.5 * math.sin(0.09 * y + 2.0)) + 1.2 * math.sin(0.31 * y)
+    zm = -28.2 + 2.6 * math.sin(0.071 * x + 1.3) + 1.3 * math.sin(0.23 * x + 0.4)
+    if x <= -59.0:
+        return -27.3                                                   # the stair's foot
+    if x < -54.0:
+        return -27.3 + (zm + 27.3) * (x + 59.0) / 5.0
+    return zm
+
+
+CB = cliff_band(F, RIM, z_rim, z_toe, TOE, z_mid=z_mid, seed=21, fissures=14, tongues=6, ivy=12, boulders=10, bench=(-2.5, 6.0),
+                mat='rock3', alt='rock2', dark='rock4',         # the faces a stain darker than the other hills: darker than the arcade's tuff
+                keep=((-76.0, -59.0, 92.0, 113.0),), min_bench=lambda x, y: 6.5 if (-73.5 < x < -61.0 and y > 95.0) else 0.0)
+PLANTS.extend(CB['plants'])
+tE = rock_mass(F, [(66, -72), (82, -72), (82, 72), (66, 72)], -36, -13.5, seed=6, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0, mat='rock3')
+tS = rock_mass(F, [(-76, -72), (76, -72), (76, -50), (-76, -50)], -36, -13.5, seed=7, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0, mat='rock3')
+foot_rocks(F, [(-71, 66), (-71, -56)], (-14.5, -13.0), top_z=CB['top'], seed=11, blocks=3, mat='rock3')   # all the base rock in the darker stain (round 3)     # chunks along the west foot
+foot_rocks(F, [(-71, -56), (71, -56)], (-14.5, -13.0), top_z=tS, seed=12, blocks=4, mat='rock3')     # ... south foot
+foot_rocks(F, [(71, -56), (71, 66)], (-14.5, -13.0), top_z=tE, seed=13, blocks=3, mat='rock3')       # ... east foot
 
 # ---- every roof surface uses the 'tile' material: fold the darker rib material into it
 _t = _bk._G.setdefault('tile', [[], [], []])
@@ -165,6 +244,8 @@ _t2 = _bk._G.pop('tile2', None)
 if _t2:
     _o = len(_t[0]); _t[0].extend(_t2[0]); _t[1].extend(tuple(_o + i for i in f) for f in _t2[1]); _t[2].extend(_t2[2])
 
+print('CLIFF', CB['stations'], 'stations', CB['tris'], 'tris')
+print('TIB_PLANTS', json.dumps([[round(p[0], 1), round(p[1], 1), round(p[2], 2), p[3], p[4]] for p in PLANTS], separators=(',', ':')))
 preview_ground(GROUND)
 human(F, 20, 110, GROUND)
 if os.environ.get('ROME_DRY'):

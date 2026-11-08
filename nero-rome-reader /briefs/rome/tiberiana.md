@@ -156,6 +156,77 @@ outline grew 2.3 m to the north and 1.9 m to the west. The main road passes 2 m 
 - Shots (left before, main 7ede1f3; right after): `docs/screenshots/tiberiana-rework-20261108/`: model previews
   `model_*`, page views `page_*`, and the north-west corner with the road from above (`page_corner_top`).
 
+#### Round 3 (2026-11-08, after the author's look at round 2)
+The author: better than the old one, but the bare rock still looks abrupt, and the lawn in front of the arcade has no use.
+Asked whether the lawn should become a street with shops or a terrace garden, the author chose the terrace garden.
+- **Terrace garden** at the arcade floor (z −19.6, the arcade floor is −19.0), so the four middle bays become its portico:
+  - a travertine step and paving in the bays;
+  - gravel over the terrace, x −65…74, y 67…95;
+  - eight beds in two rows, each framed by clipped box (`hedge`), with a pomegranate or a fig in the middle and flowers or
+    shrubs at the corners;
+  - a round basin with a statue on the axis, and six more statues on pedestals;
+  - a vine pergola with a marble bench at the east end;
+  - a tuff terrace wall along the cliff edge with a 1 m parapet and travertine coping, with a strip of grass behind it
+    planted with cypresses, umbrella pines and two broad trees;
+  - a side flight from the garden up to the NW stair landing.
+  【史】 Models: Livia's garden room at Prima Porta (painted), and the Pompeian peristyle gardens, which had box-framed beds,
+  gravel paths, basins, statues and pergolas.
+  The page plants the garden's trees and the cliff's shrubs from `TIB_PLANTS` (`palatine.js`). The model script prints
+  that list, so paste it again after every rebuild.
+- **Rock.** The north and west tN/tW rock masses are replaced by one `cliff_band` (`rk.py`), a natural cliff in 132
+  stations that runs round the garden and the west terrace:
+  - a ragged lip and a mid bench whose height and width vary along the cliff, pinching out in places;
+  - 14 fissures cut back into the face;
+  - 6 soil tongues coming over the rim, each about 6 m wide;
+  - talus and scree at the foot, with 10 boulders kept inside the toe;
+  - ivy in 12 small clumps of pointed strands, 1–6.5 m long, with gaps between them;
+  - shrubs on the benches and the scree.
+
+  Two limits keep the faces from turning up to the sky. A face bulges out at most 7 % of its height, though recesses stay
+  deep. Where the bench narrows below 1.5 m, its rib (the lip's step out) fades, so a pinched-out bench leaves no pale
+  band across the face. Room left over at a station widens the bench only where the noise put one; elsewhere the faces
+  lean back, so the bench comes and goes along the cliff.
+  The rim dips to −24.4 where the NW stair comes down, and the bench there is at least 6.5 m wide for the stair's foot.
+  Colours: the faces are `rock3`, one stain darker and warmer than the other hills, with lighter `rock2` patches; the
+  fissures and the undersides of the bench lips are `rock4`. tE, tS and the foot rocks now use `rock3` too, but their
+  shapes are unchanged. The whole base is clearly darker than the arcade's tuff, even in sun, while the other hills keep
+  the paler `rock`.
+- **Foot outline.** The toe is fitted to the round-2 outline (`palrock.js`). Every new outline vertex lies on or inside
+  the old outline, at most 0.21 m in. The one exception is the NW corner, which is chamfered 1.5 m (−80.5, −110.3).
+  Area 30 145 → 30 078 m² (−0.2 %). Foot −47.1 and top 21.6 are unchanged. Boulders stay inside the toe.
+- **Shading** (`assets.js`, shared by every GLB rock):
+  - Pattern 10 is now a function of world position only. The old version laid its beds and joints out in each face's
+    own uv, which broke at every polygon edge where the uv axes switch, and the breaks showed as a ghost grid of straight
+    lines. Changes:
+    - wavier beds;
+    - fractures as vertical planes: the edges of a cell pattern in plan (cells about 7 m), wandering with height, each
+      through two to four beds. This replaces the joint per bed, which read as brick courses;
+    - more ochre stains and rain streaks;
+    - duller grass on the ledges.
+  - Rock tints are warmer (W `rock` .385/.315/.2, `rock2` .295/.24/.15; RK `rock` .29/.235/.15, `rock2` .215/.172/.105).
+  - New pattern 11 (`turf`): the terrain's seasonal hill grass, duller and darker. Bare earth takes most of a steep face
+    and patches of a flat one.
+  - New material `ivy` (pattern 8), more olive than the clipped box.
+  - New materials `rock3` (pattern 10, W .245/.193/.112) and `rock4` (W .175/.125/.07): this model's rock and its
+    shadows. No other model uses them.
+
+  Checked on Victoria, Magna Mater, Apollo, Domus Augusti and an outcrop: one rock and one wall stone per hill still holds.
+- 62 639 triangles (cliff 3 431).
+- **Foot planting.** `terraceFeet` used to put rock lumps, a moss strip and scree along the rock foot outline; they read
+  as flat white chips and green dashes in front of the model's own talus. The Tiberiana foot records now carry
+  `natural:true` (`palGlbFeet`), so they get shrubs and cypresses only, set further out as on a ledge
+  (`terrace-edge.js`).
+- **Roads.** Re-baked. The Vicus Tuscus west of the palace, from (−60, 120) to (−142, 152), lost three bends. The nearest
+  road edge is 2.4 m from the rock foot outline (2.3 m in round 2).
+- **Checks** (summer, `dist/test.html?test`):
+  - `__wallFootCheck()`: 108 walls, no seam over 20 m; the longest on this model is 11.9 m.
+  - `__floatCheck()`: 282, as before; this model neither floats nor is buried.
+  - `bake-roads.mjs --check`: up to date.
+- Shots (left: round 2, 074128d; right: round 3), in `docs/screenshots/tiberiana-round3-20261108/`:
+  - `page_camA`, `page_camB`, `page_camC`, `page_forum_far`, `page_nw`, `page_t1`;
+  - `rock_*`: the other GLB rocks before and after the shared shading change;
+  - `model_*`: Blender previews, after only.
+
 ### Rework checklist (2026-11-08: all pass)
 - [x] No street, shops, brick back wall or lean roof north of the arcade; the north rock comes up to the plinth
 - [x] One storey of tuff arches on the north side, with travertine imposts, cornice and a balustrade; nothing in brick
@@ -166,4 +237,8 @@ outline grew 2.3 m to the north and 1.9 m to the west. The main road passes 2 m 
 - [x] Rock: benches of different heights (round 2: two, with a grassy top), tops falling toward the north and the north-west,
       no flat stack of equal layers; nothing floats (walls, plinth, stair bases go down into the rock)
 - [x] Palace, wings, loggia, garden, pavilion, eagle and side-door stair unchanged
-- [x] ≤ 70 000 triangles (65 774)
+- [x] ≤ 70 000 triangles (65 774; round 3: 62 639)
+- [x] Round 3: the north ledge is a terrace garden (beds in box, gravel walks, basin, statues, pergola, parapet with trees)
+      and the arches open onto it as a portico
+- [x] Round 3: the rock is one natural cliff (varying bench, ragged lip, fissures, soil tongues, scree, ivy, shrubs); no
+      saturated green, no yellow sheets; foot outline kept (NW corner chamfered 1.5 m)
