@@ -4,9 +4,16 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,hedge:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
+const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,rock3:10,rock4:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,turf:11,hedge:8,ivy:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
+// the hills' wild grass through the year, as the terrain draws it (builders.js): green in winter and spring, straw in summer, with bare earth
+vec3 hillGrass(vec2 p){float sS=uSeason,dryA=smoothstep(.4,.95,sS)*(1.-smoothstep(1.45,1.95,sS));
+ vec3 gSp=vec3(.103,.345,.036),gAu=vec3(.038,.169,.037),gWi=vec3(.047,.169,.044);
+ vec3 gS=sS<2.?mix(gSp,gAu,sS*.5):sS<3.?mix(gAu,gWi,sS-2.):mix(gWi,gSp,sS-3.);
+ vec3 gr=gS*mix(.82,1.18,fbm2(p*.05));gr=mix(vec3(dot(gr,vec3(.3,.5,.2))),gr,.78);
+ vec3 c=mix(gr,vec3(.54,.42,.16)*mix(.85,1.15,fbm2(p*.03+7.)),dryA*(.9+.1*fbm2(p*.02+3.)));
+ return mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),smoothstep(.62,.8,fbm2(p*.2+7.))*.6);}
 vec3 romePat(vec3 c,vec3 wp,float pat){
  vec3 n=normalize(cross(dFdx(wp),dFdy(wp)));vec3 an=abs(n);bool flr=an.y>.7;
  vec2 uv=flr?wp.xz:(an.x>an.z?vec2(wp.z,wp.y):vec2(wp.x,wp.y));
@@ -24,13 +31,28 @@ vec3 romePat(vec3 c,vec3 wp,float pat){
  else if(pat<6.5){c*=(.9+.14*fbm2(uv*vec2(.25,.12)))*mix(1.,.85,smoothstep(.55,.8,fbm2(vec2(uv.x*1.3,uv.y*.15))));}
  else if(pat<7.5){c*=.88+.2*vn2(uv*vec2(2.1,1.));}
  else if(pat<8.5)c*=.8+.35*fbm2(wp.xz*.4);
- else if(pat>9.5){   // natural rock (the hills' tufa and limestone): wavy bedding planes 1.5-3 m apart, each bed its own tone, dark vertical joints, ochre and grey stains,
-  // moss and grass on the up-facing ledges (rock and rock2 used the ashlar courses of pattern 1, so the hill bases read as cut stone or concrete; the author, 2026-11-03)
-  float st=wp.y+2.4*fbm2(wp.xz*.03)+.6*vn2(uv*vec2(.08,.3));float bed=floor(st/2.3),lay=h12(vec2(bed,7.3));
-  float seam=rpJ(st,2.3,.06+.05*lay);float jx=uv.x*.21+.9*vn2(vec2(uv.x*.04,bed*.7)),jd=abs(fract(jx)-.5);float jt=(1.-smoothstep(.015,.05,jd))*step(.35,h12(vec2(floor(jx),bed)));
-  c*=(.78+.34*lay)*(.82+.32*fbm3(wp*.19))*mix(1.-.42*seam-.5*jt*(1.-n.y*n.y),1.,far*.7);
-  c=mix(c,c*vec3(1.16,.97,.74),smoothstep(.56,.78,fbm2(wp.xz*.045+vec2(wp.y*.05,0.))));c=mix(c,vec3(dot(c,vec3(.33)))*1.05,smoothstep(.6,.8,fbm2(wp.zx*.06+3.7))*.35);
-  c=mix(c,vec3(.19,.22,.085)*(.8+.4*fbm2(wp.xz*.5)),smoothstep(.6,.85,n.y)*smoothstep(.38,.62,fbm2(wp.xz*.22))*.85);}
+ else if(pat>10.5){   // 'turf': the hill grass on ledges, soil slopes and scree (the GLB colour is only for the Blender previews). Round 3: the plain grass colour on
+  // sunlit tongues read as yellow sheets, so the grass is duller and darker than the open hillside, and bare earth takes most of a steep face and patches of a flat one.
+  vec3 g=hillGrass(wp.xz);g=mix(vec3(dot(g,vec3(.3,.5,.2))),g,.75)*vec3(.9,.95,.88)*(.74+.26*vn2(wp.xz*1.3));
+  vec3 soil=mix(vec3(.27,.21,.13),vec3(.2,.155,.095),fbm2(wp.xz*.12+5.))*(.88+.24*vn2(wp.xz*2.3+wp.y*.7));   // the hill's earth, darker than its rock in sun
+  float e=smoothstep(.42,.72,.55*fbm2(wp.xz*.3+3.1)+.25*vn2(wp.xz*1.7+wp.y)+.55*(1.-smoothstep(.5,.92,n.y)));c=mix(g,soil,e*.9);}
+ else if(pat>9.5){   // natural rock (the hills' tufa and limestone): wavy beds of uneven thickness (about 1.4-3.4 m), each its own tone, fractures at uneven spacing
+  // through a few beds, ochre stains, dark rain streaks, the hill grass on up-facing ledges. (rock and rock2 used the ashlar courses of pattern 1, so the hill bases
+  // read as cut stone or concrete: the author, 2026-11-03. Round 3, 2026-11-08: even 2.3 m beds with near-regular joints still read as courses on big faces.)
+  // Every field here is a function of the world position alone: a pattern laid out in the face's own uv broke at each polygon edge
+  // where the uv axes switch, and the breaks drew a ghost grid of straight lines over the big cliff faces (round 3).
+  float st=wp.y+3.6*fbm2(wp.xz*.022)+1.1*fbm3(wp*vec3(.05,.22,.05))+.6*sin((wp.x-wp.z)*.08+wp.y*.07);float sb=st/2.3;sb+=.3*sin(sb*2.1+1.3)+.18*sin(sb*3.7+.4);
+  float bed=floor(sb),lay=h12(vec2(bed,7.3));float seam=rpJ(sb,1.,.022+.03*lay)*(.55+.45*smoothstep(.3,.7,fbm2(wp.xz*.06+bed)));
+  // joints: vertical fracture planes, the edges of a cell pattern in plan (cells about 7 m) that wander with height; each edge runs on
+  // through a group of two to four beds and then stops (a joint per bed, offset bed by bed, read as brick courses)
+  float grp=floor(sb*.33+.8*vn2(wp.xz*.02+1.7));
+  vec2 fq=wp.xz*.15+.45*vec2(vn2(vec2(wp.y*.16,wp.x*.05)),vn2(vec2(wp.y*.16+5.,wp.z*.05)));vec2 fi=floor(fq),ff=fract(fq);float m1=8.,m2=8.;vec2 c1=fi,c2=fi;
+  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 g=vec2(i,j);vec2 r=g+vec2(h12(fi+g),h12(fi+g+17.3))-ff;float d=dot(r,r);if(d<m1){m2=m1;c2=c1;m1=d;c1=fi+g;}else if(d<m2){m2=d;c2=fi+g;}}
+  float jd=sqrt(m2)-sqrt(m1),jw=.016+.022*h12(c1+c2+3.3);float jt=(1.-smoothstep(jw,jw+.03+fwidth(jd),jd))*step(.4,h12(c1+c2+grp*.73));
+  c*=(.8+.3*lay)*(.84+.3*fbm3(wp*.19))*mix(1.-.36*seam-.45*jt*(1.-n.y*n.y),1.,far*.7);
+  c=mix(c,c*vec3(1.18,.97,.72),smoothstep(.48,.74,fbm2(wp.xz*.045+vec2(wp.y*.05,0.))));c=mix(c,vec3(dot(c,vec3(.33)))*1.05,smoothstep(.62,.82,fbm2(wp.zx*.06+3.7))*.18);
+  if(an.y<.6)c*=1.-.2*smoothstep(.58,.85,fbm2(vec2(wp.x*.37+wp.z*.29,wp.y*.035)));   // dark streaks where rain runs down the faces
+  vec3 lg=hillGrass(wp.xz);c=mix(c,mix(vec3(dot(lg,vec3(.3,.5,.2))),lg,.75)*(.7+.35*fbm2(wp.xz*.5)),smoothstep(.6,.85,n.y)*smoothstep(.38,.62,fbm2(wp.xz*.22))*.85);}
  else if(n.y>.25&&n.y<.985){vec3 ac=normalize(cross(vec3(0.,1.,0.),n));vec3 dn=normalize(cross(n,ac));float u=dot(wp,ac)/.47,v=dot(wp,dn)/.42;
   float cu=clamp(1.-fwidth(u)*1.1,0.,1.),cv=clamp(1.-fwidth(v)*1.1,0.,1.);       // band-limited: stripes fade only when finer than a pixel
   float rib=.5+.5*cos(6.2832*u),crs=smoothstep(0.,.25,fract(v)),th=h12(vec2(floor(u),floor(v)));
@@ -42,7 +64,7 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
   if(mt.name==='dark'||mt.name==='gallery_wall'){mt.color.setRGB(.40,.35,.28);mt.roughness=.92;mt.userData.galleryInterior=true;}
   if(mt.name==='gallery_floor'){mt.color.setRGB(.47,.42,.34);mt.userData.galleryInterior=true;}
-  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.36,.31,.23],rock2:[.27,.23,.165],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.385,.315,.2],rock2:[.295,.24,.15],rock3:[.245,.193,.112],rock4:[.175,.125,.07],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
@@ -75,7 +97,7 @@ function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.r
   if(inst.length){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler(),byL={};   // one set of InstancedMeshes per story-state group (o.parentLayer), the rest in the scene
     for(const p of inst)(byL[p.o.parentLayer||'']||(byL[p.o.parentLayer||'']=[])).push(p);
     for(const lk in byL){const inst=byL[lk],par=(lk&&W0.preLayers&&W0.preLayers[lk])||W0.scene;
-    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.27,.23,.17],rock2:[.2,.17,.12],moss:[.13,.155,.06]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn){mt.userData.rome=0;romeMat(mt);mt.color.setRGB(...RK);}/* a clone loses onBeforeCompile: the instanced rocks had no rock pattern or haze */const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
+    scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.29,.235,.15],rock2:[.215,.172,.105],moss:[.13,.155,.06]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn){mt.userData.rome=0;romeMat(mt);mt.color.setRGB(...RK);}/* a clone loses onBeforeCompile: the instanced rocks had no rock pattern or haze */const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
   const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
     const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;

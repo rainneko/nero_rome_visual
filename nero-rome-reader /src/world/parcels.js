@@ -186,6 +186,14 @@ function pcNearLine(W,LN,m){let best=null;const q=(a,b,hw,road)=>{const d=Math.s
   for(const id of LN.near(m[0],m[1])){const s=LN.segs[id];if(!s.road)q(s.a,s.b,s.hw,false);}
   for(const[w,S]of W.roadList||[])for(let k=1;k<S.length;k++)q(S[k-1],S[k],w/2+(w>=7?2.6:1.2),true);   // the corridor's half width, as pcLines
   return best;}
+// the first 2 m before the front of a lot that faces no line, where its paving out to the nearest line goes: the first footprint there that streets.js
+// does not pave over (all but a road and open ground: a fountain, a monument, a house, a court), or null
+function pcApronBlocked(W,L){const a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=(b[1]-a[1])/l,nz=-(b[0]-a[0])/l,S=[a,b,[b[0]+nx*2,b[1]+nz*2],[a[0]+nx*2,a[1]+nz*2]],
+    P=pInset(S,.1)||S,F=W.foot,ob=lotOBB(S),r=Math.hypot(ob.hw,ob.hd),cs=F.cell;
+  for(let i=Math.floor((ob.cx-r)/cs);i<=Math.floor((ob.cx+r)/cs);i++)for(let j=Math.floor((ob.cz-r)/cs);j<=Math.floor((ob.cz+r)/cs);j++)for(const f of F.map.get(F.key(i,j))||[]){
+    if(f.tag==='road'||f.tag==='open'&&!f.siteRole&&!f.reservation)continue;const dx=f.cx-ob.cx,dz=f.cz-ob.cz;if(dx*dx+dz*dz>(f.r+r)**2)continue;
+    if(f.circ?pcCircleHit(P,f.cx,f.cz,f.hw):residentialOverlap(P,f.blkLot||f.poly||footBox(f)))return f;}
+  return null;}
 // the line a lot's front faces: of those whose band (and a road's step back) reaches the middle of the front, the one nearest parallel to it: {s, dA (rad)} or null
 function pcFacing(LN,L){const a=L[0],b=L[1];if(Math.hypot(b[0]-a[0],b[1]-a[1])<1e-6)return null;const m=[(a[0]+b[0])/2,(a[1]+b[1])/2],th=Math.atan2(b[1]-a[1],b[0]-a[0]);let best=null;
   for(const id of LN.near(m[0],m[1])){const s=LN.segs[id];if(fbSegD2(m[0],m[1],s.a,s.b)>(s.hw+s.reach)**2)continue;const dA=fbAD(th,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0]));if(!best||dA<best.dA)best={s,dA};}
@@ -277,6 +285,7 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
         face=f2;rec.L=L=L2;ob=lotOBB(L);rec.aligned=true;S.aligned++;}}
       if(!pcStreetClear(LN,L)){drop('street');continue;}   // H11: off the secondary streets
       const hit=pcHits(W,L,.8);if(hit){const L2=hit.tag==='road'&&lot.k==='road'?pcStepBack(W,L):null;if(!L2){drop('hit');rec.hit=hit.tag||(hit.blkLot?'lot':'foot');continue;}rec.L=L=L2;ob=lotOBB(L);rec.back=true;S.stepBack++;}
+      if(!face&&(lot.k==='road'||lot.k==='street')&&pcApronBlocked(W,L)){drop('apron');continue;}   // a front that faces no line (past a street's end) is paved out to the nearest (below); with a fountain or a monument in its first 2 m that paving cannot be laid, and the house would open onto it (H10): not built
       const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){drop('grp');continue;}
       const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
       let ok=false;let gq=lot.glb?pcGlb(W,L,o.glb.spec[lot.glb]):null;if(gq&&gq.fail){cnt(S.glbMiss,gq.fail);gq=null;}   // P4: the GLB insula on its lot (o.glb.put places it); else, or where it no longer fits, lotBuild's houses
