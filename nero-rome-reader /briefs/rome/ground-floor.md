@@ -94,7 +94,7 @@ The book: "一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐
 * **What we make.**
   - Five more blocks i–m (see `insulae.md`).
   - Procedural great houses (noble quarter and central repairs): the shop rows already set into fronts of 11 m or more
-    now show a room behind each door by parallax (city shader part 48, the same goods as the house shader through
+    now show a room behind each door by parallax (city shader part 51, the same goods as the house shader through
     `shopGoods`), boards at night, and goods set out by a pier in front of some of them.
 
 ## Sources

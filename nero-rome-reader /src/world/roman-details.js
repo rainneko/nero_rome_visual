@@ -58,9 +58,9 @@ function romanFrontRelief(W,g,L,o,floorY,H,plan,awning){
     for(let i=0;i<G.nb;i++){const c=(i+.5)*G.bay;
       if(!G.ar){sp(3);box(g,F,c,floorY+G.oh,-.06,G.hw+.2,.22,.08,4|32);}   // timber lintel over a square shop opening
       if(G.shop&&hp(i+11)<.5){const w=Math.min(1.25,G.hw*1.05),x=c-G.hw+.04+w/2;sp(2);box(g,F,x,floorY-.1,-.12,w/2,1.02,.3,4|16);}}
-    // 【史】election notices painted on the whitewashed piers (red letters, part 47 draws them from the quad's uv)
+    // 【史】election notices painted on the whitewashed piers (red letters, part 50 draws them from the quad's uv)
     for(let i=0;i<G.nb-1;i++){const xp=(i+1)*G.bay,pw=G.bay-2*G.hw;if(pw<.55||hp(i+23)>=.22)continue;const w=Math.min(.66,pw-.12),h=.62,y0=floorY+1.35,z=pz-.012;
-      g.set(47,s,0,0,1,4,bn,1);g.poly([F.p(xp-w/2,y0,z),F.p(xp+w/2,y0,z),F.p(xp+w/2,y0+h,z),F.p(xp-w/2,y0+h,z)],F.d(0,0,-1),[[0,0],[w,0],[w,h],[0,h]],w,h);}
+      g.set(50,s,0,0,1,4,bn,1);g.poly([F.p(xp-w/2,y0,z),F.p(xp+w/2,y0,z),F.p(xp+w/2,y0+h,z),F.p(xp-w/2,y0+h,z)],F.d(0,0,-1),[[0,0],[w,0],[w,h],[0,h]],w,h);}
     // 【史】before Domitian's edict the shops' goods stood out in the street: a spot by a pier, placed by placeShopWares once the street mask exists
     if(G.shop&&!bn&&nSt>=2&&hp(31)<.42&&roadDecorationClear(W,L,1.0)){let x=-1;
       if(G.nb>=2)x=(Math.floor(hp(32)*(G.nb-1))+1)*G.bay;else if(len/2-G.hw>=1.0)x=(len+len/2+G.hw)/2;
@@ -94,8 +94,8 @@ function romanFrontRelief(W,g,L,o,floorY,H,plan,awning){
 function rdShopRow(g,F,zw,x0,x1,y,seed,bn=0,roof=true){const span=x1-x0,n=Math.floor(span/3.2);if(n<1)return false;
   const bay=span/n,hw=Math.min(1.35,bay*.36),oh=2.55,yT=y+oh,z=zw-.015;
   for(let i=0;i<n;i++){const c=x0+(i+.5)*bay;
-    // the shop room behind the door: part 48 draws its back wall, side walls and goods by parallax, or the night boards
-    g.set(48,(seed+i*.137+x0*.071)%1,0,0,1,4,bn,1);g.poly([F.p(c-hw,y,z),F.p(c+hw,y,z),F.p(c+hw,yT,z),F.p(c-hw,yT,z)],F.d(0,0,-1),[[0,0],[2*hw,0],[2*hw,oh],[0,oh]],2*hw,oh);
+    // the shop room behind the door: part 51 draws its back wall, side walls and goods by parallax, or the night boards
+    g.set(51,(seed+i*.137+x0*.071)%1,0,0,1,4,bn,1);g.poly([F.p(c-hw,y,z),F.p(c+hw,y,z),F.p(c+hw,yT,z),F.p(c-hw,yT,z)],F.d(0,0,-1),[[0,0],[2*hw,0],[2*hw,oh],[0,oh]],2*hw,oh);
     g.set(3,seed,0,0,1,4,bn,1);box(g,F,c,yT,z-.06,hw+.22,.22,.08,4|16|32);   // timber lintel
     if(i%2===0){g.set(2,seed,0,0,1,4,bn,1);box(g,F,c-hw+.62,y-.1,z-.2,.58,1.02,.2,4|16|2|8);}}   // counter
   for(let i=0;i<=n;i++){const c=x0+i*bay,a=Math.max(x0,c-(bay/2-hw)),b=Math.min(x1,c+(bay/2-hw));if(b-a<.15)continue;

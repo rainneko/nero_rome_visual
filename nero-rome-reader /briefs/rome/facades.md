@@ -42,7 +42,7 @@ Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Hercu
   - Square-headed shops show a trade on the back wall, chosen by a hash of bay and seed: shelves of jars, amphorae,
     loaves, or dyed cloth on a rod; the rest stay plain.
   - About 14 % stand shut with vertical boards in the threshold groove by day, and most at night.
-  - About 22 % of the piers between openings carry an election notice: part 47, red strokes on whitewash, one quad.
+  - About 22 % of the piers between openings carry an election notice: part 50 (47–49 are taken on main), red strokes on whitewash, one quad.
   - `placeShopWares` sets goods (`rome_wares_*`) in front of about a third of the shop fronts that face a side street.
 
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
