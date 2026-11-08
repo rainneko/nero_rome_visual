@@ -24,9 +24,11 @@
    of the 9 m rule (o.v2), and the aprons: the ground before a lot on a ring, or set back from a main road. W.parcels keeps it all for the review
    layer 'parcels' and tools/test/city-audit.mjs (H10, H11, H14). */
 const PCL={dim:{dense:{D:[10.5,13],W:[7,10.5]},mid:{D:[12,15],W:[9.5,13.5]},domus:{D:[8.5,10.5],W:[12,16]}},
-  front:{road:1,street:1,ring:1,square:1},roadBack:1.1,stepBack:[.8,1.6,2.6],minLot:14,minFront:2,
+  front:{road:1,street:1,ring:1,square:1},roadBack:1.1,stepBack:[.8,1.6,2.6],minLot:14,minFront:2,ringClear:2.5,farLine:12,life:{w:11,d:9,at:3.9,flat:.12},
   lane:{area:1500,edge:3.5,w:{dense:2.4,mid:2.6,domus:2.6}},pass:{run:[40,56],w:[2.2,3],end:12},
   acute:{wedge:55,tip:35,len:[6,10]},soft:150,clean:{out:.1,in:.6},align:5,chain:6,fall:[.45,.4],minFall:6.5,court:{area:35,r:2.5},
+  cal:{dense:1.1,mid:.9,domus:1},   // P4: the lot widths times this, so each class has as many houses as the old city on the same ground (city-audit.mjs, the ratio)
+  glb:{back:.5,deeper:1.5,side:.3,front:.15},   // P4: a GLB insula's lot: the strip deepened to the model's depth + back (at most deeper past the class's), side each side, its front front behind the lot's
   shop:R=>({part:R()<.3?9:0,seed:R(),sty:3+(R()<.4?8:0),fl:2|16,nSt:3+Math.floor(R()*3),gH:3.9,sH:2.9,pitch:20*DEG,lit:.7,flat:false,noSplit:true,awn:.3,balc:.1})};   // fillRoadFrontage's shop house
 
 function pcLen(P,i){const a=P[i],b=P[(i+1)%P.length];return Math.hypot(b[0]-a[0],b[1]-a[1]);}
@@ -57,21 +59,29 @@ function pcInset(P,d,minA=30){const n=P.length,L=[];
 function pcOK(L){return L.length>=3&&pArea(L)>=PCL.minLot&&!fbSelfX([L]);}
 
 // the lots of one block (ring P, edge meta E, counter-clockwise: the block on the left of each edge): {lots, court, lanes, gaps, tips, Dp, lw, mode}
-function pcLots(P,E,dk,R,area,dq){const n=P.length,dim=PCL.dim[dk],front=E.map(e=>!!(e&&PCL.front[e.k]));
+function pcLots(P,E,dk,R,area,dq,want){const n=P.length,dim=PCL.dim[dk],front=E.map(e=>!!(e&&PCL.front[e.k]));
   const res={lots:[],court:null,well:null,lanes:[],gaps:[],tips:[],Dp:0,lw:0,mode:'ring',dropped:0};
   if(n<3||!front.some(Boolean)){res.mode='none';return res;}
-  let Dp=lerp(dim.D[0],dim.D[1],R());const lw=lerp(dim.W[0],dim.W[1],R())/Math.sqrt(dq);res.lw=lw;   // fewer, wider lots at a lower density (as genBlocks)
+  let Dp=lerp(dim.D[0],dim.D[1],R());const lw=lerp(dim.W[0],dim.W[1],R())*(PCL.cal[dk]||1)/Math.sqrt(dq);res.lw=lw;   // fewer, wider lots at a lower density (as genBlocks)
+  // a GLB insula (want: its models in order of choice): on the longest secondary-street edge, whose strip alone is deepened to take the deepest of them
+  let gI=-1,Dg=Dp;if(want){const ok=want.models.filter(m=>m.d+PCL.glb.back<=dim.D[1]+PCL.glb.deeper);let best=0;for(let i=0;i<n;i++){if(!front[i]||E[i].k!=='street')continue;const l=pcLen(P,i);if(l>best){best=l;gI=i;}}
+    if(!ok.length){res.glbMiss='deep';want=null;gI=-1;}else if(gI<0){res.glbMiss='edge';want=null;}else{want={models:ok,t:want.t};Dg=Math.max(Dp,...ok.map(m=>m.d+PCL.glb.back));}}
+  const Di=i=>i===gI?Dg:Dp;
   const turn=i=>{const p=P[(i+n-1)%n],v=P[i],q=P[(i+1)%n];return(p[0]-v[0])*(q[1]-v[1])-(p[1]-v[1])*(q[0]-v[0]);},reflex=P.map((_,i)=>turn(i)>0);
   const ang=i=>{const p=P[(i+n-1)%n],v=P[i],q=P[(i+1)%n],ax=p[0]-v[0],az=p[1]-v[1],bx=q[0]-v[0],bz=q[1]-v[1];return Math.acos(clamp((ax*bx+az*bz)/((Math.hypot(ax,az)*Math.hypot(bx,bz))||1),-1,1))/DEG;};
   const soft=P.map((_,i)=>reflex[i]||ang(i)>=PCL.soft);   // a concave vertex, or a convex one within 30° of straight (a bend of the street): the strips meet on the bisector
-  let Q=pcInset(P,front.map(f=>f?Dp:0));
+  let Q=pcInset(P,front.map((f,i)=>f?Di(i):0));
+  if(!Q&&gI>=0){gI=-1;want=null;res.glbMiss='well';Q=pcInset(P,front.map(f=>f?Dp:0));}   // too thin for the model's depth: the block as without it
   if(!Q){const t=fbThick([{P}]);for(const k of PCL.fall){const d=k*t;if(d<PCL.minFall)continue;Q=pcInset(P,front.map(f=>f?d:0));if(Q){Dp=d;res.mode='well';break;}}}
   res.Dp=Dp;if(!Q)return pcThin(P,E,dim,lw,res);
   const dead=Q.dead,U=Q.filter((q,i)=>!dead[i]),ci=[];for(let i=0,c=0;i<n;i++)ci.push(dead[i]?-1:c++);   // U: the court without the edges the inset closed; ci: a block edge's edge of U
   for(let i=0;i<n;i++)if(dead[i])soft[i]=soft[(i+1)%n]=true;
   if(pArea(U)>=PCL.court.area&&fbPole([{P:U}],PCL.court.r,1).d>PCL.court.r)res.court=U;else res.well=U;   // a court a person can stand in, else a light well
   // the dead-end lane: the longest edge off the main roads, over 3.5 lots long, in a block over 1500 m²
-  let laneI=-1;if(area>PCL.lane.area&&res.court){let best=0;for(let i=0;i<n;i++){if(!front[i]||E[i].k==='road')continue;const l=pcLen(P,i);if(l>PCL.lane.edge*lw&&l>best){best=l;laneI=i;}}}
+  let laneI=-1;if(area>PCL.lane.area&&res.court){let best=0;for(let i=0;i<n;i++){if(!front[i]||E[i].k==='road'||i===gI)continue;const l=pcLen(P,i);if(l>PCL.lane.edge*lw&&l>best){best=l;laneI=i;}}}
+  // the GLB insula's lot on edge gI: the model's width + 2 side (pcGlbCuts), the first model the strip takes (as wide as its lot, as deep as Dg)
+  const gw=want&&gI>=0&&!dead[gI]?want:null;if(want)res.glbMiss=gw?'short':'edge';   // cleared when the GLB lot is cut
+  const gFit=len=>gw.models.find(m=>m.w+2*PCL.glb.side<=len&&m.d+PCL.glb.back<=Dg+1e-6);
   const add=(L,o)=>{if(pcOK(L))res.lots.push(Object.assign({L},o));else res.dropped++;};
   // a run of edges the inset closed (between two convex turns): up to PCL.chain m long (a corner cut off) it goes to the first lot after it, or the last
   // before it when that one is on a main road and the other is not, or the one after has no strip: its points join that lot's outline. A longer run
@@ -93,20 +103,21 @@ function pcLots(P,E,dk,R,area,dq){const n=P.length,dim=PCL.dim[dk],front=E.map(e
         else{add([a,...A,Q[i]],{edge:i,k:k0,shop:k0==='road',corner:true,wedge:true});add([B[B.length-1],a,Q[i],...B.slice(0,-1)],{edge:i0,k:k1,shop:k1==='road',corner:true,wedge:true});}}}   // two wedges on the bisector
     // the strip: from the corner house (or the vertex, at a concave corner or beside an edge with no strip) to the next
     const o0=soft[i]||!front[i0]?0:s0,o1=soft[i1]||!front[i1]?l:s1,lo=Math.max(o0,s0),hi=Math.min(o1,s1);if(hi-lo<PCL.minFront)continue;
-    const k=Math.max(1,Math.round((hi-lo)/lw)),T=[lo];for(let j=1;j<k;j++)T.push(lo+(hi-lo)*(j+(R()-.5)*.44)/k);T.push(hi);
+    let T=null;const gm=i===gI?gFit(hi-lo):null;if(gm){T=pcGlbCuts(lo,hi,gm.w+2*PCL.glb.side,lw,gw.t);T.n=gm.n;res.glbMiss=null;}
+    if(!T){const k=Math.max(1,Math.round((hi-lo)/lw));T=[lo];for(let j=1;j<k;j++)T.push(lo+(hi-lo)*(j+(R()-.5)*.44)/k);T.push(hi);}const k=T.length-1;
     const gap=new Map();if(i===laneI&&k>=3)gap.set(k>>1,{w:PCL.lane.w[dk],kind:'lane'});
     if(res.court&&k0==='road'&&k>=3){let last=0,run=lerp(PCL.pass.run[0],PCL.pass.run[1],R());   // a passage through the shop row every 40-56 m, none near its ends
       for(let j=1;j<k;j++){if(gap.has(j)||T[j]-last<run||T[j]<PCL.pass.end||l-T[j]<PCL.pass.end)continue;gap.set(j,{w:lerp(PCL.pass.w[0],PCL.pass.w[1],R()),kind:'passage'});last=T[j];run=lerp(PCL.pass.run[0],PCL.pass.run[1],R());}}
     const ca=chain.get('a'+i),cb=chain.get('b'+i);
     for(let j=0;j<k;j++){let t0=T[j],t1=T[j+1];const g0=gap.get(j),g1=gap.get(j+1);if(g0)t0+=g0.w/2;if(g1)t1-=g1.w/2;if(t1-t0<PCL.minFront)continue;
-      const L=[j===0?at(o0):at(t0),j===k-1?at(o1):at(t1),j===k-1?Q[i1]:at(t1,Dp),j===0?Q[i]:at(t0,Dp)];
+      const L=[j===0?at(o0):at(t0),j===k-1?at(o1):at(t1),j===k-1?Q[i1]:at(t1,Di(i)),j===0?Q[i]:at(t0,Di(i))];
       if(j===0&&ca)L.push(...ca.C);if(j===k-1&&cb)L.splice(2,0,...cb.C.slice(1),cb.end);   // the closed corner (cb.C[0] is this edge's end, L[1])
-      add(L,{edge:i,k:k0,shop:k0==='road',corner:!!(j===0&&ca||j===k-1&&cb)||undefined});}
+      add(L,{edge:i,k:k0,shop:k0==='road',corner:!!(j===0&&ca||j===k-1&&cb)||undefined,glb:j===T.jg?T.n:undefined});}
     for(const[j,g]of gap){const m=T[j],h=g.w/2,den=s1-s0;res.lanes.push({P:[at(m-h),at(m+h),at(m+h,Dp+.3),at(m-h,Dp+.3)],kind:g.kind,edge:i});
       if(Math.abs(den)>1e-6)res.gaps.push({edge:ci[i],from:(m-h-s0)/den,to:(m+h-s0)/den});}}
   // a lot that overlaps one before it (a concave corner too sharp for its depth) is dropped
   const keep=[],ins=L=>pInset(L,.12)||L;for(const o of res.lots){const I=ins(o.L);if(keep.some(q=>residentialOverlap(I,q.I))){res.dropped++;continue;}o.I=I;keep.push(o);}
-  for(const o of keep)delete o.I;res.lots=keep;return res;}
+  for(const o of keep)delete o.I;res.lots=keep;if(want&&!res.glbMiss&&!keep.some(o=>o.glb))res.glbMiss='lost';return res;}
 // a block too thin for a court: rows across its long axis every lot width, and a cut down the middle when it is two lots deep; each piece faces the
 // longest of its edges on a street (lotBuild's front), a piece with none is left open
 function pcThin(P,E,dim,lw,res){res.mode='rows';const H=fbHull(P);let bo=null;
@@ -133,6 +144,17 @@ function pcFit(L,lvl=0){if(lvl>4||residentialSolidFits(L))return[L];
     let r=-1;for(let i=0;i<P.length&&r<0;i++){const p=P[i],q=P[(i+1)%P.length],on=across||sg>0?x=>Math.abs(V(x))<1e-6:x=>Math.abs(V(x)-c)<1e-6;if(on(p)&&on(q)&&U(q)-U(p)>1e-6)r=i;}   // the front: on the old front's line, or the cut
     if(r<0)continue;out.push(...pcFit(P.slice(r).concat(P.slice(0,r)),lvl+1));}
   return out.length?out:[L];}
+// P4, a GLB insula on a lot of its size: the strip lo..hi cut so one lot is wg wide (the model and its sides), the rest into lots of about lw each side of it,
+// t (0-1) choosing how many go before it; under 0.6 lw left over, the lot takes the whole strip. Returns the cuts, T.jg the GLB lot's index
+function pcGlbCuts(lo,hi,wg,lw,t){const rest=hi-lo-wg;if(rest<.6*lw){const T=[lo,hi];T.jg=0;return T;}
+  const m=Math.max(1,Math.round(rest/lw)),u=rest/m,kl=Math.min(m,Math.floor(t*(m+1))),T=[lo];let x=lo;
+  for(let j=0;j<kl;j++)T.push(x+=u);T.push(x+=wg);for(let j=kl;j<m;j++)T.push(x+=u);T[T.length-1]=hi;T.jg=kl;return T;}
+// the model ([w, d], its front local +z) on lot L: its front on the lot's front L[0] -> L[1] at the middle, front behind it, facing the street; null when
+// it does not fit inside the lot (a front cut or stepped back), the ground under it falls more than 4 m (as monuments.js's GLB insulae) or the site is barred
+function pcGlb(W,L,wd){const[w,d]=wd,a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(l<w+.1)return{fail:'front'};const ux=(b[0]-a[0])/l,uz=(b[1]-a[1])/l,c=pCen(L);
+  let nx=-uz,nz=ux;if((c[0]-a[0])*nx+(c[1]-a[1])*nz<0){nx=-nx;nz=-nz;}const m=lp(a,b,.5),off=d/2+PCL.glb.front,x=m[0]+nx*off,z=m[1]+nz*off,r=Math.atan2(-nx,-nz),F=frame(x,0,z,r);
+  const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(q[0],0,q[1]);return[p[0],p[2]];}),I=pInset(L,-.05)||L;
+  if(!P.every(p=>nobleInside(p[0],p[1],I)))return{fail:'fit'};const gr=houseGround(W,P);if(!gr||gr.max-gr.min>4)return{fail:'ground'};if(!residentialSiteAllowed(W,P))return{fail:'site'};return{x,z,r,P,gr};}
 
 /* ---------- what a lot may not touch. A road is reserved as boxes along it and circles at its points (roads, terrain-roads.js); lotHits and
    houseRoadClear take a circle's box, which stands up to 0.41 of its radius past the corridor on a slanting road: v2 tests circles as circles ---------- */
@@ -157,6 +179,11 @@ function pcLines(W,F){const segs=[],G=new Map(),gc=20,key=(i,j)=>i*100003+j,reac
     for(let i=Math.floor((Math.min(a[0],b[0])-r)/gc);i<=Math.floor((Math.max(a[0],b[0])+r)/gc);i++)for(let j=Math.floor((Math.min(a[1],b[1])-r)/gc);j<=Math.floor((Math.max(a[1],b[1])+r)/gc);j++){const kk=key(i,j);let A=G.get(kk);if(!A)G.set(kk,A=[]);A.push(id);}}};
   for(const t of F.streets)add(t.S,t.w/2,false);for(const[w,S]of W.roadList||[])add(S,w/2+(w>=7?2.6:1.2),true);
   return{segs,near:(x,z)=>G.get(key(Math.floor(x/gc),Math.floor(z/gc)))||[]};}
+// the nearest secondary street or main road to m within PCL.farLine of its band: {d (past the band), road} or null (for the paving before a front that faces none)
+function pcNearLine(W,LN,m){let best=null;const q=(a,b,hw,road)=>{const d=Math.sqrt(fbSegD2(m[0],m[1],a,b))-hw;if(d<=PCL.farLine&&(!best||d<best.d))best={d:Math.max(0,d),road};};
+  for(const id of LN.near(m[0],m[1])){const s=LN.segs[id];if(!s.road)q(s.a,s.b,s.hw,false);}
+  for(const[w,S]of W.roadList||[])for(let k=1;k<S.length;k++)q(S[k-1],S[k],w/2+(w>=7?2.6:1.2),true);   // the corridor's half width, as pcLines
+  return best;}
 // the line a lot's front faces: of those whose band (and a road's step back) reaches the middle of the front, the one nearest parallel to it: {s, dA (rad)} or null
 function pcFacing(LN,L){const a=L[0],b=L[1];if(Math.hypot(b[0]-a[0],b[1]-a[1])<1e-6)return null;const m=[(a[0]+b[0])/2,(a[1]+b[1])/2],th=Math.atan2(b[1]-a[1],b[0]-a[0]);let best=null;
   for(const id of LN.near(m[0],m[1])){const s=LN.segs[id];if(fbSegD2(m[0],m[1],s.a,s.b)>(s.hw+s.reach)**2)continue;const dA=fbAD(th,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0]));if(!best||dA<best.dA)best={s,dA};}
@@ -191,41 +218,78 @@ function pcMaskAt(m,x,z){if(!m)return false;const i=Math.floor((x-m.x0)/m.cs),j=
 function cityParcelsArea(W,o={}){const t0=performance.now(),F=cityFabric(W),m=pcMask(F.dY||[],1),ex=o.excl||(()=>false);
   W.v2At=(x,z)=>pcMaskAt(m,x,z)&&!ex(x,z);W.v2Mask=m;W.v2AreaMs=Math.round(performance.now()-t0);return m;}
 
+/* ---------- plots left open for the street life (o.life: [site, x, z, radius, kind, how many], street-life.js LIFE_SITES): v2's streets are too narrow
+   for a stall or a bakery bay. Each is PCL.life.w along a secondary street's edge and PCL.life.d in from it, in a v2 block (not the outskirts, the
+   depots or the domus), nearest the site's centre: inside the block, flat under the bay, clear of main roads and of temples (their paving is marble).
+   Its lots are not built, it is paved (an apron), and W.lifePlots tells populateStreetLife where the bay stands (back to the plot's rear) ---------- */
+function pcLifePlots(W,F,o){const by=new Map(),all=[],C=PCL.life;if(!o.life)return{by,all};const temples=W.foot.list.filter(f=>f.t);
+  for(const[site,cx,cz,rad,kind,want]of o.life)for(let n=0;n<want;n++){let best=null;
+    F.blocks.forEach((b,bi)=>{if(Math.hypot(b.x-cx,b.z-cz)>rad+150||!W.v2At(b.x,b.z))return;const Z=o.zone(b.x,b.z);if(!Z||Z.sparse||Z.kind==='ware'||Z.kind==='domus')return;
+      const P=b.Y[0].P,E=b.Y[0].E;for(let i=0;i<P.length;i++){if(!E[i]||E[i].k!=='street')continue;const a=P[i],c=P[(i+1)%P.length],l=Math.hypot(c[0]-a[0],c[1]-a[1]);if(l<C.w+6)continue;
+        const ux=(c[0]-a[0])/l,uz=(c[1]-a[1])/l,ox=uz,oz=-ux;   // (ox, oz): out of the block, to the street (the block is on the left of its edges)
+        for(let t=C.w/2+3;t<=l-C.w/2-3;t+=2){const p=[a[0]+ux*t,a[1]+uz*t],d=Math.hypot(p[0]-cx,p[1]-cz);if(d>rad||(best&&d>=best.d))continue;
+          if(all.some(q=>Math.hypot(q.p[0]-p[0],q.p[1]-p[1])<(q.site===site&&q.kind===kind?20:26)))continue;   // populateStreetLife's spacing
+          const R=[[-1,0],[1,0],[1,1],[-1,1]].map(([u,v])=>[p[0]+ux*u*C.w/2-ox*v*C.d,p[1]+uz*u*C.w/2-oz*v*C.d]);if(!R.every(q=>nobleInside(q[0],q[1],P)))continue;
+          const x=p[0]-ox*C.at,z=p[1]-oz*C.at,B=[[-3,-2.7],[3,-2.7],[3,2.7],[-3,2.7],[0,0]].map(([u,v])=>[x+ux*u-ox*v,z+uz*u-oz*v]),Y=B.map(q=>W.gy(q[0],q[1]));
+          if(Math.max(...Y)-Math.min(...Y)>C.flat)continue;if(temples.some(f=>Math.hypot(f.cx-x,f.cz-z)<f.r+20))continue;
+          if(B.some(q=>(W.roadList||[]).some(([w,S])=>polyDist(q[0],q[1],S)[0]<w/2+2.5)))continue;
+          best={d,bi,p,R,x,z,rot:Math.atan2(ox,oz),site,kind};}}});
+    if(!best)break;all.push(best);if(!by.has(best.bi))by.set(best.bi,[]);by.get(best.bi).push(best);}
+  return{by,all};}
+
 /* ---------- the houses ---------- */
 function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)cityParcelsArea(W,o);
   const dq=Math.max(.3,Q.dens),chunks=new Map(),cs=o.chunk||600,smk=[],shop=o.shop||PCL.shop;
   const G=(x,z,k,lay='houses')=>{const key=k+'|'+lay+'|'+Math.floor(x/cs)+'_'+Math.floor(z/cs);let e=chunks.get(key);if(!e){e={k,lay,g:new GB(1<<14)};chunks.set(key,e);}return e.g;};
-  const S={blocks:0,built:0,skipped:{},modes:{},lots:0,houses:0,dropped:{},courts:{garden:0,walled:0,yard:0,none:0,well:0},lanes:0,passages:0,tips:0,shops:0,corners:0,aligned:0,stepBack:0},LN=pcLines(W,F);
-  const out={lots:[],courts:[],lanes:[],tips:[],houses:[],aprons:[],stats:S},cnt=(o,k)=>{o[k]=(o[k]||0)+1;};
-  for(const b of F.blocks){S.blocks++;
+  const S={blocks:0,built:0,skipped:{},modes:{},lots:0,houses:0,dropped:{},courts:{garden:0,walled:0,yard:0,none:0,well:0},lanes:0,passages:0,tips:0,shops:0,corners:0,aligned:0,stepBack:0,
+    glb:0,glbTried:0,glbMiss:{},ware:0,sparse:0,apronFar:0,ringBack:0,life:0},LN=pcLines(W,F),LP=pcLifePlots(W,F,o);W.lifePlots=[];
+  const out={lots:[],courts:[],lanes:[],tips:[],houses:[],aprons:[],glb:[],life:[],stats:S},cnt=(o,k)=>{o[k]=(o[k]||0)+1;};
+  for(const b of F.blocks){S.blocks++;const LB=LP.by.get(S.blocks-1);   // the street life's plots in this block
     if(!W.v2At(b.x,b.z)){cnt(S.skipped,'excl');continue;}   // its pole in a zone another generator owns
     const Z=o.zone(b.x,b.z);if(!Z){cnt(S.skipped,'zone');continue;}   // gardens (horti), steep ground, the river bank: no houses
     const R=RNG(fbSeed(b.x,b.z,77)),dk=Z.kind==='domus'?'domus':b.cls==='dense'?'dense':'mid';
     let{P,E}=pcClean(b.Y[0].P,b.Y[0].E);
-    E=E.map((e,i)=>{if(!e||e.k!=='ring')return e;const a=P[i],c=P[(i+1)%P.length],l=Math.hypot(c[0]-a[0],c[1]-a[1])||1,nx=(c[1]-a[1])/l*2,nz=-(c[0]-a[0])/l*2;   // 2 m out
-      return[.25,.5,.75].every(t=>pcFree(W,a[0]+(c[0]-a[0])*t+nx,a[1]+(c[1]-a[1])*t+nz))?e:{k:'edge',was:'ring'};});{const d=E.map(e=>e&&e.k==='road'?PCL.roadBack:0);if(d.some(x=>x>0)){const P2=pcInset(P,d);if(P2){P=P2.filter((q,i)=>!P2.dead[i]);E=E.filter((e,i)=>!P2.dead[i]);}}}
-    const r=pcLots(P,E,dk,R,Math.abs(pArea(P)),dq);cnt(S.modes,r.mode);S.dropped.geometry=(S.dropped.geometry||0)+r.dropped;
-    const lotStart=(W.lotLog||[]).length,built=[];let court=r.court;
+    const rb=[];   // P4: a ring edge nearer its precinct than 4 m (an edge the snap did not place, on the 4 m raster): moved back to the ring's width (FAB.ring), as a road edge by PCL.roadBack
+    E=E.map((e,i)=>{if(!e||e.k!=='ring')return e;const a=P[i],c=P[(i+1)%P.length],l=Math.hypot(c[0]-a[0],c[1]-a[1])||1,ux=(c[1]-a[1])/l,uz=-(c[0]-a[0])/l,
+        free=d=>[.25,.5,.75].every(t=>pcFree(W,a[0]+(c[0]-a[0])*t+ux*d,a[1]+(c[1]-a[1])*t+uz*d));
+      if(!free(PCL.ringClear))return{k:'edge',was:'ring'};let cl=PCL.ringClear;while(cl<FAB.ring&&free(cl+.25))cl+=.25;if(cl<FAB.ring-.5){rb[i]=FAB.ring-cl;S.ringBack++;}return e;});   // the band clear PCL.ringClear out, else no street
+    {const d=E.map((e,i)=>e&&e.k==='road'?PCL.roadBack:rb[i]||0);if(d.some(x=>x>0)){const P2=pcInset(P,d);if(P2){P=P2.filter((q,i)=>!P2.dead[i]);E=E.filter((e,i)=>!P2.dead[i]);}}}
+    if(Z.kind==='ware'){const key=o.grp?o.grp(b.x,b.z):'';if(key===null||key===undefined){cnt(S.skipped,'grp');continue;}   // P4: a depot block by the river: the old warehouses (lots.js), squared on its longest edge
+      const Pw=pArea(P)<0?P.slice().reverse():P;let li=0;for(let i=1;i<Pw.length;i++)if(pcLen(Pw,i)>pcLen(Pw,li))li=i;   // warehouseBlock wants the ring anticlockwise (pArea > 0)
+      S.ware+=warehouseBlock(W,G(b.x,b.z,key),Pw.slice(li).concat(Pw.slice(0,li)),R,0);cnt(S.modes,'ware');continue;}
+    let want=null;if(o.glb&&!Z.sparse&&dk!=='domus'&&o.glb.at(b.x,b.z)){const RG=RNG(fbSeed(b.x,b.z,78));if(RG()<o.glb.p){const nm=Object.keys(o.glb.spec),f=Math.floor(RG()*nm.length);   // P4: a GLB insula in this block (its own dice):
+        want={models:nm.map((_,i)=>nm[(f+i)%nm.length]).map(n=>({n,w:o.glb.spec[n][0],d:o.glb.spec[n][1]})),t:RG()};S.glbTried++;}}   // the model the dice chose, else the next that fits
+    const r=pcLots(P,E,dk,R,Math.abs(pArea(P)),dq,want);cnt(S.modes,r.mode);if(r.glbMiss)cnt(S.glbMiss,r.glbMiss);S.dropped.geometry=(S.dropped.geometry||0)+r.dropped;
+    const lotStart=(W.lotLog||[]).length,built=[],glbs=[];let court=Z.sparse?null:r.court;   // the outskirts (Z.sparse): houses apart, no court
+    if(court&&LB&&LB.some(q=>residentialOverlap(court,q.R)))court=null;   // a street-life plot reaching the court: an open yard
     const courtPlan=court&&Z.kind==='domus'&&typeof courtyardDeckPlan==='function'?courtyardDeckPlan(W,court,ESTATE_TERRACE):null;
-    for(const lot of r.lots){let L=lot.L,ob=lotOBB(L);const rec={L,k:lot.k,shop:!!lot.shop,corner:!!lot.corner,row:!!lot.row,wedge:!!lot.wedge,fan:!!lot.fan,block:S.blocks-1,built:false};out.lots.push(rec);S.lots++;
-      const drop=k=>{rec.why=k;cnt(S.dropped,k);};
+    for(const lot of r.lots){let L=lot.L,ob=lotOBB(L);const rec={L,k:lot.k,dk,shop:!!lot.shop,corner:!!lot.corner,row:!!lot.row,wedge:!!lot.wedge,fan:!!lot.fan,block:S.blocks-1,built:false};out.lots.push(rec);S.lots++;
+      const drop=k=>{rec.why=k;cnt(S.dropped,k);if(lot.glb)cnt(S.glbMiss,'drop:'+k);};
       if(o.lotOK&&!o.lotOK(ob.cx,ob.cz)){drop('lotOK');continue;}
       if(!W.v2At(ob.cx,ob.cz)){drop('excl');continue;}
+      if(Z.keep&&!Z.keep(ob.cx,ob.cz,lot)){rec.why='sparse';S.sparse++;continue;}   // the outskirts: this lot left a garden (no dice drawn)
+      if(LB&&LB.some(q=>residentialOverlap(pInset(L,.3)||L,q.R))){rec.why='life';S.life++;if(lot.glb)cnt(S.glbMiss,'life');continue;}   // a plot left open for the street life
       let face=null;if(lot.k==='road'||lot.k==='street'){const f=face=pcFacing(LN,L);if(f&&f.dA>PCL.align*DEG){const L2=f.dA<60*DEG?pcAlign(L,f.s):null;   // H14: the front parallel to its street
-        if(!L2||!pcOK(L2)||pcLen(L2,0)<PCL.minFront){drop('align');continue;}rec.L=L=L2;ob=lotOBB(L);rec.aligned=true;S.aligned++;}}
+        if(!L2||!pcOK(L2)||pcLen(L2,0)<PCL.minFront){drop('align');continue;}
+        const f2=pcFacing(LN,L2);if(f2&&f2.dA>PCL.align*DEG){drop('align');continue;}   // the cut front's middle out of that line's reach, and the line it now faces still off
+        face=f2;rec.L=L=L2;ob=lotOBB(L);rec.aligned=true;S.aligned++;}}
       if(!pcStreetClear(LN,L)){drop('street');continue;}   // H11: off the secondary streets
       const hit=pcHits(W,L,.8);if(hit){const L2=hit.tag==='road'&&lot.k==='road'?pcStepBack(W,L):null;if(!L2){drop('hit');rec.hit=hit.tag||(hit.blkLot?'lot':'foot');continue;}rec.L=L=L2;ob=lotOBB(L);rec.back=true;S.stepBack++;}
       const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){drop('grp');continue;}
       const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
-      let ok=false;for(const Lp of pcFit(L))if(lotBuild(W,G(ob.cx,ob.cz,key),Lp,p,R,key===''?smk:null))ok=true;if(!ok){drop('build');continue;}
+      let ok=false;let gq=lot.glb?pcGlb(W,L,o.glb.spec[lot.glb]):null;if(gq&&gq.fail){cnt(S.glbMiss,gq.fail);gq=null;}   // P4: the GLB insula on its lot (o.glb.put places it); else, or where it no longer fits, lotBuild's houses
+      if(gq){const n=o.glb.put({n:lot.glb,x:gq.x,y:gq.gr.min-.7,z:gq.z,r:gq.r,key});rec.glb=n;out.glb.push({n,P:gq.P,lot:out.lots.length-1});glbs.push({L:gq.P});S.glb++;ok=true;}
+      else for(const Lp of pcFit(L))if(lotBuild(W,G(ob.cx,ob.cz,key),Lp,p,R,key===''?smk:null))ok=true;if(!ok){drop('build');continue;}
       rec.built=true;rec.houses=[l0,W.lotLog.length];for(let h=l0;h<W.lotLog.length;h++)out.houses.push({h,lot:out.lots.length-1});
       {const a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=(b[1]-a[1])/l,nz=-(b[0]-a[0])/l,m=lp(a,b,.5),f=lot.k==='road'?face:null,   // the paving in front of it: a ring's band, or what lies
-         d=lot.k==='ring'?FAB.ring+.3:f?clamp(Math.sqrt(fbSegD2(m[0],m[1],f.s.a,f.s.b))-f.s.hw+.5,.5,8):0;if(d>0)out.aprons.push([a,b,[b[0]+nx*d,b[1]+nz*d],[a[0]+nx*d,a[1]+nz*d]]);}   // between it and the road's corridor
+         far=(lot.k==='road'||lot.k==='street')&&!face?pcNearLine(W,LN,m):null;   // between it and the road's corridor; a front that faces no line (past a street's end, or well back from a road): out to the nearest
+         if(far)S.apronFar++;const d=lot.k==='ring'?FAB.ring+.3:f?clamp(Math.sqrt(fbSegD2(m[0],m[1],f.s.a,f.s.b))-f.s.hw+.5,.5,8):far?clamp(far.d+.5,.5,8):0;if(d>0)out.aprons.push([a,b,[b[0]+nx*d,b[1]+nz*d],[a[0]+nx*d,a[1]+nz*d]]);}
       built.push({ob,L});S.built++;S.houses+=W.lotLog.length-l0;if(lot.shop)S.shops++;if(lot.corner)S.corners++;
       if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],c=L[1],m=lp(a,c,.5),dx=c[0]-a[0],dz=c[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}
+    for(const q of LB||[]){out.aprons.push(q.R);out.life.push(q.R);W.lifePlots.push({site:q.site,kind:q.kind,x:q.x,z:q.z,rot:q.rot});}   // paved; where the bay stands
     // the court, as genBlocks: a garden inside a closed ring, a garden wall where a stretch is missing (the U), else a yard with a well
     if(court&&footTagHit(W,court,'road'))court=null;
-    let closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(lotStart)):{closed:false,uncovered:[]};
+    let closure=court?residentialCourtClosure(court,(W.lotLog||[]).slice(lotStart).concat(glbs)):{closed:false,uncovered:[]};
     if(court&&r.gaps.length&&!closure.closed){const left=closure.uncovered.filter(u=>!r.gaps.some(g=>g.edge===u.edge&&u.from>=g.from-.03&&u.to<=g.to+.03));closure={closed:!left.length,uncovered:left,lanes:r.gaps};}   // a lane's mouth is an opening
     const c2=court?pCen(court):null,ck=court&&o.grp?o.grp(c2[0],c2[1]):'';
     if(court&&!closure.closed){let per=0,gp=0;for(let e=0;e<court.length;e++)per+=pcLen(court,e);for(const u of closure.uncovered)gp+=(u.to-u.from)*pcLen(court,u.edge);
@@ -235,7 +299,7 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
       S.courts[closure.walled?'walled':closure.closed?'garden':'yard']++;out.courts.push({P:court,closed:closure.closed,walled:!!closure.walled});}
     else S.courts[r.well?'well':'none']++;
     for(const q of built){const f=W.foot.add(q.ob.cx,q.ob.cz,q.ob.hw,q.ob.hd,q.ob.rot);f.blkLot=q.L;f.poly=q.L;f.v2=true;}   // poly: the street raster marks the real outline, not the box
-    if(built.length)for(const ln of r.lanes){const ob=lotOBB(ln.P),f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,'road');f.lane=true;f.v2=true;(W.laneLog||(W.laneLog=[])).push(ln.P);out.lanes.push(ln);S[ln.kind==='lane'?'lanes':'passages']++;}
+    if(built.length&&!Z.sparse)for(const ln of r.lanes){const ob=lotOBB(ln.P),f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,'road');f.lane=true;f.v2=true;(W.laneLog||(W.laneLog=[])).push(ln.P);out.lanes.push(ln);S[ln.kind==='lane'?'lanes':'passages']++;}
     for(const T of r.tips){if(!W.v2At(...pCen(T)))continue;const ob=lotOBB(T),f=W.foot.add(ob.cx,ob.cz,ob.hw,ob.hd,ob.rot,'road');f.v2=true;out.tips.push(T);S.tips++;}}
   // the secondary streets and the squares: road footprints from here on (no tree, prop or later house on them); the raster paves them (buildStreets o.v2)
   for(const t of F.streets){const D=densify(t.S,8);for(let k=1;k<D.length;k++){const a=D[k-1],b=D[k],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);if(len<.05||!W.v2At((a[0]+b[0])/2,(a[1]+b[1])/2))continue;

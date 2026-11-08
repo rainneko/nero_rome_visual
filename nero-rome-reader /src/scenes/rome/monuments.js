@@ -306,7 +306,7 @@ async function buildRome(msg){
    {const vx=-232,vz=-112,vy=gy(vx,vz);if(!W.foot.hits(vx,vz,9,13,0,2)){temple(W,gC,{x:vx,y:vy,z:vz,rot:Math.PI*.5,W:12,L:18,podH:2.4,colH:7,nf:4,rows:1,seed:.46,sculpt:false});W.foot.add(vx,vz,8,11,Math.PI*.5);poi('维尤维斯神庙','Aedes Veiovis',vx,vz,14,0,99,'卡比托利欧两座山顶之间鞍部（避难所）里的小神庙。',900);}}
    {const F=frame(-252,gy(-252,-140),-140,0);gC.set(11,.34);gC.poly([F.p(-14,.1,-10),F.p(14,.1,-10),F.p(14,.1,10),F.p(-14,.1,10)],[0,1,0]);W.foot.add(-252,-140,15,11,0);}
    for(let t=0;t<520&&placed<34;t++){const RS=RNG(41*65537+t*7919),x=-318+RS()*140,z=-192+RS()*132,rot=(RS()-.5)*.5,two=RS()<.6,w=8+RS()*5,d=7.5+RS()*4.5;
-     if(W.foot.hits(x,z,w/2+1,d/2+1,rot,2))continue;const y=gy(x,z);if(Math.abs(gy(x+w/2,z)-gy(x-w/2,z))>4||Math.abs(gy(x,z+d/2)-gy(x,z-d/2))>4)continue;
+     if(W.foot.hits(x,z,w/2+1,d/2+1,rot,2))continue;const y=gy(x,z),rg=(a,b)=>W.routeGround.gy(a,b);if(Math.abs(rg(x+w/2,z)-rg(x-w/2,z))>4||Math.abs(rg(x,z+d/2)-rg(x,z-d/2))>4)continue;   // the slope test on the desktop tier's ground at every tier: the same houses at both tiers (they are precincts for the street fabric)
      const F=frame(x,y,z,rot),top=two?6.6:3.8;rectWalls(gC,F,0,0,w,d,-2.5,top,0,{part:RS()<.5?0:24,seed:RS(),sty:3,fl:2|16,nSt:two?2:1,gH:3.8,sH:2.8,lit:.6});roof(gC,F,'gable',0,0,w+.8,d+.8,top,24*DEG,.4,RS());W.foot.add(x,z,w/2+.9,d/2+.9,rot);placed++;}
    W.capSaddle=placed;}   // the saddle houses: each candidate has its own dice (keyed to its number), so a reservation that blocks one (the groves) leaves the others as they are
   poi('卡比托利欧山·朱庇特神庙','Iuppiter Optimus Maximus',-275,10,48,0,99,'罗马最神圣的神庙。高台基，正面六柱、三排，三间内殿。神庙立在顺着山顶地形砌出来的多边形平台上，平台边是挡土墙。',3500);
@@ -774,23 +774,34 @@ async function buildRome(msg){
   buildAcademyHousing(W);
   buildNobleQuarter(W);
   /* ---- GLB apartment blocks (rome_insula_a/b/c) as variety among the procedural houses: dropped into free ground of the dense districts BEFORE the lots are laid out ---- */
-  {const RI2=RNG(2024),spec={rome_insula_a:[15.3,13.7],rome_insula_b:[14.7,13.4],rome_insula_c:[8.9,14.3]},names=Object.keys(spec);let nIn=0;
-   for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
+  const INSULA_GLB={rome_insula_a:[15.3,13.7],rome_insula_b:[14.7,13.4],rome_insula_c:[8.9,14.3]},   // [width along the front, depth]; the front is the model's +z
+    insulaAt=(px,pz)=>!(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16);
+  {const RI2=RNG(2024),spec=INSULA_GLB,names=Object.keys(spec);let nIn=0;
+   for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(!insulaAt(px,pz))continue;
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      if(v2Skip(px,pz)){nIn++;W.nInsulaV2=(W.nInsulaV2||0)+1;continue;}   // v2 builds its lots there (the brief: models on lots of their size, P4)
      ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
    W.nInsulaGLB=nIn;}
-  if(V2)cityParcels(W,{zone:(x,z)=>{const Z=bzone(x,z);if(Z||W.cityClass(x,z)!=='other')return Z;   // 'other': thin outskirts of a city district (dCity under .36): lower houses
-      return{kind:'mid',lot:R=>{const p=lotP.mid(R);p.nSt=2+Math.floor(R()*2);p.balc=.15;return p;},court:courtFill.mid,ppl:.08,burn:Math.hypot(x-250,z-300)<950?1:0};},
-    lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600});
+  /* v2's lots (parcels.js). 'other': the thin outskirts of a city district (dCity under .36), where genCity scattered huts and sheds: lower houses, apart
+     (P4): a lot is built where a hash of its place falls under OUTSKIRT_K times genCity's density there (izone), twice that on a main road; no court.
+     The GLB insulae go on lots of their size (P4), in blocks whose pole lies where the loop above would drop them, one block in GLB_P. Both calibrated
+     against the houses of the old city on the same ground (tools/test/city-audit.mjs, the ratio). */
+  const OUTSKIRT_K=.445,GLB_P=.85;
+  if(V2)cityParcels(W,{zone:(x,z)=>{const Z=bzone(x,z);if(Z||W.cityClass(x,z)!=='other')return Z;
+      return{kind:'mid',lot:R=>{const p=lotP.mid(R);p.nSt=2+Math.floor(R()*2);p.balc=.15;return p;},court:null,sparse:true,ppl:.08,burn:Math.hypot(x-250,z-300)<950?1:0,
+        keep:(x,z,lot)=>hash2(Math.round(x*2)+7919,Math.round(z*2)+3571)<OUTSKIRT_K*(lot.k==='road'?2:1)*Math.min(.5,dCity(x,z)*1.2)*(1-romeHorti(x,z)*.9)};},
+    lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600,
+    life:LIFE_SITES.filter(s=>!s[6]),   // a plot left open for each street-life site off a square (street-life.js): the stalls and the bakery bays
+    glb:{spec:INSULA_GLB,p:GLB_P,at:(x,z)=>Math.hypot((x-60)/1150,(z+120)/1035)<=1&&insulaAt(x,z),
+      put:q=>{const n=q.n==='rome_insula_a'&&W.storeyCut(q.x,q.z,5,()=>true)<5?'rome_insula_b':q.n;ROME.GLB.push({n,x:q.x,y:q.y,z:q.z,r:q.r,o:q.key?{parentLayer:q.key}:{}});return n;}}});   // a cut five-storey block becomes the four-storey one
   fillRoadFrontage(W);   // the main roads in the centre lined with shop houses first; the blocks, genCity and the repair grid fill in behind them
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)&&!v2Skip(x,z)?'valleyCity':null,skip:V2?v2Skip:null,noPpl:true,lanes:outSub,chunk:600});
   W.nLots+=genBlocks(W,{seed:13,sx:58,sz:44,rot:-30*DEG,ext:[-220,60,420,520],zone:(x,z)=>segD(x,z,0,280,230,320)<190&&z>175&&!palFilled(x,z)?{kind:'domus',street:6,lotW:14,depth:9,ringA:0,ringP:1,tri:.06,lot:lotP.domus,court:courtFill.domus,ppl:0,burn:0}:null,margin:14,whole:true,noPpl:true,grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,chunk:600});
 
   {const gI=new GB(1<<17),RI=RNG(77);let nI=0,nS=0;const zones=[[-760,-330,-400,190],[-430,-150,90,460],[-330,-160,-330,90],[-665,-515,10,125]];
-   for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10)continue;
+   for(const[x0,x1,z0,z1]of zones)for(let x=x0;x<=x1;x+=10.5)for(let z=z0;z<=z1;z+=11){const px=x+(RI()-.5)*4,pz=z+(RI()-.5)*4;if(polyDist(px,pz,TIBER)[0]<RTW+10||v2Skip(px,pz))continue;   // ?city=v2: parcels.js builds there
      const w=7+RI()*4.5,d=8+RI()*4.5,rot=(RI()<.5?0:Math.PI/2)+(RI()-.5)*.25;if(W.foot.hits(px,pz,w/2+.7,d/2+.7,rot,0))continue;const B=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=B.p(...[p[0],0,p[1]]);return[q[0],q[2]];}),ground=houseGround(W,P),y=ground.min+.15;if(ground.max-ground.min>4)continue;
      if(!residentialSiteAllowed(W,P))continue;
      const n=W.storeyCut(px,pz,3+Math.floor(RI()*3),()=>true),tap=n>=4,top=3.9+stUp(n-1,2.9,tap),F=frame(px,y,pz,rot),sd=RI();rectWalls(gI,F,0,0,w,d,-2,top,0,{part:sd<.62?0:9,seed:RI(),sty:3,fl:2|8|16|(tap?STOREY_TAPER:0),nSt:n,gH:3.9,sH:2.9,lit:.6});roof(gI,F,RI()<.5?'gable':'hip',0,0,w+.7,d+.7,top,23*DEG,.4,RI());

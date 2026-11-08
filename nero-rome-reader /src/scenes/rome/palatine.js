@@ -111,12 +111,13 @@ function palGlbFeet(W){const A=PAL_ASSETS.find(a=>a.n==='rome_tiberiana'),P=A&&P
    terrace, the floor reaches back to where the ground is level with it */
 const PAL_LV=[51,44,37,30,23,16];
 function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W.routeGround||W,a,b,{lim:.15,half:34,step:2.5});W.palClivus=R;PAL_CL.length=0;for(const p of R)PAL_CL.push(palL(p[0],p[1]));}
-  const g=new GB(1<<16),C=[20,-15],P=(lx,lz)=>palW(lx,lz),H=(lx,lz)=>{const q=P(lx,lz);return W.gy(q[0],q[1]);},R=RNG(57);
+  const g=new GB(1<<16),C=[20,-15],P=(lx,lz)=>palW(lx,lz),H=(lx,lz)=>{const q=P(lx,lz);return W.gy(q[0],q[1]);},R=RNG(57),
+    RG=W.routeGround||W,Hp=(lx,lz)=>{const q=P(lx,lz);return RG.gy(q[0],q[1]);};   // Hp: the plan (where each terrace runs) on the desktop tier's ground at every tier, so its footprints, fountains and walls are the same at both tiers (the street fabric's key); H: the heights, on this tier's ground
   const xyz=(l,y)=>{const q=P(l[0],l[1]);return[q[0],y,q[1]];};
   W.palWalls=0;
   PAL_LV.forEach((yk,ki)=>{const tk=yk-6,S=[];
     for(let a=-42;a<=208;a+=1.5){const th=a*DEG,dx=Math.cos(th),dz=Math.sin(th);let rIn=null,rOut=null;
-      for(let r=36;r<430;r+=1.2){const h=H(C[0]+dx*r,C[1]+dz*r);if(rIn===null&&h<yk)rIn=r;if(h<tk){rOut=r;break;}}
+      for(let r=36;r<430;r+=1.2){const h=Hp(C[0]+dx*r,C[1]+dz*r);if(rIn===null&&h<yk)rIn=r;if(h<tk){rOut=r;break;}}
       if(rIn===null||rOut===null||rOut-rIn<3.5){S.push(null);continue;}
       const o=[C[0]+dx*rOut,C[1]+dz*rOut],i=[C[0]+dx*rIn,C[1]+dz*rIn],m=[(o[0]+i[0])/2,(o[1]+i[1])/2];
       S.push(palSkip(o[0],o[1])||palSkip(i[0],i[1])||palSkip(m[0],m[1])?null:{o,i,d:rOut-rIn,a,n:[dx,dz]});}

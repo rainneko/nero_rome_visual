@@ -6,7 +6,7 @@ source=source.replace('function romePutModels(n,scene){',`function romePutModels
 fs.writeFileSync('dist/street-life-review.html',source);
 const browser=await puppeteer.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files']}),errors=[];
 try{const p=await browser.newPage();await p.setViewport({width:1280,height:800});p.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});p.on('console',m=>{if(m.type()==='error')errors.push(m.text().slice(0,600));if(/street life|streets|Error|failed/.test(m.text()))console.log('PAGE',m.text().slice(0,500));});
-await p.goto('file://'+path.join(process.cwd(),'dist/street-life-review.html')+'?test',{timeout:60000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:240000});if(!await p.evaluate(()=>!!window.__ready))throw Error(await p.evaluate(()=>window.__err));await p.waitForFunction(()=>window.__romeReady,{timeout:120000});
+await p.goto('file://'+path.join(process.cwd(),'dist/street-life-review.html')+'?test'+(process.env.CITY_V2?'&city=v2':''),{timeout:60000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:240000});if(!await p.evaluate(()=>!!window.__ready))throw Error(await p.evaluate(()=>window.__err));await p.waitForFunction(()=>window.__romeReady,{timeout:120000});
 const audit=await p.evaluate(()=>{
  const L=W0.streetLife,S=W0.street,violations=[];
  for(const q of L.placements){
@@ -21,7 +21,7 @@ const audit=await p.evaluate(()=>{
     if(S.solid[k]||S.court[k]||(S.road[k]&&!q.square)||S.water[k]||S.waterAt(x,z)||!S.grd[k])violations.push({type:'mask',n:q.n,x,z});
     if(W0.roadList.some(([w,P])=>polyDist(x,z,P)[0]<w/2+1.5-1e-5))violations.push({type:'road',n:q.n,x,z});}
   const o={cx:q.x,cz:q.z,hw:q.w/2,hd:q.d/2,c:Math.cos(q.rot),s:Math.sin(q.rot)};
-  for(const f of W0.foot.list){if(f.siteRole==='daily-life'||(q.square&&f.marketSquare))continue;if(Math.hypot(q.x-f.cx,q.z-f.cz)>Math.hypot(o.hw,o.hd)+f.r)continue;if(obb(o,f))violations.push({type:'foot',n:q.n,x:f.cx,z:f.cz,tag:f.tag});}
+  for(const f of W0.foot.list){if(f.siteRole==='daily-life'||(q.square&&f.marketSquare))continue;if(Math.hypot(q.x-f.cx,q.z-f.cz)>Math.hypot(o.hw,o.hd)+f.r)continue;if(obb(o,f)&&!(f.poly&&(f.v2||W0.parcels)&&!residentialOverlap(q.polygon,f.poly)))violations.push({type:'foot',n:q.n,x:f.cx,z:f.cz,tag:f.tag});}   // ?city=v2: a footprint with an outline by that outline (its box may reach well past it), as populateStreetLife
  }
  return{density:Q.dens,life:L,estateCounts:W0.scenicEstateLog.counts,scenicSupportOK:W0.scenicEstates.every(E=>E.courtEaveClearance>=2&&E.deckExposure<=2.001),bounds:window.__lifeBounds,views:['lifeMarket','lifeBakery','lifeGarden'].filter(k=>W0.views[k]),violations};
 });

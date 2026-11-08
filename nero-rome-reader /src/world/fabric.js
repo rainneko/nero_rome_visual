@@ -1,6 +1,6 @@
 /* ================= P2 (briefs/rome/road-first-city.md 4.3): secondary streets from a direction field and recursive cuts =================
-   cityFabric(W) -> W.fabric. It works inside the P1 districts (cityDistricts) that have FAB.minArea of their cells in FAB.area (for now the
-   Y junction window), whole districts, not clipped to the window. Each district in three steps:
+   cityFabric(W) -> W.fabric. It works inside every P1 district (cityDistricts) of FAB.minArea or more (P4; o.area: only those with that much of
+   their cells in a window, as P2 did round the Y junction), whole districts. Each district in three steps:
    1. its raster outline goes back onto the lines it was rastered from: the road corridors (half the width plus 2.6 m on roads 7 m and wider,
       else 1.2 m) and the 4.5 m precinct rings, with the corners where two of them meet put back;
    2. its sharp tips at a road junction become small squares (compita);
@@ -9,8 +9,15 @@
    Nothing is built on the blocks yet; that is P3 (`?city=v2`). The review layers 'fabric' and 'dfield' and tools/test/city-audit.mjs read it
    (H13, block areas). Seeds are keyed to place: the pole of each piece and its level, so changing one district leaves the others as they are.
    Polygons are arrays of rings {P:[[x,z],...],E:[meta of the edge P[i] -> P[i+1]]}. The outer ring comes first, with the region on its left
-   (pArea > 0, normal (-dz,dx) inwards), then the holes (pArea < 0). Edge meta: {k:'road'|'ring'|'street'|'square'|'cliff'|'water'|'edge', w, lv, id}. */
-const FAB={area:[-20,-560,500,-40],minArea:2000,
+   (pArea > 0, normal (-dz,dx) inwards), then the holes (pArea < 0). Edge meta: {k:'road'|'ring'|'street'|'square'|'cliff'|'water'|'edge', w, lv, id}.
+   P4 (4.5.1): the search for each cut is what takes the time (some 57,000 candidates for 2,700 blocks), so a live cut keeps a record of what it
+   chose (fbPack: each district's polygon, every street's line and width, the poles of the blocks) and tools/test/bake-roads.mjs writes it into
+   src/scenes/rome/street-fabric.js. The district polygons and the chosen lines are rounded to the centimetre before they cut, so fbReplay, which
+   makes the same cuts in the same order without the search, gives the same numbers. The page replays the record when its key matches fbKey(W):
+   the precincts, the roads, the river and the desktop tier's ground the districts are drawn from, and FAB. Else it cuts live and warns. A change to
+   the rules (the zones, this code) does not change the key: bake-roads.mjs --check, in the test suite, finds it. ?fabric=live always cuts live;
+   ?h15=<district id> or ?h15=<x>,<z> (the district there) cuts live with other dice in that district (the H15 audit, city-audit.mjs). */
+const FAB={v:1,area:[-20,-560,500,-40],minArea:2000,   // v: the bake's version (bump it when the cut changes); area: the Y junction window, for the block areas there
   cls:{dense:{A:[1500,3000],L:95,belt:[26,36],wB:4.8,wC:3.8,minT:15},mid:{A:[2200,4500],L:110,belt:[30,42],wB:5.4,wC:4.2,minT:17}},
   map:{dense:'dense',mid:'mid',domus:'mid',ware:'mid',other:'mid'},   // fixed, horti and campus districts are not cut
   frag:{area:300,thick:11},keep:600,snap:4.5,ring:4.5,fork:{ang:62,near:24,r:[30,21]},ladder:[3,5,7.5,10,12.5,15,19,24,30],
@@ -198,9 +205,9 @@ function fbForks(ctx,Y,sqMeta){const out={rest:[Y],squares:[]},P=Y[0].P,n=P.leng
 /* ---------- recursive cuts (4.3) ---------- */
 function fbSeed(x,z,lv){return Math.floor(hash2(Math.round(x*10)+lv*1000003,Math.round(z*10))*4294967296)>>>0;}
 function fbWidth(prm,len,lv){return len>170||(lv===0&&len>110)?prm.wB:len>70?prm.wC:prm.wC-.6;}
-function fbSub(ctx,Y,lv,cls0,did,out){const pole=fbPole(Y,null,1),cls=FAB.map[ctx.zone(pole.x,pole.z)]||cls0,prm=FAB.cls[cls],R=RNG(fbSeed(pole.x,pole.z,lv)),   // the old zone at the piece's pole (a district mixes them); the district's class in gardens and precincts
+function fbSub(ctx,Y,lv,cls0,did,out){const pole=fbPole(Y,null,1),cls=FAB.map[ctx.zone(pole.x,pole.z)]||cls0,prm=FAB.cls[cls],R=RNG(fbSeed(pole.x,pole.z,lv)^(did===ctx.h15?0x5bd1e995:0)),   // the old zone at the piece's pole (a district mixes them); the district's class in gardens and precincts. h15: other dice in one district
   A=fbArea(Y),ob=fbOBB(Y[0].P),At=lerp(prm.A[0],prm.A[1],R());
-  const block=()=>{out.blocks.push({Y,cls,district:did,area:A,lv,x:pole.x,z:pole.z,L:ob.L,S:ob.S});};
+  const block=()=>{const x=fbCm(pole.x),z=fbCm(pole.z);out.blocks.push({Y,cls,district:did,area:A,lv,x,z,L:ob.L,S:ob.S});if(out.tok)out.tok.push(0,Math.round(x*100),Math.round(z*100),cls==='dense'?0:1);};   // its pole to the centimetre: the block's dice (parcels.js)
   if(lv>30||A<1.15*prm.A[0]||(A<=At&&ob.L<=prm.L)){block();return;}
   const[th,conf]=fbFieldAt(ctx.F,pole.x,pole.z),ex=Y[0].P,n=ex.length,ED=ex.map((p,k)=>{const q=ex[(k+1)%n];return{a:p,b:q,l:Math.hypot(q[0]-p[0],q[1]-p[1]),d:Math.atan2(q[1]-p[1],q[0]-p[0]),m:Y[0].E[k]};});
   const dirs=[[th,1],[th+Math.PI/2,1]];for(const e of ED.slice().sort((a,b)=>b.l-a.l).slice(0,3))dirs.push([e.d,0],[e.d+Math.PI/2,0]);
@@ -216,7 +223,7 @@ function fbSub(ctx,Y,lv,cls0,did,out){const pole=fbPole(Y,null,1),cls=FAB.map[ct
     for(const[sp,anch]of pos){const q0=[pole.x+(sp-cs)*nx,pole.z+(sp-cs)*nz],st=fbStraight(Y,q0,d);if(!st)continue;const p0=st.p0;if(!fbIn(Y,p0[0],p0[1]))continue;
       const[ft,fc]=fbFieldAt(ctx.F,p0[0],p0[1]);let bend=!!isF&&fc>.25&&Math.min(fbAD(d,ft),fbAD(d,ft+Math.PI/2))<14*DEG,C=st.L;
       if(bend){const T=fbTrace(Y,ctx.F,p0,d);if(fbIn(Y,T[0][0],T[0][1])||fbIn(Y,T[T.length-1][0],T[T.length-1][1]))continue;const X=fbX(Y,T);if(X&&X.every(c=>!c.r))C=T;else bend=false;}   // a bend that runs into a hole goes straight across it
-      const w=fbWidth(prm,fbLen(C),lv),m={k:'street',w,lv,id:-1};
+      const w=fbCm(fbWidth(prm,fbLen(C),lv)),m={k:'street',w,lv,id:-1};   // to the centimetre (3.8 - .6 is not 3.2), as fbReplay reads it
       const C2=C.map(p=>p.slice());{const ext2=(i,j)=>{const p=C2[i],q=C2[j],l=Math.hypot(p[0]-q[0],p[1]-q[1])||1;p[0]+=(p[0]-q[0])/l*1.5;p[1]+=(p[1]-q[1])/l*1.5;};ext2(0,1);ext2(C2.length-1,C2.length-2);}
       const pieces=fbCut(Y,C2,w,m);if(!pieces)continue;const runs=fbRuns(Y,C2);if(!runs)continue;const big=pieces.map(Q=>({Q,A:fbArea(Q)})).sort((a,b)=>b.A-a.A);
       if(big[0].A<280||big[1].A<280||!fbFat(big[0].Q,minR)||!fbFat(big[1].Q,minR))continue;
@@ -227,33 +234,93 @@ function fbSub(ctx,Y,lv,cls0,did,out){const pole=fbPole(Y,null,1),cls=FAB.map[ct
       const a1=big[0].A,a2=big[1].A;sc+=anch?0:2*((a1-a2)/(a1+a2))**2;sc+=2.2*(1-e/emax);
       for(const g of big.slice(0,2)){const o2=fbOBB(g.Q[0].P),comp=o2.A?g.A/o2.A:0;sc+=2.5*Math.max(0,.74-comp);if(!fbFat(g.Q,12.5))sc+=.5;}   // thick < 22 m
       sc+=.7*(pieces.length-2);if(anch&&lv<=3)sc-=.8;sc+=R()*.45;
-      cands.push({sc,pieces,w,m,anch,kind:bend?'bend':'straight',runs,ends});}}
+      cands.push({sc,pieces,w,m,anch,kind:bend?'bend':'straight',runs,ends,C2});}}
   out.tried+=cands.length;if(!cands.length){block();return;}
-  let c=cands[0];for(const k of cands)if(k.sc<c.sc)c=k;c.m.id=out.streets.length;out.cuts++;   // one street per run: a cut across a hole is two streets
-  c.runs.forEach((u,i)=>out.streets.push({S:u.S,w:c.w,lv,kind:c.kind,anch:c.anch,ends:c.ends.slice(2*i,2*i+2),district:did,len:+fbLen(u.S).toFixed(1)}));
-  for(const g of c.pieces){const a=fbArea(g);if(a<FAB.frag.area||!fbFat(g,fbMinR(FAB.frag.thick))){out.opens.push({Y:g,area:a,why:'frag',district:did});continue;}fbSub(ctx,g,lv+1,cls0,did,out);}}
+  let c=cands[0];for(const k of cands)if(k.sc<c.sc)c=k;
+  // the chosen street's line to the centimetre, and the cut again with it: fbReplay cuts with the same numbers (the line as it was, flagged, where that fails)
+  const Cr=c.C2.map(p=>[fbCm(p[0]),fbCm(p[1])]),pr=fbCut(Y,Cr,c.w,c.m),rr=pr&&fbRuns(Y,Cr),exact=!!(pr&&rr&&pr.length===c.pieces.length&&rr.length===c.runs.length),
+    C=exact?Cr:c.C2,pieces=exact?pr:c.pieces,runs=exact?rr:c.runs,ends=exact?fbEnds(Y,runs):c.ends;
+  c.m.id=out.streets.length;out.cuts++;   // one street per run: a cut across a hole is two streets
+  runs.forEach((u,i)=>out.streets.push({S:u.S,w:c.w,lv,kind:c.kind,anch:c.anch,ends:ends.slice(2*i,2*i+2),district:did,len:+fbLen(u.S).toFixed(1)}));
+  let mask=0;const kids=pieces.map((g,gi)=>{const a=fbArea(g),f=a<FAB.frag.area||!fbFat(g,fbMinR(FAB.frag.thick));if(f)mask|=1<<gi;return{g,a,f};});
+  if(out.tok){out.tok.push(1|(c.kind==='bend'?2:0)|(c.anch?4:0)|(exact?0:8),Math.round(c.w*100),mask,C.length);let px=0,pz=0;
+    for(const p of C)if(exact){const x=Math.round(p[0]*100),z=Math.round(p[1]*100);out.tok.push(x-px,z-pz);px=x;pz=z;}else out.tok.push(p[0],p[1]);}
+  for(const{g,a,f}of kids){if(f){out.opens.push({Y:g,area:a,why:'frag',district:did});continue;}fbSub(ctx,g,lv+1,cls0,did,out);}}
+// where a street's runs end on the edges of Y: the edge's kind and the angle the street meets it at (H13)
+function fbEnds(Y,runs){const ends=[];for(const u of runs)for(const[c,o]of[[u.a,u.S[1]],[u.b,u.S[u.S.length-2]]]){const P=Y[c.r].P,e0=P[c.i],e1=P[(c.i+1)%P.length],de=Math.atan2(c.z-o[1],c.x-o[0]),al=fbAD(Math.atan2(e1[1]-e0[1],e1[0]-e0[0]),de);
+    ends.push({k:Y[c.r].E[c.i].k,ang:+(al/DEG).toFixed(1)});}return ends;}
+// fbSub again from its record (fbPack): the same cuts in the same order, without the search
+function fbReplaySub(Y,lv,did,out,T){const t=T.a[T.i++];
+  if(t===0){const x=T.a[T.i++]/100,z=T.a[T.i++]/100,cls=T.a[T.i++]?'mid':'dense',ob=fbOBB(Y[0].P);out.blocks.push({Y,cls,district:did,area:fbArea(Y),lv,x,z,L:ob.L,S:ob.S});return;}
+  const w=T.a[T.i++]/100,mask=T.a[T.i++],n=T.a[T.i++],C=[];
+  if(t&8)for(let k=0;k<n;k++)C.push([T.a[T.i++],T.a[T.i++]]);else{let x=0,z=0;for(let k=0;k<n;k++){x+=T.a[T.i++];z+=T.a[T.i++];C.push([x/100,z/100]);}}
+  const m={k:'street',w,lv,id:out.streets.length},pieces=fbCut(Y,C,w,m),runs=pieces&&fbRuns(Y,C);if(!pieces||!runs)throw Error('a baked street no longer cuts its block (district '+did+')');
+  const ends=fbEnds(Y,runs);out.cuts++;runs.forEach((u,i)=>out.streets.push({S:u.S,w,lv,kind:t&2?'bend':'straight',anch:!!(t&4),ends:ends.slice(2*i,2*i+2),district:did,len:+fbLen(u.S).toFixed(1)}));
+  pieces.forEach((g,gi)=>{if(mask>>gi&1)out.opens.push({Y:g,area:fbArea(g),why:'frag',district:did});else fbReplaySub(g,lv+1,did,out,T);});}
 
-/* ---------- the run ---------- */
-function cityFabric(W,o={}){if(W.fabric&&!o.force)return W.fabric;const t0=performance.now(),D=cityDistricts(W),G=roadGraph(W),A=o.area||FAB.area,cs=D.cs;
-  // the districts with FAB.minArea of their cells in the window
-  const cnt=new Map();for(let j=Math.max(0,Math.floor((A[1]-D.z0)/cs));j<=Math.min(D.nz-1,Math.floor((A[3]-D.z0)/cs));j++)for(let i=Math.max(0,Math.floor((A[0]-D.x0)/cs));i<=Math.min(D.nx-1,Math.floor((A[2]-D.x0)/cs));i++){const l=D.lab[j*D.nx+i];if(l>=0)cnt.set(l,(cnt.get(l)||0)+1);}
-  const sel=D.districts.filter(d=>(cnt.get(d.id)||0)*cs*cs>=FAB.minArea);
-  let B=[1e9,1e9,-1e9,-1e9];for(const d of sel)for(const p of d.loops[0]){B[0]=Math.min(B[0],p[0]);B[1]=Math.min(B[1],p[1]);B[2]=Math.max(B[2],p[0]);B[3]=Math.max(B[3],p[1]);}
-  const ctx=fbCtx(W,D,G,B);ctx.F=fbField(W,[B[0]-8,B[1]-8,B[2]+8,B[3]+8]);const tF=performance.now();
-  ctx.zone=(x,z)=>{try{return W.cityClass?W.cityClass(x,z):'other';}catch(e){return'other';}};
-  ctx.cm=[{k:'edge'},{k:'water'},{k:'road',w:0,id:-1},{k:'ring',id:-1},{k:'ring',id:-1},{k:'cliff'},{k:'edge'}];   // what lies outside an edge the snap did not place, by raster class
-  const out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:0,cuts:0},per=[],sqMeta={k:'square'};   // dY: each district's polygon (P3: the area v2 owns, parcels.js)
-  for(const d of sel){const cls=FAB.map[d.cls],t1=performance.now(),nb=out.blocks.length,nc=out.cuts;
-    if(!cls||!d.access){out.opens.push({Y:d.loops.map(P=>({P,E:P.map(()=>ctx.cm[0])})),area:d.area,why:cls?'noAccess':'class:'+d.cls,district:d.id});per.push({id:d.id,cls:d.cls,skipped:true});continue;}
-    const Y=fbDistrictPoly(ctx,d),fk=fbForks(ctx,Y,sqMeta);out.dY.push({id:d.id,Y});for(const s of fk.squares)out.squares.push({...s,district:d.id});
-    for(const R of fk.rest){const a=fbArea(R);if(a>FAB.keep)fbSub(ctx,R,0,cls,d.id,out);else out.opens.push({Y:R,area:a,why:'small',district:d.id});}
-    per.push({id:d.id,cls:d.cls,as:cls,ha:+(d.area/1e4).toFixed(1),blocks:out.blocks.length-nb,cuts:out.cuts-nc,ms:Math.round(performance.now()-t1)});}
-  // H13: street ends that meet a road, a street, a ring or a square outside 60-120°
-  let ends=0,bad=0;for(const s of out.streets)for(const e of s.ends)if(FAB.junction[e.k]){ends++;if(e.ang<60)bad++;}
+/* ---------- the bake (P4): the fabric as data, and what it was cut from ---------- */
+function fbCm(v){return Math.round(v*100)/100;}
+// a hash of what the districts and their streets are drawn from, the zones and this code aside: FAB and CD, the precincts (the footprints before the
+// houses), the roads, the join's options (termini, bridges, the island, the river) and the desktop tier's ground every 64 m in the city
+function fbKey(W){let h1=0x9e3779b9|0,h2=0x85ebca6b|0;const add=v=>{const x=Math.round(v)|0;h1=Math.imul(h1^x,0x01000193);h2=Math.imul(h2^x,0x5bd1e995);h2^=h2>>>13;},str=s=>{for(let i=0;i<s.length;i++)add(s.charCodeAt(i));};
+  str(JSON.stringify(FAB));str(JSON.stringify(typeof CD!=='undefined'?CD:null));
+  for(const{f}of fbPrecincts(W)){add(f.cx*100);add(f.cz*100);add(f.hw*100);add(f.hd*100);add(f.c*1e4);add(f.s*1e4);add(f.circ?1:0);str(f.tag||'');if(f.poly)for(const p of f.poly){add(p[0]*100);add(p[1]*100);}}
+  for(const[w,P]of W.roadList||[]){add(w*100);for(const p of P){add(p[0]*100);add(p[1]*100);}}
+  str(JSON.stringify(W.roadOpts||{}));   // its functions (the country) drop out; the ground below stands for them
+  const G=W.routeGround||W,out=W.roadOpts&&W.roadOpts.country||(()=>false);for(let z=-3008;z<=3392;z+=64)for(let x=-3200;x<=3008;x+=64)if(!out(x,z))add(G.gy(x,z)*10);
+  return(h1>>>0).toString(36)+'.'+(h2>>>0).toString(36);}
+// the record of a live cut (W.fabric.bake) as plain data: per district its polygon (centimetres, each point after the first as a step from the one
+// before) and fbSub's record (a block: 0, its pole, its class; a street: its kind, width, which pieces are fragments, its line); a district not cut
+// as its raster outline. Edge metas in one table, by index
+function fbPack(F){const metas=[],mi=new Map(),M=e=>{let i=mi.get(e);if(i===undefined){i=metas.length;mi.set(e,i);metas.push(e);}return i;},
+    enc=P=>{const A=[];let px=0,pz=0;for(const p of P){const x=Math.round(p[0]*100),z=Math.round(p[1]*100);A.push(x-px,z-pz);px=x;pz=z;}return A;},Yp=Y=>Y.map(g=>[enc(g.P),g.E.map(M)]);
+  const D=F.bake.map(d=>d.tok?[d.id,d.cls,d.as,d.ha,Yp(d.Y),d.tok]:[d.id,d.cls,d.why,Math.round(d.area*100),Yp(d.Y)]);
+  return{v:FAB.v,key:F.key,districts:F.districts,tried:F.tried,snap:[F.stats.unsnapped,F.stats.snapFixed],metas,D};}
+// a fabric from fbPack's record: the district polygons, their compita and the same cuts (null, with a warning, when the record does not fit)
+function fbReplay(W,B){const metas=B.metas.map(m=>Object.assign({},m)),dec=A=>{const P=[];let x=0,z=0;for(let i=0;i<A.length;i+=2){x+=A[i];z+=A[i+1];P.push([x/100,z/100]);}return P;},
+    Yu=Y=>Y.map(([A,E])=>({P:dec(A),E:E.map(i=>metas[i])}));
+  const ctx={nodes:roadGraph(W).nodes.filter(n=>n.deg>=3)},out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:B.tried,cuts:0},per=[],sqMeta={k:'square'};
+  try{for(const d of B.D){if(d.length===5){out.opens.push({Y:Yu(d[4]),area:d[3]/100,why:d[2],district:d[0]});per.push({id:d[0],cls:d[1],skipped:true});continue;}
+      const[id,cls,as,ha,Yr,tok]=d,Y=Yu(Yr),nb=out.blocks.length,nc=out.cuts,T={a:tok,i:0};out.dY.push({id,Y});const fk=fbForks(ctx,Y,sqMeta);for(const s of fk.squares)out.squares.push({...s,district:id});
+      for(const R of fk.rest){const a=fbArea(R);if(a>FAB.keep)fbReplaySub(R,0,id,out,T);else out.opens.push({Y:R,area:a,why:'small',district:id});}
+      if(T.i!==tok.length)throw Error('district '+id+' has '+(tok.length-T.i)+' numbers of its record left');
+      per.push({id,cls,as,ha,blocks:out.blocks.length-nb,cuts:out.cuts-nc});}}
+  catch(e){console.warn('street-fabric.js does not fit the districts ('+e.message+'): cutting the streets live');return null;}
+  return{out,per};}
+// the fabric and its numbers, live or replayed alike
+function fbFinish(W,out,per,A,key,F,districts){let ends=0,bad=0;for(const s of out.streets)for(const e of s.ends)if(FAB.junction[e.k]){ends++;if(e.ang<60)bad++;}   // H13: street ends that meet a road, a street, a ring or a square outside 60-120°
   const pct=(L,q)=>L.length?Math.round(L[Math.min(L.length-1,Math.floor(q*L.length))]):0,ar=L=>{const s=L.map(b=>b.area).sort((a,b)=>a-b);return{n:s.length,p10:pct(s,.1),p50:pct(s,.5),p90:pct(s,.9)};},
     inA=b=>b.x>=A[0]&&b.x<=A[2]&&b.z>=A[1]&&b.z<=A[3];
   const km=out.streets.reduce((s,t)=>s+t.len,0)/1000,byW={};for(const s of out.streets){const k=s.w.toFixed(1);byW[k]=(byW[k]||0)+1;}
-  W.fabric={area:A,districts:sel.map(d=>d.id),F:ctx.F,...out,stats:{districts:per,cuts:out.cuts,streets:out.streets.length,tried:out.tried,blocks:out.blocks.length,squares:out.squares.length,opens:out.opens.length,
-    km:+km.toFixed(2),byWidth:byW,blockArea:ar(out.blocks),blockAreaWindow:ar(out.blocks.filter(inA)),H13:ends?+(bad/ends*100).toFixed(1):0,H13ends:ends,H13bad:bad,
-    holes:out.blocks.filter(b=>b.Y.length>1).length,unsnapped:ctx.unsnapped||0,snapFixed:ctx.snapFixed||0,msField:Math.round(tF-t0),ms:Math.round(performance.now()-t0)}};
+  return{area:A,key,districts,F,...out,stats:{districts:per,cuts:out.cuts,streets:out.streets.length,tried:out.tried,blocks:out.blocks.length,squares:out.squares.length,opens:out.opens.length,
+    km:+km.toFixed(2),byWidth:byW,blockArea:ar(out.blocks),blockAreaWindow:ar(out.blocks.filter(inA)),H13:ends?+(bad/ends*100).toFixed(1):0,H13ends:ends,H13bad:bad,holes:out.blocks.filter(b=>b.Y.length>1).length}};}
+// the direction field of a fabric (a replayed one has none; the review layer 'dfield' draws it)
+function fabricField(W,F){if(F.F)return F.F;let B=[1e9,1e9,-1e9,-1e9];for(const d of F.dY)for(const p of d.Y[0].P){B[0]=Math.min(B[0],p[0]);B[1]=Math.min(B[1],p[1]);B[2]=Math.max(B[2],p[0]);B[3]=Math.max(B[3],p[1]);}
+  return F.F=fbField(W,[B[0]-8,B[1]-8,B[2]+8,B[3]+8]);}
+
+/* ---------- the run ---------- */
+function cityFabric(W,o={}){if(W.fabric&&!o.force)return W.fabric;const t0=performance.now(),q=typeof location!=='undefined'?location.search:'',key=fbKey(W),h15=/[?&]h15=(-?[\d.]+)(?:,(-?[\d.]+))?/.exec(q);W.fabricKey=key;
+  if(!o.live&&!h15&&!/[?&]fabric=live/.test(q)&&typeof ROME_FABRIC_BAKED!=='undefined'){const B=ROME_FABRIC_BAKED,r=B&&B.key===key&&B.v===FAB.v?fbReplay(W,B):null;
+    if(r){W.fabric=fbFinish(W,r.out,r.per,o.area||FAB.area,key,null,B.districts);W.fabric.baked=true;Object.assign(W.fabric.stats,{unsnapped:B.snap[0],snapFixed:B.snap[1],baked:true,ms:Math.round(performance.now()-t0)});return W.fabric;}
+    if(!B||B.key!==key||B.v!==FAB.v)console.warn('street-fabric.js was cut from other roads, precincts or ground: cutting the streets live (npm run build:test && npm run bake:roads)');W.fabricStale=true;}
+  const D=cityDistricts(W),G=roadGraph(W),A=o.area||FAB.area,cs=D.cs;
+  // every district of FAB.minArea; o.area: those with that much of their cells in the window
+  let sel=D.districts.filter(d=>d.area>=FAB.minArea);
+  if(o.area){const cnt=new Map();for(let j=Math.max(0,Math.floor((A[1]-D.z0)/cs));j<=Math.min(D.nz-1,Math.floor((A[3]-D.z0)/cs));j++)for(let i=Math.max(0,Math.floor((A[0]-D.x0)/cs));i<=Math.min(D.nx-1,Math.floor((A[2]-D.x0)/cs));i++){const l=D.lab[j*D.nx+i];if(l>=0)cnt.set(l,(cnt.get(l)||0)+1);}
+    sel=D.districts.filter(d=>(cnt.get(d.id)||0)*cs*cs>=FAB.minArea);}
+  let B=[1e9,1e9,-1e9,-1e9];for(const d of sel)for(const p of d.loops[0]){B[0]=Math.min(B[0],p[0]);B[1]=Math.min(B[1],p[1]);B[2]=Math.max(B[2],p[0]);B[3]=Math.max(B[3],p[1]);}
+  const ctx=fbCtx(W,D,G,B);ctx.F=fbField(W,[B[0]-8,B[1]-8,B[2]+8,B[3]+8]);const tF=performance.now();
+  if(h15){if(h15[2]===undefined)ctx.h15=+h15[1];else{const i=Math.floor((+h15[1]-D.x0)/cs),j=Math.floor((+h15[2]-D.z0)/cs);ctx.h15=i>=0&&j>=0&&i<D.nx&&j<D.nz?D.lab[j*D.nx+i]:-1;}}   // a district by its id, or the one at x,z
+  ctx.zone=(x,z)=>{try{return W.cityClass?W.cityClass(x,z):'other';}catch(e){return'other';}};
+  ctx.cm=[{k:'edge'},{k:'water'},{k:'road',w:0,id:-1},{k:'ring',id:-1},{k:'ring',id:-1},{k:'cliff'},{k:'edge'}];   // what lies outside an edge the snap did not place, by raster class
+  const out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:0,cuts:0},per=[],bake=[],sqMeta={k:'square'};   // dY: each district's polygon (P3: the area v2 owns, parcels.js); bake: fbPack's record
+  for(const d of sel){const cls=FAB.map[d.cls],t1=performance.now(),nb=out.blocks.length,nc=out.cuts;
+    if(!cls||!d.access){const Y=d.loops.map(P=>({P:P.map(p=>[fbCm(p[0]),fbCm(p[1])]),E:P.map(()=>ctx.cm[0])})),why=cls?'noAccess':'class:'+d.cls;
+      out.opens.push({Y,area:d.area,why,district:d.id});per.push({id:d.id,cls:d.cls,skipped:true});bake.push({id:d.id,cls:d.cls,why,area:d.area,Y});continue;}
+    const Y=fbDistrictPoly(ctx,d).map(g=>({P:g.P.map(p=>[fbCm(p[0]),fbCm(p[1])]),E:g.E})),fk=fbForks(ctx,Y,sqMeta),ha=+(d.area/1e4).toFixed(1);out.dY.push({id:d.id,Y});for(const s of fk.squares)out.squares.push({...s,district:d.id});
+    out.tok=[];for(const R of fk.rest){const a=fbArea(R);if(a>FAB.keep)fbSub(ctx,R,0,cls,d.id,out);else out.opens.push({Y:R,area:a,why:'small',district:d.id});}
+    bake.push({id:d.id,cls:d.cls,as:cls,ha,Y,tok:out.tok});delete out.tok;
+    per.push({id:d.id,cls:d.cls,as:cls,ha,blocks:out.blocks.length-nb,cuts:out.cuts-nc,ms:Math.round(performance.now()-t1)});}
+  W.fabric=fbFinish(W,out,per,A,key,ctx.F,sel.map(d=>d.id));W.fabric.bake=bake;
+  Object.assign(W.fabric.stats,{unsnapped:ctx.unsnapped||0,snapFixed:ctx.snapFixed||0,msField:Math.round(tF-t0),ms:Math.round(performance.now()-t0),h15:ctx.h15});
   return W.fabric;}

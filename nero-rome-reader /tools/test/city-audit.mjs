@@ -5,17 +5,27 @@
 // (road-first-city.md 4.3): --assert also fails when the road list (L1), the number of districts (L2) or the secondary streets and blocks (L3) differ.
 // P3 (road-first-city.md 9, 10; parcels.js): a third page, the desktop tier with ?city=v2, measures the lots and houses v2 builds. --assert fails on any
 // H10 (a built lot whose front faces no street, road, square or paved ground), H11 (a house on a secondary street or a main road, or two houses
-// overlapping) or H14 (a house front more than 5° off the street it faces). Reported only: the houses in that area against the page without the flag
-// (the brief's ±10 % is P4's).
+// overlapping) or H14 (a house front more than 5° off the street it faces).
+// P4 (the whole city under ?city=v2): --assert also fails when the houses in the area v2 builds are more than 10 % off the page without the flag
+// (the ratio), when a tier did not use the baked street fabric (street-fabric.js: npm run bake:roads), or on H15: a fourth page cuts the district at
+// H15PT with other dice (?h15=x,z, fabric.js), and no house in another district may change (by the districts' 4 m raster; houses outside every
+// district, by the roads and in the gaps the old generators fill, are counted apart). GLB insulae on v2's lots go into H11 and H14.
 // Open dist/city-audit.html?review (or dist/index.html?review served over http) for the layer panel and the generator lines (src/ui/review.js).
 import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import puppeteer from 'puppeteer';
 const root=process.cwd(),strict=process.argv.includes('--assert');fs.mkdirSync('shots',{recursive:true});
 const src=fs.readFileSync('dist/test.html','utf8');fs.writeFileSync('dist/city-audit.html',src.replace('window.__ready=true;loop();','window.__ready=true;if(REVIEW)loop();'));   // city-audit.html?review draws, with the review panel
-const errors=[],browsers=[];
+const errors=[],browsers=[],H15PT=process.env.H15PT||'600,-500';   // the Subura and the Esquiline slope: the largest district
 // the houses in the area ?city=v2 builds (parcels.js cityParcelsArea with monuments.js's W.v2Excl): lots, scattered houses, noble houses, warehouses, GLB insulae
 const houseCount=()=>{const W=W0;if(!W.v2At&&typeof cityParcelsArea==='function'&&W.v2Excl)cityParcelsArea(W,{excl:W.v2Excl});if(!W.v2At)return null;const at=P=>W.v2At(...pCen(P));
   const o={lots:(W.lotLog||[]).filter(l=>at(l.L)).length,scatter:(W.residentialEnvelopes||[]).filter(e=>at(e.polygon)).length,noble:(W.nobleParcels||[]).filter(p=>at(p.polygon)).length,
     warehouses:(W.warehouseLog||[]).filter(w=>at(w.polygon)).length,glb:ROME.GLB.filter(g=>/insula/.test(g.n)&&W.v2At(g.x,g.z)).length};o.all=o.lots+o.scatter+o.noble+o.warehouses+o.glb;return o;};
+// H15: every house (lot, scattered, noble, warehouse, GLB insula) as a key, with the district its centre stands in (cityDistricts' raster; -1: none)
+const houseKeys=pt=>{const W=W0,D=cityDistricts(W),r=v=>Math.round(v*100),K=P=>P.map(p=>r(p[0])+','+r(p[1])).join(';'),[px,pz]=pt.split(',').map(Number),
+    lab=(x,z)=>{const i=Math.floor((x-D.x0)/D.cs),j=Math.floor((z-D.z0)/D.cs);return i>=0&&j>=0&&i<D.nx&&j<D.nz?D.lab[j*D.nx+i]:-1;},H=[],add=(k,x,z)=>H.push([k,lab(x,z)]);
+  for(const l of W.lotLog||[])add('lot|'+K(l.L)+'|'+[l.storeys,l.gH,l.sH].join(','),...pCen(l.L));for(const e of W.residentialEnvelopes||[])add('env|'+K(e.polygon),...pCen(e.polygon));
+  for(const q of W.nobleParcels||[])add('noble|'+K(q.polygon),...pCen(q.polygon));for(const w of W.warehouseLog||[])add('ware|'+K(w.polygon),...pCen(w.polygon));
+  for(const g of ROME.GLB)if(/insula/.test(g.n))add('glb|'+g.n+'|'+r(g.x)+','+r(g.z)+','+Math.round(g.r*1000),g.x,g.z);
+  return{id:lab(px,pz),h15:W.fabric&&W.fabric.stats.h15,cut:(W.fabric.dY||[]).map(e=>e.id),H};};
 // P3 on the ?city=v2 page: H10, H11, H14 on what parcels.js built (W.parcels), with its own street lines (pcLines, pcFacing, pcStreetClear)
 const v2Measure=()=>{const W=W0,F=cityFabric(W),PC=W.parcels,LL=W.lotLog||[],LN=pcLines(W,F),R=v=>Math.round(v),ex=(A,v)=>{if(A.length<12)A.push(v);};
  const sq=F.squares.map(s=>s.Y[0].P).concat(PC.tips);
@@ -27,10 +37,11 @@ const v2Measure=()=>{const W=W0,F=cityFabric(W),PC=W.parcels,LL=W.lotLog||[],LN=
    if(k)H10.by[k]=(H10.by[k]||0)+1;else{H10.n++;ex(H10.ex,{at:m.map(R),k:l.k,lot:l.row?'row':l.corner?'corner':'strip'});}}
  // H11: v2 houses on a secondary street (10 cm leeway) or on a main road (with eaves, as H1), and pairs of houses that overlap (10 cm in), any house with a v2 house
  const v2h=PC.houses.map(h=>LL[h.h].L),roads=[];W.roadList.forEach(([w,P])=>{for(let k=1;k<P.length;k++){const p=P[k-1],q=P[k],dx=q[0]-p[0],dz=q[1]-p[1],r=Math.atan2(-dz,dx);roads.push({cx:(p[0]+q[0])/2,cz:(p[1]+q[1])/2,hw:Math.hypot(dx,dz)/2,hd:Math.max(1,w-1)/2,c:Math.cos(r),s:Math.sin(r)});}});
- const H11={houses:v2h.length,street:0,road:0,pairs:0,ex:[]},gc=20,G=new Map(),key=(i,j)=>i*100003+j,box=[];
- for(const L of v2h){if(!pcStreetClear(LN,L)){H11.street++;ex(H11.ex,['street',...pCen(L).map(R)]);}const E=pInset(L,-.55)||L,o=lotOBB(E),rad=Math.hypot(o.hw,o.hd);
+ const glb=(PC.glb||[]).map(g=>[g.P[2],g.P[3],g.P[0],g.P[1]]);   // a GLB insula's outline from its front (the model's +z side), as a lot's
+ const H11={houses:v2h.length,glb:glb.length,street:0,road:0,pairs:0,ex:[]},gc=20,G=new Map(),key=(i,j)=>i*100003+j,box=[];
+ for(const L of v2h.concat(glb)){if(!pcStreetClear(LN,L)){H11.street++;ex(H11.ex,['street',...pCen(L).map(R)]);}const E=pInset(L,-.55)||L,o=lotOBB(E),rad=Math.hypot(o.hw,o.hd);
    if(roads.some(r=>Math.hypot(o.cx-r.cx,o.cz-r.cz)<=rad+Math.hypot(r.hw,r.hd)&&nobleOverlap(E,r))){H11.road++;ex(H11.ex,['road',...pCen(L).map(R)]);}}
- const homes=v2h.map(L=>({P:L,v2:1})).concat(LL.filter(l=>!v2h.includes(l.L)).map(l=>({P:l.L})),(W.residentialEnvelopes||[]).map(e=>({P:e.polygon})),(W.nobleParcels||[]).map(p=>({P:p.polygon})),(W.warehouseLog||[]).map(w=>({P:w.polygon})));
+ const homes=v2h.concat(glb).map(L=>({P:L,v2:1})).concat(LL.filter(l=>!v2h.includes(l.L)).map(l=>({P:l.L})),(W.residentialEnvelopes||[]).map(e=>({P:e.polygon})),(W.nobleParcels||[]).map(p=>({P:p.polygon})),(W.warehouseLog||[]).map(w=>({P:w.polygon})));
  for(const h of homes){const I=pInset(h.P,.1)||h.P;let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(const p of I){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}h.I=I;h.b=[x0,z0,x1,z1];
    for(let i=Math.floor(x0/gc);i<=Math.floor(x1/gc);i++)for(let j=Math.floor(z0/gc);j<=Math.floor(z1/gc);j++){const kk=key(i,j);let A=G.get(kk);if(!A)G.set(kk,A=[]);A.push(h);}}
  const seen=new Set();for(const A of G.values())for(let u=0;u<A.length;u++)for(let v=u+1;v<A.length;v++){const a=A[u],b=A[v];if(!a.v2&&!b.v2)continue;const k=homes.indexOf(a)+'|'+homes.indexOf(b);if(seen.has(k))continue;seen.add(k);
@@ -40,15 +51,17 @@ const v2Measure=()=>{const W=W0,F=cityFabric(W),PC=W.parcels,LL=W.lotLog||[],LN=
  const H14={houses:v2h.length,measured:0,n:0,max:0,hist:{},ex:[]};
  PC.houses.forEach((h,i)=>{const k=PC.lots[h.lot].k;if(k!=='road'&&k!=='street')return;const L=v2h[i],f=pcFacing(LN,L);if(!f)return;H14.measured++;const d=f.dA/DEG,bin=d<1?'<1':d<3?'1-3':d<5?'3-5':d<10?'5-10':'10+';H14.hist[bin]=(H14.hist[bin]||0)+1;H14.max=Math.max(H14.max,+d.toFixed(1));
    if(d>5){H14.n++;ex(H14.ex,{at:pCen(L).map(R),deg:+d.toFixed(1),road:f.s.road});}});
+ for(const L of glb){const f=pcFacing(LN,L);if(!f)continue;H14.measured++;const d=f.dA/DEG;H14.max=Math.max(H14.max,+d.toFixed(1));if(d>5){H14.n++;ex(H14.ex,{at:pCen(L).map(R),deg:+d.toFixed(1),glb:1});}}
  // H3 for v2's courts: a garden in a court that is not closed
  const H3=(W.residentialReservations||[]).filter(r=>r.v2&&r.closed===false&&r.deckBuilt).length,S=PC.stats;
  return{H10,H11,H14,H3,stats:{blocks:S.blocks,modes:S.modes,lots:S.lots,built:S.built,houses:S.houses,dropped:S.dropped,courts:S.courts,shops:S.shops,corners:S.corners,lanes:S.lanes,passages:S.passages,
-   stepBack:S.stepBack,aligned:S.aligned,ms:S.ms,areaMs:W.v2AreaMs,glbSkipped:W.nInsulaV2||0}};};
+   stepBack:S.stepBack,aligned:S.aligned,glb:S.glb,glbTried:S.glbTried,glbMiss:S.glbMiss,glbOldLoop:W.nInsulaV2||0,warehouses:S.ware,sparse:S.sparse,apronFar:S.apronFar,ringBack:S.ringBack,life:S.life,lifePlots:(W.lifePlots||[]).length,ms:S.ms,areaMs:W.v2AreaMs,fabricMs:F.stats.ms,baked:!!F.baked}};};
    // one browser per tier: a second page in the same browser is a background tab, throttled until the wait times out
 const audit=async(tier,viewport)=>{const browser=await puppeteer.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files']});browsers.push(browser);
-const page=await browser.newPage();await page.setViewport(viewport);page.on('pageerror',e=>errors.push(tier+': '+e.message));await page.goto('file://'+path.join(root,'dist/city-audit.html')+(tier==='v2'?'?city=v2':''),{timeout:0});
+const page=await browser.newPage();await page.setViewport(viewport);page.on('pageerror',e=>errors.push(tier+': '+e.message));await page.goto('file://'+path.join(root,'dist/city-audit.html')+(tier==='v2'?'?city=v2':tier==='h15'?'?city=v2&h15='+H15PT:''),{timeout:0});
 await page.waitForFunction(()=>window.__ready||window.__err,{timeout:300000,polling:2000});
-if(tier==='v2')return Object.assign(await page.evaluate(v2Measure),{area:await page.evaluate(houseCount)});
+if(tier==='h15')return{keys:await page.evaluate(houseKeys,H15PT)};
+if(tier==='v2')return Object.assign(await page.evaluate(v2Measure),{area:await page.evaluate(houseCount),keys:await page.evaluate(houseKeys,H15PT)});
 const area=await page.evaluate(houseCount);
 return Object.assign(await page.evaluate(()=>{const W=W0,R=v=>Math.round(v),seg=(p,q,w,tag)=>{const dx=q[0]-p[0],dz=q[1]-p[1],r=Math.atan2(-dz,dx);return{cx:(p[0]+q[0])/2,cz:(p[1]+q[1])/2,hw:Math.hypot(dx,dz)/2,hd:w/2,c:Math.cos(r),s:Math.sin(r),tag};};
  // road corridors: main roads at full width minus 1 m (kerb tolerance), noble streets minus 0.4 m
@@ -83,17 +96,21 @@ return Object.assign(await page.evaluate(()=>{const W=W0,R=v=>Math.round(v),seg=
  // H12: land in the districts with no use (roadgraph.js cityDistricts: districts with no road or ring along them, fragments with nothing round them), per cent
  const CD=cityDistricts(W);
  // P2 (fabric.js): the secondary streets and blocks round the Y junction, H13 and the block areas
- const FBo=cityFabric(W),FB=FBo.stats,P2={H13:FB.H13,H13ends:FB.H13ends,cuts:FB.cuts,blocks:FB.blocks,squares:FB.squares,km:FB.km,blockArea:FB.blockArea,blockAreaWindow:FB.blockAreaWindow,holes:FB.holes,unsnapped:FB.unsnapped,snapFixed:FB.snapFixed,ms:FB.ms,districts:FB.districts};
+ const FBo=cityFabric(W),FB=FBo.stats,P2={baked:!!FBo.baked,H13:FB.H13,H13ends:FB.H13ends,cuts:FB.cuts,blocks:FB.blocks,squares:FB.squares,km:FB.km,blockArea:FB.blockArea,blockAreaWindow:FB.blockAreaWindow,holes:FB.holes,unsnapped:FB.unsnapped,snapFixed:FB.snapFixed,ms:FB.ms,districts:FB.districts};
  // one network at every tier: L1 the road list (uphill pieces included), L2 the districts, L3 the secondary streets, blocks and squares
  const r2=v=>Math.round(v*100)/100,hs=s=>{let x=2166136261;for(let i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,16777619);}return(x>>>0).toString(16);},pts=P=>P.map(p=>[r2(p[0]),r2(p[1])]);
  const net={tier:Q.name,grid:W.grid.n,hillBaked:!!W.roadHillBaked,L1:hs(JSON.stringify(W.roadList.map(([w,P,m])=>[w,pts(P),m&&m.hill?1:0]))),L2:CD.districts.map(d=>[d.cx,d.cz,d.area,d.cls,d.access?1:0].join(',')),
    L3:hs(JSON.stringify([FBo.blocks.map(b=>[r2(b.x),r2(b.z),Math.round(b.area),b.cls,b.Y.map(r=>pts(r.P))]),FBo.streets.map(t=>[t.w,t.lv,pts(t.S)]),FBo.squares.length]))};
  return{net,P2,faces:W.faceStats||{},triLots:(W.lotLog||[]).filter(l=>l.L&&l.L.length===3).length,rings:{courts:RS.rings,closed:RS.closed,walled:RS.walled,rate:RS.rings?+(RS.closed/RS.rings).toFixed(3):null,lots:RS.lot},H5,H8:H8.length,H8sample:H8.slice(0,20),H8all:H8,H12:CD.stats.H12,roads:G.stats,city:CD.stats,H1:onRoad.length,H1bySource:bySrc,H1sample:onRoad.slice(0,25),H2:wet,H3:openGardens,courts,H4:{attempted:E.attempted,committed:E.committed,rate:E.attempted?+(E.committed/E.attempted).toFixed(3):null,steepTerraced:E.steep||0,tooSmall:E.tooSmall||0,reasons:E.reasons,fallbackHomes:E.fallbackHomes},
    noble:{blocks:(W.nobleBlocks||[]).length,partial:(W.nobleBlocks||[]).filter(b=>b.parcels<b.target).length,triangular:(W.nobleBlocks||[]).filter(b=>b.triangular).length}};}),{area});};
-try{const[low,desk,v2]=await Promise.all([audit('low',{width:800,height:600}),audit('desktop',{width:1280,height:800}),audit('v2',{width:1280,height:800})]),T={low,desktop:desk};
+try{const[low,desk,v2,h15]=await Promise.all([audit('low',{width:800,height:600}),audit('desktop',{width:1280,height:800}),audit('v2',{width:1280,height:800}),audit('h15',{width:1280,height:800})]),T={low,desktop:desk};
 const L2a=new Set(low.net.L2),L2b=new Set(desk.net.L2),net={tiers:[low.net.tier,desk.net.tier],grids:[low.net.grid,desk.net.grid],hillBaked:low.net.hillBaked,L1same:low.net.L1===desk.net.L1,
   L2:{districts:[low.net.L2.length,desk.net.L2.length],same:low.net.L2.filter(d=>L2b.has(d)).length,lowOnly:low.net.L2.filter(d=>!L2b.has(d)),desktopOnly:desk.net.L2.filter(d=>!L2a.has(d))},L3same:low.net.L3===desk.net.L3};
-const P3={H10:v2.H10,H11:v2.H11,H14:v2.H14,H3:v2.H3,stats:v2.stats,houses:{v2:v2.area,flagOff:desk.area,ratio:v2.area&&desk.area&&desk.area.all?+(v2.area.all/desk.area.all).toFixed(3):null}};
+// H15: the houses that differ between the v2 page and the page with other dice in district id, by where they stand: that district, another one, none
+const A=v2.keys,B=h15.keys,id=A.id,bag=X=>{const m=new Map();for(const[k,l]of X.H){const g=l===id?'district':l<0?'none':'other';m.set(g+'|'+l+'|'+k,(m.get(g+'|'+l+'|'+k)||0)+1);}return m;},
+  mA=bag(A),mB=bag(B),H15={point:H15PT,district:id,salted:B.h15,changed:{district:0,other:0,none:0},ex:[]};
+for(const[x,y]of[[mA,mB],[mB,mA]])for(const[k,v]of x){const d=v-(y.get(k)||0);if(d<=0)continue;const g=k.split('|')[0];H15.changed[g]+=d;if(g==='other'&&H15.ex.length<12)H15.ex.push(k.slice(0,120));}
+const P3={H10:v2.H10,H11:v2.H11,H14:v2.H14,H3:v2.H3,H15,stats:v2.stats,houses:{v2:v2.area,flagOff:desk.area,ratio:v2.area&&desk.area&&desk.area.all?+(v2.area.all/desk.area.all).toFixed(3):null}};
 fs.writeFileSync('shots/city-audit.json',JSON.stringify({net,low,desktop:desk,P3,errors},null,1));
 const show=a=>({faces:a.faces,triLots:a.triLots,rings:a.rings,H1:a.H1,H1bySource:a.H1bySource,H2:a.H2,H3:a.H3,courts:a.courts,H4:a.H4,H5:a.H5,H8:a.H8,H8sample:a.H8sample,H12:a.H12,P2:a.P2,roads:a.roads,city:a.city,noble:a.noble});
 console.log(JSON.stringify({net,low:show(low),desktop:show(desk),P3,errors},null,1));
@@ -111,5 +128,8 @@ if(strict){for(const[t,a]of Object.entries(T)){assert.equal(a.H1,0,t+': H1 house
   assert.ok(net.hillBaked,'the low tier did not use the baked uphill stretches (road-network.js: run npm run bake:roads)');assert.ok(net.L1same,'L1: the road lists of the two tiers differ');
   assert.equal(net.L2.districts[0],net.L2.districts[1],'L2: the two tiers have different numbers of districts');assert.ok(net.L3same,'L3: the secondary streets and blocks of the two tiers differ');
   assert.equal(P3.H10.n,0,'v2: H10 lots facing no street: '+JSON.stringify(P3.H10.ex));assert.equal(P3.H11.street+P3.H11.road+P3.H11.pairs,0,'v2: H11 houses on streets or roads, or overlapping: '+JSON.stringify(P3.H11.ex));
-  assert.equal(P3.H14.n,0,'v2: H14 house fronts more than 5° off their street: '+JSON.stringify(P3.H14.ex));assert.equal(P3.H3,0,'v2: H3 open courts with gardens');}
+  assert.equal(P3.H14.n,0,'v2: H14 house fronts more than 5° off their street: '+JSON.stringify(P3.H14.ex));assert.equal(P3.H3,0,'v2: H3 open courts with gardens');
+  assert.ok(low.P2.baked&&desk.P2.baked&&v2.stats.baked,'a tier cut the streets live: street-fabric.js is out of date (npm run build:test && npm run bake:roads)');
+  assert.ok(P3.houses.ratio!==null&&Math.abs(P3.houses.ratio-1)<=.1,'v2: houses '+P3.houses.ratio+' times the old city on the same ground, more than 10 % off');
+  assert.ok(H15.salted===id&&id>=0,'H15: the page did not cut district '+id+' with other dice');assert.equal(H15.changed.other,0,'H15: houses in other districts changed: '+JSON.stringify(H15.ex));}
 }finally{for(const b of browsers)await b.close();}
