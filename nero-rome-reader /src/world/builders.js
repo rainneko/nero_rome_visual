@@ -328,19 +328,21 @@ const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
-function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
+// a tree's or a figure's own dice, keyed to its place (x, z to 0.25 m): one added or dropped elsewhere changes neither which ones the cap keeps nor their size and colour
+function placeDie(t,s){return hash2(Math.round(t[0]*4)+s*7919,Math.round(t[2]*4)-s*104729);}
+function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter(t=>placeDie(t,1)<k);}   // the cap thins the list that is drawn, by each tree's place (it used to thin W.trees, a copy nobody drew; then by the list index, so 4 trees more on the Palatine redrew 2,200 across the city)
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
-  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree keeps its index in its kind's list for its size and colour
+  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree's size and colour come from its place (placeDie)
   for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});
    for(const lk in parts)for(const T of instTiles(parts[lk].length,j=>{const t=all[parts[lk][j]];return[t[0],t[2]];})){const I=T.map(j=>parts[lk][j]),kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
     const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,I.length);
     const aI=kd.m?new Float32Array(I.length*4):null;
     const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),c=new THREE.Color();
-    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
-      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*hash2(i,3);
+    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*placeDie(t,7)),sy,sx*(.85+.3*placeDie(t,9)));Pp.set(t[0],t[1]-.3,t[2]);
+      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*placeDie(t,3);
       if(kd.m){c.setRGB(v,v,v);aI[j*4]=kd.t;aI[j*4+1]=hash2(t[0]*.37,t[2]*.53);aI[j*4+2]=t[6]||0;aI[j*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
-      else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
+      else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*placeDie(t,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
       m.setColorAt(j,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
@@ -352,9 +354,9 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter(p=>placeDie(p,2)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), by each figure's place
   for(const T of instTiles(list.length,i=>[list[i][0],list[i][2]])){const m=new THREE.InstancedMesh(PPLGEO,MAT.people,T.length),M=new THREE.Matrix4(),c=new THREE.Color();
-    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
+    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(placeDie(p,4)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
     layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
 
 /* ---------- monument generators (into GB g) ---------- */
