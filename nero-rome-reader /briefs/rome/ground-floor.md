@@ -97,6 +97,27 @@ The book: "一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐
     now show a room behind each door by parallax (city shader part 51, the same goods as the house shader through
     `shopGoods`), boards at night, and goods set out by a pier in front of some of them.
 
+## Third set (2026-11-08, five more shop fronts and ground-floor plans)
+* **Arched shops.** The tabernae along the Forum of Caesar (46 BC, rebuilt under Augustus) open under arches in tuff and
+  travertine walls; a timber floor at the springing makes the loft, lit through the lunette [23]. The Severan plan draws
+  arcades in front of some shop rows, which suggests a mezzanine behind them [18]. Brick-and-concrete arcades like
+  Trajan's Market are later and are not copied.
+* **Booksellers.** Martial's bookseller in the Argiletum, opposite Caesar's forum, has his doorposts written over on
+  both sides with the titles he sells (1.117) [24].
+* **Pergula.** A booth or projection built against a shop front for selling in; a schoolmaster could teach in one
+  (Suetonius, De grammaticis 18: Crassicius "in pergula docuit") [25]. Before Domitian traders took the street with
+  stalls, tables and booths (Martial 7.61) [5]; these are encroachments in front of single shops, not the street
+  porticoes Nero ordered after AD 64 (Tacitus, Annals 15.43) [14].
+* **Wine shops.** Dolia sunk in the floor and amphorae in racks (Ostia, Pompeii); the price list of four wines with a jug
+  over each price at Ad Cucumas, Herculaneum VI.14 [8].
+* **Raised pavements.** Pompeii's streets have pavements (crepidines) raised above the roadway with kerb stones, stepping
+  stones across, and doors and counters at pavement height [26].
+* **Passages to inner courts.** Blocks with a narrow passage from the street to a court with a well or cistern mouth and
+  workshops round it (Ostia, the Severan plan) [7][18].
+* **What we make.** Five more blocks n–r (see `insulae.md`), each with a different front: arched shops (n), open stalls
+  under awnings (o), timber booths in the street (p), a tall wine shop with a price list and a food hatch (q), a narrow
+  front on a raised pavement with a passage to an inner court (r).
+
 ## Sources
 1. Ostia Antica, "Shops and bars": https://ostia-antica.org/dict/topics/shops/shops-intro.htm
 2. Holleran, "Finding commerce: the taberna and the identification of Roman commercial space", PBSR 2017;
@@ -129,3 +150,9 @@ The book: "一楼开着铺子，卖面包的，卖鱼的，卖油的，卖陶罐
 21. Inns and stables at Pompeii: https://pompeii.pictures/R6/6%2001%2004.htm ; https://pompeii.pictures/R1/1%2010%2014.htm ;
     Ruiz de Arbulo and Gris, https://recercat.cat/handle/2072/294280
 22. Workshop of Tyrsus, I.6.1: https://pompeii.pictures/R1/1%2006%2001.htm
+23. Forum of Caesar, tabernae on the south-west side: Ulrich, "Julius Caesar and the creation of the Forum Iulium",
+    AJA 97 (1993); Amici, Foro di Cesare (1991).
+24. Martial, Epigrams 1.117 (Latin: https://www.thelatinlibrary.com/martial/mart1.shtml).
+25. Suetonius, De grammaticis 18 (Latin: https://www.thelatinlibrary.com/suetonius/suet.gram.html); pergula in
+    Lewis and Short.
+26. Pompeii streets, pavements and stepping stones: Poehler, The Traffic Systems of Pompeii (2017).

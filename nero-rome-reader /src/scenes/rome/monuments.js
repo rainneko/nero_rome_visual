@@ -8,7 +8,7 @@ const GALBA=GALBA_EAST?[1760,140]:[-690,1560];
 // scatter in buildRome and the v2 lots (parcels.js o.glb.put, P4): the variant is keyed to the place (no extra dice), a cut
 // tall block becomes a lower one, and the floor is the street in front of the model (front = local +z), at most .5 m over the
 // lowest ground: every model stands on a 1.6 m tuff plinth (tools/models/rome/rome_insulae{,2,3}.py, briefs/rome/ground-floor.md).
-const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l']};
+const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k','rome_insula_n','rome_insula_p'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m','rome_insula_o','rome_insula_q'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l','rome_insula_r']};
 function insulaGLB(W,slot,x,z,rot,d,groundMin){const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
   if(n==='rome_insula_a'&&W.storeyCut(x,z,5,()=>true)<5)n='rome_insula_b';if(n==='rome_insula_h'&&W.storeyCut(x,z,6,()=>true)<6)n='rome_insula_c';
   const fm=frame(x,0,z,rot).p(0,0,d/2-.3),gf=W.gy(fm[0],fm[2]);return{n,y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}

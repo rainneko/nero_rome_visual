@@ -69,13 +69,15 @@ def loaf(S, x, y, z, r=0.11):
     cyl(S, x, y, z, r, 0.05, 'ochre', 7, r_top=r * 0.8)
 
 
-def room(S, u0, u1, D, h=CEIL, wall='plaster', floor='paving', ceil='wood', sides=(True, True), joists=True):
+def room(S, u0, u1, D, h=CEIL, wall='plaster', floor='paving', ceil='wood', sides=(True, True), joists=True, back=True):
     """The inside of a shop behind the line: floor, back wall, side walls, timber ceiling (the loft floor) and joists."""
     P = lambda u, y, z: S.p(u, y, z)
     c = P((u0 + u1) / 2, D / 2, h / 2)
     q4(floor, [P(u0, 0, 0), P(u1, 0, 0), P(u1, D, 0), P(u0, D, 0)], c, -1)
-    q4(ceil, [P(u0, 0, h), P(u1, 0, h), P(u1, D, h), P(u0, D, h)], c, -1)
-    q4(wall, [P(u0, D, 0), P(u1, D, 0), P(u1, D, h), P(u0, D, h)], c, -1)
+    if ceil:
+        q4(ceil, [P(u0, 0, h), P(u1, 0, h), P(u1, D, h), P(u0, D, h)], c, -1)
+    if back:
+        q4(wall, [P(u0, D, 0), P(u1, D, 0), P(u1, D, h), P(u0, D, h)], c, -1)
     for k, uu in enumerate((u0, u1)):
         if sides[k]:
             q4(wall, [P(uu, 0, 0), P(uu, D, 0), P(uu, D, h), P(uu, 0, h)], c, -1)
@@ -129,7 +131,8 @@ def trim(S, u, ow, oh, yf, pw, frame='travertine', lintel='travertine'):
             box(S, u + sd * (ow / 2 + 0.1), yf + 0.03, 0.0, 0.24, 0.16, oh, frame)
     box(S, u, yf + 0.03, oh, ow + 0.44, 0.16, 0.3, lintel)
     arch(S, u, oh + 0.3, ow + 0.44, min(0.75, (ow + 0.44) / 2), yf)
-    box(S, u, yf + 0.03, oh + 0.36, pw + 0.12, 0.12, 0.06, 'wood')
+    if pw > 0:
+        box(S, u, yf + 0.03, oh + 0.36, pw + 0.12, 0.12, 0.06, 'wood')
 
 
 def programma(S, u, z, yf, w=0.9, lines=3):
@@ -378,9 +381,133 @@ def cart(S, x, y, rot=0.0):
     box(C, 0, 1.12, 0.87, 1.2, 0.06, 0.35, 'wood')
 
 
+def trade_butcher(S, u, ow, u0, u1, D, yf):
+    """【史】A butcher (lanius): joints on hooks from a rail across the door, a chopping block, a steelyard; in the street a
+    trestle table with more meat (Martial 7.61 names the butcher among those who worked in the street before Domitian)."""
+    beam(S, u - ow / 2 + 0.1, 0.45, 2.35, u + ow / 2 - 0.1, 0.45, 2.35, 0.06, 0.06, 'iron')
+    for k in range(int(ow / 0.38)):
+        x = u - ow / 2 + 0.3 + k * 0.38
+        box(S, x, 0.45, 2.3, 0.02, 0.02, 0.06, 'iron')
+        box(S, x, 0.45, 1.75 - 0.12 * (k % 2), 0.2 + 0.04 * (k % 3), 0.13, 0.55 + 0.12 * (k % 2), 'red' if k % 3 else 'flowerR')
+    cyl(S, u + 0.5, D * 0.55, 0.0, 0.36, 0.82, 'wood', 10)
+    box(S, u + 0.5, D * 0.55, 0.82, 0.3, 0.05, 0.03, 'iron', rot=30)
+    beam(S, u0 + 0.4, D - 0.4, 1.9, u0 + 1.1, D - 0.4, 1.9, 0.04, 0.04, 'bronze')
+    box(S, u0 + 0.5, D - 0.4, 1.5, 0.22, 0.22, 0.04, 'bronze')
+    box(S, u, yf - 0.55, 0.78, 1.9, 0.6, 0.05, 'wood')
+    for dx in (-0.8, 0.8):
+        for dy in (-0.2, 0.2):
+            beam(S, u + dx, yf - 0.55 + dy, 0.0, u + dx * 0.9, yf - 0.55 - dy, 0.78, 0.05, 0.05, 'wood')
+    for k in range(5):
+        box(S, u - 0.7 + k * 0.35, yf - 0.55, 0.83, 0.24, 0.3, 0.08, 'red' if k % 2 else 'flowerR', rot=12 * k)
+
+
+def doorpost_titles(S, u, ow, yf, h=2.5):
+    """【史】A bookseller's doorposts written all over with the titles on sale (Martial 1.117, the Argiletum)."""
+    for sd in (-1, 1):
+        x = u + sd * (ow / 2 + 0.1)
+        box(S, x, yf - 0.005, 0.3, 0.26, 0.012, h - 0.4, 'linen')
+        for k in range(9):
+            box(S, x, yf - 0.012, 0.45 + k * 0.22, 0.16 - 0.05 * (k % 3), 0.01, 0.05, 'dark' if k % 4 else 'red')
+
+
+def trade_books(S, u, ow, u0, u1, D, yf):
+    """【史】A bookseller (librarius): pigeonholes of scrolls on the back wall, scrolls in a bucket (capsa), a reading desk."""
+    rows, cols = 5, int((u1 - u0 - 0.5) / 0.32)
+    x0 = u0 + 0.25 + 0.16
+    box(S, (u0 + u1) / 2, D - 0.2, 0.3, u1 - u0 - 0.4, 0.36, 0.04, 'wood')
+    for r in range(rows):
+        z = 0.34 + r * 0.38
+        box(S, (u0 + u1) / 2, D - 0.2, z + 0.34, u1 - u0 - 0.4, 0.36, 0.03, 'wood')
+        for c in range(cols):
+            for j in range(2):
+                cyl(S, x0 + c * 0.32 + (j - 0.5) * 0.11, D - 0.22, z + 0.02 + 0.08 * j, 0.045, 0.3, 'linen', 6)
+    for c in range(cols + 1):
+        box(S, u0 + 0.25 + c * 0.32, D - 0.2, 0.3, 0.03, 0.36, rows * 0.38 + 0.04, 'wood')
+    cyl(S, u - 0.5, 0.9, 0.0, 0.22, 0.5, 'wood', 10)
+    for k in range(5):
+        cyl(S, u - 0.5 + 0.08 * math.cos(k * 1.3), 0.9 + 0.08 * math.sin(k * 1.3), 0.3, 0.04, 0.42, 'linen', 6)
+    box(S, u + 0.5, 1.2, 0.0, 0.7, 0.45, 0.95, 'wood')
+    box(S, u + 0.5, 1.2, 0.95, 0.4, 0.3, 0.03, 'linen')
+
+
+def trade_school(S, u, ow, u0, u1, D, yf):
+    """【史】A school in a pergula open to the street (Suetonius: "in pergula docuit"): the master's chair on a low dais, rows
+    of benches, wax tablets, a scroll on a stand."""
+    box(S, u, D - 0.75, 0.0, 1.6, 1.1, 0.25, 'wood')
+    box(S, u, D - 0.75, 0.25, 0.55, 0.5, 0.45, 'wood')
+    box(S, u, D - 0.48, 0.25, 0.55, 0.06, 1.1, 'wood')
+    for r in range(2):
+        for side in (-1, 1):
+            x = u + side * (ow / 4 + 0.15)
+            y = 0.9 + r * 0.85
+            box(S, x, y, 0.0, ow / 2 - 0.6, 0.3, 0.42, 'wood')
+            for k in range(3):
+                box(S, x - ow / 4 + 0.6 + k * 0.45, y, 0.42, 0.2, 0.14, 0.03, 'dark')
+    box(S, u0 + 0.4, D - 0.25, 1.0, 0.5, 0.04, 0.7, 'linen')
+
+
+def trade_wine(S, u, ow, u0, u1, D, yf):
+    """【史】A wine shop (taberna vinaria) without a loft: dolia sunk to their necks in the floor, amphorae in racks on two
+    tiers along the walls, a counter with jugs."""
+    for k in range(6):
+        x = u0 + 0.8 + (k % 3) * ((u1 - u0 - 1.6) / 2)
+        y = D * 0.42 + (k // 3) * 1.0
+        cyl(S, x, y, 0.0, 0.32, 0.06, 'tile', 10, r_top=0.26)
+        cyl(S, x, y, 0.06, 0.2, 0.005, 'dark', 10)
+        cyl(S, x, y, 0.065, 0.24, 0.03, 'wood', 10)
+    for z in (0.0, 1.25):
+        box(S, (u0 + u1) / 2, D - 0.3, z + 1.05, u1 - u0 - 0.4, 0.08, 0.06, 'wood')
+        for k in range(int((u1 - u0 - 0.8) / 0.4)):
+            amphora(S, u0 + 0.6 + k * 0.4, D - 0.45, z, 0.95, (0.0, 0.15), 'tile' if k % 2 else 'tile2', 5)
+    box(S, u - ow / 2 + 0.5, 0.6, 0.0, 0.9, 0.5, 0.95, 'stone')
+    box(S, u - ow / 2 + 0.5, 0.6, 0.95, 0.96, 0.56, 0.06, 'marble')
+    for k in range(3):
+        jar(S, u - ow / 2 + 0.25 + k * 0.25, 0.6, 1.01, 0.3, 0.1, 'tile2', 6, 'jug')
+
+
+def trade_hatchfood(S, u, ow, u0, u1, D, yf):
+    """A hot-food seller behind a hatch: a hearth with a pot on the back wall, jars and bowls on a shelf."""
+    box(S, (u0 + u1) / 2, D - 0.45, 0.0, 1.4, 0.8, 0.85, 'brick')
+    box(S, (u0 + u1) / 2, D - 0.45, 0.85, 0.7, 0.5, 0.04, 'flame')
+    cyl(S, (u0 + u1) / 2, D - 0.45, 0.89, 0.22, 0.28, 'bronze', 10, r_top=0.25)
+    box(S, (u0 + u1) / 2, D - 0.15, 1.55, u1 - u0 - 0.3, 0.3, 0.04, 'wood')
+    for k in range(int((u1 - u0 - 0.6) / 0.28)):
+        jar(S, u0 + 0.4 + k * 0.28, D - 0.15, 1.59, 0.26, 0.09, 'tile', 6, 'jug' if k % 2 else 'jar')
+
+
+def ad_cucumas(S, u, z, yf, cols=('red', 'blue', 'ochre', 'grey')):
+    """【史】A painted price list of wines: four coloured jugs, each with its price under it, under the shop's name
+    (Herculaneum VI.14, "Ad Cucumas")."""
+    box(S, u, yf - 0.005, z, 1.0, 0.01, 0.95, 'linen')
+    box(S, u, yf - 0.01, z + 0.78, 0.8, 0.01, 0.08, 'red')
+    for k, m in enumerate(cols):
+        x = u - 0.36 + k * 0.24
+        box(S, x, yf - 0.012, z + 0.3, 0.13, 0.01, 0.2, m)
+        box(S, x, yf - 0.012, z + 0.5, 0.05, 0.01, 0.1, m)
+        box(S, x + 0.06, yf - 0.012, z + 0.42, 0.04, 0.01, 0.08, m)
+        box(S, x, yf - 0.012, z + 0.12, 0.12, 0.01, 0.06, 'dark')
+    box(S, u, yf - 0.01, z, 1.0, 0.012, 0.04, 'red')
+
+
+def awning(S, u0, u1, z, out=1.0, drop=0.35, mat='awning'):
+    """A cloth awning over a shop front: sloping from the wall at z, out `out` m, on two poles."""
+    lean_roof(S, u0, -0.38, u1, -0.38, z, out, drop, mat=mat, tiles=False)
+    for x in (u0 + 0.08, u1 - 0.08):
+        box(S, x, -0.38 - out + 0.05, 0.0, 0.06, 0.06, z - drop, 'wood')
+    box(S, (u0 + u1) / 2, -0.38 - out + 0.05, z - drop - 0.06, u1 - u0, 0.05, 0.06, 'wood')
+
+
+def well_head(S, x, y):
+    """【史】A cistern mouth (puteal): a stone drum with a rope groove and a bucket."""
+    cyl(S, x, y, 0.0, 0.42, 0.75, 'stone', 12)
+    cyl(S, x, y, 0.74, 0.3, 0.005, 'dark', 12)
+    cyl(S, x + 0.6, y, 0.0, 0.16, 0.25, 'wood', 8, r_top=0.19)
+
+
 TRADES = {'bread': trade_bread, 'fish': trade_fish, 'oil': trade_oil, 'pottery': trade_pottery, 'bar': trade_bar,
           'cloth': trade_cloth, 'mill': trade_mill, 'fuller': trade_fuller, 'smith': trade_smith, 'green': trade_green,
-          'barber': trade_barber}
+          'barber': trade_barber, 'butcher': trade_butcher, 'books': trade_books, 'school': trade_school,
+          'wine': trade_wine, 'hatchfood': trade_hatchfood}
 
 
 def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', ceil=CEIL):
@@ -395,7 +522,15 @@ def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', c
         k = it['kind']; u = it['u']
         if k == 'shop':
             ow = it.get('w', 2.6); pw = min(ow * 0.36, 1.0)
-            ops += [(u, 0.0, ow, OH, 'rect'), (u, OH + 0.38, pw, 0.55, 'rect')]
+            ops.append((u, 0.0, ow, OH, 'rect'))
+            if it.get('loft', True):
+                ops.append((u, OH + 0.38, pw, 0.55, 'rect'))
+        elif k == 'archshop':
+            ow = it.get('w', 2.4); ops.append((u, 0.0, ow, OH + 0.1 + ow / 2, 'arch'))
+        elif k == 'hatch':
+            ops.append((u, it.get('zb', 0.9), it.get('w', 1.3), it.get('h', 1.2), 'rect'))
+        elif k == 'passage':
+            ops.append((u, 0.0, it.get('w', 1.6), it.get('h', 2.8), 'rect'))
         elif k == 'door':
             ops.append((u, 0.0, it.get('w', 1.1), 2.4, 'rect'))
         elif k == 'open':
@@ -410,9 +545,11 @@ def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', c
         if k == 'shop':
             ow = it.get('w', 2.6); pw = min(ow * 0.36, 1.0); rw = it.get('rw', ow + 0.8)
             u0, u1 = u - rw / 2, u + rw / 2
-            room(S, u0, u1, D, ceil, sides=it.get('sides', (True, True)))
-            dark_panel(S, u, OH + 0.38, pw, 0.55)
-            trim(S, u, ow, OH, yf, pw, frame=frame)
+            loft = it.get('loft', True)
+            room(S, u0, u1, D, it.get('ceil', ceil), sides=it.get('sides', (True, True)), joists=loft)
+            if loft:
+                dark_panel(S, u, OH + 0.38, pw, 0.55)
+            trim(S, u, ow, OH, yf, pw if loft else 0.0, frame=frame)
             threshold(S, u, ow, yf)
             if it.get('stair', True):
                 loft_stair(S, u1 - 0.5 if it.get('stair_side', 1) > 0 else u0 + 0.5, D, ceil)
@@ -435,6 +572,44 @@ def shop_side(F, p0, p1, h, mat, items, D=3.2, depth=0.35, frame='travertine', c
             threshold(S, u, ow, yf)
         elif k == 'win':
             dark_panel(S, u, it['zb'], it['w'], it['h'])
+        elif k == 'archshop':                                     # 【史】an arched shop door, a timber grille in the lunette lights the loft
+            ow = it.get('w', 2.4); rw = it.get('rw', ow + 0.6); zs = OH + 0.1
+            u0, u1 = u - rw / 2, u + rw / 2
+            room(S, u0, u1, D, ceil, sides=it.get('sides', (True, True)))
+            dark_panel(S, u, OH, ow, zs + ow / 2 - OH, y=0.2)
+            box(S, u, yf + 0.22, OH, ow, 0.16, 0.12, 'wood')                                      # the timber lintel
+            r = ow / 2
+            for k2 in range(1, 8):
+                x = -r + k2 * ow / 8; top = zs + math.sqrt(max(0.0, r * r - x * x))
+                box(S, u + x, yf + 0.25, OH + 0.12, 0.04, 0.05, top - OH - 0.12, 'wood')
+            box(S, u, yf + 0.25, zs + r * 0.45, ow, 0.05, 0.04, 'wood')
+            arch(S, u, zs, ow + 0.04, r + 0.02, yf, t=0.34, proj=0.06, mat=frame or 'travertine', seg=8)
+            for sd in (-1, 1):
+                box(S, u + sd * (ow / 2 + 0.12), yf + 0.02, zs - 0.18, 0.3, 0.14, 0.18, frame or 'travertine')   # imposts
+            box(S, u, yf - 0.02, zs + r + 0.02, 0.22, 0.12, 0.36, frame or 'travertine')                       # keystone
+            threshold(S, u, ow, yf)
+            if it.get('stair', True):
+                loft_stair(S, u1 - 0.5 if it.get('stair_side', 1) > 0 else u0 + 0.5, D, ceil)
+            boards(S, u, ow, OH, yf, it.get('boards', 'stack'))
+            if it.get('trade') and it.get('boards') != 'closed':
+                TRADES[it['trade']](S, u, ow, u0, u1, D, yf)
+        elif k == 'hatch':                                        # a sales hatch over a masonry counter in the street
+            hw_, zb, hh = it.get('w', 1.3), it.get('zb', 0.9), it.get('h', 1.2); rw = it.get('rw', 2.4)
+            u0, u1 = u - rw / 2, u + rw / 2
+            room(S, u0, u1, D, CEIL, joists=False)
+            box(S, u, yf - 0.22, 0.0, hw_ + 0.4, 0.5, zb - 0.06, 'stone')
+            box(S, u, yf - 0.2, zb - 0.06, hw_ + 0.5, 0.62, 0.07, 'marble')
+            box(S, u, yf + 0.03, zb + hh, hw_ + 0.4, 0.16, 0.24, frame or 'wood')
+            for k2 in range(3):
+                jar(S, u - 0.35 + k2 * 0.35, yf - 0.2, zb + 0.01, 0.24, 0.1, 'tile2', 6, 'jug' if k2 % 2 else 'jar')
+            if it.get('trade'):
+                TRADES[it['trade']](S, u, hw_, u0, u1, D, yf)
+        elif k == 'passage':                                      # a passage through the block to an inner court
+            pw_, ph, Dp = it.get('w', 1.6), it.get('h', 2.8), it.get('D', 4.6)
+            room(S, u - pw_ / 2 - 0.1, u + pw_ / 2 + 0.1, Dp, ph, wall='plaster', floor='paving', ceil='wood', joists=False, back=False)
+            box(S, u, yf + 0.2, -0.02, pw_ + 0.1, 0.5, 0.06, 'travertine')
+            box(S, u, yf + 0.03, ph, pw_ + 0.4, 0.16, 0.26, frame or 'travertine')
+            box(S, u, yf + 0.03, ph + 0.26, pw_ + 0.6, 0.2, 0.08, frame or 'travertine')
         elif k == 'gate':                                         # 【史】a cart entrance into an inn's yard (stabulum)
             gw, gh, Dg = it.get('w', 2.8), it.get('h', 3.5), it.get('D', 7.0)
             room(S, u - gw / 2 - 0.1, u + gw / 2 + 0.1, Dg, gh, floor='basalt', joists=False)

@@ -48,6 +48,22 @@ Same slots and place hash: slot a = a/d/f/i/k, slot b = b/e/j/m, slot c = c/g/h/
 * rome_insula_m (slot b, 4 storeys): a masonry stair up the outside of the side wall to the first-floor flat's door;
   greengrocer with a stepped stand of baskets, a barber (stool outside, awning), an oil shop. 5 762.
 
+## Third set of five (2026-11-08, `tools/models/rome/rome_insulae4.py`; evidence in `ground-floor.md`, "Third set")
+Slot a = a/d/f/i/k/n/p, slot b = b/e/j/m/o/q, slot c = c/g/h/l/r. Each shows a different shop front.
+* rome_insula_n (slot a, 3 storeys): four arched shops in tuff with travertine arches, imposts and keystones, a timber
+  lintel and a lunette grille lighting each loft (Forum of Caesar type); a bookseller with titles on his doorposts,
+  cloth, pottery, a food bar; windows over the arches. 8 568.
+* rome_insula_o (slot b, 4 storeys): an open market front: three wide loftless stalls under cloth awnings on poles,
+  trestle tables and baskets in the street (butcher with joints on hooks, greengrocer with strings of onions, fishmonger
+  at a marble table); the stair door on the side street. 6 268.
+* rome_insula_p (slot a, 3 storeys): timber pergula booths built out from the shops (lattice sides, counters, tiled pent
+  roofs); a school in the widest, its benches running out into the booth; oil and bread on the counters. 7 420.
+* rome_insula_q (slot b, 4 storeys): a wine merchant: a tall shop without a loft, dolia sunk in the floor, amphorae
+  racked on two tiers, an Ad Cucumas price list on the pier; a hot-food hatch over a masonry counter. 7 036.
+* rome_insula_r (slot c, 4 storeys): on a raised pavement with a kerb and end steps; a food hatch, a passage through to
+  an inner court (workshop doors, a cistern mouth, a handcart, a timber gallery, laundry), a potter; roofs round the
+  court. 6 602.
+
 ## Roman style pass (2026-11-01; this overrides the per-asset lists below where they differ)
 Learnt from `refs/arch/trajan_market_LATE.jpg` (Trajan's Market, about AD 110: materials and construction only, not its
 plan) and the Ostia/Herculaneum shop rows; mood from `refs/houses_ai_watercolour.jpg`.
