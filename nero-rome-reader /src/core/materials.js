@@ -273,7 +273,21 @@ void wallS(inout PS S,vec3 N,float P,float aa){
   if(rear){inter=mix(inter,vec3(.20,.14,.09),door);inter=mix(inter,vec3(.52,.46,.36),doorFrame*.75);}
   em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<2.5){inter=S.alb*.44;em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
- else if(kind<3.5){inter=vec3(.13,.1,.07)*(.8+.4*h12(vec2(bi,si)+seed));em=lamp*lit*uNight*1.5*flk*back*step(fract(rnd*7.3),.22);}
+ else if(kind<3.5){   // a square-headed shop: closed with its boards in the threshold groove, or a trade on the back wall (briefs/rome/ground-floor.md)
+  float tr=h12(vec2(bi*5.3+seed*17.,seed*3.7)),tc=h12(vec2(bi*2.9+seed*7.,seed*11.)),dq=1.-smoothstep(.015,.045,aa);bool shut=tc<.14+.55*uNight;
+  vec3 it=vec3(.16,.12,.08)*(.8+.35*smoothstep(-.3,1.8,qb.y));vec3 wd=vec3(.3,.18,.09);
+  if(shut){float pk=(q.x+hw)/.3;it=wd*(.8+.3*h12(vec2(floor(pk),seed)))*(1.-.6*step(.42,abs(fract(pk)-.5))*dq);it*=1.-.45*step(abs(q.y-1.1),.06);back=1.;}
+  else if(tr<.3){float sy=mod(qb.y,.6),sh=step(.55,qb.y)*step(qb.y,2.1),jx=fract(qb.x/.3+floor(qb.y/.6)*.41)-.5;   // shelves of jars (potter, oil seller)
+   it=mix(it,wd,step(sy,.05)*sh*dq);it=mix(it,vec3(.42,.17,.08)*(.85+.3*h12(vec2(floor(qb.x/.3),floor(qb.y/.6))+seed)),step(length(vec2(jx*3.,(sy-.21)/.16)),1.)*sh*dq);}
+  else if(tr<.5){float ax=abs(fract(qb.x/.36)-.5)*.36,y=qb.y,pr=y<.95?.15*sin(3.1416*clamp(y/.95,0.,1.))+.02:.05;it=mix(it,vec3(.4,.17,.08),step(ax,pr)*step(y,1.05)*dq);}   // amphorae along the wall
+  else if(tr<.66){float sy=mod(qb.y,.5),sh=step(.6,qb.y)*step(qb.y,2.),lx=fract(qb.x/.26)-.5;   // shelves of loaves
+   it=mix(it,wd,step(sy,.04)*sh*dq);it=mix(it,vec3(.55,.36,.14),step(length(vec2(lx*2.6,(sy-.08)/.05)),1.)*sh*dq);}
+  else if(tr<.78){float cx=floor(qb.x/.42),cl=h12(vec2(cx,seed*5.));vec3 cc=cl<.3?vec3(.62,.56,.43):cl<.55?vec3(.46,.1,.06):cl<.8?vec3(.5,.34,.07):vec3(.12,.16,.3);   // dyed cloth hung from a rod
+   it=mix(it,cc*.8,step(1.25-.6*cl,qb.y)*step(qb.y,2.25)*step(.08,fract(qb.x/.42))*dq);it=mix(it,wd,step(abs(qb.y-2.28),.03)*dq);}
+  else{float tx=fract(qb.x/.55)-.5,th=h12(vec2(floor(qb.x/.55),seed*9.));   // a workshop: bench along the back wall, tools and baskets hung above it
+   it=mix(it,wd*1.15,step(abs(qb.y-.85),.05)*dq);it=mix(it,wd*.7,step(qb.y,.8)*step(.42,abs(fract(qb.x/.9)-.5))*dq);
+   it=mix(it,mix(vec3(.45,.36,.2),vec3(.33,.3,.27),step(.5,th)),step(abs(tx),.06+.08*th)*step(1.35,qb.y)*step(qb.y,1.75+.35*th)*dq);}
+  inter=it;em=shut?vec3(0.):lamp*lit*uNight*1.5*flk*back*step(fract(rnd*7.3),.22);}
  else{inter=S.alb*.46;em=lamp*lit*uNight*.8*flk*back;}
  vec3 revN=N;if(back<.5){float tx=((vt>0.?hw:-hw)-q.x)/(abs(vt)>1e-4?vt:1e-4);float ty=((vu>0.?oh:0.)-q.y)/(abs(vu)>1e-4?vu:1e-4);revN=(tx<ty)?(vt>0.?-T:T):(vu>0.?-Up:Up);}
  if(archInterior){S.bounce=.24;S.nw=revN;S.useN=1.;}
@@ -339,6 +353,10 @@ else if(P>37.5&&P<38.5){S.alb=stoneC(uv,seed,vec3(.3,.265,.22),1.3,.5,aa)*(.9+.2
 else if(P>36.5&&P<37.5){S.alb=stoneC(uv,seed,vec3(.38,.33,.26),1.6,.75,aa);S.rough=.8;}
 else if(P>35.5&&P<36.5){S.alb=vec3(.427,.389,.31)*(.95+.1*fbm2(vWP.xz*.5));S.rough=.85;}
 else if(P>31.5&&P<32.5){S.alb=vec3(.15,.11,.085)*(.8+.3*vn2(uv*2.));S.rough=.95;}
+else if(P>46.5&&P<47.5){vec2 p=uv;float pw=vA.z,ph=vA.w,t=ph-p.y;   // 【史】painted election notice (programma): red letters on a whitewashed panel
+ vec3 c=vec3(.7,.67,.6)*(.9+.12*vn2(p*5.+seed*9.));float r0=t<.24?0.:floor((t-.24)/.15)+1.,ry=t<.24?(t-.05)/.15:fract((t-.24)/.15)/.7,cw=r0<.5?.075:.055,cx=p.x-.06,fx=fract(cx/cw),hh=h12(vec2(floor(cx/cw),r0)+seed*31.);
+ float g=max(step(abs(fx-.3),.1),step(.55,fract(hh*7.))*step(abs(ry-(fract(hh*3.)<.5?.1:.9)),.12)*step(fx,.75));
+ float m=step(.14,hh)*step(0.,cx)*step(cx,pw-.12)*step(0.,ry)*step(ry,1.)*step(r0,2.5)*g;c=mix(c,vec3(.5,.08,.05),m*(1.-smoothstep(.01,.03,aa)));c=mix(c,c*vec3(1.,.86,.83),smoothstep(.01,.03,aa)*.5);S.alb=c;S.rough=.85;}
 else if(P>45.5&&P<46.5){vec2 p=vWP.xz;S.alb=vec3(.36,.26,.19)*(.82+.3*fbm2(p*.4))*(1.-.12*smoothstep(.6,.8,fbm2(p*.08)));S.rough=.9;}   // roof terrace of opus signinum: matte brick-red crushed-tile concrete
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*uBurn*vC.z;

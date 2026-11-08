@@ -57,7 +57,14 @@ function romanFrontRelief(W,g,L,o,floorY,H,plan,awning){
       if(G.ar){sp(2);box(g,F,(x0+x1)/2,yTop-.02,-.05,(x1-x0)/2+.06,.2,.08,4|32);}}   // travertine impost block at the springing
     for(let i=0;i<G.nb;i++){const c=(i+.5)*G.bay;
       if(!G.ar){sp(3);box(g,F,c,floorY+G.oh,-.06,G.hw+.2,.22,.08,4|32);}   // timber lintel over a square shop opening
-      if(G.shop&&hp(i+11)<.5){const w=Math.min(1.25,G.hw*1.05),x=c-G.hw+.04+w/2;sp(2);box(g,F,x,floorY-.1,-.12,w/2,1.02,.3,4|16);}}}   // masonry counter in the opening
+      if(G.shop&&hp(i+11)<.5){const w=Math.min(1.25,G.hw*1.05),x=c-G.hw+.04+w/2;sp(2);box(g,F,x,floorY-.1,-.12,w/2,1.02,.3,4|16);}}
+    // 【史】election notices painted on the whitewashed piers (red letters, part 47 draws them from the quad's uv)
+    for(let i=0;i<G.nb-1;i++){const xp=(i+1)*G.bay,pw=G.bay-2*G.hw;if(pw<.55||hp(i+23)>=.22)continue;const w=Math.min(.66,pw-.12),h=.62,y0=floorY+1.35,z=pz-.012;
+      g.set(47,s,0,0,1,4,bn,1);g.poly([F.p(xp-w/2,y0,z),F.p(xp+w/2,y0,z),F.p(xp+w/2,y0+h,z),F.p(xp-w/2,y0+h,z)],F.d(0,0,-1),[[0,0],[w,0],[w,h],[0,h]],w,h);}
+    // 【史】before Domitian's edict the shops' goods stood out in the street: a spot by a pier, placed by placeShopWares once the street mask exists
+    if(G.shop&&!bn&&nSt>=2&&hp(31)<.42&&roadDecorationClear(W,L,1.0)){let x=-1;
+      if(G.nb>=2)x=(Math.floor(hp(32)*(G.nb-1))+1)*G.bay;else if(len/2-G.hw>=1.0)x=(len+len/2+G.hw)/2;
+      if(x>0){const P=F.p(x,floorY,-.02),nx=dz/len,nz=-dx/len;(W.rdWares||(W.rdWares=[])).push({x:P[0],z:P[2],y:floorY,r:Math.atan2(nx,nz),w:W,k:hp(33)});}}}
   // a tiled pent roof over the shops on timber beams and struts, its eave edged with antefixes (Ostia, Herculaneum);
   // decorLot then leaves this front alone. Not over a cloth awning, not into a road.
   if(G&&G.shop&&!awning&&nSt>=2&&len>=6&&hp(5)<.6&&roadDecorationClear(W,L,1.4)){
@@ -111,3 +118,13 @@ function rdStreetWidth(W,L,reach){const A=L[0],B=L[1],dx=B[0]-A[0],dz=B[1]-A[1],
     zo=((mx-c[0])*dz/len+(mz-c[1])*(-dx/len))>0?-1:1,rot=Math.atan2(-dz/len,dx/len),q0=frame(mx,0,mz,rot).p(0,0,zo*reach/2),
     q={cx:q0[0],cz:q0[2],hw:len/2,hd:reach/2,c:Math.cos(rot),s:Math.sin(rot),r:Math.hypot(len/2,reach/2)};let w=Infinity;
   for(const f of W.foot?.list||[])if(f.tag==='road'&&Math.hypot(f.cx-q.cx,f.cz-q.cz)<=f.r+q.r&&obb(f,q))w=Math.min(w,f.hd*2);return w;}
+// goods in front of the shops (rome_wares_*, instanced): only where the street mask has a free side-street cell in front,
+// never on a main road, a stair, a court, or the streets the fire and the Golden House take (they are not in the base layer)
+function placeShopWares(W){const S=W.street,Ls=W.rdWares||[];if(!S)return;let n=0;const cnt={},N=['rome_wares_jars','rome_wares_bread','rome_wares_fish','rome_wares_amph','rome_wares_cloth'];
+  const at=(x,z)=>{const i=Math.floor((x-S.x0)/S.cs),j=Math.floor((z-S.z0)/S.cs);return i>=0&&j>=0&&i<S.nx&&j<S.nz?j*S.nx+i:-1;};
+  for(const w of Ls){if(w.w!==W||n>=1800)continue;const fx=w.x+Math.sin(w.r)*1.1,fz=w.z+Math.cos(w.r)*1.1,k=at(fx,fz);
+    if(k<0||!S.grd[k]||S.grd[k]===3||S.road[k]||S.solid[k]||S.court[k]||S.stair?.[k])continue;
+    if((typeof AUREA_SITE==='function'&&(AUREA_SITE(w.x,w.z)||AUREA_VEST_SITE(w.x,w.z)))||(typeof VAL==='function'&&VAL(w.x,w.z)))continue;
+    const gy=W.gy(fx,fz);if(Math.abs(gy-w.y)>.45)continue;
+    const nm=N[Math.min(4,Math.floor(w.k*5))];romePlace(nm,w.x,Math.min(gy,w.y)-.03,w.z,w.r,{inst:1});cnt[nm]=(cnt[nm]||0)+1;n++;}
+  W.nShopWares=n;console.log('shop wares',n,JSON.stringify(cnt));}

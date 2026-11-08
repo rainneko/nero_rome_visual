@@ -651,12 +651,17 @@ async function buildRome(msg){
   buildScenicEstates(W);
   buildAcademyHousing(W);
   buildNobleQuarter(W);
+  // each placement slot keeps its footprint; the variants drawn in it (tools/models/rome/rome_insulae2.py, briefs/rome/ground-floor.md)
+  const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f'],rome_insula_b:['rome_insula_b','rome_insula_e'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h']};
   /* ---- GLB apartment blocks (rome_insula_a/b/c) as variety among the procedural houses: dropped into free ground of the dense districts BEFORE the lots are laid out ---- */
   {const RI2=RNG(2024),spec={rome_insula_a:[15.3,13.7],rome_insula_b:[14.7,13.4],rome_insula_c:[8.9,14.3]},names=Object.keys(spec);let nIn=0;
    for(let t=0;t<30000&&nIn<170;t++){const a=RI2()*TAU,rr=Math.sqrt(RI2())*1150,px=60+Math.cos(a)*rr,pz=-120+Math.sin(a)*rr*.9;if(nobleQuarterAt(px,pz)==='core'||dCity(px,pz)<.6||romeHorti(px,pz)>.25||segD(px,pz,0,280,230,320)<205||segD(px,pz,-262,40,-205,-225)<135||(px>-1150&&px<-420&&pz>-1750&&pz<-950)||Math.hypot(px-572,pz-200)<150||polyDist(px,pz,TIBER)[0]<RTW+16)continue;
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
-     ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
+     const VAR=INSULA_VARIANTS[n];let n2=VAR[Math.floor(hash2(Math.round(px*3),Math.round(pz*3)+71)*VAR.length)];   // the variant is keyed to the place: no extra dice, the layout is unchanged
+     if(n2==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5)n2='rome_insula_b';if(n2==='rome_insula_h'&&W.storeyCut(px,pz,6,()=>true)<6)n2='rome_insula_c';   // a cut tall block becomes a lower one, on the same ground
+     const fm=F.p(0,0,d/2-.3),gf=W.gy(fm[0],fm[2]);   // the shop floor at the street in front (GLB front = local +z); the tuff plinth under it shows at most .5 m downhill
+     ROME.GLB.push({n:n2,x:px,y:Math.max(ground.min-.7,Math.min(gf-.12,ground.min+.5)),z:pz,r:rot,o:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)?'aureaSite':'',lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)?'valleyCity':null,noPpl:true,lanes:outSub,chunk:600});
@@ -714,7 +719,7 @@ async function buildRome(msg){
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
-   roadKerbs(W,W.roadList,{layerAt:(x,z)=>AUREA_SITE(x,z)?'aureaSite':null});roadStairs(W,W.roadList,{layerAt:(x,z)=>AUREA_SITE(x,z)?'aureaSite':null});streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});populateStreetLife(W);
+   roadKerbs(W,W.roadList,{layerAt:(x,z)=>AUREA_SITE(x,z)?'aureaSite':null});roadStairs(W,W.roadList,{layerAt:(x,z)=>AUREA_SITE(x,z)?'aureaSite':null});streetStairs(W);streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60});populateStreetLife(W);placeShopWares(W);
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .5-.7) and sunk 40 % of their height below the lowest ground under them. At most 40.
    {const RC=RNG(77),dim={rome_rock_a:[6,4.5,6.5],rome_rock_b:[4.3,3.2,9.5],rome_rock_c:[3,2.2,4.3]};   // [half length along the contour, half depth, height from the cut base (-1.5 m) to the top]

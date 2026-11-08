@@ -18,6 +18,20 @@ Before the fire of AD 64 most apartment blocks had a masonry ground floor and ti
 mud and lime (opus craticium); Augustus limited their height to about 21 m; tile roofs; wooden balconies (maeniana).
 Porticoes along every street came only with Nero's building rules after AD 64 — do not add street porticoes.
 
+## Five more blocks (2026-11-08, `tools/models/rome/rome_insulae2.py`; ground floors per `ground-floor.md`)
+Each fits an older block's placement slot; `monuments.js` picks the variant from a hash of the place.
+* rome_insula_d (slot a, 14 × 12 m, 4 storeys): four shops with lofts (bread, fish, oil, pottery), a stair door with an
+  election notice, a shrine on the side, a shop shut with its boards; maenianum with laundry. ≤ 9 000 triangles (8 930).
+* rome_insula_e (slot b, 12 × 12 m): a corner food bar open on both streets (painted counter, three dolia, jug shelf,
+  lararium), a wine shop, a closed timber room hanging over the street, benches. 8 104.
+* rome_insula_f (slot a): a bakery with two lava mills and a domed oven, the bread shop beside it, gable roof. 4 982.
+* rome_insula_g (slot c, 8 × 11 m, 3 storeys): Herculaneum type, the first floor out over the pavement on two brick
+  columns; a potter's shop. 4 016.
+* rome_insula_h (slot c, 8 × 12 m, 6 storeys, eaves 18.75 m): Subura tenement, dyer's shop, cloth over the street. 3 148.
+  Becomes c where `W.storeyCut` allows fewer than six storeys.
+* All eight blocks stand on a tuff plinth (1.6 m); the page sets the floor at the street in front, at most 0.5 m above
+  the lowest ground of the footprint.
+
 ## Roman style pass (2026-11-01; this overrides the per-asset lists below where they differ)
 Learnt from `refs/arch/trajan_market_LATE.jpg` (Trajan's Market, about AD 110: materials and construction only, not its
 plan) and the Ostia/Herculaneum shop rows; mood from `refs/houses_ai_watercolour.jpg`.
