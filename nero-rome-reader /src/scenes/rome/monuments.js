@@ -9,9 +9,12 @@ const GALBA=GALBA_EAST?[1760,140]:[-690,1560];
 // tall block becomes a lower one, and the floor is the street in front of the model (front = local +z), at most .5 m over the
 // lowest ground: every model stands on a 1.6 m tuff plinth (tools/models/rome/rome_insulae{,2,3}.py, briefs/rome/ground-floor.md).
 const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k','rome_insula_n','rome_insula_p'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m','rome_insula_o','rome_insula_q'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l','rome_insula_r']};
-function insulaGLB(W,slot,x,z,rot,d,groundMin){const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
+// null = the street in front is more than 0.8 m above the lowest ground: with the floor at most 0.5 m over that the shop
+// fronts would stand in the ground, so the site is left to the procedural houses (they step with the slope).
+function insulaGLB(W,slot,x,z,rot,d,groundMin){const fm=frame(x,0,z,rot).p(0,0,d/2-.3),gf=W.gy(fm[0],fm[2]);if(gf-groundMin>.8)return null;
+  const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
   if(n==='rome_insula_a'&&W.storeyCut(x,z,5,()=>true)<5)n='rome_insula_b';if(n==='rome_insula_h'&&W.storeyCut(x,z,6,()=>true)<6)n='rome_insula_c';
-  const fm=frame(x,0,z,rot).p(0,0,d/2-.3),gf=W.gy(fm[0],fm[2]);return{n,y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}
+  return{n,y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}
 // 密度图：由 3D STOA 全景图按屋顶颜色分割，再用 9 个地标做单应性映射得到（64×64，255=图外）
 const DMAP=/*__DMAP__*/null,RINGD=[[0,.74],[200,.73],[600,.66],[1000,.56],[1400,.36],[1900,.18],[2600,.06],[3600,.03],[6000,.02]];
 function ringD(x,z){const r=Math.hypot(x-17,z+22);for(let i=0;i<RINGD.length-1;i++){const a=RINGD[i],b=RINGD[i+1];if(r<b[0])return lerp(a[1],b[1],(r-a[0])/(b[0]-a[0]));}return .02;}
@@ -787,7 +790,7 @@ async function buildRome(msg){
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      if(v2Skip(px,pz)){nIn++;W.nInsulaV2=(W.nInsulaV2||0)+1;continue;}   // v2 builds its lots there (the brief: models on lots of their size, P4)
-     const I=insulaGLB(W,n,px,pz,rot,d,ground.min);
+     const I=insulaGLB(W,n,px,pz,rot,d,ground.min);if(!I){W.nInsulaUphill=(W.nInsulaUphill||0)+1;continue;}
      ROME.GLB.push({n:I.n,x:px,y:I.y,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
   if(V2)cityParcels(W,{zone:(x,z)=>{const Z=bzone(x,z);if(Z||W.cityClass(x,z)!=='other')return Z;   // 'other': thin outskirts of a city district (dCity under .36): lower houses
