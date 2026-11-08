@@ -1,6 +1,7 @@
 import os, sys, math; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rk import *
 import bpy
+from mathutils import Vector
 import bl_kit as _bk
 reset()
 # tile ribs at 2.4x the kit spacing (keeps the triangle budget; every roof still shows its tile ribs)
@@ -11,34 +12,51 @@ _bk._ribs = _ribs_sparse
 
 F = Frame()                  # origin = centre of the palace platform, z = 0 = platform level
 NAME = 'rome_tiberiana'
-GROUND = -41.0               # preview ground = foot of the rock (the benches dip to about -41 m)
+GROUND = -47.0               # preview ground = foot of the rock (the north foot reaches about -46 m)
 
 # ---- fills: core under the terraces (-14..-7), platform fill (-7..0), north foot under the terraces (-36..-22)
 box(F, 0, 2.5, -14, 140, 115, 7, 'tuff')
 box(F, 0, 0.35, -7, 129, 99.7, 7, 'tuff')
-box(F, 0, 72, -36, 130, 24, 14, 'tuff')         # y 60..84
-box(F, -67, 75, -36, 4, 18, 14, 'tuff')         # west end of the Forum street
-box(F, -68, 63, -36, 6, 6, 29, 'tuff')          # NW corner pier
-box(F, 68, 63, -36, 6, 6, 29, 'tuff')           # NE corner pier
-box(F, -69, 0, -22, 4, 132, 8, 'tuff')          # west foot
+box(F, -68, 63, -40, 6, 6, 33, 'tuff')          # NW corner pier
+box(F, 68, 63, -40, 6, 6, 33, 'tuff')           # NE corner pier
+box(F, -69, 0, -25, 4, 132, 11, 'tuff')         # west foot
 box(F, 69, 0, -22, 4, 132, 8, 'tuff')           # east foot
 box(F, 0, -56, -22, 140, 4, 8, 'tuff')          # south foot
 box(F, 0, 0.35, 0, 129, 99.7, 0.05, 'paving')   # paved platform top, visible between the wings
 
-# ---- hill base: west, east and south have two terrace walls (0..-7 and -7..-14); north has brick arcades in 3 levels
+# ---- hill base: west, east and south have two terrace walls (0..-7 and -7..-14); north: one storey of tuff arches on a plinth (below)
 for pts in ([(-65, 60), (-65, -50)], [(-65, -50), (65, -50)], [(65, -50), (65, 60)]):
     retaining_wall(F, pts, 0.0, -7.0, buttress='square', every=10.0, parapet=None, courses=3.5)
-for pts in ([(-71, 66), (-71, -56)], [(-71, -56), (71, -56)], [(71, -56), (71, 66)]):
-    retaining_wall(F, pts, -7.0, -14.0, bastion='d', b_size=8.0, b_rise=0.8, coping=True, every=30.0, buttress=None, parapet=None, courses=3.5)
-substructure(F, 65, 60, -65, 60, -7, storeys=1, h=7.0, bay=5.0, depth=10.0, mat='brick', pier_mat='travertine', top_parapet=False)
-substructure(F, 65, 66, -65, 66, -22, storeys=2, h=7.5, bay=5.0, depth=6.0, mat='brick', pier_mat='travertine',
-             half_cols=False, top_parapet=False)
+retaining_wall(F, [(-71, 66), (-71, -56)], -7.0, -25.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
+for pts in ([(-71, -56), (71, -56)], [(71, -56), (71, 66)]):
+    retaining_wall(F, pts, -7.0, -14.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
+for (bx, by) in ((-71.0, -56.0), (-73.5, 57.0)):                   # round corner towers (restored), SW and NW
+    cyl(F, bx, by, -25.0, 4.5, 18.6, 'tuff', 24)
+    cyl(F, bx, by, -6.85, 4.8, 0.45, 'rock2', 24)
+# north face: one storey of tuff arches on a plinth; the upper north face is a plain wall behind the portico
+retaining_wall(F, [(65, 60), (-65, 60)], 0.0, -7.0, buttress=None, parapet=None, courses=3.5)
+box(F, 0, 55, -7, 130, 10, 7, 'tuff')
+box(F, 0, 63.45, -40, 130, 6.9, 21.0, 'tuff')
+box(F, 0, 66.45, -19.4, 130.4, 0.9, 0.4, 'travertine')
+substructure(F, 65, 66, -65, 66, -19.0, storeys=1, h=12.0, bay=8.0, depth=6.0, mat='tuff', pier_mat='travertine',
+             half_cols=False, cornice_mat='travertine', top_parapet=True)
 box(F, -68, 5, -7, 6, 122, 0.12, 'paving')      # west terrace-2 strip
 box(F, 68, 5, -7, 6, 122, 0.12, 'paving')       # east strip
 box(F, 0, -53, -7, 142, 6, 0.12, 'paving')      # south strip
 box(F, 0, 63, -7, 130, 6, 0.12, 'paving')       # north mid terrace, on the lower arcade
 colonnade(F, -30, 63.0, 30, 63.0, -6.88, 9, 4.6, None, 'marble', 'ionic', ent=True, ent_h=0.9)
-beam(F, -68.0, 83.0, -23.4, -68.0, 62.0, -8.4, 6.5, 3.0, 'stone')   # monumental ramp up the west side
+def stair_on_base(F, x, ya, za, yb, zb, w=4.0, zbase=-40.0):
+    """A straight flight along y at x from (ya, za) up to (yb, zb) on a solid tuff wall down to zbase."""
+    stair_flight(F, x, ya, x, yb, za, zb, width=w, mat='travertine', cheek_mat='tuff')
+    L = abs(yb - ya); rot = math.degrees(math.atan2(yb - ya, 0.0)); S = F.sub(x, ya, 0, rot); hw = w / 2 + 0.6
+    v = [S.p(0, -hw, zbase), S.p(L, -hw, zbase), S.p(L, -hw, zb - 0.5), S.p(0, -hw, za - 0.5),
+         S.p(0, hw, zbase), S.p(L, hw, zbase), S.p(L, hw, zb - 0.5), S.p(0, hw, za - 0.5)]
+    add_mesh('tuff', v, [(0, 1, 2, 3), (5, 4, 7, 6), (3, 2, 6, 7), (4, 0, 3, 7), (1, 5, 6, 2), (0, 4, 5, 1)])
+
+stair_on_base(F, -68.0, 104.0, -27.0, 87.0, -16.0)                 # lower flight, from the rock ledge
+box(F, -68.0, 85.5, -40.0, 5.2, 3.0, 24.0, 'tuff')                 # landing (top at -16)
+box(F, -68.0, 85.5, -16.0, 5.2, 3.0, 0.1, 'travertine')
+stair_on_base(F, -68.0, 84.0, -16.0, 66.5, -7.0)                   # upper flight, onto the corner pier and the mid terrace
 
 # ---- forecourt on the upper arcade, low parapet, statues, flower beds; entrance porch on the north door
 box(F, 0, 55, 0, 130, 10, 0.12, 'paving')
@@ -125,14 +143,6 @@ cone_roof(F, 0, -12, ze, 4.4, 2.4, 'tile', 28, finial='gold')
 # ---- side door in the west wing with a stair running south down the slope to the terrace-2 strip
 stair_flight(F, -66.0, -5.5, -66.0, 14.0, -7.0, 0.0, width=3.0, mat='stone', cheek_mat='tuff')
 
-# ---- the Forum-side foot: paved street, portico with shops behind it, brick back wall with dark arches
-box(F, 0, 75, -22, 130, 18, 0.12, 'paving')
-box(F, 0, 87, -36, 130, 6, 18.8, 'brick')
-arcade(F, 65, 90, -65, 90, -36, 18.8, 1.2, 13, 'brick', open_w=2.8, open_h=7.5, back='dark')
-taberna_front(F, -65, 84, 65, 84, -22, 13, h=4.8, mat='plaster2')
-colonnade(F, -58, 80.5, 58, 80.5, -22, 7, 3.6, None, 'marble', 'tuscan', ent=True, ent_h=0.6)
-lean_roof(F, -60, 84, 60, 84, -17.0, 5.0, 1.6)
-
 # ---- upper arcaded loggia over the north wing: arcade with dark bays, Ionic columns, tile lean-to
 arcade(F, 30, 49.9, -30, 49.9, 10.5, 5.5, 0.6, 10, 'plaster', open_w=2.6, open_h=3.8, back='dark')
 box(F, 0, 51.4, 10.5, 60, 3.6, 0.5, 'marble')
@@ -141,8 +151,8 @@ box(F, 0, 53.0, 11.0, 60, 0.5, 1.0, 'marble')
 lean_roof(F, 30, 50.2, -30, 50.2, 16.0, 5.0, 1.3)
 
 # ---- rock at the foot of the hill base (the lowest walls rise out of it)
-tN = rock_mass(F, [(-80, 84), (80, 84), (80, 112), (-80, 112)], -36, -21, seed=3, strata=3, step=10.0, boulders=3, grid=7.0)
-tW = rock_mass(F, [(-82, -66), (-66, -66), (-66, 84), (-82, 84)], -36, -13.5, seed=5, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0)
+tN = rock_mass(F, [(-79, 50), (79, 50), (79, 109), (-79, 109)], -41.0, -21.8, seed=3, strata=2, split=(0.6, 0.4), step=6.0, dip=0.0, tilt=lambda x, y: -0.14 * max(0.0, y - 66.0), relief=2.0, jitter=3.0, rock2=0.4, batter=18.0, band=4.5, boulders=8, grid=7.0, moss_cover=0.5, top_mat='grass')
+tW = rock_mass(F, [(-79, -66), (-56, -66), (-56, 84), (-79, 84)], -31, -13.5, seed=5, strata=2, split=(0.6, 0.4), step=6.0, dip=0.0, tilt=lambda x, y: -0.07 * (y + 56.0) + 0.12 * min(0.0, x + 71.0), relief=1.8, jitter=3.0, rock2=0.4, batter=18.0, band=4.5, boulders=6, grid=7.0, moss_cover=0.5, top_mat='grass')
 tE = rock_mass(F, [(66, -72), (82, -72), (82, 72), (66, 72)], -36, -13.5, seed=6, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0)
 tS = rock_mass(F, [(-76, -72), (76, -72), (76, -50), (-76, -50)], -36, -13.5, seed=7, strata=4, step=10.0, band=5.0, boulders=3, grid=7.0)
 foot_rocks(F, [(-71, 66), (-71, -56)], (-14.5, -13.0), top_z=tW, seed=11, blocks=3)     # chunks along the west foot
@@ -162,4 +172,5 @@ if os.environ.get('ROME_DRY'):
     print('DRY_TRIS', sum(len(p.vertices) - 2 for p in ob.data.polygons), 'verts', len(ob.data.vertices))
 else:
     bpy.context.scene.eevee.taa_render_samples = 8
-    finish(NAME, front='+Y')
+    finish(NAME, front='+Y', extra_cams=[('north_low', Vector((0.0, 1.0, 0.0)), 6),
+           ('west_low', Vector((-1.0, 0.0, 0.0)), 6), ('nw', Vector((-0.7, 0.7, 0.0)), 22)])

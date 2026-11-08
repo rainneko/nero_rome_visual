@@ -6,7 +6,8 @@
       the street: a bent street keeps its bends); edges on a main road step back PCL.roadBack from its corridor, which the houses' eaves and lotHits
       keep clear of. An edge on a precinct's ring faces a street only where the ring's band is clear 2 m out (an open reserve may reach the edge);
    2. every edge that faces a street (main road, secondary street, precinct ring, square) gets a strip of lots one lot deep, cut into quads with
-      the front on the edge (lotBuild's L[0] -> L[1]). A convex corner between two such edges takes a corner house; at a concave one, or a bend
+      the front on the edge (lotBuild's L[0] -> L[1]). A convex corner between two such edges takes a corner house (its front on the main road
+      where it has one, and off a side under 2 m: a jog in the block's edge, where a street ends on a precinct's ring); at a concave one, or a bend
       within 30° of straight, the two strips meet on the bisector. An edge on a cliff or at the district's edge has no strip: the court reaches it,
       and a garden wall closes it. Acute corners: under 55° the corner house is two wedges meeting on the bisector, under 35° the tip (6-10 m) is a
       small square. An edge shorter than its corners take closes in the inset (pcInset, as a straight skeleton): up to 6 m it joins the next lot,
@@ -96,7 +97,8 @@ function pcLots(P,E,dk,R,area,dq,want){const n=P.length,dim=PCL.dim[dk],front=E.
     if(!soft[i]&&front[i0]){const pa=P[i0],lv=Math.hypot(a[0]-pa[0],a[1]-pa[1])||1,vx=(a[0]-pa[0])/lv,vz=(a[1]-pa[1])/lv,sp=(Q[i][0]-pa[0])*vx+(Q[i][1]-pa[1])*vz,th=ang(i),k1=E[i0].k,shop=k0==='road'||k1==='road',
         // its sides run along both edges to where Q[i] falls on them; past the far end of an edge (a concave vertex there) they go round it to its inset point
         A=s0<=l?[at(Math.max(s0,0))]:[b,Q[i1]],B=sp>=0?[[pa[0]+vx*sp,pa[1]+vz*sp]]:[Q[i0],pa],e0=A[0],fp=B[0],K=[a,...A,Q[i],...B];
-      if(th>=PCL.acute.wedge)add(k1==='road'&&k0!=='road'?[K[K.length-1],...K.slice(0,-1)]:K,{edge:i,k:k1==='road'&&k0!=='road'?k1:k0,shop,corner:true});   // its front on the main road where it has one
+      if(th>=PCL.acute.wedge){const fi=A.length>1?l:Math.max(s0,0),f0=B.length>1?lv:lv-sp,fb=k1==='road'&&k0!=='road'||fi<PCL.minFront&&f0>fi;   // its front on the main road where it has one, and on the edge
+        if(Math.max(fi,f0)<PCL.minFront)res.dropped++;else add(fb?[K[K.length-1],...K.slice(0,-1)]:K,{edge:fb?i0:i,k:fb?k1:k0,shop,corner:true});}   // before where its side on this one is a stub (a jog: a street's end on a ring)
       else{const tt=th<PCL.acute.tip&&A.length===1&&B.length===1?Math.min(lerp(PCL.acute.len[0],PCL.acute.len[1],R())/Math.cos(th/2*DEG),.7*Math.max(s0,0)):0;
         if(tt>1.5){const pi=at(tt),pm=[a[0]-vx*tt,a[1]-vz*tt],M=[(pi[0]+pm[0])/2,(pi[1]+pm[1])/2];res.tips.push([a,pi,pm]);   // the tip: a small square (a shrine or a basin, P5)
           add([pi,e0,Q[i],M],{edge:i,k:k0,shop:k0==='road',corner:true,wedge:true});add([fp,pm,M,Q[i]],{edge:i0,k:k1,shop:k1==='road',corner:true,wedge:true});}
