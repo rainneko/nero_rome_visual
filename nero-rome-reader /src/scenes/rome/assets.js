@@ -55,7 +55,7 @@ function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pa
 // register a placement; fn(g,F) draws the stand-in (optional). o: {parent: group, sx, sy, sz: scale}
 function romeStand(W,n,x,z,y,rot,fn,o){const G=layTag(new THREE.Group(),'models');G.name='stand_'+n;
   if(fn){const pend=W.cols,G0=W.colGroup;W.cols={};for(const k in pend)W.cols[k]=[];   // the stand-in's own columns only: the ones still waiting (e.g. a peristyle the Golden House takes) go where their builder flushes them
-    const g=new GB(1<<14);W.colGroup=G;fn(g,frame(x,y,z,rot||0));const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=G0;W.cols=pend;}
+    const g=new GB(1<<14),S0=W.inStand;W.colGroup=G;W.inStand=n;fn(g,frame(x,y,z,rot||0));W.inStand=S0;const m=g.mesh(MAT.city);if(m)G.add(m);flushColumns(W);W.colGroup=G0;W.cols=pend;}   // W.inStand: what is drawn is hidden once the model loads (templeCourt keeps it plain)
   ((o&&o.parent)||W.scene).add(G);ROME.GLB.push({n,x,y:y+((o&&o.dy)||0),z,r:(o&&o.grot!==undefined)?o.grot:(rot||0),stand:G,o:o||{}});return G;}   // o: {dy: GLB height offset, grot: GLB turn if it differs from the stand-in's, hide, parent, sx/sy/sz}
 // a GLB without a stand-in; o.inst = true draws many copies as one InstancedMesh per part (street kit)
 function romePlace(n,x,y,z,rot,o){ROME.GLB.push({n,x,y,z,r:rot||0,o:o||{}});}

@@ -447,13 +447,17 @@ def _insets(total, n, rnd):
 
 def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0,
               moss=True, boulders=6, dip=4.0, rim=0.6, grid=5.0, rock2=0.25,
-              relief=0.3, batter=7.5, moss_cover=0.3, ground=None, band=None):
+              relief=0.3, batter=7.5, moss_cover=0.3, ground=None, band=None, tilt=None, split=None, top_mat=None):
     """A steep cliff of ledge rock: `strata` benches (z0 to z1 in all), each the previous outline inset 1-3 m with
     noise; the stack dips `dip` degrees and its tops vary `relief` m along the outline (about 1.5 steps a wall foot's
     ledge up and down). Faces lean back by `batter` degrees, with deep joint notches, a two-step rounded lip and
     `rock2` stains. Tops are pale `mat` with a `rim`; only the topmost bench gets moss, as irregular islands over
     `moss_cover` of its top. `boulders` irregular chunks sit on the ledges, partly sunk. Give a footprint that hugs a
-    wall: inner edge inside the terrace fill, outer edge 8-12 m out. Returns top(x, y), the top height at a point."""
+    wall: inner edge inside the terrace fill, outer edge 8-12 m out. Returns top(x, y), the top height at a point.
+    tilt(x, y): metres added to every level at (x, y), so the stack follows the hill's slope (give dip=0 with it; the
+    dip's direction is random). split: the benches' share of z0..z1, bottom first (e.g. (0.5, 0.3, 0.2)), so they are
+    not all the same height. top_mat: material of the topmost bench's top inside the rim (e.g. 'grass' for a grassy
+    slope above the cliff; its moss islands still go on it). All three default off: the old models come out as before."""
     F = _F(F); rnd = random.Random(seed)
     ring = []
     for i in range(len(pts)):
@@ -470,10 +474,20 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
     extent = band if band is not None else min(12.0, max(2.0, 0.6 * rel))
     steps = _insets(extent, strata - 1, rnd)
 
+    acc = None
+    if split:
+        tot = float(sum(split)); acc = [0.0]
+        for f in split:
+            acc.append(acc[-1] + f / tot)
+
+    def lev(s):            # height of level s above z0 (equal benches unless split)
+        return s * h if acc is None else (z1 - z0) * acc[min(s, len(acc) - 1)]
+
     def zat(x, y, s):      # height of level s (0 = bottom) at (x, y): stacked, dipping, relief and fine noise
-        return (z0 + s * h + tdip * ((x - cxm) * math.cos(phi) + (y - cym) * math.sin(phi))
+        return (z0 + lev(s) + tdip * ((x - cxm) * math.cos(phi) + (y - cym) * math.sin(phi))
                 + relief * math.sin(0.11 * x + 1.7 * seed) * math.cos(0.09 * y + 0.4 * seed)
-                + 0.3 * math.sin(0.37 * x + 1.7 * seed) * math.cos(0.29 * y + 0.4 * seed))
+                + 0.3 * math.sin(0.37 * x + 1.7 * seed) * math.cos(0.29 * y + 0.4 * seed)
+                + (tilt(x, y) if tilt else 0.0))
 
     outline = _joints(ring, rnd, 0.0, C)
     benches = []
@@ -490,7 +504,8 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
         R2 = _inset_toward(O, C, 0.4 + rim)              # outer edge of the rim, the top inside it
         for i in range(n):
             j = (i + 1) % n
-            B = [(O[k][0] + out[k][0] * h * tbat, O[k][1] + out[k][1] * h * tbat) for k in (i, j)]   # batter
+            hb = h if acc is None else lev(s + 1) - lev(s)
+            B = [(O[k][0] + out[k][0] * hb * tbat, O[k][1] + out[k][1] * hb * tbat) for k in (i, j)]   # batter
             zb = [zat(O[k][0], O[k][1], s) for k in (i, j)]
             zl = [zat(O[k][0], O[k][1], s + 1) - 0.5 for k in (i, j)]
             zm = [zat(Mid[k][0], Mid[k][1], s + 1) - 0.15 for k in (i, j)]
@@ -506,7 +521,7 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
             add_poly(mat, [F.p(R1[i][0], R1[i][1], zt[0]), F.p(R1[j][0], R1[j][1], zt[1]),
                            F.p(R2[j][0], R2[j][1], zr[1]), F.p(R2[i][0], R2[i][1], zr[0])])
         zf = (lambda x, y, s=s: zat(x, y, s + 1))
-        _flat_top(F, R2, zf, mat, grid)
+        _flat_top(F, R2, zf, top_mat if (top_mat and s == strata - 1) else mat, grid)
         if moss and s == strata - 1:
             _moss_islands(F, R2, zf, rnd, moss_cover)
     for _ in range(boulders):

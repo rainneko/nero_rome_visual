@@ -47,7 +47,7 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   const solid=new Uint8Array(N),veg=new Uint8Array(N),openLand=new Uint8Array(N),court=new Uint8Array(N),temple=new Uint8Array(N),K=(i,j)=>j*nx+i;
   for(const f of F){if(f.tag==='road')continue;const open=f.tag==='open'||f.tag==='court',isCourt=open&&(!!f.siteRole||!!f.reservation||f.tag==='court'),m=open?0:.3,r=f.r+1,i0=Math.max(0,Math.floor((f.cx-r-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.cx+r-x0)/cs)),j0=Math.max(0,Math.floor((f.cz-r-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.cz+r-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=x0+(i+.5)*cs-f.cx,z=z0+(j+.5)*cs-f.cz,u=f.c*x-f.s*z,v=f.s*x+f.c*z;
-      if(f.poly?nobleInside(x+f.cx,z+f.cz,f.poly):(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m)){if(open){veg[K(i,j)]=1;openLand[K(i,j)]=1;if(isCourt)court[K(i,j)]=1;}else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;}}}}
+      if(f.poly?nobleInside(x+f.cx,z+f.cz,f.poly):f.circ&&o.v2?x*x+z*z<=(f.hw+m)*(f.hw+m):(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m)){if(open){veg[K(i,j)]=1;openLand[K(i,j)]=1;if(isCourt)court[K(i,j)]=1;}else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;}}}}   // ?city=v2: a circle as a circle (v2's lots and rings take it so; the old city keeps its box)
   // vegetation and water on a 10 m lattice, nearest-sampled
   const wat=new Uint8Array(N),naturalVeg=new Uint8Array(N),lat=Math.max(1,Math.round(10/cs));{const lx=Math.ceil(nx/lat)+1,lz=Math.ceil(nz/lat)+1,V=new Uint8Array(lx*lz),Wt=new Uint8Array(lx*lz);
     for(let j=0;j<lz;j++)for(let i=0;i<lx;i++){const x=x0+(i*lat+lat/2)*cs,z=z0+(j*lat+lat/2)*cs;V[j*lx+i]=o.veg(x,z)?1:0;Wt[j*lx+i]=o.water(x,z)?1:0;}
@@ -272,14 +272,15 @@ function streetWallProp(W,x,z,done,K,w){const F=W.foot,cs=F.cell,seen=new Set(),
    props stand against the walls of dirt and stone streets (awnings and counters back to a house wall, found from the footprints by streetWallProp; the rest from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed.
    o.layerAt(x,z): a story-state group for a prop there (parentLayer; the streets the Golden House takes), or null. */
 function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
-  let nP=0,nS=0,nC=0;const plaza=[],props=[];
+  let nP=0,nS=0,nC=0;const plaza=[],props=[],LP=W.lifePlots||[],inPlot=(x,z)=>LP.some(q=>Math.hypot(q.x-x,q.z-z)<8);   // ?city=v2: the plots left for the street life (parcels.js) stay clear
   for(let j=3;j<nz-3;j+=2)for(let i=3;i<nx-3;i+=2){const k=j*nx+i,g=grd[k];if(!g||g===3)continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,u=o.urban(x,z);if(u<.25)continue;
     const w=wid[k];
-    if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35)plaza.push([x,z,w]);
+    if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35&&!inPlot(x,z))plaza.push([x,z,w]);
     const d=dist[k]*cs;if(d<1.2||d>3.8||w<3.4||S.road[k]||S.stair?.[k])continue;   // no stalls on a flight of stairs   // dist is in cells: the first free cell next to a wall is cs away
     const gx=dist[k+1]-dist[k-1],gz=dist[k+nx]-dist[k-nx],l=Math.hypot(gx,gz);if(l<.3)continue;const wx=gx/l,wz=gz/l;   // direction away from the wall
     if(R()>(g===2?.075:.045)*(u>.6?1:.6))continue;if(W.gy(x,z)>o.maxY)continue;
     const r=R(),rot=Math.atan2(-wx,-wz),tint=TINT[Math.floor(R()*TINT.length)];
+    if(inPlot(x,z))continue;   // after the dice: the other props keep their places
     if(r<.3){const a=streetWallProp(W,x,z,props,STREET_AWNING,w);if(!a)continue;put('rome_awning',a[0],a[1],a[2],{tint,dy:a[3]-W.gy(a[0],a[1])});props.push(a);}   // the dice above are drawn either way: the other props keep their places
     else if(r<.55){const a=streetWallProp(W,x,z,props,STREET_COUNTER,w);if(!a)continue;put('rome_counter',a[0],a[1],a[2],{dy:a[3]-W.gy(a[0],a[1])});props.push(a);}
     else if(r<.75)put('rome_amphorae',x,z,rot);

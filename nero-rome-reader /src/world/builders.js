@@ -469,7 +469,7 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
     for(const z of o.W>=26?['big','mid']:[o.W>=14?'mid':'small'])for(const d of[z==='big'?7:z==='mid'?5:4.5,3.5,2.5]){const[hx,b0,b1]=ext(z);if(d-b0<1||al||templeHit(W,F,o,hx,zF+d-b0,zF+d+b1))continue;
       const G=templeGround(W,F,hx,zF+d-b0,zF+d+b1),ya=G?Math.max(0,G.mn):0;if(G&&(ya>2.5||G.mx-ya>1))continue;   // where the ground in front rises it stands on it (lifted, at most 2.5 m, its uphill side sunk at most 1 m)
       al={z,d,f:zF+d+b1,ya,yb:G&&o.pave===false?Math.min(ya,G.mn):ya};}   // yb: off the paving, the ground that falls away under it (a socle)
-    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
+    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}templeCourt(W,g,F,o,{pz0,pz1,pcz,phx,phz,yb,PP});g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
   const eH=cH*.24,ye=y0+cH;g.set(6,o.seed||.3);box(g,F,0,ye,0,W2-m*.25,eH*.62,L2-m*.25,31);g.set(2,.5);box(g,F,0,ye+eH*.33,0,W2-m*.2+.06,eH*.12,L2-m*.2+.06,15);
   g.set(6,o.seed||.3);box(g,F,0,ye+eH*.62,0,W2+.35,eH*.38,L2+.35,31);
   if(o.dentils!==false){g.set(2,.6);for(let x=-W2;x<=W2;x+=.45){box(g,F,x,ye+eH*.55,L2+.12,.12,eH*.08,.15,1|2|8|32);}}
@@ -482,6 +482,29 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
   g.set(o.roof==='gilt'?12:1,(o.seed||.3)+.2+(tH>.5?.37:0));
   for(const sx of[1,-1])g.poly([F.p(sx*(W2+.55),yb+.35,zr+.2),F.p(0,yb+hP+.55,zr+.2),F.p(0,yb+hP+.55,-zr-.2),F.p(sx*(W2+.55),yb+.35,-zr-.2)],F.d(sx,1,0));
   {const fe=Math.max(L2+run,zA)+1,be=L2+ph*1.4+1,q=F.p(0,0,(fe-be)/2);W.foot.add(q[0],q[2],W2+1,(fe+be)/2,o.rot||0).t=1;}return{top:yb+hP};}   // the stair and the altar are in it
+// podium p3 (2026-11-08; the author: a white block under a temple on the slope): the paved court round a temple (o.pave), from 4 m behind it to 12 m in front of
+// its stair, 5 m either side. Where the ground under it falls 0.2-1.5 m it stands on a plain base of the podium's stone (travertine under a marble podium; it was
+// white marble, 13 m high on the Palatine). Where it falls more it is a terrace: retaining walls with a coping, a parapet and buttresses (terraceEdge, the hill's
+// wall stone), and the temple's way goes on down from the front: one flight where the ground in front is 3 m or less below the court, else a landing in front of
+// an opening in the middle and two flights along the front wall, turning down the sides where they need to (edgeStair). In Rome, before the houses, the court is
+// reserved (terraceReserve). A stand-in's court (W.inStand, romeStand) stays a plain base: the model brings its own. W.templeCourts logs each court: its fall, the fall in front, and how it is held.
+function templeCourt(W,g,F,o,c){const{pz0,pz1,pcz,phx,phz,yb,PP}=c,log=W.templeCourts||(W.templeCourts=[]);
+  const q0=F.p(0,0,pz1+1.5),dF=W.gy?F.oy-W.gy(q0[0],q0[2]):0,e={x:Math.round(o.x),z:Math.round(o.z),drop:+(-yb).toFixed(1),front:+dF.toFixed(1)};log.push(e);
+  // whether it is a terrace (in Rome reserved before the houses: the street fabric's key) is planned on the desktop tier's ground at every tier (W.routeGround),
+  // the temple raised there as much as its ground is (exact for a temple stood on its ground, T2): the low tier's ground is 1-2 m off near some temples.
+  // Flat or base, and every height, on this tier's ground.
+  const RG=W.routeGround;let yp=yb;
+  if(RG&&W.gy){const cy=RG.gy(F.ox,F.oz)-W.gy(F.ox,F.oz);yp=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yp=Math.min(yp,RG.gy(q[0],q[2])-F.oy-cy);}e.plan=+(-yp).toFixed(1);}
+  if(yp>=-1.5||W.inStand||typeof terraceEdge!=='function'){if(yb>=-.2){e.kind='flat';return;}g.set(PP===6?48:PP,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);e.kind='base';return;}
+  const P=[[-phx,pz0],[phx,pz0],[phx,pz1],[-phx,pz1]],ow=Math.min(phx-1.2,4.5),pair=dF>3,lx=(x,z)=>(x-F.ox)*F.c-(z-F.oz)*F.s,
+    open=(x,z,i)=>i===2&&Math.abs(lx(x,z))<(pair?1.6:ow)?'stair':false;
+  if(W.name==='rome'&&!(W.footMark&&W.footMark.houses!=null))terraceReserve(W,F,P,{});
+  terraceEdge(W,g,P,.07,{F,tag:'templeCourt',open,wing:false});
+  if(pair){const zl=pz1+1.3,q=F.p(0,0,zl),gb=Math.min(W.gy(q[0],q[2])-F.oy,0)-.8,pal=hillPal(o.x,o.z);g.set(60,.5,pal,0);box(g,F,0,gb,zl,1.6,.07-.12-gb,1.3,31&~32);g.set(48,.45);box(g,F,0,-.05,zl,1.63,.12,1.33,31);   // the landing in front of the opening
+    e.steps=[1,-1].map(s=>edgeStair(W,g,[F.p(s*1.6,0,pz1+1.65),F.p(s*(phx+1.65),0,pz1+1.65),F.p(s*(phx+1.65),0,pz0)].map(p=>[p[0],p[2]]),F.oy+.07,{w:2.6,side:-s,pal}).steps);e.kind='terrace, two flights';}
+  else if(dF>.6){const n=Math.max(2,Math.ceil(dF/.18)),t=.34,r=dF/n;g.set(48,.45);for(let i=0;i<n;i++){const z=pz1+i*t+t/2,yt=.07-(i+1)*r,q=F.p(0,0,z),gb=Math.min(W.gy(q[0],q[2])-F.oy,yt)-.8;box(g,F,0,gb,z,ow,yt-gb,t/2+.01,31);}
+    e.steps=n;e.kind='terrace, one flight';}
+  else e.kind='terrace';}
 function tholos(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0),R=o.R||7,ph=o.podH||2.6,cH=o.colH||9,n=o.n||18;
   g.set(6,.35);lathe(g,F,0,-3,0,[[R+.9,0],[R+.9,3+ph],[0,3+ph]],32);g.set(2,.4);lathe(g,F,0,ph-.4,0,[[R+1.05,0],[R+1.05,.4],[0,.4]],32);
   for(let i=0;i<5;i++){g.set(2,.45);box(g,F,0,0,R+.9+(i+.5)*.42,2.6,ph*(5-i)/5,.21,1|2|8|16);}

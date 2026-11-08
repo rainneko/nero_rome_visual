@@ -10,7 +10,10 @@
 * City dice are keyed to place: each block in `genBlocks`, each `genCity` cell and each `fillCentralHousing` candidate has its own RNG.
   Keep it that way (no shared stream across blocks), so a change in one place does not reshuffle the houses everywhere else.
 * Main roads are routed from the waypoints in `monuments.js` (`MAIN`) and baked into `src/scenes/rome/road-network.js`.
-  After changing `MAIN`, `LATE` or a monument near a road: `npm run build:test && npm run bake:roads`, then build again.
+  The city's districts, secondary streets and blocks (`?city=v2`, `src/world/fabric.js`) are baked into `src/scenes/rome/street-fabric.js`.
+  After changing `MAIN`, `LATE`, a monument near a road, any footprint placed before the houses (`W.footMark.houses`) or the fabric code:
+  `npm run build:test && npm run bake:roads`, then build again. `node tools/test/bake-roads.mjs --check` and `city-audit.mjs --assert` fail
+  while the bake is out of date. Footprints placed before the houses must not depend on the quality tier: plan them on `W.routeGround`.
 * 1 unit = 1 m, x east, z south. Antium at (-70000, 0), Ostia at (-70000, -80000).
 * Label history with 【史】; book content is the novel's. Quote the novel exactly. No post-Nero buildings.
 * The novel text is the author's; do not rewrite it. `data/book.txt` is the full text (see README).

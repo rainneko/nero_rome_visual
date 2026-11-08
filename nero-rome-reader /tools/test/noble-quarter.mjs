@@ -26,7 +26,7 @@ try{
  await p.goto('file://'+path.join(root,'dist/noble-assets-test.html')+'?test',{timeout:45000});await p.waitForFunction(()=>window.__modelsReady,{timeout:45000});results.push(...await p.evaluate(()=>checks));await p.screenshot({path:path.join(out,'assets-plain.png')});
  await p.evaluate(()=>{settings.crystL=true;P.render(scene,camera);});await p.screenshot({path:path.join(out,'assets-crystal.png')});
  const city=fs.readFileSync('dist/test.html','utf8');if(!city.includes('window.__ready=true;loop();'))throw Error('boot marker changed');fs.writeFileSync('dist/noble-city-test.html',city.replace('window.__ready=true;loop();','window.__ready=true;'));
- await p.goto('file://'+path.join(root,'dist/noble-city-test.html')+'?test',{timeout:45000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:60000});const boot=await p.evaluate(()=>({ready:window.__ready,error:window.__err}));if(!boot.ready)throw Error(boot.error);
+ await p.goto('file://'+path.join(root,'dist/noble-city-test.html')+'?test'+(process.env.CITY_V2?'&city=v2':''),{timeout:45000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:60000});const boot=await p.evaluate(()=>({ready:window.__ready,error:window.__err}));if(!boot.ready)throw Error(boot.error);
  await p.waitForFunction(()=>window.__romeReady,{timeout:45000});
  const audit=await p.evaluate(()=>{W0.scene.updateMatrixWorld(true);const homes=W0.nobleHomes,rows=W0.nobleProcedural||[],parcels=W0.nobleParcels,blocks=W0.nobleBlocks,roads=W0.nobleRoads,loaded=ROME.GLB.filter(p=>p.n.startsWith('rome_lux_'));
    const storeys={};for(const p of parcels)storeys[p.storeys]=(storeys[p.storeys]||0)+1;

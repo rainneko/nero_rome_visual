@@ -12,12 +12,14 @@
 function hillStair(W,R,w,top){const gy=W.gy,H=stairGround(W),ix=stairLandings(W,R),gS=new GB(1<<15);let yT=top??H(R[0][0],R[0][1]);const y0=yT,st={steps:0,landings:0,rock:0,parapets:0};
   const slope=(x,z)=>Math.hypot(gy(x+2,z)-gy(x-2,z),gy(x,z+2)-gy(x,z-2))/4;
   for(let l=0;l<ix.length-1;l++){const A=R[ix[l]],B=R[ix[l+1]],Ls=Math.hypot(B[0]-A[0],B[1]-A[1]);if(Ls<3)continue;const yB=H(B[0],B[1]),dh=yT-yB;if(dh<.5){yT=Math.min(yT,yB);continue;}
-    const F=frame(A[0],0,A[1],Math.atan2(-(B[1]-A[1]),B[0]-A[0])),run=stairRun(Ls,dh),pal=hillPal(A[0],A[1]),rks=[];
-    for(const p of run.P){const s2=p.s+p.len/2,yS=yT-p.i*run.rise-(p.land?0:run.rise),q=F.p(s2,0,0),gb=Math.min(gy(q[0],q[2]),yS)-2.5;
+    const F=frame(A[0],0,A[1],Math.atan2(-(B[1]-A[1]),B[0]-A[0])),o0=stairEdge(W,H,A,B,Ls,yT),run=stairRun(Ls-o0,dh),pal=hillPal(A[0],A[1]),rks=[];
+    if(o0>0){const q=F.p(o0/2,0,0),gb=Math.min(gy(q[0],q[2]),yT)-2.5;gS.set(6,.4);box(gS,F,o0/2,gb,0,o0/2+.02,yT-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,o0/2,gb,sd*(w/2+.3),o0/2+.02,yT-gb+.9,.3,31);
+      gS.set(48,.5);for(const sd of[1,-1])box(gS,F,o0/2,yT+.9,sd*(w/2+.3),o0/2+.06,.12,.36,31);st.landings++;}   // podium p3: the landing out to the terrace's edge, where the steps begin
+    for(const p of run.P){const s2=o0+p.s+p.len/2,yS=yT-p.i*run.rise-(p.land?0:run.rise),q=F.p(s2,0,0),gb=Math.min(gy(q[0],q[2]),yS)-2.5;
       if(p.land){gS.set(6,.4);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.9,.3,31);
         gS.set(48,.5);for(const sd of[1,-1])box(gS,F,s2,yS+.9,sd*(w/2+.3),p.len/2+.06,.12,.36,31);st.landings++;continue;}   // E2: a landing between two flights, its cheeks a little higher
       const ql=F.p(s2,0,w/2+1),qr=F.p(s2,0,-w/2-1),rk=Math.max(slope(q[0],q[2]),slope(ql[0],ql[2]),slope(qr[0],qr[2]))>.52;st.steps++;
-      if(rk){gS.set(61,.35+.3*teH(q[0],q[2],70),pal,0);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);st.rock++;rks.push({s0:p.s,s1:p.s+p.len,y:yS});continue;}   // E1: cut in the rock (the banks on both sides below)
+      if(rk){gS.set(61,.35+.3*teH(q[0],q[2],70),pal,0);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);st.rock++;rks.push({s0:o0+p.s,s1:o0+p.s+p.len,y:yS});continue;}   // E1: cut in the rock (the banks on both sides below)
       gS.set(6,.4);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.75,.3,31);   // pale treads between low pale cheek walls
       if(p.i%3===0){gS.set(2,.6);for(const sd of[1,-1])box(gS,F,s2,yS+.7,sd*(w/2+.3),p.len*1.5+.02,.14,.4,31);}}   // coping
     // E1: the rock left standing on both sides of the cut steps, in banks about 2.4 m long that follow the slope of the flight, sheer on the stair side
@@ -44,6 +46,10 @@ function rockBank(g,F,sa,sb,ya,yb,sd,w,pal){const c=F.p((sa+sb)/2,0,sd*(w/2+.5))
 function stairRun(Ls,dh){const n=Math.max(3,Math.round(dh/.19));let m=Math.max(1,Math.ceil(n/15)),Lw=m>1?Math.max(.9,Math.min(1.5,(Ls-n*.32)/(m-1))):0;if(m>1&&(Ls-(m-1)*Lw)/n<.28){m=1;Lw=0;}
   const tr=(Ls-(m-1)*Lw)/n,P=[];let s=0,i=0;for(let f=0;f<m;f++){const k=Math.round(n*(f+1)/m)-Math.round(n*f/m);for(let j=0;j<k;j++){P.push({s,len:tr,i:i++});s+=tr;}if(f<m-1){P.push({s,len:Lw,i,land:true});s+=Lw;}}
   return{n,P,rise:dh/n};}
+// podium p3 (2026-11-08): where a flight leaves the floor of a Palatine garden terrace (stairGround above the terrain), the distance along it to the floor's edge,
+// plus 0.5 m: the steps begin there, not at the landing point up to 2 m inside the edge (they went down under the floor and met the wall's parapet). 0 elsewhere.
+function stairEdge(W,H,A,B,Ls,yT){if(H(A[0],A[1])<W.gy(A[0],A[1])+.5)return 0;const ux=(B[0]-A[0])/Ls,uz=(B[1]-A[1])/Ls;let s=0;
+  while(s<Ls-3&&H(A[0]+ux*(s+.25),A[1]+uz*(s+.25))>yT-.3)s+=.25;return s>0?Math.min(s+.5,Ls-3):0;}
 // what a hill stair stands on: the terrain, or the floor of a Palatine garden terrace where one lies over it (palatine.js palTerraces, 1.25 m raster)
 function stairGround(W){if(W.stairGround)return W.stairGround;const gy=W.gy,T=W.foot.list.filter(f=>f.palTer!=null);if(!T.length)return W.stairGround=gy;
   let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(const f of T){x0=Math.min(x0,f.cx-f.r);z0=Math.min(z0,f.cz-f.r);x1=Math.max(x1,f.cx+f.r);z1=Math.max(z1,f.cz+f.r);}
@@ -64,8 +70,8 @@ function templeNet(W){const S=W.street,{nx,nz,grd,road}=S,net=new Uint8Array(nx*
 // the tread height at each point of a hill stair (the flights of hillStair: straight from landing to landing)
 function hillStairHeights(W,R,top){const H=stairGround(W),ix=stairLandings(W,R),Y=new Array(R.length).fill(top);let yT=top;
   for(let l=0;l<ix.length-1;l++){const A=R[ix[l]],B=R[ix[l+1]],Ls=Math.hypot(B[0]-A[0],B[1]-A[1]);if(Ls<3){for(let i=ix[l];i<=ix[l+1];i++)Y[i]=yT;continue;}const yB=H(B[0],B[1]),dh=yT-yB;
-    if(dh<.5){for(let i=ix[l];i<=ix[l+1];i++)Y[i]=yT;yT=Math.min(yT,yB);continue;}const run=stairRun(Ls,dh);let d=0;
-    for(let i=ix[l];i<=ix[l+1];i++){if(i>ix[l])d+=Math.hypot(R[i][0]-R[i-1][0],R[i][1]-R[i-1][1]);const sd=Math.min(Ls,d);let y=yT;for(const p of run.P){if(p.s>sd)break;y=yT-p.i*run.rise-(p.land?0:run.rise);}Y[i]=y;}yT=yB;}
+    if(dh<.5){for(let i=ix[l];i<=ix[l+1];i++)Y[i]=yT;yT=Math.min(yT,yB);continue;}const o0=stairEdge(W,H,A,B,Ls,yT),run=stairRun(Ls-o0,dh);let d=0;
+    for(let i=ix[l];i<=ix[l+1];i++){if(i>ix[l])d+=Math.hypot(R[i][0]-R[i-1][0],R[i][1]-R[i-1][1]);const sd=Math.min(Ls-o0,Math.max(0,d-o0));let y=yT;for(const p of run.P){if(p.s>sd)break;y=yT-p.i*run.rise-(p.land?0:run.rise);}Y[i]=y;}yT=yB;}
   return Y;}
 function templeMark(S,N,R,r,Y){const{x0,z0,cs,nx,nz}=S;
   for(let p=0;p<R.length-1;p++){const a=R[p],b=R[p+1],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/(cs*.5)));
