@@ -53,3 +53,117 @@ References: `villa_noble.jpg` (palace of wings, porticoes, gardens, a pool, a be
       with a soil bed for the fig tree
 - [ ] Columned garden pavilion; side door with a stair down the slope
 - [ ] ≤ 70k triangles
+
+## Rework 2026-11-08 (podium p3, C1): the hill base on the Forum and west sides
+The author (2026-11-07): the big base and the arches under the palace look unnatural. In the page (`palatine.js`, `PAL_ASSETS`:
+platform z = 0 at 54.8 m) the ground round the model is, relative to the platform: the valley floor at about −47 north of the
+model and west of its north half, rising to about −32 at the south end of the west side; east and south the ground is level
+with the platform (the saddle deck and the hilltop), so the east and south walls and rock are buried. What was wrong:
+* the Forum-side street, shops and brick back wall (y 66–90) stood on the rock; from the Forum only a 130 m brick strip and a
+  lean roof showed, like a beam lying on the grass;
+* three identical tiers of brick arcades on the north side (they read as an aqueduct; 【待核】the brick arcades along the Nova
+  Via are mostly Domitianic and Hadrianic, after Nero);
+* a white slanted slab ("west ramp") at the north-west corner;
+* D-shaped bastions every 30 m on the lower walls (the author's rule: half-round projections only at a few rock-spur corners,
+  square buttresses elsewhere — `briefs/rome/podium-stairs-rock.md` section 6, decision 3);
+* four rock benches of the same height with flat tops: they read as four more walls.
+The wall stone stays `tuff` (the page's procedural Palatine walls already take this model's colours).
+
+Change only these things (line numbers are those of `tools/models/rome/rome_tiberiana.py` before the change):
+1. **Remove the Forum-side street and everything on it:** the fill `box(F, 0, 72, -36, ...)` and `box(F, -67, 75, -36, ...)`
+   (lines 19–20) and the whole block "the Forum-side foot" (lines 129–134: paving, brick back wall, arcade at y 90,
+   `taberna_front`, Tuscan colonnade, lean roof).
+2. **Three brick arcade tiers → one tuff arcade:** remove both `substructure(...)` calls (lines 33–35) and build instead
+   * the upper north face as a plain wall like the other sides, but without buttresses (the viewing portico stands in front of it):
+     `retaining_wall(F, [(65, 60), (-65, 60)], 0.0, -7.0, buttress=None, parapet=None, courses=3.5)` and a fill under the
+     forecourt `box(F, 0, 55, -7, 130, 10, 7, 'tuff')`;
+   * a plinth along the foot of the lower north face, 0.9 m proud of it: `box(F, 0, 63.45, -40, 130, 6.9, 21.0, 'tuff')`
+     (y 60–66.9, z −40 to −19) and a travertine band on it `box(F, 0, 66.45, -19.4, 130.4, 0.9, 0.4, 'travertine')`;
+   * ONE storey of tall tuff arches on it, travertine imposts and cornice, a marble balustrade along the mid terrace on top:
+     `substructure(F, 65, 66, -65, 66, -19.0, storeys=1, h=12.0, bay=8.0, depth=6.0, mat='tuff', pier_mat='travertine',
+     half_cols=False, cornice_mat='travertine', top_parapet=True)` (16 arches about 4.6 × 9.6 m);
+   * the two corner piers (lines 21–22) go down to −40: `box(F, ±68, 63, -40, 6, 6, 33, 'tuff')`.
+   The mid terrace paving (line 39) and its Ionic colonnade (line 40, the viewing portico) stay.
+3. **The west ramp → a stair along the wall with parapets:** remove the `beam(...)` (line 41). Two flights at x = −68 on
+   solid tuff bases, travertine treads, tuff parapets (the flight's cheek walls), a landing between them:
+   ```python
+   def stair_on_base(F, x, ya, za, yb, zb, w=4.0, zbase=-40.0):
+       """A straight flight along y at x from (ya, za) up to (yb, zb) on a solid tuff wall down to zbase."""
+       stair_flight(F, x, ya, x, yb, za, zb, width=w, mat='travertine', cheek_mat='tuff')
+       L = abs(yb - ya); rot = math.degrees(math.atan2(yb - ya, 0.0)); S = F.sub(x, ya, 0, rot); hw = w / 2 + 0.6
+       v = [S.p(0, -hw, zbase), S.p(L, -hw, zbase), S.p(L, -hw, zb - 0.5), S.p(0, -hw, za - 0.5),
+            S.p(0, hw, zbase), S.p(L, hw, zbase), S.p(L, hw, zb - 0.5), S.p(0, hw, za - 0.5)]
+       add_mesh('tuff', v, [(0, 1, 2, 3), (5, 4, 7, 6), (3, 2, 6, 7), (4, 0, 3, 7), (1, 5, 6, 2), (0, 4, 5, 1)])
+
+   stair_on_base(F, -68.0, 104.0, -26.5, 87.0, -16.0)                 # lower flight, from the rock ledge
+   box(F, -68.0, 85.5, -40.0, 5.2, 3.0, 24.0, 'tuff')                 # landing (top at -16)
+   box(F, -68.0, 85.5, -16.0, 5.2, 3.0, 0.1, 'travertine')
+   stair_on_base(F, -68.0, 84.0, -16.0, 66.5, -7.0)                   # upper flight, onto the corner pier and the mid terrace
+   ```
+4. **Bastions only at the two west rock-spur corners:** the lower walls (lines 31–32) get square buttresses like the upper
+   ones; the west one goes deeper (the rock top falls to about −22 at its north end):
+   ```python
+   retaining_wall(F, [(-71, 66), (-71, -56)], -7.0, -25.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
+   for pts in ([(-71, -56), (71, -56)], [(71, -56), (71, 66)]):
+       retaining_wall(F, pts, -7.0, -14.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
+   for (bx, by) in ((-71.0, -56.0), (-73.5, 57.0)):                   # round corner towers (restored), SW and NW
+       cyl(F, bx, by, -25.0, 4.5, 18.6, 'tuff', 24)
+       cyl(F, bx, by, -6.85, 4.8, 0.45, 'rock2', 24)
+   ```
+   Also make the west foot box (line 23) go down to −25: `box(F, -69, 0, -25, 4, 132, 11, 'tuff')`.
+5. **Rock that follows the hill:** replace `tN` and `tW` (lines 144–145); `tE` and `tS` (buried) stay as they are.
+   `rock_mass` now takes `tilt` (metres added at (x, y)) and `split` (the benches' shares, bottom first):
+   ```python
+   tN = rock_mass(F, [(-80, 50), (80, 50), (80, 112), (-80, 112)], -40, -20.5, seed=3, strata=3, split=(0.45, 0.33, 0.22),
+                  step=8.0, dip=0.0, tilt=lambda x, y: -0.14 * max(0.0, y - 66.0), relief=1.4, jitter=2.2, batter=18.0,
+                  band=6.0, boulders=5, grid=7.0)
+   tW = rock_mass(F, [(-82, -66), (-56, -66), (-56, 84), (-82, 84)], -31, -13.5, seed=5, strata=3, split=(0.45, 0.33, 0.22),
+                  step=8.0, dip=0.0, tilt=lambda x, y: -0.07 * (y + 56.0) + 0.12 * min(0.0, x + 71.0), relief=1.2,
+                  jitter=2.0, batter=18.0, band=6.0, boulders=4, grid=7.0)
+   ```
+   (north: the top meets the plinth at −20.5 and falls to about −26 at the outer ledge, the foot reaches −46 at the north edge;
+   west: the top is −13.5 at the south end of the wall and −22 at its north end, the foot falls from −32 to −42.)
+6. `GROUND = -47.0`; `finish(NAME, front='+Y', extra_cams=[('north_low', Vector((0.0, 1.0, 0.0)), 6),
+   ('west_low', Vector((-1.0, 0.0, 0.0)), 6), ('nw', Vector((-0.7, 0.7, 0.0)), 22)])` (add `from mathutils import Vector`).
+
+#### Round 2 (after the page view of round 1)
+Round 1 got the structure right, but in the page the cliff still read as even horizontal bands, and the 40 m ledge in front of
+the arcade was a broad, pale, flat plateau. The 18° batter pushes each face's foot out by height × tan 18°, so the bottom
+outline grew 2.3 m to the north and 1.9 m to the west. The main road passes 2 m outside the north-west corner.
+- `rock_mass` takes `top_mat` (the topmost bench's top inside the rim; default off).
+- tN: footprint pulled in to x ±79, y 50–109; z −41 to −21.8 (the top stays below the plinth band at −19.4 even with the relief);
+  2 benches, split (0.6, 0.4), band 4.5, relief 2.0, jitter 3.0, step 6, rock2 0.4, boulders 8, moss_cover 0.5,
+  `top_mat='grass'`; same tilt.
+- tW: west edge pulled in to x −79; same heights and tilt; 2 benches with the same settings, relief 1.8, boulders 6, `top_mat='grass'`.
+- Lower NW flight starts at −27.0, on the ledge (the top there is about −27).
+- The ledge in front of the arcade is now a grassy slope (8°) over a two-bench cliff.
+
+#### In the page (round 2)
+- `palrock.js`: tiberiana foot −47.1 (it was −40.8). The old rock's north foot stopped 6 m above the valley floor, so the
+  terrain was pulled up into a 7 m mound along the north side. Now the ground 1 m outside the north foot is −45 and 10 m out
+  it is −46.9, the valley floor. The outline is 24 points, box x −82.7…82.7, y −72.7…112.7 (it was −82.6…82.5, −72.7…112.5).
+- `palTibFeet` and `palGlbFeet` follow the outline on their own. `__wallFootCheck()`: 107 walls, no seam over 20 m; the
+  longest on this model is 11.8 m. `__floatCheck()`: 282, as before; the model floats nowhere.
+- **Roads.** The router does not see the rock. Once the mound was gone, the Vicus Tuscus routed 3.6 m into the rock's
+  north-west corner, at (−19.8, 73.6); its edge was 7 m inside. A waypoint at (−22, 59) in `MAIN` (`monuments.js`), 12 m off
+  the corner (the old bake already passed there), keeps it out: the nearest road edge is now 2.3 m from the rock foot outline
+  (it was 3.6 m with the old model). Re-baked.
+- In the summer shots the grass is greener than the dry hill grass around it. Left as is.
+- `city-audit.mjs --assert` fails on one H14 house on the `?city=v2` page, at (571, −413): 18.7° off its street, 1 of
+  10 879 measured. It passed before the re-bake. In the bake only the Vicus Tuscus changed, and that house is 600 m away;
+  v2 cuts each district into blocks from its pole (`fbSub`), so reshaping one district moves blocks far from the change.
+  Left to the city-generation side (`parcels.js`, `fabric.js`).
+- Shots (left before, main 7ede1f3; right after): `docs/screenshots/tiberiana-rework-20261108/`: model previews
+  `model_*`, page views `page_*`, and the north-west corner with the road from above (`page_corner_top`).
+
+### Rework checklist (2026-11-08: all pass)
+- [x] No street, shops, brick back wall or lean roof north of the arcade; the north rock comes up to the plinth
+- [x] One storey of tuff arches on the north side, with travertine imposts, cornice and a balustrade; nothing in brick
+- [x] Upper north face is a plain wall behind the Ionic portico; forecourt parapet and statues unchanged
+- [x] The north-west stair: two flights on solid bases with parapets and a landing, from the rock ledge to the mid terrace;
+      no white slab
+- [x] Square buttresses on all lower walls; round towers only at the SW and NW corners of the west side
+- [x] Rock: benches of different heights (round 2: two, with a grassy top), tops falling toward the north and the north-west,
+      no flat stack of equal layers; nothing floats (walls, plinth, stair bases go down into the rock)
+- [x] Palace, wings, loggia, garden, pavilion, eagle and side-door stair unchanged
+- [x] ≤ 70 000 triangles (65 774)
