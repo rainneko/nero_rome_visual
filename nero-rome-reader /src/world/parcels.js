@@ -286,6 +286,7 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
       if(!pcStreetClear(LN,L)){drop('street');continue;}   // H11: off the secondary streets
       const hit=pcHits(W,L,.8);if(hit){const L2=hit.tag==='road'&&lot.k==='road'?pcStepBack(W,L):null;if(!L2){drop('hit');rec.hit=hit.tag||(hit.blkLot?'lot':'foot');continue;}rec.L=L=L2;ob=lotOBB(L);rec.back=true;S.stepBack++;}
       if(!face&&(lot.k==='road'||lot.k==='street')&&pcApronBlocked(W,L)){drop('apron');continue;}   // a front that faces no line (past a street's end) is paved out to the nearest (below); with a fountain or a monument in its first 2 m that paving cannot be laid, and the house would open onto it (H10): not built
+      {const I=pInset(L,.1)||L;if(built.concat(glbs).some(q=>residentialOverlap(I,pInset(q.L,.1)||q.L))){drop('overlap');continue;}}   // H11: a lot turned to its street or stepped back from a road (above) can reach into one this block has built
       const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){drop('grp');continue;}
       const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
       let ok=false;let gq=lot.glb?pcGlb(W,L,o.glb.spec[lot.glb]):null;if(gq&&gq.fail){cnt(S.glbMiss,gq.fail);gq=null;}   // P4: the GLB insula on its lot (o.glb.put places it); else, or where it no longer fits, lotBuild's houses

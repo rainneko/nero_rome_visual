@@ -50,3 +50,15 @@ source rather than editing the GLB. Origin at the foot of the 13 m stone base (t
 (`Sol_Head_Continuous_Neck`, `Original_A3_Curls_And_Ears`, `Seven_Ray_Crown`) are taken off and `colossus_works.glb` is added: the iron bars,
 nest, timber props and casting debris of Kimi's construction model (`Kimi_Agent_头部重做/金宫铜巨人/rome_colossus_headless.glb` on the backup
 drive), moved onto this body by `tools/models/rome/colossus_works.mjs` (Kimi's own body is the older, shorter-legged one and is not used).
+
+## Golden House: the Oppian halls, the octagon wing (2026-11-09)
+`assets/models/oppian/oppian_s1.glb` (state 7, 59–68: walls, true openings and timber centring) and `oppian_s3.glb` (state 8, finished: vaults,
+roofs, pavements, paintings, pools, garden) are stages S1 and S3 of GPT's staged model `renders/domus-aurea/oppian-model-v1/` in the main checkout
+(generator `tools/models/construction/oppian/build.py` there, brief `briefs/rome/oppian-model-v1/README.md`). `tools/models/rome/oppian_pack.mjs`
+drops the schematic hillside node (`S*_site-context`), welds and quantizes them (8.1 → 4.0 MB, 17.4 → 10.1 MB for the 18:21 export); the build gzips them into
+`dist/oppian-assets.js` (`lazy`, `optimize`, 9.0 MB), which `domus-aurea.js` fetches the first time `aureaHalls7` or `aureaHalls8` shows.
+Run the packer again on a new export rather than editing the GLBs.
+Origin at the octagon's centre, floor y = 0, front (the octagon's porch) on +Z. In the page: frame `frB(850,-40,190)` on the Oppian pad (`OPP` in
+`domus-aurea.js`), floor at the pad's height. `oppGround` (called by `romeH`, with a 3 m terrain patch `OPP_PATCH`) holds the ground just under the
+floor and cuts it under the two garden terraces (−3.06 and −6.19 m) and a lower lawn south of them. The houses on the footprint (`AUREA_OPPIAN`) are
+shown in states 0–6 only. The procedural block and dome stay until the file comes, or for good without it.

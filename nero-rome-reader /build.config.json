@@ -77,6 +77,13 @@
       "dir": "assets/models/aurea"
     },
     {
+      "file": "oppian-assets.js",
+      "var": "OPP_GLB",
+      "cb": "oppAssetsLoaded",
+      "dir": "assets/models/oppian",
+      "optimize": true
+    },
+    {
       "file": "rome-assets.js",
       "var": "ROME_GLB",
       "cb": "romeAssetsLoaded",

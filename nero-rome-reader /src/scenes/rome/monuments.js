@@ -12,7 +12,8 @@ let DM=null;function dmS(k,x,z){if(!DMAP)return-1;if(!DM)DM={D:Uint8Array.from(a
 const dCity=(x,z)=>{const m=dmS('D',x,z),r=ringD(x,z);return m<0?r:.6*m+.4*r;},vImg=(x,z)=>{const m=dmS('V',x,z);return m<0?0:m;};
 const PADS=[[17,-22,190],[-200,560,150],[0,667,160],[200,780,150],[110,300,140],[-275,10,80],[-200,-210,45],[1350,-330,78],[-1190,2760,270],[-765,3141,170],[-1420,2450,70],[GALBA[0],GALBA[1],135],[-2429,-1134,320],[-1036,-356,170],[-448,22,90],[900,640,130],[850,-40,170],[572,200,130],[-590,-1300,120],[-895,-834,130],[-99,-143,70],[110,-235,80],[-1250,600,175],[-960,-525,75]];
 const HORTI=[[1450,-380,260],[1950,-80,260],[150,-1250,300],[-300,-2150,360],[-2250,-1050,520],[-1550,1050,330],[1080,780,200]];
-let PADH=null;
+let PADH=null;const OPP_PAD=PADS.findIndex(p=>p[0]===850&&p[1]===-40);   // the Oppian pad, under the Golden House's octagon wing (domus-aurea.js OPP)
+const OPP_PATCH=[606,-160,952,76];   // whole coarse cells round the Oppian halls and their terraces, in 3 m cells (oppGround's steps)
 function segD(x,z,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz;let t=((x-ax)*dx+(z-az)*dz)/l2;t=clamp(t,0,1);return Math.hypot(ax+dx*t-x,az+dz*t-z);}
 function romeRaw(x,z){let h=RW+7.5+5*(fbm(x*.0011+3,z*.0011,3)-.5);const n=fbm(x*.003,z*.003,3)-.5,tv=.9+.2*fbm(x*.006+5,z*.006,2);let hm=0;
   for(const H of HILLS){const d=segD(x,z,H[0],H[1],H[2],H[3])/H[4];if(d>1.5)continue;const v=1-sstep(.38+n*.35,1.18+n*.5,d);if(v>0)hm=Math.max(hm,v*H[5]*tv);}
@@ -44,6 +45,7 @@ const CAP_PATCH=[-440,-100,-262,190];   // whole coarse cells x -440..-272, z -9
 const THP={x:-425.3,z:223.5,r:18,h:0,on:false};
 function romeH(x,z){let h=romeRaw(x,z);
   for(let i=0;i<PADS.length;i++){const p=PADS[i],d=Math.hypot(x-p[0],z-p[1]);if(d<p[2])h=lerp(h,PADH[i],1-sstep(p[2]*.7,p[2],d));}
+  h=oppGround(x,z,h,PADH[OPP_PAD]);   // the Oppian halls: held under their floor, cut under their garden terraces (domus-aurea.js)
   h=palShape(x,z,h);
   if(CLP.on)h=claudiaPad(x,z,h);
   if(CAPF.on)h=capFill(x,z,h);
@@ -152,7 +154,7 @@ async function buildRome(msg){
   THP.h=romeH(THP.x,THP.z);THP.on=true;
   {const y0c=romeH(CAPF.cx,CAPF.cz);let yt=0;for(const[px,pz]of CAPF.T[0])yt=Math.max(yt,romeH(CAPF.cx+px*.8,CAPF.cz+pz*.8)-y0c);CAPF.y=y0c+Math.max(.15,yt-2.2);CAPF.on=true;}   // terrace level as the Capitol block computes it (before the embankment exists)
   const GRID_N=500;buildGrid(W,R_EXT,Q.name==='low'?320:GRID_N,romeH);   // the low tier's grid is coarser
-  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH}];
+  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:4,hfn:romeH}];
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
   W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
@@ -351,7 +353,10 @@ async function buildRome(msg){
   await msg('建造埃斯奎利诺山学园与战神广场……');
   /* ---- Esquiline academy ---- */
   const gA=new GB(1<<15),AF=frB(1350,-330,200,gy(1350,-330));W.AF=AF;
-  courtBlock(W,gA,AF,{cx:0,cz:-22,w:46,d:36,y0:0,nSt:2,sH:3.8,gH:4.6,cw:22,cd:16,part:0,seed:.16,sty:5,fl:1|64|8});
+  // the old house where the first lecture room was (vol 17 夜路: "在埃斯奎利诺山上，干了的水池旁边，我开存在之学的那一间"): states 0-6 as it was; from the fire of 64
+  // (state 7) its walls black, and still black under a new roof in state 8 ("屋顶换了新的瓦，可是墙还是黑的"; burn 2 keeps the soot after uBurn goes off).
+  // Two copies, switched by app.js XL (academyOld, academyBurnt); the court's columns, trees and the reserved area are not gated, so only the first copy places them
+  for(const[k,burn]of[['academyOld',0],['academyBurnt',2]]){const gk=new GB(1<<14);courtBlock(W,gk,AF,{cx:0,cz:-22,w:46,d:36,y0:0,nSt:2,sH:3.8,gH:4.6,cw:22,cd:16,part:0,seed:.16,sty:5,fl:1|64|8,burn,peristyle:!burn,garden:!burn,reserve:!burn});const m=gk.mesh(MAT.city);if(m)preLayerGroup(W,k).add(m);}
   gA.set(2,.5);for(const[cx,cz,hx,hz]of[[0,9.4,10.6,.6],[0,18.6,10.6,.6],[-10,14,.6,4],[10,14,.6,4]])box(gA,AF,cx,0,cz,hx,.7,hz,31);gA.set(23,.4);box(gA,AF,0,-1,14,9.4,.6,4,16);
   pedestalStatue(gA,AF,15,14,0,6.5);for(const s of[-1,1]){const q=AF.p(s*11,0,40);W.trees.push([q[0],gy(q[0],q[2]),q[2],'pine',1.85]);}
   {const q=AF.p(0,0,44);W.pois.push({n:'青铜规矩柱',l:'帝国阿波罗大学堂',x:q[0],z:q[2],y:AF.oy+12,s0:0,s1:99,ch0:7,d:700,sub:true,info:'第7章：大门外立起一根青铜柱，刻着新的规矩。门口两棵很老的伞松，树冠铺开，像两把撑着的伞（第4章）。'});}
@@ -823,7 +828,7 @@ async function buildRome(msg){
     const rot=-30*DEG+.9*(fbm(x*.0006+11,z*.0006,2)-.5),burn=(x,z)=>Math.hypot(x-250,z-300)<950?1:0;
     if(u>=.5)return{d:.8*(1-gd*.8),mix:{shed:.5,tower:.15,insula:.35},st:[2,4],rot,m:.7,step:7,shops:.7,brick:.35,ppl:.05,burn};
     return{d:Math.min(.5,u*1.2)*(1-gd*.9),mix:{hut:.55,shed:.2,insula:.15,domus:.1},st:[1,3],rot,m:2,step:6,shops:.3,brick:.25,ppl:.03,burn};};
-  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)||v2Skip(x,z)?null:izone(x,z),grp:(x,z)=>AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)?'aureaSite':'',chunk:700});   // none on the Golden House ground; those by the Via Sacra and the vestibule go with the fire (states 0-6)
+  W.nBuild=genCity(W,{seed:7,ext:[-2900,-2500,2700,3300],sp:15,zone:(x,z)=>AUREA_SITE(x,z)||v2Skip(x,z)?null:izone(x,z),grp:(x,z)=>AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z)?'aureaSite':'',chunk:700});   // none on the Golden House ground; those by the Via Sacra and the vestibule go with the fire (states 0-6)
   fillCentralHousing(W);
   await msg('郊野：农庄、佃农棚屋、墓道……');
   {const R=RNG(33),gV=new GB(1<<15),Zv={shops:0,brick:.25},MR=[[[555,890],[900,1500],[1500,2600],[2000,3500]],[[-500,2400],[-440,2950],[-520,3600]],[[-480,-1100],[-720,-2300],[-900,-2800]],[[700,200],[1100,250],[1800,150],[2545,56],[2800,0]],[[-1036,133],[-1300,300],[-1650,600],[-2400,800]]];
@@ -856,7 +861,7 @@ async function buildRome(msg){
    water:(x,z)=>polyDist(x,z,TIBER)[0]<RTW+4||(Math.abs(x+1250)<125&&Math.abs(z-600)<80),
      marble:(x,z)=>inR(FF,x,z,-150,170,-75,75)||inR(FC,x,z,-45,72,-48,48)||inR(FA,x,z,-76,76,-90,76)||(()=>{const[lx,lz]=palL(x,z);return Math.abs(lx)<235&&Math.abs(lz)<175;})()||Math.hypot(x+275,z-10)<105||Math.hypot(x-900,z-640)<110,
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
-   const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
+   const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
@@ -901,7 +906,7 @@ async function buildRome(msg){
   W.oliveGroveTrees=plantOliveGroves(W,{r:2700,lim:14000*Q.trees});
   flushTrees(W,W.trees,null,aureaGone);W.trees=[];flushPeople(W,W.people);W.people=[];
   W.views={forum:{n:'罗马广场',pos:[-250,118,-205],tgt:[40,26,40]},senate:{n:'元老院',pos:[150,64,40],tgt:[-45,22,-84]},palatine:{n:'帕拉蒂尼',pos:[520,210,560],tgt:[120,70,290]},
-    circus:{n:'大竞技场',pos:[-340,150,990],tgt:[60,30,600]},academy:{n:'学园',pos:[1110,205,-50],tgt:[1360,95,-330]},campus:{n:'战神广场',pos:[-360,230,-380],tgt:[-880,20,-720]},
+    circus:{n:'大竞技场',pos:[-340,150,990],tgt:[60,30,600]},academy:{n:'学园',pos:[1110,205,-50],tgt:[1360,95,-330]},academyOld:{n:'埃斯奎利诺·旧讲堂',pos:W.AF.p(-6,6.5,31),tgt:W.AF.p(2,4.5,-14)},campus:{n:'战神广场',pos:[-360,230,-380],tgt:[-880,20,-720]},
     south:{n:'南岸特区',pos:[-820,150,2380],tgt:[-1240,25,2790]},pagoda:{n:'琉璃塔',pos:[-1250,170,2280],tgt:[-1420,95,2460]},subura:{n:'苏布拉',pos:[520,135,-330],tgt:[700,30,-640]},circusW:{n:'竞技场西门',pos:[-382,70,490],tgt:[-242,12,533]},capitol:{n:'卡比托利欧',pos:[-150,95,170],tgt:[-275,35,10]},claudius:{n:'克劳狄神庙',pos:[720,95,470],tgt:[880,20,640]},jupiter:{n:'朱庇特神庙',pos:[-186,118,142],tgt:[-275,42,8]},palW:{n:'提比略宫西侧',pos:[-178,75,105],tgt:[-20,25,190]},tarpeia:{n:'塔尔佩亚岩下',pos:[-430,22,205],tgt:[-345,38,105]},forumCap:{n:'广场望卡比托利欧',pos:[-140,24,30],tgt:[-212,48,8]},campusS:{n:'战神广场南部',pos:[-450,140,250],tgt:[-620,20,-150]},boarium:{n:'牛市广场河岸',pos:[-245,75,455],tgt:[-370,8,330]},stoa:{n:'鸟瞰对照',pos:[280,1250,2150],tgt:[20,0,-300]},galba:{n:'城东',pos:[GALBA[0]-310,230,GALBA[1]-370],tgt:[GALBA[0],110,GALBA[1]]},
     gallery:(()=>{const a=palW(-34,-178),b=palW(-34,-102);return{n:'尼禄长廊',pos:[a[0],84,a[1]],tgt:[b[0],54,b[1]]};})(),
     overview:{n:'全城',pos:[700,1900,3500],tgt:[-200,0,200]}};

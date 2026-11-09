@@ -367,7 +367,7 @@ else if(P>59.5&&P<62.5){float k=floor(vB.z+.5);   // hill palette (hillPal in te
   c=mix(c,vec3(.13,.16,.065)*(.8+.4*fbm2(p.xz*.6)),smoothstep(.6,.9,N.y)*.7);S.alb=c;S.rough=.96;}   // moss on the tops
  else{vec2 p=vWP.xz;vec3 m=vec3(.115,.145,.06)*(.75+.5*fbm2(p*.8));S.alb=mix(m,rc*.55,smoothstep(.55,.78,fbm2(p*.35+4.))*.45);S.rough=.97;}}   // 62 moss and grass at the wall foot
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
-S.alb*=1.-.42*uBurn*vC.z;
+S.alb*=1.-.42*min(1.,uBurn*vC.z);if(vC.z>1.5)S.alb*=mix(.3,.55,fbm2(vWP.xz*.25+vWP.y*.35));   // burn 1: sooty while uBurn is on (the state of the fire); burn 2: black in every state
 `;
 const MAT={};
 // translucent ground decals (wheel ruts): vA.x = 0 at the edge .. 1 on the centre line, vA.y = fade at the run ends
