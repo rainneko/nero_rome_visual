@@ -136,7 +136,10 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     c=mix(c,stC,cov);}}}
  if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
   float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),max(1.-smoothstep(32.,40.,length(p-vec2(330.,160.))),1.-smoothstep(-6.,2.,max(max(660.-p.x,p.x-776.),max(118.-p.y,p.y-326.))))));   // (+ AUREA_EAST)
-  mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);}
+  float mI=0.,mE=0.;{vec2 q=p-vec2(850.,-40.);float u=q.x*.98481+q.y*.17365,v=-q.x*.17365+q.y*.98481,dI=max(max(-195.4-u,u-53.8),max(-55.5-v,v-49.2));mA=max(mA,1.-smoothstep(-6.,2.,dI));   // (+ AUREA_OPPIAN, the octagon wing's ground)
+   mI=1.-smoothstep(-1.,1.,dI);mE=1.-smoothstep(.3,1.1,abs(dI+1.4));}   // from 68 the inner court (vol 18): a cooler, closer-mown lawn and a pale gravel edge 1.4 m in, no wall
+  mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);
+  if(uAurea>1.5){c=mix(c,c*vec3(.84,.96,.9),mI*mA*.7);c=mix(c,vec3(.56,.53,.46),mE*mA*.5);}}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
 MAT.road=MAT.city;
@@ -571,7 +574,7 @@ function courtBlock(W,g,F,o){const{cx,cz,w,d,y0,nSt,sH,cw,cd}=o,gH=o.gH||sH*1.2,
         else{const x1=sx*(cw/2-ins+.4),x2=sx*cw/2;g.poly([F.p(cx+x1,yr,cz-cd/2+ins),F.p(cx+x1,yr,cz+cd/2-ins),F.p(cx+x2,yi,cz+cd/2),F.p(cx+x2,yi,cz-cd/2)],F.d(-sx,1,0));}}}
     if(W.trees&&o.garden!==false){const n=Math.floor(cw*cd/180);for(let i=0;i<n;i++){const q=F.p(cx+(hash2(i,cw|0)-.5)*(cw-9),y0,cz+(hash2(i,cd|0)-.5)*(cd-9));W.trees.push([q[0],y0,q[2],hash2(i,3)<.5?'cyp':'broad',.6+.4*hash2(i,5)]);}}
   }else roof(g,F,o.roof||'hip',cx,cz,w,d,yT,22*DEG,.8,fac.seed+.1);
-  if(cw>2&&typeof reserveResidentialArea==='function'){const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(cx+q[0],0,cz+q[1]);return[p[0],p[2]];});reserveResidentialArea(W,P,'authored-courtyard-estate');}
+  if(cw>2&&o.reserve!==false&&typeof reserveResidentialArea==='function'){const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(cx+q[0],0,cz+q[1]);return[p[0],p[2]];});reserveResidentialArea(W,P,'authored-courtyard-estate');}
   return yT;}
 function tower(g,F,cx,cz,w,y0,nSt,sH,o={}){const gH=sH*1.1,yT=y0+gH+(nSt-1)*sH;
   rectWalls(g,F,cx,cz,w,w,y0-8,yT,y0,{part:o.part??0,seed:o.seed??.7,sty:7,fl:(8|4|256|32),nSt,gH,sH,lit:1});

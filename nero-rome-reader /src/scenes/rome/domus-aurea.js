@@ -20,21 +20,41 @@ function AUREA_VEST_SITE(x,z){if(AUREA_VEST_COURT(x,z))return true;
   const[a,b]=VEST.via,dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz),t=((x-a[0])*dx+(z-a[1])*dz)/L;return t>8&&t<L+12&&Math.abs((z-a[1])*dx-(x-a[0])*dz)/L<16;}
 // the park's east end, between the valley and its east wall (x 772): the houses there go with the fire too (the colonnade's east leg and the lake's east shore stand on it)
 function AUREA_EAST(x,z){return x>660&&x<776&&z>118&&z<326;}
-// everything shown in states 0-6 only (preLayers 'aureaSite'): the Golden House ground, the vestibule and the Via Sacra's porticoes, the park's east end
-function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z);}
+// the Oppian halls, the octagon wing (assets/models/oppian, from renders/domus-aurea/oppian-model-v1): frame frB(850,-40,190) on the Oppian pad
+// (monuments.js PADS), floor at the pad's height; u east along the front, v south. The model spans u -187.4..45.8, v -47.5..39.2; its garden terraces
+// step down south of the front: floor 0 to v 18.5, -3.06 to v 30.5, -6.19 to v 39.2. The octagon (room 128) is at the origin.
+const OPP={x:850,z:-40,rot:Math.PI-190*Math.PI/180,u0:-187.4,u1:45.8,v0:-47.5,v1:39.2,steps:[18.5,30.5]};
+function oppUV(x,z){const c=Math.cos(OPP.rot),s=Math.sin(OPP.rot),dx=x-OPP.x,dz=z-OPP.z;return[dx*c-dz*s,dx*s+dz*c];}
+// the ground the halls take from 59, with 8-10 m round them: the houses there are shown in states 0-6 only
+function AUREA_OPPIAN(x,z){const[u,v]=oppUV(x,z);return u>OPP.u0-8&&u<OPP.u1+8&&v>OPP.v0-8&&v<OPP.v1+10;}
+// romeH: the ground under and round the halls (y0: the pad's height). Under the halls and their upper court it is held 0.3 m under the floor (the
+// pad's west end sags 1.5 m). From 2.5 m before the first terrace wall it falls to -8, under both terraces (floors -3.06, -6.19) and on as the lower
+// lawn: deep enough that the terrain patch's smoothing (about 9 m) cannot lift it through them, and one level, so the Carinae compounds of states
+// 0-6 still find flat ground there. 6 m past the last terrace it falls gently until it meets the hill's own slope. Past the model's ends it eases
+// back over 20 m.
+function oppGround(x,z,h,y0){const[u,v]=oppUV(x,z);if(u<OPP.u0-36||u>OPP.u1+36||v<OPP.v0-16||v>OPP.v1+90)return h;
+  const w=1-sstep(0,20,Math.max(OPP.u0-10-u,u-OPP.u1-10,0));if(w<=0)return h;
+  if(v<OPP.steps[0]-2.5)return lerp(h,y0-.3,w*(1-sstep(0,15,OPP.v0-4-v)));
+  const s1=OPP.steps[0],t=v<s1-2.5?y0-.3:v<s1?lerp(y0-.3,y0-8,(v-s1+2.5)/2.5):v<OPP.v1+6?y0-8:y0-8-(v-OPP.v1-6)*.08;
+  return lerp(h,Math.min(h,t),w);}
+// everything shown in states 0-6 only (preLayers 'aureaSite'): the Golden House ground, the vestibule and the Via Sacra's porticoes, the park's east end,
+// the Oppian halls
+function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z);}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
-// dist/aurea-assets.js sets window.AUREA_GLB={coenatio, colossus, colossus_works: base64 GLBs} and calls aureaAssetsLoaded(); the file is fetched
-// once, by the first layer that shows. Model n goes into its layer G at frame F, S (the stand-in) hides, then cb(model).
-const AUREA_WAIT=[];
-function aureaLoad(n,G,F,S,cb){
-  const go=()=>{const D=window.AUREA_GLB;if(!D||!D[n])return;
-    new THREE.GLTFLoader().parse(Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)).buffer,'',gl=>{const o=layTag(gl.scene,'models');o.name=n+'GLB';
+// dist/aurea-assets.js sets window.AUREA_GLB={coenatio, colossus, colossus_works: base64 GLBs} and calls aureaAssetsLoaded(); dist/oppian-assets.js
+// sets window.OPP_GLB={oppian_s1, oppian_s3: gzipped GLBs} and calls oppAssetsLoaded(). Each file is fetched once, by the first layer that needs it.
+// Model n goes into its layer G at frame F, S (the stand-in) hides, then cb(model).
+const AUREA_PACK={aurea:{v:'AUREA_GLB',cb:'aureaAssetsLoaded',file:'aurea-assets.js',wait:[]},opp:{v:'OPP_GLB',cb:'oppAssetsLoaded',file:'oppian-assets.js',wait:[]}};
+function aureaLoad(n,G,F,S,cb,pack='aurea'){const P=AUREA_PACK[pack];
+  const go=async()=>{const D=window[P.v];if(!D||!D[n])return;let buf;
+    try{const raw=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0));buf=window[P.v+'_gz']?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;}catch(e){console.warn(n+' glb',e);return;}
+    new THREE.GLTFLoader().parse(buf,'',gl=>{const o=layTag(gl.scene,'models');o.name=n+'GLB';
       o.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});o.position.set(F.ox,F.oy,F.oz);o.rotation.y=F.rot;G.add(o);S.visible=false;
       if(cb)cb(o);},e=>console.warn(n+' glb',e));};
-  if(window.AUREA_GLB){go();return;}AUREA_WAIT.push(go);if(AUREA_WAIT.length>1)return;
-  window.aureaAssetsLoaded=()=>AUREA_WAIT.forEach(f=>f());const s=document.createElement('script');s.src='aurea-assets.js';
-  s.onerror=()=>console.warn('aurea-assets.js not found: the procedural stand-ins stay');document.head.appendChild(s);}
+  if(window[P.v]){go();return;}P.wait.push(go);if(P.wait.length>1)return;
+  window[P.cb]=()=>P.wait.forEach(f=>f());const s=document.createElement('script');s.src=P.file;
+  s.onerror=()=>console.warn(P.file+' not found: the procedural stand-ins stay');document.head.appendChild(s);}
 function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   const lakeRing=(m,n=56,u0=0,u1=1)=>{const c=Math.cos(LK.rot),s=Math.sin(LK.rot),P=[];for(let i=0;i<=n;i++){const a=(u0+(u1-u0)*i/n)*TAU,u=Math.cos(a)*(LK.rx+m),v=Math.sin(a)*(LK.rz+m);P.push([LK.x+c*u+s*v,LK.z-s*u+c*v]);}return P;};
   const yw=gy(LK.x,LK.z)+.25;
@@ -229,12 +249,17 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     W.anim.push((t,dt)=>{if(!G.visible)return;if(!S.userData.asked){S.userData.asked=1;aureaLoad('coenatio',G,F,S,o=>AUREA.spin=o.getObjectByName('ROTATING_CEILING'));}if(AUREA.spin&&W.ev&&W.ev.dineSpin)AUREA.spin.rotation.y+=dt*.03;});});   // the starry timber ceiling under the fixed dome (about 3½ minutes a turn) stands still: vol 17 "转了一个月", then one night
   // in 68 ("快到半夜，轴动了" ... "以后再也没有转过"), which the reader's excerpt turns on (W.ev.dineSpin, app.js TRIG)
 
-  /* ---- the Oppian halls (the inner court, the octagon): half-built in 59-68, finished later; the old placeholder wing ---- */
-  const halls=(g,scaff)=>{const F=frB(850,-40,190,gy(850,-40));rectWalls(g,F,0,0,280,40,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});if(scaff)for(let x=-130;x<=130;x+=26)scaffold(g,F,x,0,6,0,16,false);
-    for(let x=-136;x<=136;x+=5)W.cols.cor.push([...F.p(x,0,23),F.rot,9,[1,.95,.85]]);g.set(2,.5);box(g,F,0,9,24,140,1.1,2.2,31);g.set(1,.5);g.poly([F.p(-140,10.1,25.6),F.p(140,10.1,25.6),F.p(140,12.8,20),F.p(-140,12.8,20)],[0,1,0]);g.set(2,.45);box(g,F,0,-6,23,141,6,3.4,31);
-    g.set(24,.86,0,1);lathe(g,F,0,14,0,[[16,0],[16,6],[0,6]],8);g.set(12,.5);lathe(g,F,0,20,0,scaff?[[16.5,0],[13,6],[7,10],[0,11]]:[[16.5,0],[13,6],[7,10],[3.2,10.8]],16);   // the octagon; open at the top once finished
-    if(!scaff){g.set(12,.4);box(g,F,6,4,25.8,.9,.6,.05,31);}};   // the bronze list of names by the door (from 68)
-  L('aureaHalls7',16,(g)=>halls(g,true));L('aureaHalls8',0,(g)=>halls(g,false));
+  /* ---- the Oppian halls (the octagon wing): 59-68 walls and timber centring (oppian_s1), from 68 finished (oppian_s3); a procedural stand-in until
+     dist/oppian-assets.js has come, or for good without it: a two-storey block on the model's footprint, a colonnade along its front, the octagon ---- */
+  const hallsStand=(g,F,scaff)=>{const cx=(OPP.u0+OPP.u1)/2,hw=(OPP.u1-OPP.u0)/2,zf=12;rectWalls(g,F,cx,(OPP.v0+zf)/2,2*hw,zf-OPP.v0,-6,14,0,{part:24,seed:.86,sty:13,fl:8|32,nSt:2,gH:7,sH:7,lit:1});
+    if(scaff)for(let x=OPP.u0+12;x<=OPP.u1-8;x+=26)scaffold(g,F,x,zf-12,6,0,16,false);
+    for(let x=OPP.u0+3;x<=OPP.u1-3;x+=5)W.cols.cor.push([...F.p(x,0,zf+1),F.rot,9,[1,.95,.85]]);g.set(2,.5);box(g,F,cx,9,zf+2,hw+1,1.1,2.2,31);g.set(1,.5);g.poly([F.p(OPP.u0-1,10.1,zf+3.6),F.p(OPP.u1+1,10.1,zf+3.6),F.p(OPP.u1+1,12.8,zf-2),F.p(OPP.u0-1,12.8,zf-2)],[0,1,0]);
+    g.set(24,.86,0,1);lathe(g,F,0,14,0,[[16,0],[16,6],[0,6]],8);g.set(12,.5);lathe(g,F,0,20,0,scaff?[[16.5,0],[13,6],[7,10],[0,11]]:[[16.5,0],[13,6],[7,10],[3.2,10.8]],16);};   // the octagon; open at the top once finished
+  const halls=(g,G,scaff)=>{const y0=PADH[PADS.findIndex(p=>p[0]===OPP.x&&p[1]===OPP.z)],F=frB(OPP.x,OPP.z,190,y0),S=new THREE.Group(),g2=new GB(1<<14);S.name='oppianStand';G.add(S);
+    flushColumns(W);W.colGroup=S;hallsStand(g2,F,scaff);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
+    if(!scaff){g.set(2,.45);box(g,F,6.2,0,13.4,.7,1.9,.25,31);g.set(12,.4);box(g,F,6.2,1.25,13.68,.55,.55,.03,31);}   // the bronze list of names on a stone post by the octagon's porch (from 68)
+    W.anim.push(()=>{if(!G.visible||S.userData.asked)return;S.userData.asked=1;aureaLoad(scaff?'oppian_s1':'oppian_s3',G,F,S,null,'opp');});};
+  L('aureaHalls7',16,(g,G)=>halls(g,G,true));L('aureaHalls8',0,(g,G)=>halls(g,G,false));
 
   W.views.aurea={n:'金宫谷地',pos:[300,gy(300,380)+150,380],tgt:[620,gy(620,170),170]};   // the copy team's fixed camera: above the Palatine's north-east corner, looking north-east
   // where the reader's Golden House excerpts fly (app.js AUREA_EX, TRIG): the colossus from the Via Sacra, the colonnade's bend at Lentulus's site
@@ -242,11 +267,24 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   W.views.aureaVest={n:'金宫前庭·铜巨人',pos:[355,62,72],tgt:[430,55,140]};W.views.aureaBend={n:'金柱廊拐弯处',pos:[515,62,235],tgt:[592,14,108]};
   W.views.aureaLake={n:'金宫的湖',pos:[748,55,318],tgt:[600,9,222]};W.views.aureaGate={n:'园门·阿波罗的林子',pos:[660,34,280],tgt:[618,9,330]};
   W.views.aureaDine={n:'旋转圆厅',pos:[392,62,222],tgt:[330,36,160]};
+  // the inner court (vol 18): the Oppian halls from their garden, the octagon from its porch, the bronze list by the porch (OPP frame, floor y0)
+  {const y0=PADH[PADS.findIndex(p=>p[0]===OPP.x&&p[1]===OPP.z)],c=Math.cos(OPP.rot),sn=Math.sin(OPP.rot),P=(u,y,v)=>[OPP.x+u*c+v*sn,y0+y,OPP.z-u*sn+v*c];
+   W.views.aureaInner={n:'金宫内院',pos:P(-30,24,100),tgt:P(-45,2,-2)};W.views.aureaOct={n:'内院·八角厅',pos:P(0,10.5,48),tgt:P(0,5,3)};
+   W.views.aureaPlaque={n:'内院门口的铜牌',pos:P(11.5,3.4,23),tgt:P(6.2,1.3,13.5)};}
   /* ---- labels ---- */
   const poi=(n,l,x,z,s0,s1,info,d=1600,h=30)=>W.pois.push({n,l,x,z,y:gy(x,z)+h,s0,s1,d,info});
   poi('伦图卢斯家','【设】',AUREA.lent[0],AUREA.lent[1],0,6,'【书中】第9份：数地契那夜他说"差这几块"，伦图卢斯不卖房，神龛和住户也拆不得。门口一棵老悬铃木。64年大火后，这里成了金柱廊拐弯的地方。',900,18);
   poi('金宫工地','Domus Aurea',600,180,7,7,'【书中】空白期修的金宫是半拉子工程：一里长的金柱廊在伦图卢斯家原址拐了个弯，湖只挖了一半，铜巨人立在韦利亚坡顶，没有头，脖子上露着铁条；林子种得很密，里面没有一盏灯。【史】64年大火后修建（苏埃托尼乌斯《尼禄传》31，塔西佗《编年史》15.42）。',3000,40);
-  poi('金宫园子','Domus Aurea · 开放园区',600,180,8,99,'【书中】回来以后园子开放，按一半、四分之一、四分之一分开：柱廊以南的湖、林子和草地给所有人，门口地上刻一道线，旁边立着写规矩的石头；柱廊以北奥庇乌斯山脚的几座厅和八角厅是内院，门口挂铜牌名单；帕拉蒂尼山那面坡（旋转餐厅）和凯利安山的水景、长凳归皇家，中间只是矮墙和卫兵。湖后来挖完，巨人补上了太阳神的头。',3000,40);
+  // the three parts of the park from 68 (vol 18, 草地: "一半" / "四分之一" / "四分之一"; the copy team and the author, 2026-11-09). No walls between them:
+  // in the book only the line at the gate and the inner court's bronze list divide them; the ground shader tints the inner court (builders.js)
+  poi('金宫园子','Domus Aurea · 开放区（一半）',600,180,8,99,'【书中】第18份《草地》：园子分成一半、四分之一、四分之一。一半给所有人：韦利亚坡顶的园门和门口那道线、铜人、整个山谷（湖、环湖步道、草地、林子，林子到凯利安山坡脚为止）、金柱廊和尼禄圣道两侧的柱廊；听诉处设在柱廊底下。四分之一是内院，奥庇乌斯山翼的八角厅馆舍；四分之一是皇宫，帕拉蒂尼山那一面坡和会转的饭厅。湖后来挖完，巨人补上了太阳神的头。【设】三块之间不画墙，内院只用地面色调和一圈淡边区分。',3000,40);
+  poi('金宫内院','奥庇乌斯山翼（四分之一）',OPP.x,OPP.z,8,99,'【书中】第18份：园子的四分之一，“留给讲得最好的那些人”。“他坐在内院的八角厅里”，跟另一个懂法的争一个跨过门口那道线的奴隶。内院门口立铜牌，名单每年换一次。【史】奥庇乌斯山翼的八角厅今天还在。苏埃托尼乌斯说的那间日夜旋转的饭厅是哪一座，史学界有两种说法：一说就是这座八角厅，一说是2009年在帕拉蒂尼山东北角发现的圆形建筑。小说取后一说，八角厅不是那间会转的屋子。61年，城守佩达尼乌斯被自家奴隶杀死，按旧法同宅的四百个奴隶都要处死，元老院为此争过一场，卡西乌斯·隆吉努斯力主照办（塔西佗《编年史》14.42–45）。',1600,26);
+  poi('金宫内院','奥庇乌斯山翼（在建）',OPP.x,OPP.z,7,7,'【设】59–68年：墙已立起，门洞是真的，拱顶还架在木拱架上。【史】奥庇乌斯山翼的八角厅今天还在，中间穹顶开一个圆口。',1600,26);
+  {const y0=PADH[PADS.findIndex(p=>p[0]===OPP.x&&p[1]===OPP.z)],c=Math.cos(OPP.rot),sn=Math.sin(OPP.rot),q=[OPP.x+6.2*c+13.5*sn,OPP.z-6.2*sn+13.5*c];
+   W.pois.push({n:'内院铜牌',l:'【书中】',x:q[0],z:q[1],y:y0+4,s0:8,s1:99,d:300,info:'【书中】第18份：“这回牌子上只写名字。”“为什么上去，为什么下来，都写在牌子上。每年换一次。”第一年刻了十一个名字，第二年换了三个，换上去的里面有一个是释奴。'});}
+  poi('皇宫','帕拉蒂尼山那一面坡（四分之一）',300,215,8,99,'【书中】第18份：“那间会转的屋子，在你那一块。帕拉蒂尼山那一面坡，也是你的。”',1800,40);
+  if(W.claudEast){const CE=W.claudEast,q=CE.FE.p((CE.fx0+CE.fx1)/2+2,0,CE.zBack+.45);   // the bench behind the water (layers.js claudWater): the palace's one spot outside its part, a point, not an area
+   W.pois.push({n:'水后的长凳',l:'皇宫的飞地',x:q[0],z:q[2],y:gy(q[0],q[2])+10,s0:8,s1:99,d:700,info:'【书中】第18份：“这道水，这张凳子，也给你。”凯利安山那道水后面的一张长凳，归皇宫。'});}
   poi('铜巨人','Colossus',AUREA.vest[0],AUREA.vest[1],7,7,'【书中】约35米，没有头，脖子上戳着铁条，上面有鸟窝。【史】策诺多鲁斯铸，原为尼禄像（老普林尼《博物志》34.45）。',1500,45);
   poi('铜巨人','Colossus Solis',AUREA.vest[0],AUREA.vest[1],8,99,'【书中】约70年补上了头：太阳神的脸，头上一圈光芒，不是尼禄的脸。',1500,45);
   poi('金宫前庭','Vestibulum（在建）',...VEST.via[1],7,7,'【史】苏埃托尼乌斯《尼禄传》31：金宫的前庭里立着一座一百二十尺高的尼禄像。【设】前庭在韦利亚坡顶，正对圣道最后一段直路；西头是门廊和台阶，东半边架在拱廊基座上，俯瞰谷地。59–68年：台基已起，南廊先盖好，西廊只立了柱子，北墙搭着脚手架，院里还是土地。',1200,14);
