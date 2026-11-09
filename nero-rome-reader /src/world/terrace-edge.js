@@ -148,7 +148,8 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
 function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,shrubs:0,cyp:0,scree:0};let own=null;   // own: footprints of the record's own building (R.own), not in the way
   const busy=(x,z,r)=>(W.streetAt&&W.streetAt(x,z))||W.foot.hits(x,z,r,r,0,0,f=>f.tag==='open'||f.tag==='precinct'||(own&&own.has(f)));
   const rock=(x,z,rot,hl,hd,ht,pal,sd)=>{const C=frame(x,0,z,rot);let yg=1e9;for(const a of[-hl,hl])for(const b of[-hd,hd]){const q=C.p(a,0,b);yg=Math.min(yg,gy(q[0],q[2]));}rockLump(g,C,hl,hd,yg-.45,ht+.45,pal,sd,[x,z]);};
-  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),lg=!!R.ledge;if(S.length<2)continue;own=R.own||null;   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),nat=!!R.natural,lg=!!R.ledge||nat;if(S.length<2)continue;own=R.own||null;   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+    // R.natural: the foot of a modelled cliff with its own talus, scree and boulders (the Tiberiana's rock): as a ledge, and no scree either
     const Wp=(s,d)=>{let k=0;while(k<S.length-2&&S[k+1].s<s)k++;const A=S[k],B=S[k+1],t=clamp((s-A.s)/((B.s-A.s)||1),0,1),nx=lerp(A.nx??R.nx,B.nx??R.nx,t),nz=lerp(A.nz??R.nz,B.nz??R.nz,t);   // along the samples (a curved wall foot has its own normals)
       return[lerp(A.x,B.x,t)+nx*d,lerp(A.z,B.z,t)+nz*d];};let nextRock=1+3*teH(R.ax,R.az,1),nextShrub=1.5,nextCyp=3+4*teH(R.ax,R.az,2);
     const tall=S.filter(q=>q.h>=3&&!q.open).length*(R.L/(S.length-1));
@@ -163,7 +164,7 @@ function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,sh
           nextRock=s+4+5*teH(A.x+s,A.z-s,9);}
         if(s>=nextShrub&&hm>=1.2){const q=Wp(s,(lg?3.6:.9)+1.6*teH(A.x+s,A.z,10));if(teH(q[0],q[1],11)<.6&&!busy(q[0],q[1],.8)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'shrub',.7+.6*teH(q[0],q[1],12),null,3]);R.brk.push(s);st.shrubs++;}nextShrub=s+2.5+3*teH(A.x,A.z+s,13);}
         if(s>=nextCyp&&hm>=3&&tall>=18){const q=Wp(s,(lg?5.6:2.6)+.9*teH(A.x+s,A.z,14));if(!busy(q[0],q[1],1.2)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'cyp',.85+.3*teH(q[0],q[1],15),null,3]);R.brk.push(s);st.cyp++;}nextCyp=s+6+2*teH(A.x+s,A.z+s,16);}}
-      if(hm>=3&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
+      if(hm>=3&&!nat&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
         if(sl<.35||busy(q[0],q[1],.4))continue;const r=.22+.35*teH(q[0],q[1],50+j);rock(q[0],q[1],teH(q[1],q[0],60+j)*TAU,r,r*.8,r*.7,pal,.3);st.scree++;}}}
   own=null;const m=g.mesh(MAT.city);if(m){layTag(m,'ground');m.name='terraceFeet';W.scene.add(m);}W.terraceFeetStats=st;return st;}
 // a lump of the hill's rock (part 61, palette pal) centred on frame C: hl x hd at its base y0, ht high, its corners jittered by a die keyed to key (x,z)
