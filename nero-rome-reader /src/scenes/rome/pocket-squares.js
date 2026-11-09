@@ -14,7 +14,7 @@ function fillPocketSquares(W){
     if(placed.length>=20)break;
     if(!housingCore(x,z)||!nearHome(x,z)||palFilled(x,z)||dCity(x,z)<.42)continue;
     if(placed.some(p=>Math.hypot(p.x-x,p.z-z)<50))continue;
-    const angle=rot+(seed()-.5)*.22;
+    const PR=RNG((hash2(Math.round(x*4)+7919,Math.round(z*4)-104729)*4294967296)>>>0),angle=rot+(PR()-.5)*.22;   // this square's own dice, keyed to its place
     // Try a generous square first, then reduce it until the real footprint fits.
     // Keep the same compact square dimensions on both axes.
     let size=0,hw=0,hd=0,lo=Infinity,hi=-Infinity;
@@ -32,7 +32,7 @@ function fillPocketSquares(W){
     }
     if(!size)continue;
     // Ensure the set has both focal types whenever at least two squares fit.
-    const kind=!placed.some(p=>p.type==='fountain')?'fountain':!placed.some(p=>p.type==='altar')?'altar':seed()<.84?'fountain':'altar';
+    const kind=!placed.some(p=>p.type==='fountain')?'fountain':!placed.some(p=>p.type==='altar')?'altar':PR()<.84?'fountain':'altar';
     const y=hi+.04,F=frame(x,y,z,angle),stone=2,shade=6;
     // Pale, compact stone paving: a single batch, sized to remain a pocket square.
     g.set(stone,.43,0,0);box(g,F,0,-.04,0,hw,.16,hd,31);
