@@ -331,6 +331,11 @@ Keep this file current: every promise made to the author goes here until it is d
   - 新摘录（状态 8，第18份，逐字核过 `小说文本/第18份_改写稿.md`）：《草地 · 内院》“四分之一……”→ 新机位 `aureaInner`；《开门 · 八角厅》“他坐在内院的八角厅里……”接到“……问得好。”他说。→ `aureaOct`；《开门 · 铜牌》“内院门口那块铜牌，第一年刻了十一个名字……”→ `aureaPlaque`。截图 `zone8_*.jpg`。
   - 旧讲堂彩蛋（文案组，2026-11-09）：摘录接在《开门 · 铜牌》后面，第17份《十一 夜路》三段（逐字核过 `小说文本/第17份_改写稿.md`），触发句“是更老的那一间，在埃斯奎利诺山上”→ 新机位 `academyOld`（学园 `AF` 框架里，干水池旁那间老房子；原来的 `academy` 是远景，看不清这间）。这间房原来就是学园里单独的 `courtBlock`，现在做两份：`academyOld`（0–6）、`academyBurnt`（7–8，`app.js` 的 `XL`）。熏黑：城市着色器的 `burn` 原来只在 `uBurn` 打开的状态（7）才变暗，新加 burn 2＝任何状态都黑（`materials.js` 最后一行），所以 64 年大火之后（7）墙是黑的，68 年以后（8）屋顶换了新瓦（屋顶不带 burn），墙还是黑的。第二份不再放院里的柱子、树和住宅保留区（这些不跟图层走），占地哈希不变。截图 `academy_6_7_8.jpg`。
   - GPT 18:21 又导出一版（中央五边形院加拼花地面、一棵树和圆花池，八角厅门前和台地上加盆栽、开花灌木，台地墙加压顶），已重新打包；占地、原点不变，状态 7、8 对过截图（`zone8_*.jpg` 是新版，`zone8_*_prev.jpg` 是上一版）。以后再导出，再跑一遍 `oppian_pack.mjs`、`npm run build` 即可。
+  - ✅ 精修 v2 已接入（2026-11-11，工单 `briefs/rome/aurea-refine-v2/`，交付在主检出 `renders/domus-aurea/oppian-model-v2/` 和 `coenatio-v3/`）：圆厅 v3 正面拆开、加饭台，新视角「圆厅饭台·看湖」（`aureaDineLake`）；八角厅群 S1/S3 换 v2；新模块 `oppian_court`（厅前草坪、之字形台阶）。网页这边：柱廊中段开内院门（`AUREA.gate`，门洞拆台基和后墙、加门框门楣）；地形照 `court_ground-target` 削填（`oppian-court-ground.js`，`buildPatch` 的 `post` 在平滑之后再压一遍，台阶不被埋）；内院着色扩到新边界；饭台视线扇形里的房子拆掉（`AUREA_DINEVIEW`）、开口那侧三棵柏树去掉；铜牌挪进占位模型。测试（2026-11-11）：check、test:boot（无页面错误）、bake --check、city-audit --assert（低档、桌面档、?city=v2）、noble-quarter、neighborhood-regression 全过。
+    - ✅ 审计 H10 退化已修：接入后 v2 在 (681,−335) 有一块条形地不临街。二分结果：main（9e84a74）上不报；关掉内院占地、饭台视线扇形都还报；把 `OPP_PATCH` 换回旧的（z 到 76、3 m 格、无 post）就不报，所以是地形补丁改变后那一带支路重排出来的。这是退化，不是期望过时。修在 `parcels.js`，没动金宫占地：临街地的门面只在支路的"够得着"范围里、离街带超过 0.3 m（门在支路尽头外）时，也照路边地的办法铺一块门前地面，补到街带上。
+    - ⬜ 待定四件：铜牌留八角厅门廊还是挪到内院门（等文案组）；东路接不接园子；湖东南补不补亭廊；圣道在湖期怎么走。
+    - ⬜ 湖面在饭台的掠射角下是一整片灰（`waterMat` 的菲涅耳只反出阴天天空，没有高光和倒影）。可试：这片湖单独给大一点的波纹幅度或加天空渐变，改完要从 `aureaDineLake` 截图核对。
+    - ⬜ 三角形基线（`p3/job_same.js`）这次没跑：临时目录在会话重启时被清掉，脚本丢了，要重写。
 - [x] 路网（状态 7、8）：
   - 旧街的零碎从状态 7 起和房子一起消失（0–6 不变）：街道台阶（`streetStairs` 加 `layerAt`）、摊子、晾衣绳、喷泉、踏脚石（`streetKit` 加 `layerAt`，实例化模型按 `parentLayer` 分组）、两栋公寓模型和一栋贵族宅模型、宅院列柱（`flushColumnsAt`；`romeStand` 不再把别人还没放的柱子提前放进场景）、院中水池（`gbSplitAt`）、园树（`flushTrees` 加 `layerAt`，每棵树的大小和颜色不变）。前厅院子范围里的路缘石也归进去；圣道直路的路缘石留着。
   - 园子东头（`AUREA_EAST`，x 660–776、z 118–326，东墙以内）：原来有约 57 栋房子留到状态 7、8，其中 27 栋压在金柱廊东段上。现在它们和火灾一起消失，地面画成草地。全部归到 `AUREA_GONE`。
@@ -499,7 +504,7 @@ Keep this file current: every promise made to the author goes here until it is d
     - 182 个街坊排成行；
     - 丢弃的地块里，`lotBuild` 盖不下 667 块，碰到占地 781 块；
     - GLB 公寓有 198 次因加深后内院退不出来而没放下。
-    - v2 的 GLB 公寓仍压在占地最低点下 0.7 m（`parcels.js` 传给 `o.glb.put`）。作者 2026-11-08 已定新规则：按门前街面放，最多比最低点高 0.5 m，下面是凝灰岩基座（great-thompson 分支）。旧模型没有基座，所以这里不单独改。那个分支已合了 main（583eece），把变体选择（槽 a/b/c 共 13 种）、两条楼层限制和这条高度规则做成了 `insulaGLB(W,slot,x,z,rot,d,groundMin)`。两边合到一起时，`o.glb.put` 改调它：d 取 `o.glb.spec[slot][1]`，groundMin 由 `parcels.js` 传 `gq.gr.min`。他们新加的部件已改成 50、51 号（aaaf8a9），不再和 main 的 47 号（凝灰岩方石）、48 号（石灰华方石）撞。
+    - v2 的 GLB 公寓仍压在占地最低点下 0.7 m（`parcels.js` 传给 `o.glb.put`）。作者 2026-11-08 已定新规则：按门前街面放，最多比最低点高 0.5 m，下面是凝灰岩基座（great-thompson 分支）。旧模型没有基座，所以这里不单独改。那个分支未合并，待合（583eece 是 main 合进那个分支，分支上 8 个提交不在 main），把变体选择（槽 a/b/c 共 13 种）、两条楼层限制和这条高度规则做成了 `insulaGLB(W,slot,x,z,rot,d,groundMin)`。两边合到一起时，`o.glb.put` 改调它：d 取 `o.glb.spec[slot][1]`，groundMin 由 `parcels.js` 传 `gq.gr.min`。他们新加的部件已改成 50、51 号（aaaf8a9），不再和 main 的 47 号（凝灰岩方石）、48 号（石灰华方石）撞。
       - 陡地：门前地面比最低点高太多时，上坡一侧的店门会埋进土里。`insulaGLB` 现在遇到门前比 groundMin 高 0.8 m 以上就返回 null（ea31ea4），旧循环会换个地方放（仍是 170 栋，18 处换了地方；门前埋深超过 0.5 m 的从 14 处降到 0，最多 0.3 m）。v2 接入时，`parcels.js` 要接住 `o.glb.put` 返回的 null：记一次 `'uphill'` 落空，改盖程序房子。现在 put 一调用就把这块地记成已建，程序房子只在 `else` 里盖，不接的话这块地会空着。接好后核一次房子数比值。
       - 变体 n–r 的雨篷和摊棚伸出槽位正面约 0.5 m。v2 的模型正面只比地块正面退 0.15 m（`PCL.glb.front`），所以会伸进支路约 0.35 m；3.2 m 宽的小街要看一眼。
 - [ ] P5 路口神龛和水池、横街台阶、城郊成簇，默认切到 v2，删掉旧代码。
