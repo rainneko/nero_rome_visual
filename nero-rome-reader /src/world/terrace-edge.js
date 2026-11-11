@@ -5,6 +5,7 @@
    The hill of a point is the HILLS ridge (monuments.js) nearest to it, in units of that hill's radius. */
 function hillPal(x,z){let best=-1,bd=1.15;for(let i=0;i<HILLS.length;i++){const H=HILLS[i],d=segD(x,z,H[0],H[1],H[2],H[3])/H[4];if(d<bd){bd=d;best=i;}}return best===0?0:best===1?1:2;}
 const teH=(x,z,j)=>hash2(Math.round(x*8)+j*9173,Math.round(z*8)-j*6151);   // a die keyed to the place (hash2 truncates its arguments)
+const trimSet=(g,pal,s=.5)=>pal===1?g.set(60,s,1,2):g.set(48,s);   // the travertine trim (coping, string course, caps, treads): on the Palatine grade 4 of its stone family (part 60 flag 2, H0), elsewhere part 48 as before
 function nearPoly(x,z,P,r){for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<r)return true;return P.length===1&&Math.hypot(x-P[0][0],z-P[0][1])<r;}
 function inPolyXZ(x,z,Q){let ins=false;for(let i=0,j=Q.length-1;i<Q.length;j=i++){const a=Q[j],b=Q[i];if(((a[1]>z)!==(b[1]>z))&&(x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0]))ins=!ins;}return ins;}
 // the ground a terrace takes, reserved before the houses and streets are laid out: a 12 m strip inside each edge ('precinct') and, outside each walled edge,
@@ -46,13 +47,13 @@ function terraceEdge(W,g,P,yTop,o={}){
         g.poly([Wp(A.s,ba,fa),Wp(B.s,bb,fb),Wp(B.s,0,yW),Wp(A.s,0,yW)],want);}
       g.set(60,seed,pal,1);for(let k=k0;k<k1;k++){const A=S[k],B=S[k+1];if(A.h<1.6||B.h<1.6||A.room||B.room)continue;const[fa,ba]=bodyAt(e,k),[fb,bb]=bodyAt(e,k+1),ta=Math.min(A.gF+1,yW-.6),tb=Math.min(B.gF+1,yW-.6),oa=A.bat*(yW-ta)+.07,ob=B.bat*(yW-tb)+.07;
         g.poly([Wp(A.s,ba+.07,fa),Wp(B.s,bb+.07,fb),Wp(B.s,ob,tb),Wp(A.s,oa,ta)],want);g.poly([Wp(A.s,oa,ta),Wp(B.s,ob,tb),Wp(B.s,ob-.08,tb),Wp(A.s,oa-.08,ta)],[0,1,0]);}
-      g.set(48,.5);for(let j=1;j<5;j++){const yc=yW-6*j;for(let k=k0;k<k1;k++){const A=S[k],B=S[k+1];if(A.sub||B.sub||A.room||B.room||yc<A.gF+1.5||yc<B.gF+1.5)continue;const d=A.bat*(yW-yc)+.12,d2=B.bat*(yW-yc)+.12;
+      trimSet(g,pal,.5);for(let j=1;j<5;j++){const yc=yW-6*j;for(let k=k0;k<k1;k++){const A=S[k],B=S[k+1];if(A.sub||B.sub||A.room||B.room||yc<A.gF+1.5||yc<B.gF+1.5)continue;const d=A.bat*(yW-yc)+.12,d2=B.bat*(yW-yc)+.12;
         g.poly([Wp(A.s,d,yc),Wp(B.s,d2,yc),Wp(B.s,d2,yc+.3),Wp(A.s,d,yc+.3)],want);g.poly([Wp(A.s,d,yc+.3),Wp(B.s,d2,yc+.3),Wp(B.s,d2-.16,yc+.3),Wp(A.s,d-.16,yc+.3)],[0,1,0]);g.poly([Wp(A.s,d-.16,yc),Wp(B.s,d2-.16,yc),Wp(B.s,d2,yc),Wp(A.s,d,yc)],[0,-1,0]);}}
       // B2 coping and parapet
-      const tA=cA&&spur(e.i)?TRIM:0,tB=cB&&spur(e.i+1)?TRIM:0,xa=Math.max(sA-(cA&&!tA?.3:0),tA),xb=Math.min(sB+(cB&&!tB?.3:0),e.L-tB);g.set(48,.45);box(g,EF,X((xa+xb)/2),yW,-.075,(xb-xa)/2,.45,.375,31);
+      const tA=cA&&spur(e.i)?TRIM:0,tB=cB&&spur(e.i+1)?TRIM:0,xa=Math.max(sA-(cA&&!tA?.3:0),tA),xb=Math.min(sB+(cB&&!tB?.3:0),e.L-tB);trimSet(g,pal,.45);box(g,EF,X((xa+xb)/2),yW,-.075,(xb-xa)/2,.45,.375,31);
       const rail=(o.rail&&o.rail[e.i])||'pluteus';
       for(let k=k0;k<=k1;){if(top-S[k].gF<.6){k++;continue;}let k2=k;while(k2<k1&&top-S[k2+1].gF>=.6)k2++;const ra=Math.max(S[k].s-(k===0&&!tA?.3:0),tA),rb=Math.min(S[k2].s+(k2===ns&&!tB?.3:0),e.L-tB);
-        if(rb-ra>1.5){if(rail==='transenna')transenna(g,EF,X,ra,rb,top+.1,pal,e.brk);else{g.set(60,seed,pal,0);box(g,EF,X((ra+rb)/2),top+.1,-.12,(rb-ra)/2,.88,.2,31);g.set(48,.5);box(g,EF,X((ra+rb)/2),top+.98,-.12,(rb-ra)/2+.04,.1,.25,31);}}
+        if(rb-ra>1.5){if(rail==='transenna')transenna(g,EF,X,ra,rb,top+.1,pal,e.brk);else{g.set(60,seed,pal,0);box(g,EF,X((ra+rb)/2),top+.1,-.12,(rb-ra)/2,.88,.2,31);trimSet(g,pal,.5);box(g,EF,X((ra+rb)/2),top+.98,-.12,(rb-ra)/2+.04,.1,.25,31);}}
         k=k2+1;}
       // B3 buttresses (or blind arches where the wall is higher than 9 m)
       const Lr=sB-sA,m=Math.max(1,Math.round(Lr/7));
@@ -72,7 +73,7 @@ function terraceEdge(W,g,P,yTop,o={}){
     const cr=e0.ux*e1.uz-e0.uz*e1.ux;if(cr*(A2>0?1:-1)<=0)continue;const gF=Math.min(q0.gF,q1.gF);if(top-gF<.6)continue;let bx=e0.nx+e1.nx,bz=e0.nz+e1.nz;const bl=Math.hypot(bx,bz)||1;bx/=bl;bz/=bl;
     const[vx,vz]=Q[v],sp=o.spur&&o.spur.includes(v);
     if(sp){out.spurs.push(spurTower(W,g,vx,vz,bx,bz,gF,top,pal,Q));e0.brk.push(e0.L);e1.brk.push(0);continue;}
-    const C=frame(vx+bx*.3,0,vz+bz*.3,Math.atan2(bx,bz));g.set(60,.5,pal,1);box(g,C,0,gF-1.2,0,.85,top+1.2-gF+1.2,.85,31&~32);g.set(48,.5);box(g,C,0,top+1.2,0,.95,.18,.95,31);e0.brk.push(e0.L);e1.brk.push(0);}
+    const C=frame(vx+bx*.3,0,vz+bz*.3,Math.atan2(bx,bz));g.set(60,.5,pal,1);box(g,C,0,gF-1.2,0,.85,top+1.2-gF+1.2,.85,31&~32);trimSet(g,pal,.5);box(g,C,0,top+1.2,0,.95,.18,.95,31);e0.brk.push(e0.L);e1.brk.push(0);}
   return out;}
 // B3: a square buttress at s along edge e, from y0 (under the ground) to y1 under the coping: 1.2 m wide and 0.6 m deep at the foot, 0.84 x 0.32 at the top, the top weathered
 function buttress(g,e,s,y0,y1,bat,pal,seed){const{Wp}=e,face=y=>bat*(y1+.12-y),w0=.6,w1=.42,p0=.6,p1=.32,yc=y1-.55;g.set(60,seed,pal,1);
@@ -82,23 +83,23 @@ function buttress(g,e,s,y0,y1,bat,pal,seed){const{Wp}=e,face=y=>bat*(y1+.12-y),w
   g.poly([P(-w1,yc,fC+p1),P(w1,yc,fC+p1),P(w1,y1,face(y1)-.05),P(-w1,y1,face(y1)-.05)],[e.nx,1,e.nz]);}
 // B2: piers every ~2.4 m and stone grilles (transenna) between them, along edge frame EF from s ra to rb, base y
 function transenna(g,EF,X,ra,rb,y,pal,brk){const nb=Math.max(1,Math.round((rb-ra)/2.4)),bw=(rb-ra)/nb;
-  for(let j=0;j<=nb;j++){const s=ra+j*bw;g.set(48,.5);box(g,EF,X(s),y,-.12,.2,1.02,.2,31);box(g,EF,X(s),y+1.02,-.12,.25,.1,.25,31);}
+  for(let j=0;j<=nb;j++){const s=ra+j*bw;trimSet(g,pal,.5);box(g,EF,X(s),y,-.12,.2,1.02,.2,31);box(g,EF,X(s),y+1.02,-.12,.25,.1,.25,31);}
   g.set(6,.45);for(let j=0;j<nb;j++){const c=ra+(j+.5)*bw,hw=bw/2-.2;box(g,EF,X(c),y,-.12,hw,.14,.09,31);box(g,EF,X(c),y+.84,-.12,hw,.1,.09,31);
     const nv=Math.max(2,Math.round(hw*2/.32));for(let v=1;v<nv;v++)box(g,EF,X(c-hw+v*hw*2/nv),y+.14,-.12,.03,.7,.06,31);box(g,EF,X(c),y+.47,-.12,hw,.04,.06,31);}}
 // B5: the pier at the end of a wall by an opening, with a statue or a bronze tripod on it (the author, 2026-11-04)
-function endPier(W,g,e,s,gF,top,pal,seed,kind){const{EF,X}=e;g.set(60,seed,pal,1);box(g,EF,X(s),gF-1.2,-.1,.7,top+1.3-gF+1.2,.7,31&~32);g.set(48,.5);box(g,EF,X(s),top+1.3,-.1,.8,.16,.8,31);
+function endPier(W,g,e,s,gF,top,pal,seed,kind){const{EF,X}=e;g.set(60,seed,pal,1);box(g,EF,X(s),gF-1.2,-.1,.7,top+1.3-gF+1.2,.7,31&~32);trimSet(g,pal,.5);box(g,EF,X(s),top+1.3,-.1,.8,.16,.8,31);
   const q=e.Wp(s,-.1,0);if(teH(q[0],q[2],5)<.5)pedestalStatue(g,frame(q[0],0,q[2],EF.rot),0,0,top+1.46,2.6,{gilt:teH(q[0],q[2],6)<.4});else tripod(g,frame(q[0],0,q[2],EF.rot),0,0,top+1.46,1.25);}
 // B5: a wing wall from the end pier back into the slope, along the outward normal, its top stepping down 1.5 m at a time
 function wingWall(W,g,e,s,top,pal,seed){const p0=e.Wp(s,0,0),C=frame(p0[0],0,p0[2],Math.atan2(e.nx,e.nz)),gy=W.gy,Lw=7;let yPrev=top+.1;
   for(let d=.7;d<Lw;d+=1.5){const q=C.p(0,0,d+.75),g0=gy(q[0],q[2]),yT=Math.max(g0+.8,Math.min(yPrev,lerp(top+.1,g0+.8,(d+.75)/Lw)));if(yT-g0<.75)break;
-    g.set(60,seed,pal,0);box(g,C,0,g0-1,d+.75,.3,yT-g0+1,.75,31&~32);g.set(48,.5);box(g,C,0,yT,d+.75,.36,.12,.8,31);yPrev=yT-.01;}}
+    g.set(60,seed,pal,0);box(g,C,0,g0-1,d+.75,.3,yT-g0+1,.75,31&~32);trimSet(g,pal,.5);box(g,C,0,yT,d+.75,.36,.12,.8,31);yPrev=yT-.01;}}
 // B4: a half-round projection at a rock-spur corner (a reconstruction): diameter 8 m, its own coping and parapet 0.8 m above the wall's, four steps up from the terrace
 function spurTower(W,g,vx,vz,bx,bz,gF,top,pal,Q){const R=4,cx=vx+bx*R*.45,cz=vz+bz*R*.45,F0=frame(cx,0,cz,0),gy=W.gy;let yb=gF;for(let k=0;k<12;k++){const a=k/12*TAU;yb=Math.min(yb,gy(cx+Math.cos(a)*(R+.6),cz+Math.sin(a)*(R+.6)));}
-  const yD=top+.9;g.set(60,.55,pal,0);lathe(g,F0,0,yb-1.2,0,[[R,0],[R,yD-.45-(yb-1.2)]],28);g.set(48,.5);lathe(g,F0,0,yD-.45,0,[[R,0],[R+.3,0],[R+.3,.45],[R-.4,.45]],28);g.set(49,.4);lathe(g,F0,0,yD,0,[[R-.4,0],[0,0]],28);
+  const yD=top+.9;g.set(60,.55,pal,0);lathe(g,F0,0,yb-1.2,0,[[R,0],[R,yD-.45-(yb-1.2)]],28);trimSet(g,pal,.5);lathe(g,F0,0,yD-.45,0,[[R,0],[R+.3,0],[R+.3,.45],[R-.4,.45]],28);g.set(49,.4);lathe(g,F0,0,yD,0,[[R-.4,0],[0,0]],28);
   g.set(60,.55,pal,1);lathe(g,F0,0,yb-1.2,0,[[R+.08,0],[R+.08,Math.min(1.2+1,yD-.6-(yb-1.2))],[R,Math.min(1.2+1.08,yD-.5-(yb-1.2))]],28);   // the plinth course
   const nS=20;for(let k=0;k<nS;k++){const a=(k+.5)/nS*TAU,px=cx+Math.cos(a)*(R-.2),pz=cz+Math.sin(a)*(R-.2);if(inPolyXZ(px-Math.cos(a)*.6,pz-Math.sin(a)*.6,Q)&&inPolyXZ(px+Math.cos(a)*.3,pz+Math.sin(a)*.3,Q))continue;
-    if(Math.cos(a)*-bx+Math.sin(a)*-bz>.55)continue;const S=frame(px,0,pz,Math.atan2(Math.cos(a),Math.sin(a))),hl=Math.PI*(R-.2)/nS+.04;g.set(60,.55,pal,0);box(g,S,0,yD,0,hl,.88,.2,31);g.set(48,.5);box(g,S,0,yD+.88,0,hl+.03,.1,.25,31);}
-  const S=frame(cx-bx*(R-.3),0,cz-bz*(R-.3),Math.atan2(-bx,-bz));g.set(48,.5);for(let k=0;k<4;k++)box(g,S,0,top+.1,.2+k*.38,1.2,.2*(4-k),.19,31);
+    if(Math.cos(a)*-bx+Math.sin(a)*-bz>.55)continue;const S=frame(px,0,pz,Math.atan2(Math.cos(a),Math.sin(a))),hl=Math.PI*(R-.2)/nS+.04;g.set(60,.55,pal,0);box(g,S,0,yD,0,hl,.88,.2,31);trimSet(g,pal,.5);box(g,S,0,yD+.88,0,hl+.03,.1,.25,31);}
+  const S=frame(cx-bx*(R-.3),0,cz-bz*(R-.3),Math.atan2(-bx,-bz));trimSet(g,pal,.5);for(let k=0;k<4;k++)box(g,S,0,top+.1,.2+k*.38,1.2,.2*(4-k),.19,31);
   return{x:cx,z:cz,y:yD,R};}
 /* B8: a row of rooms in a wall (the Tabularium's way, a reconstruction): open arches with dark rooms 4 m deep behind them, an awning over each and a stall
    in front, on edge e from s0 to s1; the wall there is built with real openings (arcade()). Where the wall is 10.5 m or higher a gallery with half-columns
@@ -126,8 +127,8 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
   const Ltot=cum[cum.length-1],at=s=>{let i=1;while(i<path.length-1&&cum[i]<s)i++;const t=clamp((s-cum[i-1])/(cum[i]-cum[i-1]),0,1),dx=(path[i][0]-path[i-1][0])/(cum[i]-cum[i-1]),dz=(path[i][1]-path[i-1][1])/(cum[i]-cum[i-1]);return{x:lerp(path[i-1][0],path[i][0],t),z:lerp(path[i-1][1],path[i][1],t),dx,dz,seg:i};};
   const pts=[];
   const block=(s,len,yt,landing)=>{const p=at(s+len/2),S=frame(p.x,0,p.z,Math.atan2(-p.dz,p.dx));let yg=1e9;for(const a of[-len/2,len/2])for(const b of[-w/2,w/2]){const q=S.p(a,0,b);yg=Math.min(yg,gy(q[0],q[2]));}   // frame: local x = walking direction, local z = left
-    g.set(60,.5,pal,0);box(g,S,0,yg-.8,0,len/2+.01,yt-.12-yg+.8,w/2,31&~32);g.set(48,.45);box(g,S,0,yt-.12,0,len/2+.03,.12,w/2+.03,31);
-    const zs=-side*(w/2+.18);g.set(60,.5,pal,0);box(g,S,0,yt,zs,len/2+.01,landing?1.0:.95,.18,31);g.set(48,.5);box(g,S,0,yt+(landing?1.0:.95),zs,len/2+.03,.08,.22,31);pts.push([p.x,p.z]);return S;};
+    g.set(60,.5,pal,0);box(g,S,0,yg-.8,0,len/2+.01,yt-.12-yg+.8,w/2,31&~32);trimSet(g,pal,.45);box(g,S,0,yt-.12,0,len/2+.03,.12,w/2+.03,31);
+    const zs=-side*(w/2+.18);g.set(60,.5,pal,0);box(g,S,0,yt,zs,len/2+.01,landing?1.0:.95,.18,31);trimSet(g,pal,.5);box(g,S,0,yt+(landing?1.0:.95),zs,len/2+.03,.08,.22,31);pts.push([p.x,p.z]);return S;};
   // B7: a landing every 12-15 steps, spread evenly: a dry run counts the steps, then the run is cut into equal flights of at most 15 (and at each turn)
   const march=(per,mk)=>{let s=o.s0||0,y=y0,nSt=0,inFl=0,lastSeg=1,nL=0;
     while(s<Ltot-.2&&nSt<400){const p=at(s),turn=p.seg!==lastSeg;lastSeg=p.seg;if(y<=gy(p.x,p.z)+.22)break;
@@ -136,7 +137,7 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
     return{s,y,nSt,nL};};
   const n0=march(15,false).nSt,{s,y,nSt,nL}=march(Math.max(1,Math.ceil(n0/Math.max(1,Math.ceil(n0/15)))),true);
   const p=at(Math.min(s,Ltot)),S=frame(p.x,0,p.z,Math.atan2(-p.dz,p.dx)),q=S.p(.2,0,-side*(w/2+.18)),yg=gy(q[0],q[2]);
-  g.set(60,.5,pal,1);box(g,S,.2,yg-.6,-side*(w/2+.18),.35,Math.max(y,yg)+1.25-yg+.6,.35,31&~32);g.set(48,.5);box(g,S,.2,Math.max(y,yg)+1.25,-side*(w/2+.18),.42,.12,.42,31);
+  g.set(60,.5,pal,1);box(g,S,.2,yg-.6,-side*(w/2+.18),.35,Math.max(y,yg)+1.25-yg+.6,.35,31&~32);trimSet(g,pal,.5);box(g,S,.2,Math.max(y,yg)+1.25,-side*(w/2+.18),.42,.12,.42,31);
   if(teH(q[0],q[2],3)<.55)tripod(g,frame(q[0],0,q[2],S.rot),0,0,Math.max(y,yg)+1.37,1.2);else pedestalStatue(g,frame(q[0],0,q[2],S.rot),0,0,Math.max(y,yg)+1.37,2.4,{gilt:false});
   for(let i=0;i<pts.length;i+=3)W.foot.addCircle(pts[i][0],pts[i][1],w/2+.8,'road');
   W.stairFeet=W.stairFeet||[];W.stairFeet.push({x:p.x,z:p.z,dx:p.dx,dz:p.dz});(W.edgeStairs=W.edgeStairs||[]).push({steps:nSt,landings:nL,top:+y0.toFixed(2),bottom:+y.toFixed(2),len:+s.toFixed(1)});

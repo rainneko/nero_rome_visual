@@ -67,7 +67,8 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
    fcG=hk2<.4?vec3(.52,.032,.021):hk2<.65?vec3(.83,.75,.51):hk2<.9?vec3(.75,.51,.045):vec3(.26,.1,.4);   // poppy red, cream, yellow, a few violet (linear)
    fmG=dotM*clus*fBl;}}
 
- vec3 cGr=c;{vec3 gn=gS/max(dot(gS,W3),.01);vec3 hc=htG/max(dot(htG,W3),.01);cGr=c*mix(vec3(1.),clamp(hc/gn,vec3(.7),vec3(1.4)),.6*(1.-dryA));}   // hill grass: the season colour with a slight hue of its own (applied over the town ground below)
+ vec3 cGr=c;{vec3 gn=gS/max(dot(gS,W3),.01);vec3 hc=htG/max(dot(htG,W3),.01);cGr=c*mix(vec3(1.),clamp(hc/gn,vec3(.7),vec3(1.4)),.6*(1.-dryA));}
+ {float palG=(1.-smoothstep(150.,205.,SDS(p,vec2(0.,280.),vec2(230.,320.))))*(1.-uDbg.x);c=mix(vec3(dot(c,W3)),c,1.-.4*palG);cGr=mix(vec3(dot(cGr,W3)),cGr,1.-.4*palG);}   // H0 (palatine-masterplan.md M5): the Palatine's wild grass 40 % duller, still the season's colour   // hill grass: the season colour with a slight hue of its own (applied over the town ground below)
  c=mix(c,mix(vec3(.4,.29,.17),vec3(.32,.23,.135),.35+.4*fbm2(p*.02))*(.8+.3*fbm2(p*.05))*(.86+.3*fbm2(p*.45)),vZ.x*(1.-vZ.y)*1.);   // town ground: open earth between the streets
  c=mix(c,cGr,hwG*.7);c=mix(c,wcG*(.9+.2*fbm2(p*.03)),clamp(vZ.y*.55+wmG,0.,1.)*.95);   // the horti (vZ.y) are tree gardens, not lawns: their meadow shows throughc=mix(c,fcG,fmG);{float frT=smoothstep(2.35,3.,sS)*(1.-smoothstep(3.,3.6,sS));c=mix(c,vec3(.82,.84,.87),frT*.42*smoothstep(.75,1.,N.y));}
  vec2 qq=p/165.+vec2(fbm2(p*.003),fbm2(p*.003+5.))*.9;vec2 cl=floor(qq),fq=fract(qq);float chs=h12(cl);if(vZ.z>.85)chs=.1;float ang=chs*6.2832;vec2 dr=vec2(cos(ang),sin(ang));
@@ -82,7 +83,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
  float pal=(1.-smoothstep(230.,380.,length(p-vec2(100.,300.))))*(1.-uDbg.x);   // the Palatine: pale limestone with moss on the ledges (rock_and_base brief)
  // (the dark-green slope band that used to sit here was the soft smear in front of the Jupiter temple; steep cells are now the rocky scarp below)
  vec3 rock=mix(vec3(.31,.28,.19),vec3(.2,.18,.16),vZ.w)*(.75+.4*fbm2(p*.07));
- rock=mix(rock,vec3(.58,.52,.41)*(.85+.3*fbm2(p*.08)),pal*.85);
+ rock=mix(rock,vec3(.32,.28,.2)*(.85+.3*fbm2(p*.08)),pal*.85);   // H0: grade 1 of the Palatine's stone family (was a pale limestone, lighter than the walls)
  c=mix(c,rock,mix(smoothstep(.6,.9,sl),smoothstep(.5,.78,sl),pal)*.85);
  {   // bare rock/earth: only within 6-10 m of a rock cluster and on near-vertical cells (gradient > .9), as irregular fBm patches in world xz (no height term: bands read as a topographic map)
   float rkd=1e3;for(int i=0;i<16;i++){vec4 rs=uRk[i];rkd=min(rkd,SDS(p,rs.xy,rs.zw));}
