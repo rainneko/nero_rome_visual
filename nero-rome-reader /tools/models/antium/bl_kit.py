@@ -385,7 +385,8 @@ def opening_skin(F, x0, y0, x1, y1, z0, h, openings, mat='plaster', depth=0.35, 
             (ua, za), (ub, zb2) = rim_c[i], rim_c[i + 1]
             add_poly(rm, [P(ua, za), P(ua, za, -0.005), P(ub, zb2, -0.005), P(ub, zb2)])
         back_mat = 'gallery_wall' if kind == 'arch' and inner == 'dark' else inner
-        add_poly(back_mat, [P(u, z, -0.02) for u, z in reversed(rim)])
+        if back_mat:                              # inner=None: no back panel (a real room is built behind the hole)
+            add_poly(back_mat, [P(u, z, -0.02) for u, z in reversed(rim)])
         if kind == 'arch':
             add_poly('gallery_floor', [P(a, zb), P(b, zb), P(b, zb, -0.02), P(a, zb, -0.02)])
         if frame_mat:

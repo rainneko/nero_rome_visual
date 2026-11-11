@@ -4,6 +4,20 @@ const RW=1.5,RTW=56,R_EXT=[-3200,-2800,2800,3600];
 const TIBER=[[-1350,-2800],[-1219,-1968],[-1000,-1600],[-912,-1390],[-1020,-1201],[-1300,-1110],[-1575,-1068],[-1666,-912],[-1741,-734],[-1700,-600],[-1567,-489],[-1400,-250],[-1235,-44],[-1036,133],[-830,165],[-630,156],[-464,300],[-490,500],[-522,667],[-688,945],[-895,1279],[-1100,1550],[-1326,1868],[-1350,2100],[-1268,2280],[-1000,2600],[-688,2836],[-564,3336],[-937,3892],[-1683,4448],[-2600,4900]];
 const HILLS=[[-262,40,-205,-225,112,31],[0,280,230,320,175,36],[-640,860,-330,1150,250,33],[-60,1150,150,1350,190,24],[560,640,1250,760,200,33],[480,-40,1250,-170,210,36],[760,-480,1400,-560,175,39],[1500,-500,2700,0,620,42],[500,-760,1350,-1080,170,41],[-60,-560,900,-1520,230,43],[-650,-2050,150,-2300,330,42],[-1700,-500,-1780,1500,360,62],[-1500,2200,-1650,2700,250,28],[-2900,-1700,-2500,-1400,420,46],[360,120,430,80,110,16]];
 const GALBA=GALBA_EAST?[1760,140]:[-690,1560];
+// GLB apartment blocks: the model drawn in a placement slot (rome_insula_a/b/c) and its floor height. One rule for the old
+// scatter in buildRome and the v2 lots (parcels.js o.glb.put, P4): the variant is keyed to the place (no extra dice), a cut
+// tall block becomes a lower one, and the floor is the street in front of the model (front = local +z), at most .5 m over the
+// lowest ground: every model stands on a 1.6 m tuff plinth (tools/models/rome/rome_insulae{,2,3}.py, briefs/rome/ground-floor.md).
+const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k','rome_insula_n','rome_insula_p'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m','rome_insula_o','rome_insula_q'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l','rome_insula_r']};
+// null = the street in front is more than 0.8 m above the lowest ground: with the floor at most 0.5 m over that the shop
+// fronts would stand in the ground, so the site is left to the procedural houses (they step with the slope).
+// INSULA_BACK: a variant set back in its slot (metres) so what it puts out in the street stays on the lot: o's awning poles.
+// Returns {n, x, z, y}: draw the model at x, z (the slot's middle unless set back).
+const INSULA_BACK={rome_insula_o:.45};
+function insulaGLB(W,slot,x,z,rot,d,groundMin){const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
+  const F=frame(x,0,z,rot),bk=INSULA_BACK[n]||0,c=F.p(0,0,-bk),fm=F.p(0,0,d/2-.3-bk),gf=W.gy(fm[0],fm[2]);if(gf-groundMin>.8)return null;
+  if(n==='rome_insula_a'&&W.storeyCut(x,z,5,()=>true)<5)n='rome_insula_b';if(n==='rome_insula_h'&&W.storeyCut(x,z,6,()=>true)<6)n='rome_insula_c';
+  return{n,x:c[0],z:c[2],y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}
 // 密度图：由 3D STOA 全景图按屋顶颜色分割，再用 9 个地标做单应性映射得到（64×64，255=图外）
 const DMAP=/*__DMAP__*/null,RINGD=[[0,.74],[200,.73],[600,.66],[1000,.56],[1400,.36],[1900,.18],[2600,.06],[3600,.03],[6000,.02]];
 function ringD(x,z){const r=Math.hypot(x-17,z+22);for(let i=0;i<RINGD.length-1;i++){const a=RINGD[i],b=RINGD[i+1];if(r<b[0])return lerp(a[1],b[1],(r-a[0])/(b[0]-a[0]));}return .02;}
@@ -786,7 +800,8 @@ async function buildRome(msg){
      const n=names[Math.floor(RI2()*3)],[w,d]=spec[n],rot=-30*DEG+Math.floor(RI2()*4)*Math.PI/2+(RI2()-.5)*.08;if(W.foot.hits(px,pz,w/2+3,d/2+3,rot,0))continue;
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      if(v2Skip(px,pz)){nIn++;W.nInsulaV2=(W.nInsulaV2||0)+1;continue;}   // v2 builds its lots there (the brief: models on lots of their size, P4)
-     ROME.GLB.push({n:n==='rome_insula_a'&&W.storeyCut(px,pz,5,()=>true)<5?'rome_insula_b':n,x:px,y:ground.min-.7,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}   // a cut five-storey block becomes the four-storey one, on a's ground
+     const I=insulaGLB(W,n,px,pz,rot,d,ground.min);if(!I){W.nInsulaUphill=(W.nInsulaUphill||0)+1;continue;}
+     ROME.GLB.push({n:I.n,x:I.x,y:I.y,z:I.z,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
   /* v2's lots (parcels.js). 'other': the thin outskirts of a city district (dCity under .36), where genCity scattered huts and sheds: lower houses, apart
      (P4): a lot is built where a hash of its place falls under OUTSKIRT_K times genCity's density there (izone), twice that on a main road; no court.
@@ -799,7 +814,7 @@ async function buildRome(msg){
     lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600,
     life:LIFE_SITES.filter(s=>!s[6]),   // a plot left open for each street-life site off a square (street-life.js): the stalls and the bakery bays
     glb:{spec:INSULA_GLB,p:GLB_P,at:(x,z)=>Math.hypot((x-60)/1150,(z+120)/1035)<=1&&insulaAt(x,z),
-      put:q=>{const n=q.n==='rome_insula_a'&&W.storeyCut(q.x,q.z,5,()=>true)<5?'rome_insula_b':q.n;ROME.GLB.push({n,x:q.x,y:q.y,z:q.z,r:q.r,o:q.key?{parentLayer:q.key}:{}});return n;}}});   // a cut five-storey block becomes the four-storey one
+      put:q=>{const g=insulaGLB(W,q.n,q.x,q.z,q.r,INSULA_GLB[q.n][1],q.gmin);if(!g)return null;ROME.GLB.push({n:g.n,x:g.x,y:g.y,z:g.z,r:q.r,o:q.key?{parentLayer:q.key}:{}});return g.n;}}});   // the same rule as the scatter (insulaGLB): variant keyed to place, cut blocks lower, null on an uphill front
   fillRoadFrontage(W);   // the main roads in the centre lined with shop houses first; the blocks, genCity and the repair grid fill in behind them
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)&&!v2Skip(x,z)?'valleyCity':null,skip:V2?v2Skip:null,noPpl:true,lanes:outSub,chunk:600});
@@ -865,6 +880,7 @@ async function buildRome(msg){
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
+   placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,
    // not a boulder lying on the slope; the author 2026-11-03 found them odd) and sunk half their height below the ground. At most 40.
