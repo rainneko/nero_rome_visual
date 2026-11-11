@@ -535,6 +535,10 @@ Keep this file current: every promise made to the author goes here until it is d
       v2 GLB 公寓 133 栋（原 151），`'uphill'` 落空 18 次，都改盖了程序房子；旧循环仍是 170 栋。
       实测门前埋深：默认模式 170 栋最多 0.30 m，v2 130 栋（`?test` 页）最多 0.29 m，都没有超过 0.5 m 的；基座底没有一处高出地面。
       街景六张（平地、中坡、陡坡各两张，含一条 3.2 m 小街）：`docs/screenshots/insula-merge-20261111/`。
+      金宫 v2 进 main 后再合一次（6a13845，只有 TODO 冲突；`parcels.js` 门前铺地条件和 `terrain-roads.js` 补丁 `post` 都自动合入）。重烘焙：街坊 2,706、街 2,719、226.32 km，`bake-roads --check` 两项最新。
+      `city-audit --assert` 全过（H3/H10/H11/H14 = 0，H8 桌面 3、低档 8 只报告，H12 0.96）；两种模式的四个城市测试、居住/地基/画廊光/内院闭合全过。
+      数字：v2 25,958 栋，旧城同片 26,584 栋，比值 0.976；v2 GLB 公寓 136 栋，`'uphill'` 落空 16 次；旧循环 170 栋。
+      `street-generation.mjs` 失败（"road must stop on natural vegetation"）：只载入 `streets.js`，本分支没改那个文件，main 上同样失败，未处理。
 - [ ] P5 路口神龛和水池、横街台阶、城郊成簇，默认切到 v2，删掉旧代码。
 - ⚠️ 待作者拍板（设计稿第 11 节）：街坊大小；坡度 > 52% 的地留绿还是盖台地房；大火前后是否同一张路网；64 年以前大街有没有柱廊。
 
