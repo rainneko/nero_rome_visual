@@ -101,7 +101,7 @@ function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.r
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
   const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
     const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;
-    for(const n of names){try{const raw=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)),buf=window.ROME_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;   // rome-assets.js holds gzipped, quantized GLBs (tools/glbopt.mjs)
+    for(const n of names){try{const raw=b64u8(D[n]),buf=window.ROME_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;   // rome-assets.js holds gzipped, quantized GLBs (tools/glbopt.mjs)
       new THREE.GLTFLoader().parse(buf,'',gl=>{romePutModels(n,gl.scene);fin();},e=>{console.warn('rome glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
     if(!left)window.__romeReady=true;};
   if(window.ROME_GLB){go();return;}window.romeAssetsLoaded=go;const s=document.createElement('script');s.src='rome-assets.js';

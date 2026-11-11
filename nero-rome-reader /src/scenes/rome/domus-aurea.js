@@ -48,7 +48,7 @@ function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if
 const AUREA_PACK={aurea:{v:'AUREA_GLB',cb:'aureaAssetsLoaded',file:'aurea-assets.js',wait:[]},opp:{v:'OPP_GLB',cb:'oppAssetsLoaded',file:'oppian-assets.js',wait:[]}};
 function aureaLoad(n,G,F,S,cb,pack='aurea'){const P=AUREA_PACK[pack];
   const go=async()=>{const D=window[P.v];if(!D||!D[n])return;let buf;
-    try{const raw=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0));buf=window[P.v+'_gz']?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;}catch(e){console.warn(n+' glb',e);return;}
+    try{const raw=b64u8(D[n]);buf=window[P.v+'_gz']?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;}catch(e){console.warn(n+' glb',e);return;}
     new THREE.GLTFLoader().parse(buf,'',gl=>{const o=layTag(gl.scene,'models');o.name=n+'GLB';
       o.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});o.position.set(F.ox,F.oy,F.oz);o.rotation.y=F.rot;G.add(o);S.visible=false;
       if(cb)cb(o);},e=>console.warn(n+' glb',e));};

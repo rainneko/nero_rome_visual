@@ -17,7 +17,7 @@ function consMat(mt){const o=mt.name;   // material aliases from the review tool
 function consLoad(){if(CONS.load)return;CONS.load=1;
   const go=async()=>{const D=window.CONS_GLB;if(!D)return;CONS.load=2;const F=consFrame();
     for(const n of Object.keys(D)){const [id,k]=n.split('/');if(!CONS.ids[id])continue;
-      try{const raw=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)),buf=window.CONS_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;
+      try{const raw=b64u8(D[n]),buf=window.CONS_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;
         const gl=await new Promise((ok,bad)=>new THREE.GLTFLoader().parse(buf,'',ok,bad)),G=gl.scene;
         G.traverse(o=>{if(!o.isMesh)return;o.castShadow=o.receiveShadow=true;for(const mt of[].concat(o.material)){consMat(mt);mt.userData.op=mt.opacity;}});
         G.name=id+'@'+k;G.position.set(F.ox,F.oy,F.oz);G.rotation.y=F.rot;G.visible=false;W0.scene.add(G);(CONS.ids[id].g||(CONS.ids[id].g={}))[+k.slice(1)]=G;}catch(e){console.warn('construction glb',n,e);}}
