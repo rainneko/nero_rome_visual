@@ -11,10 +11,13 @@ const GALBA=GALBA_EAST?[1760,140]:[-690,1560];
 const INSULA_VARIANTS={rome_insula_a:['rome_insula_a','rome_insula_d','rome_insula_f','rome_insula_i','rome_insula_k','rome_insula_n','rome_insula_p'],rome_insula_b:['rome_insula_b','rome_insula_e','rome_insula_j','rome_insula_m','rome_insula_o','rome_insula_q'],rome_insula_c:['rome_insula_c','rome_insula_g','rome_insula_h','rome_insula_l','rome_insula_r']};
 // null = the street in front is more than 0.8 m above the lowest ground: with the floor at most 0.5 m over that the shop
 // fronts would stand in the ground, so the site is left to the procedural houses (they step with the slope).
-function insulaGLB(W,slot,x,z,rot,d,groundMin){const fm=frame(x,0,z,rot).p(0,0,d/2-.3),gf=W.gy(fm[0],fm[2]);if(gf-groundMin>.8)return null;
-  const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
+// INSULA_BACK: a variant set back in its slot (metres) so what it puts out in the street stays on the lot: o's awning poles.
+// Returns {n, x, z, y}: draw the model at x, z (the slot's middle unless set back).
+const INSULA_BACK={rome_insula_o:.45};
+function insulaGLB(W,slot,x,z,rot,d,groundMin){const V=INSULA_VARIANTS[slot]||[slot];let n=V[Math.floor(hash2(Math.round(x*3),Math.round(z*3)+71)*V.length)];
+  const F=frame(x,0,z,rot),bk=INSULA_BACK[n]||0,c=F.p(0,0,-bk),fm=F.p(0,0,d/2-.3-bk),gf=W.gy(fm[0],fm[2]);if(gf-groundMin>.8)return null;
   if(n==='rome_insula_a'&&W.storeyCut(x,z,5,()=>true)<5)n='rome_insula_b';if(n==='rome_insula_h'&&W.storeyCut(x,z,6,()=>true)<6)n='rome_insula_c';
-  return{n,y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}
+  return{n,x:c[0],z:c[2],y:Math.max(groundMin-.7,Math.min(gf-.12,groundMin+.5))};}
 // 密度图：由 3D STOA 全景图按屋顶颜色分割，再用 9 个地标做单应性映射得到（64×64，255=图外）
 const DMAP=/*__DMAP__*/null,RINGD=[[0,.74],[200,.73],[600,.66],[1000,.56],[1400,.36],[1900,.18],[2600,.06],[3600,.03],[6000,.02]];
 function ringD(x,z){const r=Math.hypot(x-17,z+22);for(let i=0;i<RINGD.length-1;i++){const a=RINGD[i],b=RINGD[i+1];if(r<b[0])return lerp(a[1],b[1],(r-a[0])/(b[0]-a[0]));}return .02;}
@@ -798,7 +801,7 @@ async function buildRome(msg){
      const F=frame(px,0,pz,rot),P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];}),ground=houseGround(W,P);if(ground.max-ground.min>4||!residentialSiteAllowed(W,P))continue;
      if(v2Skip(px,pz)){nIn++;W.nInsulaV2=(W.nInsulaV2||0)+1;continue;}   // v2 builds its lots there (the brief: models on lots of their size, P4)
      const I=insulaGLB(W,n,px,pz,rot,d,ground.min);if(!I){W.nInsulaUphill=(W.nInsulaUphill||0)+1;continue;}
-     ROME.GLB.push({n:I.n,x:px,y:I.y,z:pz,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
+     ROME.GLB.push({n:I.n,x:I.x,y:I.y,z:I.z,r:rot,o:AUREA_GONE(px,pz)?{parentLayer:'aureaSite'}:{}});W.foot.add(px,pz,w/2+.3,d/2+.3,rot);nIn++;}
    W.nInsulaGLB=nIn;}
   /* v2's lots (parcels.js). 'other': the thin outskirts of a city district (dCity under .36), where genCity scattered huts and sheds: lower houses, apart
      (P4): a lot is built where a hash of its place falls under OUTSKIRT_K times genCity's density there (izone), twice that on a main road; no court.
@@ -811,7 +814,7 @@ async function buildRome(msg){
     lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>AUREA_GONE(x,z)?'aureaSite':'',chunk:600,
     life:LIFE_SITES.filter(s=>!s[6]),   // a plot left open for each street-life site off a square (street-life.js): the stalls and the bakery bays
     glb:{spec:INSULA_GLB,p:GLB_P,at:(x,z)=>Math.hypot((x-60)/1150,(z+120)/1035)<=1&&insulaAt(x,z),
-      put:q=>{const n=q.n==='rome_insula_a'&&W.storeyCut(q.x,q.z,5,()=>true)<5?'rome_insula_b':q.n;ROME.GLB.push({n,x:q.x,y:q.y,z:q.z,r:q.r,o:q.key?{parentLayer:q.key}:{}});return n;}}});   // a cut five-storey block becomes the four-storey one
+      put:q=>{const g=insulaGLB(W,q.n,q.x,q.z,q.r,INSULA_GLB[q.n][1],q.gmin);if(!g)return null;ROME.GLB.push({n:g.n,x:g.x,y:g.y,z:g.z,r:q.r,o:q.key?{parentLayer:q.key}:{}});return g.n;}}});   // the same rule as the scatter (insulaGLB): variant keyed to place, cut blocks lower, null on an uphill front
   fillRoadFrontage(W);   // the main roads in the centre lined with shop houses first; the blocks, genCity and the repair grid fill in behind them
   W.nLots=genBlocks(W,{seed:11,sx:58,sz:44,rot:-30*DEG,ext:[-2900,-2500,2700,3300],zone:bzone,lotOK:(x,z)=>polyDist(x,z,TIBER)[0]>RTW+8&&!inPal(x,z)&&nobleQuarterAt(x,z)!=='core',grp:(x,z)=>v2Skip(x,z)?null:AUREA_GONE(x,z)?'aureaSite':'',skip:V2?v2Skip:null,lanes:outSub,chunk:600});   // aureaSite: the streets the fire and the Golden House take (states 0-6 only; domus-aurea.js)
   W.nLots+=genBlocks(W,{seed:12,sx:58,sz:44,rot:-30*DEG,ext:[400,30,750,370],zone:(x,z)=>VAL(x,z)?{kind:'mid',street:4.2,lotW:13,depth:13,ringA:1200,ringP:.45,tri:.12,lot:R=>{const p=lotP.mid(R);p.loggia=false;return p;},court:null,ppl:0,burn:1}:null,grp:(x,z)=>VAL(x,z)&&!v2Skip(x,z)?'valleyCity':null,skip:V2?v2Skip:null,noPpl:true,lanes:outSub,chunk:600});

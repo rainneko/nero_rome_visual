@@ -290,8 +290,9 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
       const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){drop('grp');continue;}
       const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
       let ok=false;let gq=lot.glb?pcGlb(W,L,o.glb.spec[lot.glb]):null;if(gq&&gq.fail){cnt(S.glbMiss,gq.fail);gq=null;}   // P4: the GLB insula on its lot (o.glb.put places it); else, or where it no longer fits, lotBuild's houses
-      if(gq){const n=o.glb.put({n:lot.glb,x:gq.x,y:gq.gr.min-.7,z:gq.z,r:gq.r,key});rec.glb=n;out.glb.push({n,P:gq.P,lot:out.lots.length-1});glbs.push({L:gq.P});S.glb++;ok=true;}
-      else for(const Lp of pcFit(L))if(lotBuild(W,G(ob.cx,ob.cz,key),Lp,p,R,key===''?smk:null))ok=true;if(!ok){drop('build');continue;}
+      if(gq){const n=o.glb.put({n:lot.glb,x:gq.x,z:gq.z,r:gq.r,gmin:gq.gr.min,key});   // null: the street in front is too far uphill (monuments.js insulaGLB)
+        if(n){rec.glb=n;out.glb.push({n,P:gq.P,lot:out.lots.length-1});glbs.push({L:gq.P});S.glb++;ok=true;}else{cnt(S.glbMiss,'uphill');gq=null;}}
+      if(!gq)for(const Lp of pcFit(L))if(lotBuild(W,G(ob.cx,ob.cz,key),Lp,p,R,key===''?smk:null))ok=true;if(!ok){drop('build');continue;}
       rec.built=true;rec.houses=[l0,W.lotLog.length];for(let h=l0;h<W.lotLog.length;h++)out.houses.push({h,lot:out.lots.length-1});
       {const a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=(b[1]-a[1])/l,nz=-(b[0]-a[0])/l,m=lp(a,b,.5),f=lot.k==='road'?face:null,   // the paving in front of it: a ring's band, or what lies
          far=(lot.k==='road'||lot.k==='street')&&!face?pcNearLine(W,LN,m):null;   // between it and the road's corridor; a front that faces no line (past a street's end, or well back from a road): out to the nearest
