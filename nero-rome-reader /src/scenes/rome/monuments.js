@@ -27,7 +27,7 @@ const dCity=(x,z)=>{const m=dmS('D',x,z),r=ringD(x,z);return m<0?r:.6*m+.4*r;},v
 const PADS=[[17,-22,190],[-200,560,150],[0,667,160],[200,780,150],[110,300,140],[-275,10,80],[-200,-210,45],[1350,-330,78],[-1190,2760,270],[-765,3141,170],[-1420,2450,70],[GALBA[0],GALBA[1],135],[-2429,-1134,320],[-1036,-356,170],[-448,22,90],[900,640,130],[850,-40,170],[572,200,130],[-590,-1300,120],[-895,-834,130],[-99,-143,70],[110,-235,80],[-1250,600,175],[-960,-525,75]];
 const HORTI=[[1450,-380,260],[1950,-80,260],[150,-1250,300],[-300,-2150,360],[-2250,-1050,520],[-1550,1050,330],[1080,780,200]];
 let PADH=null;const OPP_PAD=PADS.findIndex(p=>p[0]===850&&p[1]===-40);   // the Oppian pad, under the Golden House's octagon wing (domus-aurea.js OPP)
-const OPP_PATCH=[606,-160,952,76];   // whole coarse cells round the Oppian halls and their terraces, in 3 m cells (oppGround's steps)
+const OPP_PATCH=[606,-160,952,184];   // whole coarse cells round the Oppian halls, their terraces and the inner court down to the colonnade, in 2 m cells (oppGround's steps, oppCourtPost's stairs)
 function segD(x,z,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz;let t=((x-ax)*dx+(z-az)*dz)/l2;t=clamp(t,0,1);return Math.hypot(ax+dx*t-x,az+dz*t-z);}
 function romeRaw(x,z){let h=RW+7.5+5*(fbm(x*.0011+3,z*.0011,3)-.5);const n=fbm(x*.003,z*.003,3)-.5,tv=.9+.2*fbm(x*.006+5,z*.006,2);let hm=0;
   for(const H of HILLS){const d=segD(x,z,H[0],H[1],H[2],H[3])/H[4];if(d>1.5)continue;const v=1-sstep(.38+n*.35,1.18+n*.5,d);if(v>0)hm=Math.max(hm,v*H[5]*tv);}
@@ -168,7 +168,7 @@ async function buildRome(msg){
   THP.h=romeH(THP.x,THP.z);THP.on=true;
   {const y0c=romeH(CAPF.cx,CAPF.cz);let yt=0;for(const[px,pz]of CAPF.T[0])yt=Math.max(yt,romeH(CAPF.cx+px*.8,CAPF.cz+pz*.8)-y0c);CAPF.y=y0c+Math.max(.15,yt-2.2);CAPF.on=true;}   // terrace level as the Capitol block computes it (before the embankment exists)
   const GRID_N=500;buildGrid(W,R_EXT,Q.name==='low'?320:GRID_N,romeH);   // the low tier's grid is coarser
-  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:4,hfn:romeH}];
+  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
   W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);

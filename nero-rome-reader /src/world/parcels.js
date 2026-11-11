@@ -294,8 +294,8 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
         if(n){rec.glb=n;out.glb.push({n,P:gq.P,lot:out.lots.length-1});glbs.push({L:gq.P});S.glb++;ok=true;}else{cnt(S.glbMiss,'uphill');gq=null;}}
       if(!gq)for(const Lp of pcFit(L))if(lotBuild(W,G(ob.cx,ob.cz,key),Lp,p,R,key===''?smk:null))ok=true;if(!ok){drop('build');continue;}
       rec.built=true;rec.houses=[l0,W.lotLog.length];for(let h=l0;h<W.lotLog.length;h++)out.houses.push({h,lot:out.lots.length-1});
-      {const a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=(b[1]-a[1])/l,nz=-(b[0]-a[0])/l,m=lp(a,b,.5),f=lot.k==='road'?face:null,   // the paving in front of it: a ring's band, or what lies
-         far=(lot.k==='road'||lot.k==='street')&&!face?pcNearLine(W,LN,m):null;   // between it and the road's corridor; a front that faces no line (past a street's end, or well back from a road): out to the nearest
+      {const a=L[0],b=L[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=(b[1]-a[1])/l,nz=-(b[0]-a[0])/l,m=lp(a,b,.5),f=lot.k==='road'||face&&lot.k==='street'&&fbSegD2(m[0]+nx,m[1]+nz,face.s.a,face.s.b)>(face.s.hw+.3)**2?face:null,   // the paving in front of it: a ring's band, or what lies
+         far=(lot.k==='road'||lot.k==='street')&&!face?pcNearLine(W,LN,m):null;   // between it and the road's corridor (or a street's band it faces only by reach, at the street's end: H10); a front that faces no line (past a street's end, or well back from a road): out to the nearest
          if(far)S.apronFar++;const d=lot.k==='ring'?FAB.ring+.3:f?clamp(Math.sqrt(fbSegD2(m[0],m[1],f.s.a,f.s.b))-f.s.hw+.5,.5,8):far?clamp(far.d+.5,.5,8):0;if(d>0)out.aprons.push([a,b,[b[0]+nx*d,b[1]+nz*d],[a[0]+nx*d,a[1]+nz*d]]);}
       built.push({ob,L});S.built++;S.houses+=W.lotLog.length-l0;if(lot.shop)S.shops++;if(lot.corner)S.corners++;
       if(!o.noPpl&&Z.ppl&&R()<Z.ppl){const a=L[0],c=L[1],m=lp(a,c,.5),dx=c[0]-a[0],dz=c[1]-a[1],l=Math.hypot(dx,dz)||1,px=m[0]+dz/l*1.6,pz=m[1]-dx/l*1.6;W.people.push([px,W.gy(px,pz),pz]);}}
