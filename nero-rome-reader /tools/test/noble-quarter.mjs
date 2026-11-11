@@ -26,7 +26,7 @@ try{
  await p.goto('file://'+path.join(root,'dist/noble-assets-test.html')+'?test',{timeout:45000});await p.waitForFunction(()=>window.__modelsReady,{timeout:45000});results.push(...await p.evaluate(()=>checks));await p.screenshot({path:path.join(out,'assets-plain.png')});
  await p.evaluate(()=>{settings.crystL=true;P.render(scene,camera);});await p.screenshot({path:path.join(out,'assets-crystal.png')});
  const city=fs.readFileSync('dist/test.html','utf8');if(!city.includes('window.__ready=true;loop();'))throw Error('boot marker changed');fs.writeFileSync('dist/noble-city-test.html',city.replace('window.__ready=true;loop();','window.__ready=true;'));
- await p.goto('file://'+path.join(root,'dist/noble-city-test.html')+'?test',{timeout:45000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:60000});const boot=await p.evaluate(()=>({ready:window.__ready,error:window.__err}));if(!boot.ready)throw Error(boot.error);
+ await p.goto('file://'+path.join(root,'dist/noble-city-test.html')+'?test'+(process.env.CITY_V2?'&city=v2':''),{timeout:45000});await p.waitForFunction(()=>window.__ready||window.__err,{timeout:60000});const boot=await p.evaluate(()=>({ready:window.__ready,error:window.__err}));if(!boot.ready)throw Error(boot.error);
  await p.waitForFunction(()=>window.__romeReady,{timeout:45000});
  const audit=await p.evaluate(()=>{W0.scene.updateMatrixWorld(true);const homes=W0.nobleHomes,rows=W0.nobleProcedural||[],parcels=W0.nobleParcels,blocks=W0.nobleBlocks,roads=W0.nobleRoads,loaded=ROME.GLB.filter(p=>p.n.startsWith('rome_lux_'));
    const storeys={};for(const p of parcels)storeys[p.storeys]=(storeys[p.storeys]||0)+1;
@@ -41,7 +41,9 @@ try{
  // Expectations follow the rules in force (2026-11-02): spec 5.2 (7ec9392) builds no triangle of houses, so the diagonal cut survives only as an F3 double-triangle square
  // (W.faceF3); about a dozen compounds fit the slope, courtyard and Golden House reservation rules, so the old "six-house block", "non-quadrilateral parcel" and ">10 neighbour pairs" no longer hold.
  results.push({name:'mixed three/four-storey compounds, no triangle blocks, diagonal lanes as F3 squares',pass:audit.storeys[3]>0&&audit.storeys[4]>0&&audit.fullBlocks.length>0&&audit.triangular===0&&audit.f3>0});
- results.push({name:'separate compounds with service lanes, main streets and lanes',pass:audit.partyWallPairs>=3&&audit.maxPartyGap>=1.5&&audit.roads.some(w=>w<3)&&audit.roads.some(w=>w>6)});
+ // >=2 pairs since 2026-11-09: the Carinae's south-east corner is where the Oppian halls' garden terraces go (domus-aurea.js oppGround); the block
+ // there (7:2, two compounds, states 0-6 only) straddles the 8 m cut in front of the first terrace wall and no longer fits the slope limit
+ results.push({name:'separate compounds with service lanes, main streets and lanes',pass:audit.partyWallPairs>=2&&audit.maxPartyGap>=1.5&&audit.roads.some(w=>w<3)&&audit.roads.some(w=>w>6)});
  results.push({name:'thick house volumes, floor and slope rules',pass:audit.volumes.length>30&&audit.volumes.every(v=>v.storeys>=3&&v.storeys<=4&&v.depth>=5.6)&&audit.compoundSlopeErrors===0&&audit.roofParts.includes(1)&&audit.roofParts.includes(43)});
  results.push({name:'procedural private courts genuinely open',pass:audit.courtChecks.length>0&&audit.courtChecks.every(c=>c.open)});
  results.push({name:'pocket squares use real gaps',pass:audit.pocketSquares.length>0&&audit.pocketSquares.every(p=>p.slope<.8)});

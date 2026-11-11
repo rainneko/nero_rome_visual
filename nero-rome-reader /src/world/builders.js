@@ -136,7 +136,10 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     c=mix(c,stC,cov);}}}
  if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
   float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),max(1.-smoothstep(32.,40.,length(p-vec2(330.,160.))),1.-smoothstep(-6.,2.,max(max(660.-p.x,p.x-776.),max(118.-p.y,p.y-326.))))));   // (+ AUREA_EAST)
-  mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);}
+  float mI=0.,mE=0.;{vec2 q=p-vec2(850.,-40.);float u=q.x*.98481+q.y*.17365,v=-q.x*.17365+q.y*.98481,dI=max(max(-195.4-u,u-53.8),max(-55.5-v,v-49.2));mA=max(mA,1.-smoothstep(-6.,2.,dI));   // (+ AUREA_OPPIAN, the octagon wing's ground)
+   mI=1.-smoothstep(-1.,1.,dI);mE=1.-smoothstep(.3,1.1,abs(dI+1.4));}   // from 68 the inner court (vol 18): a cooler, closer-mown lawn and a pale gravel edge 1.4 m in, no wall
+  mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);
+  if(uAurea>1.5){c=mix(c,c*vec3(.84,.96,.9),mI*mA*.7);c=mix(c,vec3(.56,.53,.46),mE*mA*.5);}}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
 MAT.road=MAT.city;
@@ -328,19 +331,21 @@ const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive
 // Tree kinds (t[3]): evergreen cyp, pine, broad (holm oak / laurel), olive, shrub, palm; deciduous broadD (oak/elm), plane, poplar (and willow), fig, pomegr, almond; flower (shrub with seasonal flowers).
 // t = [x,y,z,kind,scale,colour?,owner?]. owner: 0 public / wild, 1 imperial, 2 senatorial, 3 temple, 4 plebeian (pots): picks the flower season profile (see FLW_GL).
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
-function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter((t,i)=>hash2(i,t[2]|0)<k);}   // the cap thins the list that is drawn, the same way on every load (it used to thin W.trees, a copy nobody drew)
+// a tree's or a figure's own dice, keyed to its place (x, z to 0.25 m): one added or dropped elsewhere changes neither which ones the cap keeps nor their size and colour
+function placeDie(t,s){return hash2(Math.round(t[0]*4)+s*7919,Math.round(t[2]*4)-s*104729);}
+function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter(t=>placeDie(t,1)<k);}   // the cap thins the list that is drawn, by each tree's place (it used to thin W.trees, a copy nobody drew; then by the list index, so 4 trees more on the Palatine redrew 2,200 across the city)
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
-  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree keeps its index in its kind's list for its size and colour
+  // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree's size and colour come from its place (placeDie)
   for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});
    for(const lk in parts)for(const T of instTiles(parts[lk].length,j=>{const t=all[parts[lk][j]];return[t[0],t[2]];})){const I=T.map(j=>parts[lk][j]),kd=TKIND[k]||{g:k,t:0,m:0};let geo=TREEGEO[kd.g];
     if(kd.m){const g2=new THREE.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);g2.boundingSphere=geo.boundingSphere;geo=g2;}   // the per-instance season attribute needs its own geometry object (buffers are shared)
     const m=new THREE.InstancedMesh(geo,kd.m===2?MAT.bloom:kd.m===1?MAT.foliageD:MAT.foliage,I.length);
     const aI=kd.m?new Float32Array(I.length*4):null;
     const M=new THREE.Matrix4(),q=new THREE.Quaternion(),S=new THREE.Vector3(),Pp=new THREE.Vector3(),c=new THREE.Color();
-    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*hash2(i,7)),sy,sx*(.85+.3*hash2(i,9)));Pp.set(t[0],t[1]-.3,t[2]);
-      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*hash2(i,3);
+    I.forEach((i,j)=>{const t=all[i],s=t[4]||1,sx=s*(kd.sx||1),sy=s*(kd.sy||1);q.setFromAxisAngle(new THREE.Vector3(0,1,0),hash2(t[0]|0,t[2]|0)*TAU);S.set(sx*(.85+.3*placeDie(t,7)),sy,sx*(.85+.3*placeDie(t,9)));Pp.set(t[0],t[1]-.3,t[2]);
+      M.compose(Pp,q,S);m.setMatrixAt(j,M);const v=.75+.5*placeDie(t,3);
       if(kd.m){c.setRGB(v,v,v);aI[j*4]=kd.t;aI[j*4+1]=hash2(t[0]*.37,t[2]*.53);aI[j*4+2]=t[6]||0;aI[j*4+3]=hash2(t[0]*.91+3.,t[2]*.77);}
-      else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*hash2(i,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
+      else{const b=TREECOL[k];c.setRGB(b[0]*v,b[1]*v*(.9+.2*placeDie(t,5)),b[2]*v);if(t[5])c.setRGB(t[5][0]*v,t[5][1]*v,t[5][2]*v);}
       m.setColorAt(j,c);});
     if(aI)geo.setAttribute('aI',new THREE.InstancedBufferAttribute(aI,4));
     if(kd.m===1)m.customDepthMaterial=DEPTH_D;
@@ -352,9 +357,9 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
-function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter((p,i)=>hash2(i,p[2]|0)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), the same way on every load
+function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter(p=>placeDie(p,2)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), by each figure's place
   for(const T of instTiles(list.length,i=>[list[i][0],list[i][2]])){const m=new THREE.InstancedMesh(PPLGEO,MAT.people,T.length),M=new THREE.Matrix4(),c=new THREE.Color();
-    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(hash2(i,p[0]|0)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
+    T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(placeDie(p,4)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
     layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
 
 /* ---------- monument generators (into GB g) ---------- */
@@ -469,7 +474,7 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
     for(const z of o.W>=26?['big','mid']:[o.W>=14?'mid':'small'])for(const d of[z==='big'?7:z==='mid'?5:4.5,3.5,2.5]){const[hx,b0,b1]=ext(z);if(d-b0<1||al||templeHit(W,F,o,hx,zF+d-b0,zF+d+b1))continue;
       const G=templeGround(W,F,hx,zF+d-b0,zF+d+b1),ya=G?Math.max(0,G.mn):0;if(G&&(ya>2.5||G.mx-ya>1))continue;   // where the ground in front rises it stands on it (lifted, at most 2.5 m, its uphill side sunk at most 1 m)
       al={z,d,f:zF+d+b1,ya,yb:G&&o.pave===false?Math.min(ya,G.mn):ya};}   // yb: off the paving, the ground that falls away under it (a socle)
-    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}if(yb<-.2){g.set(6,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);}g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
+    if(al){templeAltar(g,F,o,zF+al.d,al.z,al.ya,al.yb);zA=al.f;}if(st){const e=W.templeStairLog[W.templeStairLog.length-1];e.altar=al?al.z+'@'+al.d:'none';if(al&&al.ya>.05)e.altarY=+al.ya.toFixed(2);}}if(o.pave!==false&&o.W>=10){const pz0=-L2-4,pz1=zF+12,pcz=(pz0+pz1)/2,phx=W2+5,phz=(pz1-pz0)/2;let yb=0;if(W.gy){yb=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yb=Math.min(yb,W.gy(q[0],q[2])-F.oy);}}templeCourt(W,g,F,o,{pz0,pz1,pcz,phx,phz,yb,PP});g.set(49,tH);g.poly([F.p(-phx,.07,pcz-phz),F.p(phx,.07,pcz-phz),F.p(phx,.07,pcz+phz),F.p(-phx,.07,pcz+phz)],[0,1,0]);g.set(38,.3);g.poly([F.p(-.5,.085,zF),F.p(.5,.085,zF),F.p(.5,.085,pz1),F.p(-.5,.085,pz1)],[0,1,0]);}}if(o.fest??(tH>.62&&o.W<34)){const fz=zf+cD*.8;for(let c=0;c<nf-1;c++){const xa=-W2+m+c*ic,xb=xa+ic;g.set(23,.3);for(let k=1;k<6;k++){const t=k/6;box(g,F,lerp(xa,xb,t),y0+cH-1.3-Math.sin(t*Math.PI)*1.1,fz,.22,.3,.22,31);}g.set(8,(c*.37+tH)%1);for(const xx of[xa+.35,xb-.35])g.poly([F.p(xx-.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-2.6,fz+.05),F.p(xx+.08,y0+cH-1.3,fz+.05),F.p(xx-.08,y0+cH-1.3,fz+.05)],F.d(0,0,1));}}
   const eH=cH*.24,ye=y0+cH;g.set(6,o.seed||.3);box(g,F,0,ye,0,W2-m*.25,eH*.62,L2-m*.25,31);g.set(2,.5);box(g,F,0,ye+eH*.33,0,W2-m*.2+.06,eH*.12,L2-m*.2+.06,15);
   g.set(6,o.seed||.3);box(g,F,0,ye+eH*.62,0,W2+.35,eH*.38,L2+.35,31);
   if(o.dentils!==false){g.set(2,.6);for(let x=-W2;x<=W2;x+=.45){box(g,F,x,ye+eH*.55,L2+.12,.12,eH*.08,.15,1|2|8|32);}}
@@ -482,6 +487,29 @@ function temple(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0);
   g.set(o.roof==='gilt'?12:1,(o.seed||.3)+.2+(tH>.5?.37:0));
   for(const sx of[1,-1])g.poly([F.p(sx*(W2+.55),yb+.35,zr+.2),F.p(0,yb+hP+.55,zr+.2),F.p(0,yb+hP+.55,-zr-.2),F.p(sx*(W2+.55),yb+.35,-zr-.2)],F.d(sx,1,0));
   {const fe=Math.max(L2+run,zA)+1,be=L2+ph*1.4+1,q=F.p(0,0,(fe-be)/2);W.foot.add(q[0],q[2],W2+1,(fe+be)/2,o.rot||0).t=1;}return{top:yb+hP};}   // the stair and the altar are in it
+// podium p3 (2026-11-08; the author: a white block under a temple on the slope): the paved court round a temple (o.pave), from 4 m behind it to 12 m in front of
+// its stair, 5 m either side. Where the ground under it falls 0.2-1.5 m it stands on a plain base of the podium's stone (travertine under a marble podium; it was
+// white marble, 13 m high on the Palatine). Where it falls more it is a terrace: retaining walls with a coping, a parapet and buttresses (terraceEdge, the hill's
+// wall stone), and the temple's way goes on down from the front: one flight where the ground in front is 3 m or less below the court, else a landing in front of
+// an opening in the middle and two flights along the front wall, turning down the sides where they need to (edgeStair). In Rome, before the houses, the court is
+// reserved (terraceReserve). A stand-in's court (W.inStand, romeStand) stays a plain base: the model brings its own. W.templeCourts logs each court: its fall, the fall in front, and how it is held.
+function templeCourt(W,g,F,o,c){const{pz0,pz1,pcz,phx,phz,yb,PP}=c,log=W.templeCourts||(W.templeCourts=[]);
+  const q0=F.p(0,0,pz1+1.5),dF=W.gy?F.oy-W.gy(q0[0],q0[2]):0,e={x:Math.round(o.x),z:Math.round(o.z),drop:+(-yb).toFixed(1),front:+dF.toFixed(1)};log.push(e);
+  // whether it is a terrace (in Rome reserved before the houses: the street fabric's key) is planned on the desktop tier's ground at every tier (W.routeGround),
+  // the temple raised there as much as its ground is (exact for a temple stood on its ground, T2): the low tier's ground is 1-2 m off near some temples.
+  // Flat or base, and every height, on this tier's ground.
+  const RG=W.routeGround;let yp=yb;
+  if(RG&&W.gy){const cy=RG.gy(F.ox,F.oz)-W.gy(F.ox,F.oz);yp=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,1],[0,-1],[1,0],[-1,0]]){const q=F.p(sx*phx,0,pcz+sz*phz);yp=Math.min(yp,RG.gy(q[0],q[2])-F.oy-cy);}e.plan=+(-yp).toFixed(1);}
+  if(yp>=-1.5||W.inStand||typeof terraceEdge!=='function'){if(yb>=-.2){e.kind='flat';return;}g.set(PP===6?48:PP,o.seed||.3);box(g,F,0,yb-1.2,pcz,phx,-yb+1.2-.03,phz,31);g.set(2,.5);box(g,F,0,-.35,pcz,phx+.25,.4,phz+.25,31);e.kind='base';return;}
+  const P=[[-phx,pz0],[phx,pz0],[phx,pz1],[-phx,pz1]],ow=Math.min(phx-1.2,4.5),pair=dF>3,lx=(x,z)=>(x-F.ox)*F.c-(z-F.oz)*F.s,
+    open=(x,z,i)=>i===2&&Math.abs(lx(x,z))<(pair?1.6:ow)?'stair':false;
+  if(W.name==='rome'&&!(W.footMark&&W.footMark.houses!=null))terraceReserve(W,F,P,{});
+  terraceEdge(W,g,P,.07,{F,tag:'templeCourt',open,wing:false});
+  if(pair){const zl=pz1+1.3,q=F.p(0,0,zl),gb=Math.min(W.gy(q[0],q[2])-F.oy,0)-.8,pal=hillPal(o.x,o.z);g.set(60,.5,pal,0);box(g,F,0,gb,zl,1.6,.07-.12-gb,1.3,31&~32);g.set(48,.45);box(g,F,0,-.05,zl,1.63,.12,1.33,31);   // the landing in front of the opening
+    e.steps=[1,-1].map(s=>edgeStair(W,g,[F.p(s*1.6,0,pz1+1.65),F.p(s*(phx+1.65),0,pz1+1.65),F.p(s*(phx+1.65),0,pz0)].map(p=>[p[0],p[2]]),F.oy+.07,{w:2.6,side:-s,pal}).steps);e.kind='terrace, two flights';}
+  else if(dF>.6){const n=Math.max(2,Math.ceil(dF/.18)),t=.34,r=dF/n;g.set(48,.45);for(let i=0;i<n;i++){const z=pz1+i*t+t/2,yt=.07-(i+1)*r,q=F.p(0,0,z),gb=Math.min(W.gy(q[0],q[2])-F.oy,yt)-.8;box(g,F,0,gb,z,ow,yt-gb,t/2+.01,31);}
+    e.steps=n;e.kind='terrace, one flight';}
+  else e.kind='terrace';}
 function tholos(W,g,o){const F=frame(o.x,o.y,o.z,o.rot||0),R=o.R||7,ph=o.podH||2.6,cH=o.colH||9,n=o.n||18;
   g.set(6,.35);lathe(g,F,0,-3,0,[[R+.9,0],[R+.9,3+ph],[0,3+ph]],32);g.set(2,.4);lathe(g,F,0,ph-.4,0,[[R+1.05,0],[R+1.05,.4],[0,.4]],32);
   for(let i=0;i<5;i++){g.set(2,.45);box(g,F,0,0,R+.9+(i+.5)*.42,2.6,ph*(5-i)/5,.21,1|2|8|16);}
@@ -546,7 +574,7 @@ function courtBlock(W,g,F,o){const{cx,cz,w,d,y0,nSt,sH,cw,cd}=o,gH=o.gH||sH*1.2,
         else{const x1=sx*(cw/2-ins+.4),x2=sx*cw/2;g.poly([F.p(cx+x1,yr,cz-cd/2+ins),F.p(cx+x1,yr,cz+cd/2-ins),F.p(cx+x2,yi,cz+cd/2),F.p(cx+x2,yi,cz-cd/2)],F.d(-sx,1,0));}}}
     if(W.trees&&o.garden!==false){const n=Math.floor(cw*cd/180);for(let i=0;i<n;i++){const q=F.p(cx+(hash2(i,cw|0)-.5)*(cw-9),y0,cz+(hash2(i,cd|0)-.5)*(cd-9));W.trees.push([q[0],y0,q[2],hash2(i,3)<.5?'cyp':'broad',.6+.4*hash2(i,5)]);}}
   }else roof(g,F,o.roof||'hip',cx,cz,w,d,yT,22*DEG,.8,fac.seed+.1);
-  if(cw>2&&typeof reserveResidentialArea==='function'){const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(cx+q[0],0,cz+q[1]);return[p[0],p[2]];});reserveResidentialArea(W,P,'authored-courtyard-estate');}
+  if(cw>2&&o.reserve!==false&&typeof reserveResidentialArea==='function'){const P=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(q=>{const p=F.p(cx+q[0],0,cz+q[1]);return[p[0],p[2]];});reserveResidentialArea(W,P,'authored-courtyard-estate');}
   return yT;}
 function tower(g,F,cx,cz,w,y0,nSt,sH,o={}){const gH=sH*1.1,yT=y0+gH+(nSt-1)*sH;
   rectWalls(g,F,cx,cz,w,w,y0-8,yT,y0,{part:o.part??0,seed:o.seed??.7,sty:7,fl:(8|4|256|32),nSt,gH,sH,lit:1});

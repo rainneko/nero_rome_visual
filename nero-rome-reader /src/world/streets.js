@@ -44,10 +44,10 @@ function streetPrecinctWingColumns(plan,wingIndex,spacing,gy,floorY){const colum
 function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,bz0=1e9,bx1=-1e9,bz1=-1e9;
   for(const f of F){if(f.tag==='road'||f.tag==='open'||f.r>400)continue;bx0=Math.min(bx0,f.cx);bx1=Math.max(bx1,f.cx);bz0=Math.min(bz0,f.cz);bz1=Math.max(bz1,f.cz);}
   const cs=Q.name==='low'&&!TEST?3.5:2.5,x0=Math.max(bx0-160,-3000),z0=Math.max(bz0-160,-2700),nx=Math.ceil((Math.min(bx1+160,3000)-x0)/cs),nz=Math.ceil((Math.min(bz1+160,3500)-z0)/cs),N=nx*nz;
-  const solid=new Uint8Array(N),veg=new Uint8Array(N),openLand=new Uint8Array(N),court=new Uint8Array(N),temple=new Uint8Array(N),K=(i,j)=>j*nx+i;
-  for(const f of F){if(f.tag==='road')continue;const open=f.tag==='open'||f.tag==='court',isCourt=open&&(!!f.siteRole||!!f.reservation||f.tag==='court'),m=open?0:.3,r=f.r+1,i0=Math.max(0,Math.floor((f.cx-r-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.cx+r-x0)/cs)),j0=Math.max(0,Math.floor((f.cz-r-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.cz+r-z0)/cs));
+  const solid=new Uint8Array(N),veg=new Uint8Array(N),openLand=new Uint8Array(N),court=new Uint8Array(N),temple=new Uint8Array(N),house=new Uint8Array(N),hb=(W.footMark&&W.footMark.houses)||0,K=(i,j)=>j*nx+i;
+  let fi=-1;for(const f of F){fi++;if(f.tag==='road')continue;const open=f.tag==='open'||f.tag==='court',isCourt=open&&(!!f.siteRole||!!f.reservation||f.tag==='court'),m=open?0:.3,r=f.r+1,i0=Math.max(0,Math.floor((f.cx-r-x0)/cs)),i1=Math.min(nx-1,Math.floor((f.cx+r-x0)/cs)),j0=Math.max(0,Math.floor((f.cz-r-z0)/cs)),j1=Math.min(nz-1,Math.floor((f.cz+r-z0)/cs));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=x0+(i+.5)*cs-f.cx,z=z0+(j+.5)*cs-f.cz,u=f.c*x-f.s*z,v=f.s*x+f.c*z;
-      if(f.poly?nobleInside(x+f.cx,z+f.cz,f.poly):(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m)){if(open){veg[K(i,j)]=1;openLand[K(i,j)]=1;if(isCourt)court[K(i,j)]=1;}else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;}}}}
+      if(f.poly?nobleInside(x+f.cx,z+f.cz,f.poly):f.circ&&o.v2?x*x+z*z<=(f.hw+m)*(f.hw+m):(Math.abs(u)<=f.hw+m&&Math.abs(v)<=f.hd+m)){if(open){veg[K(i,j)]=1;openLand[K(i,j)]=1;if(isCourt)court[K(i,j)]=1;}else{solid[K(i,j)]=1;if(f.t)temple[K(i,j)]=1;if(fi>=hb)house[K(i,j)]=1;}}}}   // house: placed with or after the houses (W.footMark.houses), not a monument or reserved site   // ?city=v2: a circle as a circle (v2's lots and rings take it so; the old city keeps its box)
   // vegetation and water on a 10 m lattice, nearest-sampled
   const wat=new Uint8Array(N),naturalVeg=new Uint8Array(N),lat=Math.max(1,Math.round(10/cs));{const lx=Math.ceil(nx/lat)+1,lz=Math.ceil(nz/lat)+1,V=new Uint8Array(lx*lz),Wt=new Uint8Array(lx*lz);
     for(let j=0;j<lz;j++)for(let i=0;i<lx;i++){const x=x0+(i*lat+lat/2)*cs,z=z0+(j*lat+lat/2)*cs;V[j*lx+i]=o.veg(x,z)?1:0;Wt[j*lx+i]=o.water(x,z)?1:0;}
@@ -61,6 +61,7 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
   {const min=Math.round(260/(cs*cs));stComps(st,nx,nz,c=>{if(c.length<min)for(let a=0;a<c.length;a++)st[c[a]]=0;},true);}
   for(let it=0;it<2;it++){const s2=st.slice();for(let j=1;j<nz-1;j++)for(let i=1;i<nx-1;i++){const k=K(i,j);if(solid[k]||wat[k]||veg[k]){s2[k]=0;continue;}
     const n=st[k-1]+st[k+1]+st[k-nx]+st[k+nx]+st[k-nx-1]+st[k-nx+1]+st[k+nx-1]+st[k+nx+1]+st[k];s2[k]=(st[k]||n>=5)?1:0;}st.set(s2);}   // only fills: thin alleys (one cell wide) must survive
+  const hug=st.slice();   // what the 9 m rule laid (a lone patch of it goes below, o.loneHug)
   // main roads: stone inside the city, dirt in the country unless wide; direction field for ruts. An uphill piece (roadHillSplit, {hill:true}) is an
   // ordinary street paved by its district: marble on the monumental hills and precincts, stone in the city, earth in the country. 【史】Even the climb
   // out of the Subura had stone steps, "numquam sicco sordida saxa gradu" (Martial 5.22); earth steps are for the lanes of poor quarters (streetStairs).
@@ -102,6 +103,12 @@ function buildStreets(W,o){const t0=performance.now(),F=W.foot.list;let bx0=1e9,
     for(const P of o.v2.aprons||[]){let a0=1e9,b0=1e9,a1=-1e9,b1=-1e9;for(const p of P){a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);}
       for(let j=Math.max(0,Math.floor((b0-z0)/cs));j<=Math.min(nz-1,Math.floor((b1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((a0-x0)/cs));i<=Math.min(nx-1,Math.floor((a1-x0)/cs));i++){const k=K(i,j);
         if(!solid[k]&&!wat[k]&&!court[k]&&nobleInside(x0+(i+.5)*cs,z0+(j+.5)*cs,P)){st[k]=1;veg[k]=naturalVeg[k]=0;}}}}
+  // A street leads somewhere. A patch the 9 m rule laid that reaches no road, lane or square and has no house within 9 m only rings a monument's
+  // box: a 50 m marble strip along the Domus Augusti above the Circus, with a flight of steps down onto the grass (the Victoria stand-in's court hid it
+  // until 2026-11-08). Where o.loneHug(x,z) holds at its middle, it is not a street: the ground stays as it is (W.loneHug logs them).
+  if(o.loneHug){const dH=stChamfer(house,nx,nz),log=W.loneHug=[];stComps(st,nx,nz,c=>{let sx=0,sz=0;
+    for(let a=0;a<c.length;a++){const k=c[a];if(!hug[k]||road[k]||dH[k]*cs<=9)return;const i=k%nx;sx+=i;sz+=(k-i)/nx;}
+    const x=x0+(sx/c.length+.5)*cs,z=z0+(sz/c.length+.5)*cs;if(!o.loneHug(x,z))return;for(let a=0;a<c.length;a++)st[c[a]]=0;log.push({x:Math.round(x),z:Math.round(z),m2:Math.round(c.length*cs*cs)});},true);}
 
   // width of each street (distance to the nearest non-street, local maximum) -> alleys narrower than ~3 m are dirt
   const nonSt=new Uint8Array(N);for(let k=0;k<N;k++)nonSt[k]=st[k]?0:1;const dN=stChamfer(nonSt,nx,nz),wid=new Float32Array(N);
@@ -271,23 +278,25 @@ function streetWallProp(W,x,z,done,K,w){const F=W.foot,cs=F.cell,seen=new Set(),
 /* street kit (rome_lacus, rome_compitum, rome_stepping, rome_counter, rome_awning, rome_amphorae, rome_cart, rome_laundry): one InstancedMesh per part, placed from the street raster:
    props stand against the walls of dirt and stone streets (awnings and counters back to a house wall, found from the footprints by streetWallProp; the rest from the wall-distance field), fountains and shrines on the small piazzas, stepping stones where main roads are crossed.
    o.layerAt(x,z): a story-state group for a prop there (parentLayer; the streets the Golden House takes), or null. */
-function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,R=RNG(123),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
-  let nP=0,nS=0,nC=0;const plaza=[],props=[];
+// each prop's dice are keyed to its place (x, z to 0.25 m), not drawn from one stream in raster order: a street changed in one place moves no prop elsewhere
+function streetKit(W,o){const S=W.street,{x0,z0,cs,nx,nz,grd,dist,wid}=S,PR=(x,z,s)=>RNG((hash2(Math.round(x*4)+s*7919,Math.round(z*4)-s*104729)*4294967296)>>>0),put=(n,x,z,rot,opt)=>{const lk=o.layerAt&&o.layerAt(x,z);ROME.GLB.push({n,x,y:W.gy(x,z)+(opt&&opt.dy||0),z,r:rot,o:Object.assign({inst:1},lk?{parentLayer:lk}:null,opt)});},TINT=[[.8,.74,.6],[.74,.5,.1],[.46,.12,.08],[.52,.34,.14],[.36,.17,.28],[.8,.74,.6]];   // undyed linen, saffron, madder, ochre, faded purple
+  let nP=0,nS=0,nC=0;const plaza=[],props=[],LP=W.lifePlots||[],inPlot=(x,z)=>LP.some(q=>Math.hypot(q.x-x,q.z-z)<8);   // ?city=v2: the plots left for the street life (parcels.js) stay clear
   for(let j=3;j<nz-3;j+=2)for(let i=3;i<nx-3;i+=2){const k=j*nx+i,g=grd[k];if(!g||g===3)continue;const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,u=o.urban(x,z);if(u<.25)continue;
     const w=wid[k];
-    if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35)plaza.push([x,z,w]);
+    if(w>=8.5&&g<3&&dist[k]*cs>4.2&&u>.35&&!inPlot(x,z))plaza.push([x,z,w]);
     const d=dist[k]*cs;if(d<1.2||d>3.8||w<3.4||S.road[k]||S.stair?.[k])continue;   // no stalls on a flight of stairs   // dist is in cells: the first free cell next to a wall is cs away
     const gx=dist[k+1]-dist[k-1],gz=dist[k+nx]-dist[k-nx],l=Math.hypot(gx,gz);if(l<.3)continue;const wx=gx/l,wz=gz/l;   // direction away from the wall
-    if(R()>(g===2?.075:.045)*(u>.6?1:.6))continue;if(W.gy(x,z)>o.maxY)continue;
+    const R=PR(x,z,1);if(R()>(g===2?.075:.045)*(u>.6?1:.6))continue;if(W.gy(x,z)>o.maxY)continue;
     const r=R(),rot=Math.atan2(-wx,-wz),tint=TINT[Math.floor(R()*TINT.length)];
+    if(inPlot(x,z))continue;   // after the dice: the other props keep their places
     if(r<.3){const a=streetWallProp(W,x,z,props,STREET_AWNING,w);if(!a)continue;put('rome_awning',a[0],a[1],a[2],{tint,dy:a[3]-W.gy(a[0],a[1])});props.push(a);}   // the dice above are drawn either way: the other props keep their places
     else if(r<.55){const a=streetWallProp(W,x,z,props,STREET_COUNTER,w);if(!a)continue;put('rome_counter',a[0],a[1],a[2],{dy:a[3]-W.gy(a[0],a[1])});props.push(a);}
     else if(r<.75)put('rome_amphorae',x,z,rot);
     else if(r<.85)put('rome_cart',x,z,rot+(R()-.5)*1.2);
     else put('rome_laundry',x-wx*(d-.3),z-wz*(d-.3),rot,{dy:4.4});nP++;}
-  plaza.sort(()=>R()-.5);const used=[];
-  for(const[x,z,w]of plaza){if(nC>=90)break;if(used.some(p=>Math.hypot(p[0]-x,p[1]-z)<60))continue;used.push([x,z]);
-    if(nC%2===0)put('rome_lacus',x,z,R()*TAU);else put('rome_compitum',x,z,R()*TAU);nC++;}
+  for(const p of plaza)p.pr=PR(p[0],p[1],2)();plaza.sort((a,b)=>a.pr-b.pr);const used=[];   // fountains and shrines: the order, the kind and the turn by place
+  for(const[x,z,w]of plaza){if(nC>=90)break;if(used.some(p=>Math.hypot(p[0]-x,p[1]-z)<60))continue;used.push([x,z]);const R=PR(x,z,3);
+    if(R()<.5)put('rome_lacus',x,z,R()*TAU);else put('rome_compitum',x,z,R()*TAU);nC++;}
   for(const[w,pts0]of o.roads){if(w<7)continue;const pts=densify(pts0,12);let acc=60;
     for(let p=0;p<pts.length-1;p++){const a=pts[p],b=pts[p+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1;acc+=l;if(acc<110)continue;const x=(a[0]+b[0])/2,z=(a[1]+b[1])/2;if(S.at(x,z)!==2||o.urban(x,z)<.4)continue;acc=0;
       put('rome_stepping',x,z,Math.atan2(-dx/l,-dz/l),{sx:Math.min(1.6,w/5.3),sy:1,sz:1,dy:.02});nS++;}}   // across the street: the stones' long axis is the road's normal

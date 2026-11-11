@@ -34,6 +34,10 @@ _bk.PAL.update({
     'rock':       ((0.79, 0.75, 0.68), 0.0, 0.95),   # pale limestone of the hills, #c9bfae (was a brown tuff)
     'rock2':      ((0.66, 0.62, 0.54), 0.0, 0.95),   # darker stain on rock faces, #a89d8a
     'moss':       ((0.60, 0.65, 0.29), 0.0, 0.90),   # yellow-green moss and grass on ledge tops, #9aa64a
+    'turf':       ((0.66, 0.57, 0.36), 0.0, 0.95),   # dry hill grass on ledges and scree (the page gives it the terrain's seasonal meadow)
+    'ivy':        ((0.22, 0.30, 0.12), 0.0, 0.90),   # ivy on rock faces: more olive than the clipped box hedges (it hangs in the faces' shade)
+    'rock3':      ((0.60, 0.55, 0.45), 0.0, 0.95),   # the same rock, a stain darker and warmer (the Tiberiana's base; the page: W rock3)
+    'rock4':      ((0.47, 0.43, 0.36), 0.0, 0.95),   # ... in shadowed re-entrants: fissures, under bench lips
     'pav_red':    ((0.62, 0.24, 0.17), 0.0, 0.50),   # red marble inlay bands
     'pav_blue':   ((0.24, 0.34, 0.52), 0.0, 0.50),   # blue-grey inlay bands
     'blue':       ((0.20, 0.36, 0.62), 0.0, 0.80),   # Egyptian blue paint
@@ -447,13 +451,17 @@ def _insets(total, n, rnd):
 
 def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0,
               moss=True, boulders=6, dip=4.0, rim=0.6, grid=5.0, rock2=0.25,
-              relief=0.3, batter=7.5, moss_cover=0.3, ground=None, band=None):
+              relief=0.3, batter=7.5, moss_cover=0.3, ground=None, band=None, tilt=None, split=None, top_mat=None):
     """A steep cliff of ledge rock: `strata` benches (z0 to z1 in all), each the previous outline inset 1-3 m with
     noise; the stack dips `dip` degrees and its tops vary `relief` m along the outline (about 1.5 steps a wall foot's
     ledge up and down). Faces lean back by `batter` degrees, with deep joint notches, a two-step rounded lip and
     `rock2` stains. Tops are pale `mat` with a `rim`; only the topmost bench gets moss, as irregular islands over
     `moss_cover` of its top. `boulders` irregular chunks sit on the ledges, partly sunk. Give a footprint that hugs a
-    wall: inner edge inside the terrace fill, outer edge 8-12 m out. Returns top(x, y), the top height at a point."""
+    wall: inner edge inside the terrace fill, outer edge 8-12 m out. Returns top(x, y), the top height at a point.
+    tilt(x, y): metres added to every level at (x, y), so the stack follows the hill's slope (give dip=0 with it; the
+    dip's direction is random). split: the benches' share of z0..z1, bottom first (e.g. (0.5, 0.3, 0.2)), so they are
+    not all the same height. top_mat: material of the topmost bench's top inside the rim (e.g. 'grass' for a grassy
+    slope above the cliff; its moss islands still go on it). All three default off: the old models come out as before."""
     F = _F(F); rnd = random.Random(seed)
     ring = []
     for i in range(len(pts)):
@@ -470,10 +478,20 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
     extent = band if band is not None else min(12.0, max(2.0, 0.6 * rel))
     steps = _insets(extent, strata - 1, rnd)
 
+    acc = None
+    if split:
+        tot = float(sum(split)); acc = [0.0]
+        for f in split:
+            acc.append(acc[-1] + f / tot)
+
+    def lev(s):            # height of level s above z0 (equal benches unless split)
+        return s * h if acc is None else (z1 - z0) * acc[min(s, len(acc) - 1)]
+
     def zat(x, y, s):      # height of level s (0 = bottom) at (x, y): stacked, dipping, relief and fine noise
-        return (z0 + s * h + tdip * ((x - cxm) * math.cos(phi) + (y - cym) * math.sin(phi))
+        return (z0 + lev(s) + tdip * ((x - cxm) * math.cos(phi) + (y - cym) * math.sin(phi))
                 + relief * math.sin(0.11 * x + 1.7 * seed) * math.cos(0.09 * y + 0.4 * seed)
-                + 0.3 * math.sin(0.37 * x + 1.7 * seed) * math.cos(0.29 * y + 0.4 * seed))
+                + 0.3 * math.sin(0.37 * x + 1.7 * seed) * math.cos(0.29 * y + 0.4 * seed)
+                + (tilt(x, y) if tilt else 0.0))
 
     outline = _joints(ring, rnd, 0.0, C)
     benches = []
@@ -490,7 +508,8 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
         R2 = _inset_toward(O, C, 0.4 + rim)              # outer edge of the rim, the top inside it
         for i in range(n):
             j = (i + 1) % n
-            B = [(O[k][0] + out[k][0] * h * tbat, O[k][1] + out[k][1] * h * tbat) for k in (i, j)]   # batter
+            hb = h if acc is None else lev(s + 1) - lev(s)
+            B = [(O[k][0] + out[k][0] * hb * tbat, O[k][1] + out[k][1] * hb * tbat) for k in (i, j)]   # batter
             zb = [zat(O[k][0], O[k][1], s) for k in (i, j)]
             zl = [zat(O[k][0], O[k][1], s + 1) - 0.5 for k in (i, j)]
             zm = [zat(Mid[k][0], Mid[k][1], s + 1) - 0.15 for k in (i, j)]
@@ -506,7 +525,7 @@ def rock_mass(F, pts, z0, z1, mat='rock', seed=1, jitter=1.4, strata=4, step=3.0
             add_poly(mat, [F.p(R1[i][0], R1[i][1], zt[0]), F.p(R1[j][0], R1[j][1], zt[1]),
                            F.p(R2[j][0], R2[j][1], zr[1]), F.p(R2[i][0], R2[i][1], zr[0])])
         zf = (lambda x, y, s=s: zat(x, y, s + 1))
-        _flat_top(F, R2, zf, mat, grid)
+        _flat_top(F, R2, zf, top_mat if (top_mat and s == strata - 1) else mat, grid)
         if moss and s == strata - 1:
             _moss_islands(F, R2, zf, rnd, moss_cover)
     for _ in range(boulders):
@@ -534,6 +553,279 @@ def foot_rocks(F, pts, z_top_range, z_bot=-20.0, width=4.0, seed=1, step=4.0, bl
         size = rnd.uniform(2.0, 4.5)
         base = (top_z(x, y) if top_z else rnd.uniform(lo, hi)) - 0.25 * size
         _chunk(F, x, y, base, size, rnd, mat, rnd.uniform(0.0, 90.0))
+
+
+def _ray_poly(px, py, nx, ny, poly):
+    """Distance along the unit vector (nx, ny) from (px, py) to the nearest crossing of the closed polygon, or None."""
+    best = None
+    for i in range(len(poly)):
+        (x0, y0), (x1, y1) = poly[i], poly[(i + 1) % len(poly)]
+        ex, ey = x1 - x0, y1 - y0
+        den = nx * ey - ny * ex
+        if abs(den) < 1e-9:
+            continue
+        t = ((x0 - px) * ey - (y0 - py) * ex) / den
+        s = ((x0 - px) * ny - (y0 - py) * nx) / den
+        if t > 0.0 and -1e-6 <= s <= 1.0 + 1e-6 and (best is None or t < best):
+            best = t
+    return best
+
+
+def _wave(rnd, n=3, base=0.03):
+    """A smooth 1-D noise in [0, 1] along a length s: n sines with random wavelengths (about 1/base m and shorter) and phases."""
+    W = [(rnd.uniform(0.6, 1.6) * base * (1.9 ** k), rnd.uniform(0.0, TAU), 0.55 ** k) for k in range(n)]
+    tot = sum(a for _, _, a in W)
+    return lambda s: 0.5 + 0.5 * sum(a * math.sin(w * s + p) for w, p, a in W) / tot
+
+
+def _tris():
+    return sum(len(f) - 2 for g in _bk._G.values() for f in g[1])
+
+
+def cliff_band(F, rim, z_rim, z_toe, toe_poly, z_mid=None, seed=1, spacing=(1.9, 3.3), w_in=5.0, skirt=4.0,
+               bench=(0.0, 5.5), bat_up=(9.0, 17.0), bat_low=(6.0, 13.0), talus=(3.0, 7.0), slope=(30.0, 38.0),
+               fissures=8, tongues=4, ivy=6, boulders=16, plants=0.35, keep=(), min_bench=None, margin=0.15,
+               jitter=0.5, mat='rock', top_mat='turf', scree=0.5, alt='rock2', dark='rock2'):
+    """A natural cliff along an open rim polyline, the outside on the LEFT of travel (a clockwise run round a model).
+    Built from cross-sections ('stations') every 1.9-3.3 m along the rim. Each runs from a buried skirt and a top strip
+    w_in m wide behind the rim, over a rounded lip, down an upper face to a mid bench (z_mid; width 0-5.5 m by noise;
+    none where z_mid returns None), down a lower face, and over a scree slope (talus) to its toe. The toe lands `margin`
+    m inside toe_poly (a closed polygon, e.g. the old foot outline, so the footprint stays where it was) at z_toe(x, y);
+    the bench and the talus share whatever room is left, and the faces steepen where there is little. Along the rim the
+    heights, bench width, talus height and face batter wander by smooth noise and the faces bulge in and out (no big
+    flat facets); `fissures` stations are cut back 1.2-2.6 m into vertical gullies with taller scree fans below them,
+    `tongues` stations become soil slopes coming over the rim, and `ivy` patches hang from the lip. keep: boxes
+    (x0, x1, y0, y1) where no fissure, tongue or ivy goes (stairs). min_bench(x, y): a minimum bench width at a rim
+    point (a stair foot). z_rim and z_mid take the rim point. Materials: `mat` the faces, `alt` patches on them,
+    `dark` the fissures and the bench lips' undersides (the re-entrants), `top_mat` the top strip, tongues and wide benches.
+    Returns {'top': f(x, y) -> rim height of the nearest station, 'plants': [(x, y, z, kind, scale)] for the page
+    (shrubs and small trees on the benches and the scree), 'tris': triangles added, 'stations': count}."""
+    F = _F(F); rnd = random.Random(seed); tri0 = _tris()
+    cum = [0.0]
+    for i in range(len(rim) - 1):
+        cum.append(cum[-1] + math.hypot(rim[i + 1][0] - rim[i][0], rim[i + 1][1] - rim[i][1]))
+    total = cum[-1]
+
+    def at(s):
+        s = max(0.0, min(total, s))
+        for i in range(len(rim) - 1):
+            if s <= cum[i + 1] or i == len(rim) - 2:
+                t = (s - cum[i]) / ((cum[i + 1] - cum[i]) or 1e-9)
+                (x0, y0), (x1, y1) = rim[i], rim[i + 1]
+                return x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+
+    S = [0.0]
+    while S[-1] < total - 0.6:
+        S.append(min(total, S[-1] + rnd.uniform(*spacing)))
+    S[-1] = total
+    wj, wb, wt, wa, wm = (_wave(rnd, 3, b) for b in (0.05, 0.04, 0.05, 0.03, 0.07))
+    wu1, wu2, wl1, wl2 = (_wave(rnd, 3, 0.11) for _ in range(4))
+    inkeep = lambda x, y: any(x0 <= x <= x1 and y0 <= y <= y1 for (x0, x1, y0, y1) in keep)
+    st = []
+    for s in S:
+        x, y = at(s); xa, ya = at(s - 5.0); xb, yb = at(s + 5.0)          # the normals turn slowly: no folds at bends
+        tx, ty = xb - xa, yb - ya; L = math.hypot(tx, ty) or 1.0; tx /= L; ty /= L
+        k = inkeep(x, y)
+        j = 0.0 if k else (wj(s) - 0.5) * 2.0 * jitter + rnd.uniform(-0.15, 0.15)
+        st.append({'s': s, 'x': x - ty * j, 'y': y + tx * j, 'nx': -ty, 'ny': tx, 'keep': k})
+    n = len(st)
+    cand = [i for i in range(3, n - 3) if not st[i]['keep']]
+    rnd.shuffle(cand)
+    fis = []
+    for i in cand:
+        if len(fis) < fissures and all(abs(i - j) >= 5 for j in fis):
+            fis.append(i)
+    pull = [0.0] * n
+    for i in fis:
+        p = rnd.uniform(1.4, 3.2); pull[i] = max(pull[i], p)
+        for j in (i - 1, i + 1):
+            pull[j] = max(pull[j], 0.45 * p)
+    ton = [0.0] * n; cnt = 0
+    for i in cand:
+        if cnt < tongues and all(abs(i - j) >= 3 for j in fis) and not any(ton[max(0, i - 5):i + 6]):
+            ton[i] = 1.0; ton[i - 1] = ton[i + 1] = 0.6; cnt += 1                  # 3 stations, about 6 m wide
+
+    prof, info = [], []
+    for i, q in enumerate(st):
+        x, y, s = q['x'], q['y'], q['s']
+        zr = z_rim(x, y)
+        D = _ray_poly(x, y, q['nx'], q['ny'], toe_poly)
+        D = max(1.2, (D - margin) if D is not None else 8.0)
+        zt = z_toe(x + q['nx'] * D, y + q['ny'] * D)
+        zm = z_mid(x, y) if z_mid else None
+        if zm is not None and not (zt + 6.0 < zm < zr - 3.0):
+            zm = None
+        tl = math.tan(math.radians(bat_up[0] + (bat_up[1] - bat_up[0]) * wa(s)))
+        tl2 = math.tan(math.radians(bat_low[0] + (bat_low[1] - bat_low[0]) * (1.0 - wa(s))))
+        tg = ton[i]
+        if tg:
+            tl += (1.19 - tl) * tg                               # a soil slope (about 40 degrees) over the rim
+        Ht = min(talus[0] + (talus[1] - talus[0]) * wt(s) + (2.0 if pull[i] > 1.0 else 0.0), 0.35 * (zr - zt))
+        zf = zt + Ht
+        tw = Ht / math.tan(math.radians(slope[0] + (slope[1] - slope[0]) * wt(s + 37.0)))
+        zl = zr - 0.35
+        bench_on = zm is not None
+        zm_e = zm if bench_on else zl - 0.55 * (zl - zf)
+        wbt = max(0.0, bench[0] + (bench[1] - bench[0]) * wb(s)) if bench_on and pull[i] <= 1.0 else 0.0   # bench[0] < 0: it pinches out
+        mb = min_bench(x, y) if (min_bench and bench_on) else 0.0
+        wbt = max(wbt, mb)
+        dup = (zl - zm_e) * tl; dlo = (zm_e - zf) * tl2
+        rem = D - (dup + 0.4 + dlo + tw); bw = 0.0
+        if rem >= wbt:
+            extra = rem - wbt; bw = wbt
+            add = min(extra, max(0.0, Ht / math.tan(math.radians(22.0)) - tw)); tw += add; extra -= add
+            if bench_on and wbt > 0.3:                           # the room left over widens a bench the noise put here ...
+                bw += extra
+            elif extra > 0.0:                                    # ... where it pinched out (or there is none), the faces lean back
+                k = 1.0 + extra / max(0.01, dup + dlo); dup *= k; dlo *= k
+        else:
+            bw = max(mb, rem, 0.0); short = (D - rem) + bw - D          # a stair foot keeps its bench: the rest steepens
+            cut = min(short, max(0.0, tw - Ht / math.tan(math.radians(50.0)))); tw -= cut; short -= cut
+            if short > 0.0:
+                k = max(0.15, 1.0 - short / max(0.01, dup + dlo)); dup *= k; dlo *= k
+        p = pull[i]
+        b1, b2 = ((0.0, 0.0) if tg >= 0.6 else ((wu1(s) - 0.5) * 1.8, (wu2(s) - 0.5) * 1.8))
+        b3, b4 = (wl1(s) - 0.5) * 2.4, (wl2(s) - 0.5) * 2.4
+        hu = zl - zm_e
+        # bulges go in deep but come out only a little: a bulge pushed out past the face above it turns its top to the sky,
+        # and in the page those tops read as pale grey wedges (round 3). Recesses stay deep: they read as shadow.
+        b1, b2 = min(b1, 0.07 * hu), min(b2, 0.07 * hu)
+        hl = max(0.0, zm_e - zf)
+        b3, b4 = min(b3, 0.07 * hl), min(b4, 0.07 * hl)
+        z_lip = zr - 0.15 if tg >= 1.0 else zl - rnd.uniform(0.0, 0.5)          # a ragged lip, not a cut edge
+        rib = min(1.0, bw / 1.5) if bench_on else 0.0             # a narrow or pinched-out bench leaves no rib across the face
+        zub = zm_e + 0.25 * rib
+        zbe = zm_e - 0.04 * bw
+        zbl = zbe - (0.05 + 0.4 * rib)
+        d_lip = -0.5 * p + (wj(s * 1.7 + 5.0) - 0.5) * 0.9
+        d_ub = dup - p
+        d_be = dup + bw - 0.6 * p
+        d_bl = d_be + 0.05 + 0.35 * rib
+        d_lb = min(d_bl + dlo - 0.3 * p, D - 0.5)
+        P = [(-w_in, zr - skirt), (-w_in, zr + 0.05), (-0.7, zr), (d_lip, z_lip),
+             (dup * 0.36 + b1 - p, zl - hu * 0.36), (dup * 0.72 + b2 - p, zl - hu * 0.72), (d_ub, zub), (d_be, zbe),
+             (d_bl, zbl), (d_bl + dlo * 0.38 + b3 - 0.8 * p, zbl - (zbl - zf) * 0.38),
+             (d_bl + dlo * 0.74 + b4 - 0.5 * p, zbl - (zbl - zf) * 0.74), (d_lb, zf), (D, zt)]
+        prof.append(P); info.append({'bw': bw, 'D': D, 'rib': rib})
+
+    def mat_of(i, k):
+        s = st[i]['s']
+        if k == 0:
+            return mat
+        if k == 7:                                            # the bench lip
+            return dark if min(info[i]['rib'], info[i + 1]['rib']) > 0.6 else mat
+        if k == 1:
+            return top_mat
+        if k == 2:
+            return top_mat if wm(s) > 0.35 else mat
+        if k in (3, 4, 5) and min(ton[i], ton[i + 1]) >= 0.6:   # soil only where both ends lie on the tongue's slope: a face
+            return top_mat                                      # half on the steep rock read as grey soil hanging on it
+        if k in (3, 4, 5, 8, 9, 10):
+            if max(pull[i], pull[i + 1]) > 0.9:
+                return dark
+            if k == 8 and min(info[i]['rib'], info[i + 1]['rib']) > 0.6:
+                return dark                                   # the shadow under a bench lip
+            return alt if wm(s * 3.1 + k * 7.0) > 0.68 else mat
+        if k == 6:
+            return top_mat if min(info[i]['bw'], info[i + 1]['bw']) > 1.5 else mat
+        return alt if wm(s * 2.3 + 11.0) > 1.0 - scree else top_mat     # k == 11: the scree
+
+    def W(q, d, z):
+        return F.p(q['x'] + q['nx'] * d, q['y'] + q['ny'] * d, z)
+
+    for i in range(n - 1):
+        A, B = prof[i], prof[i + 1]
+        for k in range(len(A) - 1):
+            add_poly(mat_of(i, k), [W(st[i], *A[k]), W(st[i + 1], *B[k]), W(st[i + 1], *B[k + 1]), W(st[i], *A[k + 1])])
+    # round a convex corner the toe points spread apart and the straight toe edge between two of them cuts the outline's
+    # corner: a scree wedge, falling slightly outward, runs out to every outline vertex that lies beyond such an edge
+    for i in range(n - 1):
+        a, b = st[i], st[i + 1]; (da, za), (db, zb) = prof[i][-1], prof[i + 1][-1]
+        ta = (a['x'] + a['nx'] * da, a['y'] + a['ny'] * da); tb = (b['x'] + b['nx'] * db, b['y'] + b['ny'] * db)
+        ex, ey = tb[0] - ta[0], tb[1] - ta[1]; L = math.hypot(ex, ey)
+        if L < 1e-3:
+            continue
+        for vx, vy in toe_poly:
+            u = ((vx - ta[0]) * ex + (vy - ta[1]) * ey) / (L * L)
+            out_d = (ex * (vy - ta[1]) - ey * (vx - ta[0])) / L          # > 0: outside (left of travel)
+            if 0.0 < u < 1.0 and 0.3 < out_d < 4.0:
+                px, py = ta[0] + ex * u, ta[1] + ey * u; f = (out_d - margin) / out_d
+                add_poly(mat_of(i, 11), [F.p(ta[0], ta[1], za), F.p(tb[0], tb[1], zb),
+                                         F.p(px + (vx - px) * f, py + (vy - py) * f, min(za, zb))])
+
+    def d_at(P, z):                                           # the upper face's distance out at height z
+        for k in range(3, 6):
+            (d0, z0), (d1, z1) = P[k], P[k + 1]
+            if z1 <= z <= z0:
+                return d0 + (d1 - d0) * (z0 - z) / ((z0 - z1) or 1e-9)
+        return P[6][0]
+
+    # ivy hanging from the lip in clumps over 1-3 stations: strands 0.35-0.9 m wide and 1-6.5 m long (longest in the middle of the
+    # clump) with gaps between, each ending in a point at its own height, 0.15-0.45 m in front of the face. (Round 3: whole
+    # sheets read as dark stickers, and close-set strands as black saw teeth.)
+    def lerp_st(j, f):
+        a, b = st[j], st[j + 1]
+        nx, ny = a['nx'] + (b['nx'] - a['nx']) * f, a['ny'] + (b['ny'] - a['ny']) * f; L_ = math.hypot(nx, ny) or 1.0
+        q = {'x': a['x'] + (b['x'] - a['x']) * f, 'y': a['y'] + (b['y'] - a['y']) * f, 'nx': nx / L_, 'ny': ny / L_}
+        P = [(d0 + (d1 - d0) * f, z0 + (z1 - z0) * f) for (d0, z0), (d1, z1) in zip(prof[j], prof[j + 1])]
+        return q, P
+
+    icand = [i for i in range(2, n - 7) if not st[i]['keep'] and not any(ton[i:i + 6])]
+    rnd.shuffle(icand); used = []
+    for i in icand:
+        if len(used) >= ivy:
+            break
+        if any(abs(i - j) < 8 for j in used):
+            continue
+        used.append(i); L = rnd.randint(1, 3); hmax = rnd.uniform(3.0, 6.5)
+        u = rnd.uniform(0.0, 0.3)                             # position along the clump in stations
+        while u < L - 0.2:
+            seg = max(0.5, math.hypot(st[i + 1]['x'] - st[i]['x'], st[i + 1]['y'] - st[i]['y']))
+            if rnd.random() < 0.3:                            # a gap
+                u += rnd.uniform(0.4, 1.2) / seg; continue
+            w_st = rnd.uniform(0.35, 0.9) / seg
+            u0, u1 = u, min(L, u + w_st); um = 0.5 * (u0 + u1)
+            j0 = min(i + int(u0), n - 2); j1 = min(i + int(u1), n - 2); jm = min(i + int(um), n - 2)
+            (qa, Pa), (qb, Pb), (qm, Pm) = lerp_st(j0, u0 - int(u0)), lerp_st(j1, min(1.0, u1 - (j1 - i))), lerp_st(jm, um - int(um))
+            h = max(1.0, hmax * (0.3 + 0.7 * math.sin(math.pi * min(1.0, um / L))) * rnd.uniform(0.3, 1.0))
+            za, zb = Pa[3][1] + 0.05, Pb[3][1] + 0.05; zfl = min(Pm[3][1] - 1.0, max(Pm[6][1] + 0.3, min(za, zb) - h))
+            zsa, zsb = za - (za - zfl) * rnd.uniform(0.55, 0.8), zb - (zb - zfl) * rnd.uniform(0.55, 0.8)
+            off = rnd.uniform(0.15, 0.45)
+            add_poly('ivy', [W(qa, d_at(Pa, za) + off, za), W(qb, d_at(Pb, zb) + off, zb),
+                             W(qb, d_at(Pb, zsb) + off, zsb), W(qa, d_at(Pa, zsa) + off, zsa)])
+            add_poly('ivy', [W(qa, d_at(Pa, zsa) + off, zsa), W(qb, d_at(Pb, zsb) + off, zsb), W(qm, d_at(Pm, zfl) + off, zfl)])
+            u = u1 - rnd.uniform(0.0, 0.15) * w_st
+
+    out = []
+    for _ in range(boulders):                                  # boulders on the scree (most) and the bench
+        i = rnd.randrange(n); P = prof[i]; q = st[i]
+        if info[i]['bw'] > 1.5 and rnd.random() < 0.3:
+            t = rnd.uniform(0.2, 0.8); d = P[6][0] + (P[7][0] - P[6][0]) * t; z = P[6][1] + (P[7][1] - P[6][1]) * t
+        else:
+            t = rnd.uniform(0.25, 0.85); d = P[11][0] + (P[12][0] - P[11][0]) * t; z = P[11][1] + (P[12][1] - P[11][1]) * t
+        size = rnd.uniform(1.4, 3.2)
+        d = min(d, P[12][0] - 0.6 * size)                      # inside the toe: a boulder does not push the foot outline out
+        _chunk(F, q['x'] + q['nx'] * d, q['y'] + q['ny'] * d, z - 0.3 * size, size, rnd, mat, rnd.uniform(0.0, 90.0))
+    for i in range(n):                                         # where the page plants shrubs and small trees
+        P = prof[i]; q = st[i]
+        if q['keep']:
+            continue
+        r = rnd.random()
+        if info[i]['bw'] > 2.5 and r < plants:
+            t = rnd.uniform(0.35, 0.75); d = P[6][0] + (P[7][0] - P[6][0]) * t; z = P[6][1] + (P[7][1] - P[6][1]) * t
+            u = rnd.random(); kind = 'shrub' if u < 0.55 else 'broadD' if u < 0.8 else 'fig'
+        elif r < plants * 0.7:
+            t = rnd.uniform(0.3, 0.8); d = P[11][0] + (P[12][0] - P[11][0]) * t; z = P[11][1] + (P[12][1] - P[11][1]) * t
+            kind = 'shrub' if rnd.random() < 0.75 else 'broadD'
+        else:
+            continue
+        out.append((round(q['x'] + q['nx'] * d, 1), round(q['y'] + q['ny'] * d, 1), round(z, 1), kind,
+                    round(rnd.uniform(0.55, 0.9) if kind != 'shrub' else rnd.uniform(0.6, 1.0), 2)))
+
+    def top(x, y):
+        b = min(range(n), key=lambda i: (st[i]['x'] - x) ** 2 + (st[i]['y'] - y) ** 2)
+        return prof[b][2][1]
+    return {'top': top, 'plants': out, 'tris': _tris() - tri0, 'stations': n}
 
 
 # ---------------------------------------------------------------- sacred area furniture

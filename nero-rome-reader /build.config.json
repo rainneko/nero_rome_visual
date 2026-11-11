@@ -23,6 +23,7 @@
     "src/scenes/rome/domus-aurea.js",
     "src/scenes/rome/faces.js",
     "src/scenes/rome/road-network.js",
+    "src/scenes/rome/street-fabric.js",
     "src/scenes/rome/monuments.js",
     "src/scenes/rome/palrock.js",
     "src/scenes/rome/palatine.js",
@@ -74,6 +75,13 @@
       "var": "AUREA_GLB",
       "cb": "aureaAssetsLoaded",
       "dir": "assets/models/aurea"
+    },
+    {
+      "file": "oppian-assets.js",
+      "var": "OPP_GLB",
+      "cb": "oppAssetsLoaded",
+      "dir": "assets/models/oppian",
+      "optimize": true
     },
     {
       "file": "rome-assets.js",

@@ -20,7 +20,8 @@ function terraceReserve(W,F,P,o={}){const Q=P.map(p=>{const q=F.p(p[0],0,p[1]);r
       is higher than 2.5 m, blind arches (substructure()) over 9 m, piers at the corners. B4 half-round projections at the rock-spur corners in o.spur (a
       reconstruction). B5 at each opening the wall ends in a pier with a statue or a bronze tripod and turns back into the slope in a stepped wing wall.
    o.skip: edges with no wall (shared with a higher terrace); o.footY[i]: the edge stands on a lower floor at that level (local), not on the ground;
-   o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms).
+   o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms). o.wing=false: no wing walls at the openings (a stair
+   with its own cheek walls comes through).
    Records: W.wallFeet (the samples and what breaks the line of the wall foot: read by terraceFeet and __wallFootCheck) and W.terraceEdges (the band). */
 function terraceEdge(W,g,P,yTop,o={}){
   const F=o.F,top=F.oy+yTop,yW=top-.35,gy=W.gy,n=P.length,Q=P.map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];});let A2=0;
@@ -63,7 +64,7 @@ function terraceEdge(W,g,P,yTop,o={}){
       if(o.rooms&&o.rooms[e.i]){const[r0,r1]=o.rooms[e.i];arcadeRooms(W,g,e,Math.max(r0,sA),Math.min(r1,sB),S[k0].gF,yW,pal,o.roomOpt||{});}
       // B5 ends at the openings: a pier with a statue or a tripod, a stepped wing wall back into the slope
       for(const[end,k,dir]of[[!cA,k0,1],[!cB,k1,-1]]){if(!end)continue;const q=S[k],kind=S[k-dir]&&S[k-dir].open;if(kind==='arch')continue;const s=q.s+dir*.45;endPier(W,g,e,s,q.gF,top,pal,seed,kind);e.brk.push(q.s);out.ends.push([q.x,q.z]);
-        if(top-q.gF>1.5)wingWall(W,g,e,s,top,pal,seed);}}
+        if(o.wing!==false&&top-q.gF>1.5)wingWall(W,g,e,s,top,pal,seed);}}
     W.wallFeet.push({tag:tag+':'+e.i,pal,ax:e.a[0],az:e.a[1],ux:e.ux,uz:e.uz,nx,nz,L:e.L,top,S:S.map(q=>({s:q.s,x:q.x,z:q.z,y:q.gF,h:top+.1-q.gF,open:q.open,sub:q.sub,room:q.room})),brk:e.brk});
     const rl=(o.rail&&o.rail[e.i])==='transenna'?1.12:1.08;let band=9;for(const q of S)if(!q.open&&top-q.gF>=.6)band=Math.min(band,.45+rl);W.terraceEdges.push({tag:tag+':'+e.i,L:+e.L.toFixed(1),band:band<9?band:null,maxH:+Math.max(0,...S.map(q=>q.h)).toFixed(1)});}   // band: the edge seen from below, coping + parapet (or the grille piers)
   // corners: a pier where two walls meet at an outer corner, a half-round projection at the rock spurs
@@ -147,7 +148,8 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
 function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,shrubs:0,cyp:0,scree:0};let own=null;   // own: footprints of the record's own building (R.own), not in the way
   const busy=(x,z,r)=>(W.streetAt&&W.streetAt(x,z))||W.foot.hits(x,z,r,r,0,0,f=>f.tag==='open'||f.tag==='precinct'||(own&&own.has(f)));
   const rock=(x,z,rot,hl,hd,ht,pal,sd)=>{const C=frame(x,0,z,rot);let yg=1e9;for(const a of[-hl,hl])for(const b of[-hd,hd]){const q=C.p(a,0,b);yg=Math.min(yg,gy(q[0],q[2]));}rockLump(g,C,hl,hd,yg-.45,ht+.45,pal,sd,[x,z]);};
-  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),lg=!!R.ledge;if(S.length<2)continue;own=R.own||null;   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),nat=!!R.natural,lg=!!R.ledge||nat;if(S.length<2)continue;own=R.own||null;   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+    // R.natural: the foot of a modelled cliff with its own talus, scree and boulders (the Tiberiana's rock): as a ledge, and no scree either
     const Wp=(s,d)=>{let k=0;while(k<S.length-2&&S[k+1].s<s)k++;const A=S[k],B=S[k+1],t=clamp((s-A.s)/((B.s-A.s)||1),0,1),nx=lerp(A.nx??R.nx,B.nx??R.nx,t),nz=lerp(A.nz??R.nz,B.nz??R.nz,t);   // along the samples (a curved wall foot has its own normals)
       return[lerp(A.x,B.x,t)+nx*d,lerp(A.z,B.z,t)+nz*d];};let nextRock=1+3*teH(R.ax,R.az,1),nextShrub=1.5,nextCyp=3+4*teH(R.ax,R.az,2);
     const tall=S.filter(q=>q.h>=3&&!q.open).length*(R.L/(S.length-1));
@@ -162,7 +164,7 @@ function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,sh
           nextRock=s+4+5*teH(A.x+s,A.z-s,9);}
         if(s>=nextShrub&&hm>=1.2){const q=Wp(s,(lg?3.6:.9)+1.6*teH(A.x+s,A.z,10));if(teH(q[0],q[1],11)<.6&&!busy(q[0],q[1],.8)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'shrub',.7+.6*teH(q[0],q[1],12),null,3]);R.brk.push(s);st.shrubs++;}nextShrub=s+2.5+3*teH(A.x,A.z+s,13);}
         if(s>=nextCyp&&hm>=3&&tall>=18){const q=Wp(s,(lg?5.6:2.6)+.9*teH(A.x+s,A.z,14));if(!busy(q[0],q[1],1.2)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'cyp',.85+.3*teH(q[0],q[1],15),null,3]);R.brk.push(s);st.cyp++;}nextCyp=s+6+2*teH(A.x+s,A.z+s,16);}}
-      if(hm>=3&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
+      if(hm>=3&&!nat&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
         if(sl<.35||busy(q[0],q[1],.4))continue;const r=.22+.35*teH(q[0],q[1],50+j);rock(q[0],q[1],teH(q[1],q[0],60+j)*TAU,r,r*.8,r*.7,pal,.3);st.scree++;}}}
   own=null;const m=g.mesh(MAT.city);if(m){layTag(m,'ground');m.name='terraceFeet';W.scene.add(m);}W.terraceFeetStats=st;return st;}
 // a lump of the hill's rock (part 61, palette pal) centred on frame C: hl x hd at its base y0, ht high, its corners jittered by a die keyed to key (x,z)
