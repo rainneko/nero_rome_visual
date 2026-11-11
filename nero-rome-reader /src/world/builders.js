@@ -136,7 +136,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
     c=mix(c,stC,cov);}}}
  if(uAurea>.5){   // the Golden House ground (domus-aurea.js AUREA_SITE): from 59 the streets are gone; 59-68 rough ground and builders' earth, from 68 mown grass
   float mA=max(max(1.-smoothstep(142.,152.,length(p-vec2(572.,200.))),1.-smoothstep(-6.,2.,max(max(380.-p.x,p.x-520.),max(20.-p.y,p.y-200.)))),max(1.-smoothstep(-6.,2.,max(max(450.-p.x,p.x-1000.),max(-20.-p.y,p.y-120.))),max(1.-smoothstep(32.,40.,length(p-vec2(330.,160.))),1.-smoothstep(-6.,2.,max(max(660.-p.x,p.x-776.),max(118.-p.y,p.y-326.))))));   // (+ AUREA_EAST)
-  float mI=0.,mE=0.;{vec2 q=p-vec2(850.,-40.);float u=q.x*.98481+q.y*.17365,v=-q.x*.17365+q.y*.98481,dI=max(max(-195.4-u,u-53.8),max(-55.5-v,v-49.2));mA=max(mA,1.-smoothstep(-6.,2.,dI));   // (+ AUREA_OPPIAN, the octagon wing's ground)
+  float mI=0.,mE=0.;{vec2 q=p-vec2(850.,-40.);float u=q.x*.98481+q.y*.17365,v=-q.x*.17365+q.y*.98481,dI=min(max(max(-195.4-u,u-53.8),max(-55.5-v,v-49.2)),min(max(max(-182.-u,u-43.),max(39.-v,v-126.)),max(max(-170.-u,u+80.),max(118.-v,v-200.))));mA=max(mA,1.-smoothstep(-6.,2.,dI));   // (+ AUREA_OPPIAN, the octagon wing's ground)
    mI=1.-smoothstep(-1.,1.,dI);mE=1.-smoothstep(.3,1.1,abs(dI+1.4));}   // from 68 the inner court (vol 18): a cooler, closer-mown lawn and a pale gravel edge 1.4 m in, no wall
   mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);
   if(uAurea>1.5){c=mix(c,c*vec3(.84,.96,.9),mI*mA*.7);c=mix(c,vec3(.56,.53,.46),mE*mA*.5);}}

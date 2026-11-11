@@ -8,7 +8,7 @@
    The vestibule court and the Neronian porticoes of the Via Sacra (states 7-8) follow the MadainProject site plan (the vestibule on the Velia, the
    Via Sacra running straight up to it from the Forum; Van Deman, "The Neronian Sacra Via", AJA 1923). */
 const AUREA={vest:[430,140],lent:[585,105],shrines:[[590,124],[448,176]],dine:[330,160],lake:{x:605,z:232,rx:118,rz:68,rot:-.17},
-  route:[[467.8,157.8],[560,134],[572,116],[600,113],[612,130],[742,126],[752,200],[748,300]]};   // the gilded colonnade: from the vestibule's foot (its east face) along the valley's north edge, round Lentulus's site, then down the east end of the lake
+  gate:[681,128],route:[[467.8,157.8],[560,134],[572,116],[600,113],[612,130],[742,126],[752,200],[748,300]]};   // the gilded colonnade: from the vestibule's foot (its east face) along the valley's north edge, round Lentulus's site, then down the east end of the lake
 // the ground the fire and the Golden House take: the valley, the Velia shoulder, the Carinae's south edge down to the slope, the dining hall's corner of the Palatine
 function AUREA_SITE(x,z){return Math.hypot(x-572,z-200)<150||(x>380&&x<520&&z>20&&z<200)||(x>450&&x<1000&&z>-20&&z<120)||Math.hypot(x-AUREA.dine[0],z-AUREA.dine[1])<38;}
 // the vestibule court in the frame of the Via Sacra's last straight (via; +x up the road to the ESE, +z to the SW), centred on the colossus: court x0..x1, -hz..hz
@@ -26,7 +26,9 @@ function AUREA_EAST(x,z){return x>660&&x<776&&z>118&&z<326;}
 const OPP={x:850,z:-40,rot:Math.PI-190*Math.PI/180,u0:-187.4,u1:45.8,v0:-47.5,v1:39.2,steps:[18.5,30.5]};
 function oppUV(x,z){const c=Math.cos(OPP.rot),s=Math.sin(OPP.rot),dx=x-OPP.x,dz=z-OPP.z;return[dx*c-dz*s,dx*s+dz*c];}
 // the ground the halls take from 59, with 8-10 m round them: the houses there are shown in states 0-6 only
-function AUREA_OPPIAN(x,z){const[u,v]=oppUV(x,z);return u>OPP.u0-8&&u<OPP.u1+8&&v>OPP.v0-8&&v<OPP.v1+10;}
+// the inner court's garden south of the halls (oppian_court.glb): the lawn shelf, and the stairs down the slope to the colonnade's gate
+function oppCourtIn(u,v,m=0){return(u>-182-m&&u<43+m&&v>39-m&&v<126+m)||(u>-170-m&&u<-80+m&&v>=118-m&&v<200+m);}
+function AUREA_OPPIAN(x,z){const[u,v]=oppUV(x,z);return u>OPP.u0-8&&u<OPP.u1+8&&v>OPP.v0-8&&v<OPP.v1+10||oppCourtIn(u,v,6);}
 // romeH: the ground under and round the halls (y0: the pad's height). Under the halls and their upper court it is held 0.3 m under the floor (the
 // pad's west end sags 1.5 m). From 2.5 m before the first terrace wall it falls to -8, under both terraces (floors -3.06, -6.19) and on as the lower
 // lawn: deep enough that the terrain patch's smoothing (about 9 m) cannot lift it through them, and one level, so the Carinae compounds of states
@@ -37,9 +39,18 @@ function oppGround(x,z,h,y0){const[u,v]=oppUV(x,z);if(u<OPP.u0-36||u>OPP.u1+36||
   if(v<OPP.steps[0]-2.5)return lerp(h,y0-.3,w*(1-sstep(0,15,OPP.v0-4-v)));
   const s1=OPP.steps[0],t=v<s1-2.5?y0-.3:v<s1?lerp(y0-.3,y0-8,(v-s1+2.5)/2.5):v<OPP.v1+6?y0-8:y0-8-(v-OPP.v1-6)*.08;
   return lerp(h,Math.min(h,t),w);}
+// after the terrain patch's smoothing: the inner court's ground as GPT's target gives it (oppian-court-ground.js), 0.12 m under it so the paths and
+// treads stay on top; it eases in over 6 m from the target grid's edge
+function oppCourtPost(x,z,h,y0){const[u,v]=oppUV(x,z),t=oppCourtH(u,v);if(t===null)return h;const C=OPP_COURT,e=Math.min(u-C.u0,C.u0+(C.nu-1)*C.d-u,v-C.v0,C.v0+(C.nv-1)*C.d-v);
+  return lerp(h,y0+t-.12,sstep(0,6,e));}
 // everything shown in states 0-6 only (preLayers 'aureaSite'): the Golden House ground, the vestibule and the Via Sacra's porticoes, the park's east end,
 // the Oppian halls
-function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z);}
+// the round dining hall's view (coenatio v3 opens four bays towards the valley, θ -15..60° from its +x towards -z; the dais puts the eye 3.55 m over
+// the floor at y 31.33): a house in that fan within 260 m whose roof (taken as 15 m over its ground) rises over the line from the eye down to the
+// valley floor 300 m out goes with the fire, so the lake shows from the couches
+function AUREA_DINEVIEW(x,z){const dx=x-AUREA.dine[0],dz=z-AUREA.dine[1],d=Math.hypot(dx,dz);if(d<18||d>260)return false;
+  const lx=.866*dx+.5*dz,lz=-.5*dx+.866*dz,th=Math.atan2(-lz,lx)*180/Math.PI;if(th<-17||th>62)return false;return romeH(x,z)+15>34.9+(8-34.9)*d/300;}
+function AUREA_GONE(x,z){return AUREA_SITE(x,z)||AUREA_VEST_SITE(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z)||AUREA_DINEVIEW(x,z);}
 function aureaInLake(x,z,m=0){const L=AUREA.lake,dx=x-L.x,dz=z-L.z,c=Math.cos(L.rot),s=Math.sin(L.rot),u=c*dx-s*dz,v=s*dx+c*dz;return(u/(L.rx+m))**2+(v/(L.rz+m))**2<1;}
 function aureaNearRoute(x,z,d){const P=AUREA.route;for(let i=1;i<P.length;i++)if(segD(x,z,P[i-1][0],P[i-1][1],P[i][0],P[i][1])<d)return true;return false;}
 // dist/aurea-assets.js sets window.AUREA_GLB={coenatio, colossus, colossus_works: base64 GLBs} and calls aureaAssetsLoaded(); dist/oppian-assets.js
@@ -84,9 +95,15 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
       for(let k=0;k<=n;k++){const h=gy(a[0]+dx*k/n,a[1]+dz*k/n);yt=Math.max(yt,h);yb=Math.min(yb,h);}
       const y0=yt+.4,F=frame((a[0]+b[0])/2,y0,(a[1]+b[1])/2,Math.atan2(-dz,dx)),hl=len/2+.4;
       if(scaff&&i%2===0)continue;   // 59-68: every other stretch still a skeleton (porticusScaff)
-      g.set(2,.45);box(g,F,0,yb-y0-.5,0,hl,y0-yb+.5,4.2,31);   // podium down to the lowest ground
-      g.set(24,.86);box(g,F,0,0,-3.6,hl,18.6,.6,31);   // back wall, three storeys
-      for(let lv=0;lv<3;lv++){const yl=lv*6.2;for(let x=-hl+1.5;x<=hl-1;x+=3.6)W.cols.cor.push([...F.p(x,yl,2.8),F.rot,5.2,[1,.9,.62]]);   // columns with gilded capitals (warm tint)
+      // from 68 the inner court's gate (vol 18; the copy team's plan: in the middle of the colonnade): a 6 m bay open from the valley floor (about
+      // 5 m under the podium's top here) through the podium and the back wall to the first floor, onto the foot of the court's stairs (oppian_court)
+      const G=AUREA.gate,gt=((G[0]-a[0])*dx+(G[1]-a[1])*dz)/len,gn=Math.abs((G[1]-a[1])*dx-(G[0]-a[0])*dz)/len,gx=!scaff&&gt>8&&gt<len-8&&gn<6?gt-len/2:null,gw=3,yf=gx===null?0:gy(...G)-y0;
+      const span=(x0,x1,f)=>{if(gx===null||x1<=gx-gw||x0>=gx+gw)return f(x0,x1);if(x0<gx-gw)f(x0,gx-gw);if(x1>gx+gw)f(gx+gw,x1);};
+      g.set(2,.45);span(-hl,hl,(x0,x1)=>box(g,F,(x0+x1)/2,yb-y0-.5,0,(x1-x0)/2,y0-yb+.5,4.2,31));   // podium down to the lowest ground
+      g.set(24,.86);span(-hl,hl,(x0,x1)=>box(g,F,(x0+x1)/2,0,-3.6,(x1-x0)/2,18.6,.6,31));   // back wall, three storeys
+      if(gx!==null){box(g,F,gx,5.2,-3.6,gw,13.4,.6,31);g.set(2,.5);for(const sd of[-1,1])box(g,F,gx+sd*(gw+.35),yf,-3.6,.35,5.2-yf,.8,31);box(g,F,gx,4.4,-3.6,gw+.7,.8,.85,31);   // the wall over the bay, its jambs and lintel
+        g.set(11,.3);box(g,F,gx,yf-.25,0,gw,.25,4.4,31);}   // the passage's paving, level with the valley
+      for(let lv=0;lv<3;lv++){const yl=lv*6.2;for(let x=-hl+1.5;x<=hl-1;x+=3.6)if(lv||gx===null||Math.abs(x-gx)>gw)W.cols.cor.push([...F.p(x,yl,2.8),F.rot,5.2,[1,.9,.62]]);   // columns with gilded capitals (warm tint)
         g.set(2,.5);box(g,F,0,yl+5.2,0,hl,.9,3.4,31);g.set(12,.4);box(g,F,0,yl+5.55,3.42,hl,.22,.05,31);}   // entablature with a gilded band
       g.set(4,.5);g.poly([F.p(-hl,19,3.6),F.p(hl,19,3.6),F.p(hl,20.8,-3.8),F.p(-hl,20.8,-3.8)],F.d(0,1,.3));}};
   L('porticus7',0,(g)=>porticus(g,true));L('porticus8',0,(g)=>porticus(g,false));
@@ -242,7 +259,7 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     g.set(14,.5);lathe(g,F,0,0,0,[[R2+.25,yL-.35],[R2+.25,yL+.05],[R1,yL+.05]],48);lathe(g,F,0,0,0,[[R1+.25,T-.35],[R1+.25,T+.05],[R1-.35,T+.05]],48);   // copings
     for(let i=0;i<48;i++){const a=(i+.5)/48*TAU;if(at(R1+1,a)<T-.8){g.set(14,.48);box(g,seg(R1-.05,a),0,T,0,R1*Math.PI/48+.03,.95,.22,31);}}   // parapet where the terrace stands above the slope
     for(let i=0;i<32;i++){const a=(i+.5)/32*TAU,y0=at(R2+1.5,a)-1;if(y0<yL-3){g.set(2,.4);box(g,seg(R2+.9,a),0,y0,0,.75,yL-.45-y0,.9,31);}}   // buttresses where the lower tier is tall (their foot is inside the batter)
-    for(let k=0;k<8;k++){const a=(160+30*k)*DEG,q=F.p(Math.cos(a)*22.6,0,Math.sin(a)*22.6);W.trees.push([q[0],Math.max(F.oy+T,gy(q[0],q[2])),q[2],'cyp',.9+.2*hash2(k,77)]);}   // cypresses round the terrace, clear of the stair (the door is at 90°)
+    for(let k=0;k<5;k++){const a=(160+30*k)*DEG,q=F.p(Math.cos(a)*22.6,0,Math.sin(a)*22.6);W.trees.push([q[0],Math.max(F.oy+T,gy(q[0],q[2])),q[2],'cyp',.9+.2*hash2(k,77)]);}   // cypresses round the terrace, clear of the stair (the door is at 90°) and of the open bays (300-375°)
     const S=new THREE.Group();S.name='coenatioStand';G.add(S);const g2=new GB(1<<13);flushColumns(W);W.colGroup=S;   // the stand-in: drum, dome open at the top, 16 columns
     g2.set(2,.45);lathe(g2,F,0,0,0,[[17.5,T],[17.5,0],[0,0]],24);g2.set(24,.86);lathe(g2,F,0,0,0,[[15,0],[15,11],[0,11]],24,24);g2.set(2,.55);lathe(g2,F,0,11,0,[[15.6,0],[15.6,.8],[13.6,4.5],[9.5,7.5],[4.2,8.8],[3.6,9.1]],24);
     for(let a=0;a<TAU;a+=TAU/16)W.cols.cor.push([...F.p(Math.cos(a)*16.2,0,Math.sin(a)*16.2),a,5.5,[1,.92,.7]]);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
@@ -256,9 +273,11 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
     for(let x=OPP.u0+3;x<=OPP.u1-3;x+=5)W.cols.cor.push([...F.p(x,0,zf+1),F.rot,9,[1,.95,.85]]);g.set(2,.5);box(g,F,cx,9,zf+2,hw+1,1.1,2.2,31);g.set(1,.5);g.poly([F.p(OPP.u0-1,10.1,zf+3.6),F.p(OPP.u1+1,10.1,zf+3.6),F.p(OPP.u1+1,12.8,zf-2),F.p(OPP.u0-1,12.8,zf-2)],[0,1,0]);
     g.set(24,.86,0,1);lathe(g,F,0,14,0,[[16,0],[16,6],[0,6]],8);g.set(12,.5);lathe(g,F,0,20,0,scaff?[[16.5,0],[13,6],[7,10],[0,11]]:[[16.5,0],[13,6],[7,10],[3.2,10.8]],16);};   // the octagon; open at the top once finished
   const halls=(g,G,scaff)=>{const y0=PADH[PADS.findIndex(p=>p[0]===OPP.x&&p[1]===OPP.z)],F=frB(OPP.x,OPP.z,190,y0),S=new THREE.Group(),g2=new GB(1<<14);S.name='oppianStand';G.add(S);
-    flushColumns(W);W.colGroup=S;hallsStand(g2,F,scaff);flushColumns(W);W.colGroup=G;const m=g2.mesh(MAT.city);if(m)S.add(m);
-    if(!scaff){g.set(2,.45);box(g,F,6.2,0,13.4,.7,1.9,.25,31);g.set(12,.4);box(g,F,6.2,1.25,13.68,.55,.55,.03,31);}   // the bronze list of names on a stone post by the octagon's porch (from 68)
-    W.anim.push(()=>{if(!G.visible||S.userData.asked)return;S.userData.asked=1;aureaLoad(scaff?'oppian_s1':'oppian_s3',G,F,S,null,'opp');});};
+    flushColumns(W);W.colGroup=S;hallsStand(g2,F,scaff);flushColumns(W);W.colGroup=G;
+    if(!scaff){g2.set(2,.45);box(g2,F,6.2,0,13.4,.7,1.9,.25,31);g2.set(12,.4);box(g2,F,6.2,1.25,13.68,.55,.55,.03,31);}   // the bronze list of names on a stone post by the octagon's porch (from 68): S3 has its own (inner_plaque)
+    const m=g2.mesh(MAT.city);if(m)S.add(m);
+    W.anim.push(()=>{if(!G.visible||S.userData.asked)return;S.userData.asked=1;aureaLoad(scaff?'oppian_s1':'oppian_s3',G,F,S,null,'opp');
+      if(!scaff)aureaLoad('oppian_court',G,F,new THREE.Group(),null,'opp');});};   // from 68 the inner court's garden and stairs, on the ground oppCourtPost cut for them
   L('aureaHalls7',16,(g,G)=>halls(g,G,true));L('aureaHalls8',0,(g,G)=>halls(g,G,false));
 
   W.views.aurea={n:'金宫谷地',pos:[300,gy(300,380)+150,380],tgt:[620,gy(620,170),170]};   // the copy team's fixed camera: above the Palatine's north-east corner, looking north-east
@@ -267,6 +286,7 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
   W.views.aureaVest={n:'金宫前庭·铜巨人',pos:[355,62,72],tgt:[430,55,140]};W.views.aureaBend={n:'金柱廊拐弯处',pos:[515,62,235],tgt:[592,14,108]};
   W.views.aureaLake={n:'金宫的湖',pos:[748,55,318],tgt:[600,9,222]};W.views.aureaGate={n:'园门·阿波罗的林子',pos:[660,34,280],tgt:[618,9,330]};
   W.views.aureaDine={n:'旋转圆厅',pos:[392,62,222],tgt:[330,36,160]};
+  {const F=frame(AUREA.dine[0],31.33,AUREA.dine[1],-30*DEG),D=DEG;W.views.aureaDineLake={n:'圆厅饭台·看湖',pos:F.p(10.43,3.55,-2.8),tgt:[605,8.5,232]};;}   // the couch on the dais (coenatio v3: r 10.8, θ 15°)
   // the inner court (vol 18): the Oppian halls from their garden, the octagon from its porch, the bronze list by the porch (OPP frame, floor y0)
   {const y0=PADH[PADS.findIndex(p=>p[0]===OPP.x&&p[1]===OPP.z)],c=Math.cos(OPP.rot),sn=Math.sin(OPP.rot),P=(u,y,v)=>[OPP.x+u*c+v*sn,y0+y,OPP.z-u*sn+v*c];
    W.views.aureaInner={n:'金宫内院',pos:P(-30,24,100),tgt:P(-45,2,-2)};W.views.aureaOct={n:'内院·八角厅',pos:P(0,10.5,48),tgt:P(0,5,3)};

@@ -23,9 +23,10 @@ function buildGrid(W,ext,n,hfn){const g={x0:ext[0],z0:ext[1],x1:ext[2],z1:ext[3]
 /* finer terrain patch (sub x sub vertices per coarse cell) over a block of whole coarse cells; the coarse mesh gets a hole there.
    The rim follows the coarse grid lines and uses their linear heights (no cracks); inside, heights fade to the exact function. */
 function terrainPatchSpec(W,rect,sub){const g=W.grid,n=g.n,i0=Math.max(0,Math.ceil((rect[0]-g.x0)/g.dx)),i1=Math.min(n,Math.floor((rect[2]-g.x0)/g.dx)),j0=Math.max(0,Math.ceil((rect[1]-g.z0)/g.dz)),j1=Math.min(n,Math.floor((rect[3]-g.z0)/g.dz));return{i0,i1,j0,j1,sub};}
-function buildPatch(W,sp,hfn,zoneFn){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,dx=g.dx/sub,dz=g.dz/sub,x0=g.x0+i0*g.dx,z0=g.z0+j0*g.dz,H=new Float32Array(NX*NZ),gy0=W.gy;
+function buildPatch(W,sp,hfn,zoneFn,post){const g=W.grid,{i0,i1,j0,j1,sub}=sp,nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,dx=g.dx/sub,dz=g.dz/sub,x0=g.x0+i0*g.dx,z0=g.z0+j0*g.dz,H=new Float32Array(NX*NZ),gy0=W.gy;
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const x=x0+i*dx,z=z0+j*dz,hc=gy0(x,z),ed=Math.min(i,nx-i,j,nz-j)/sub,w=sstep(0,1.6,ed);H[j*NX+i]=w>0?lerp(hc,hfn(x,z),w):hc;}
   for(let it=0;it<3;it++){const B=H.slice();for(let j=2;j<NZ-2;j++)for(let i=2;i<NX-2;i++){const k=j*NX+i;let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=H[k+b*NX+a];B[k]=lerp(H[k],s/9,sstep(0,1,Math.min(i,j,NX-1-i,NZ-1-j)/(2*sub)));}H.set(B);}   // smooth the interior: the exact height function has steps (min/blend terms), the patch must not zigzag
+  if(post)for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i;H[k]=post(x0+i*dx,z0+j*dz,H[k]);}   // then exact heights the smoothing must not touch (stair treads)
   const P=new Float32Array(NX*NZ*3),Z=new Float32Array(NX*NZ*4);
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=x0+i*dx,z=z0+j*dz;P[k*3]=x;P[k*3+1]=H[k];P[k*3+2]=z;Z.set(zoneFn(x,z,H[k]),k*4);}
   const I=new Uint32Array(nx*nz*6);let q=0;for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*NX+i,b=a+1,c=a+NX,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
@@ -40,18 +41,19 @@ function fixedGround(W,ext,n,hfn,patches){const x0=ext[0],z0=ext[1],dx=(ext[2]-x
   const ch=(i,j)=>{const k=j*N+i;let v=C.get(k);if(v===undefined){v=Math.fround(hfn(x0+i*dx,z0+j*dz));C.set(k,v);}return v;};
   let gy=(x,z)=>{const fx=clamp((x-x0)/dx,0,n-1e-3),fz=clamp((z-z0)/dz,0,n-1e-3),i=Math.floor(fx),j=Math.floor(fz);return tri(ch(i,j),ch(i+1,j),ch(i,j+1),ch(i+1,j+1),fx-i,fz-j);};
   for(const p of patches||[]){const r=p.rect,sub=p.sub||4,i0=Math.max(0,Math.ceil((r[0]-x0)/dx)),i1=Math.min(n,Math.floor((r[2]-x0)/dx)),j0=Math.max(0,Math.ceil((r[1]-z0)/dz)),j1=Math.min(n,Math.floor((r[3]-z0)/dz));
-    const nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,fdx=dx/sub,fdz=dz/sub,px=x0+i0*dx,pz=z0+j0*dz,X1=px+nx*fdx,Z1=pz+nz*fdz,g0=gy,L=[new Map(),new Map(),new Map(),new Map()];
-    const H=(l,i,j)=>{const k=j*NX+i,M=L[l];let v=M.get(k);if(v!==undefined)return v;   // level 0 as buildPatch samples it, then its three smoothing passes
-      if(l===0){const x=px+i*fdx,z=pz+j*fdz,hc=g0(x,z),w=sstep(0,1.6,Math.min(i,nx-i,j,nz-j)/sub);v=Math.fround(w>0?lerp(hc,p.hfn(x,z),w):hc);}
+    const nx=(i1-i0)*sub,nz=(j1-j0)*sub,NX=nx+1,NZ=nz+1,fdx=dx/sub,fdz=dz/sub,px=x0+i0*dx,pz=z0+j0*dz,X1=px+nx*fdx,Z1=pz+nz*fdz,g0=gy,L=[new Map(),new Map(),new Map(),new Map(),new Map()];
+    const H=(l,i,j)=>{const k=j*NX+i,M=L[l];let v=M.get(k);if(v!==undefined)return v;   // level 0 as buildPatch samples it, then its three smoothing passes, then p.post
+      if(l===4){v=H(3,i,j);if(p.post)v=Math.fround(p.post(px+i*fdx,pz+j*fdz,v));}
+      else if(l===0){const x=px+i*fdx,z=pz+j*fdz,hc=g0(x,z),w=sstep(0,1.6,Math.min(i,nx-i,j,nz-j)/sub);v=Math.fround(w>0?lerp(hc,p.hfn(x,z),w):hc);}
       else{v=H(l-1,i,j);if(j>=2&&j<NZ-2&&i>=2&&i<NX-2){let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=H(l-1,i+a,j+b);v=Math.fround(lerp(v,s/9,sstep(0,1,Math.min(i,j,NX-1-i,NZ-1-j)/(2*sub))));}}
       M.set(k,v);return v;};
-    gy=(x,z)=>{if(x<px||x>=X1||z<pz||z>=Z1)return g0(x,z);const fx=(x-px)/fdx,fz=(z-pz)/fdz,i=Math.min(nx-1,Math.floor(fx)),j=Math.min(nz-1,Math.floor(fz));return tri(H(3,i,j),H(3,i+1,j),H(3,i,j+1),H(3,i+1,j+1),fx-i,fz-j);};}
+    gy=(x,z)=>{if(x<px||x>=X1||z<pz||z>=Z1)return g0(x,z);const fx=(x-px)/fdx,fz=(z-pz)/fdz,i=Math.min(nx-1,Math.floor(fx)),j=Math.min(nz-1,Math.floor(fz));return tri(H(4,i,j),H(4,i+1,j),H(4,i,j+1),H(4,i+1,j+1),fx-i,fz-j);};}
   return Object.assign(Object.create(W),{gy});}
 function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float32Array(N*N*3),Z=new Float32Array(N*N*4);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,x=g.x0+i*g.dx,z=g.z0+j*g.dz;P[k*3]=x;P[k*3+1]=g.h[k];P[k*3+2]=z;const zz=zoneFn(x,z,g.h[k]);Z.set(zz,k*4);}
   const pl=!patch?[]:Array.isArray(patch)?patch:[patch],sps=pl.map(p=>terrainPatchSpec(W,p.rect,p.sub||4)),I=new Uint32Array(n*n*6);let q=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(sps.some(sp=>i>=sp.i0&&i<sp.i1&&j>=sp.j0&&j<sp.j1))continue;const a=j*N+i,b=a+1,c=a+N,d=c+1;I[q++]=a;I[q++]=c;I[q++]=b;I[q++]=b;I[q++]=c;I[q++]=d;}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setAttribute('aZ',new THREE.BufferAttribute(Z,4));G.setIndex(new THREE.BufferAttribute(I.slice(0,q),1));G.computeVertexNormals();
-  const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);W.terrainGeo=G;W.patchRects=pl.map(p=>p.rect);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn));   // gradeRoads moves coarse vertices later and leaves the patches alone
+  const m=layTag(new THREE.Mesh(G,MAT.terrain),'ground');m.receiveShadow=true;m.castShadow=false;W.scene.add(m);W.terrainGeo=G;W.patchRects=pl.map(p=>p.rect);pl.forEach((p,i)=>buildPatch(W,sps[i],p.hfn,zoneFn,p.post));   // gradeRoads moves coarse vertices later and leaves the patches alone
   if(far){const F=new THREE.PlaneGeometry(120000,120000,140,140);F.rotateX(-Math.PI/2);const p=F.attributes.position,FZ=new Float32Array(p.count*4);
     for(let i=0;i<p.count;i++){const x=p.getX(i)+W.farC[0],z=p.getZ(i)+W.farC[1];p.setX(i,x);p.setZ(i,z);const inside=x>g.x0+60&&x<g.x1-60&&z>g.z0+60&&z<g.z1-60;
       p.setY(i,inside?far(x,z)-40:far(x,z)-1);FZ.set([0,0,.8*sstep(5000,9000,Math.hypot(x-W.farC[0],z-W.farC[1]))*(1-sstep(30000,45000,Math.hypot(x,z))),0],i*4);}

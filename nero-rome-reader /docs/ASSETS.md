@@ -31,7 +31,11 @@ the model cannot load.
 ## Rome generators
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
 
-## Golden House: the round dining hall (2026-10-28)
+## Golden House: the round dining hall (2026-10-28, v3 2026-11-11)
+Since 2026-11-11 the file is GPT's v3 (`renders/domus-aurea/coenatio-v3/models/coenatio.glb` in the main checkout, 2.45 MB, brief
+`briefs/rome/aurea-refine-v2/`): the front wall is opened to the lake and a dais added; `ROTATING_CEILING` is kept. The view
+`aureaDineLake` stands on the dais (GLB 10.43, 3.55, -2.8) and looks at the lake centre; `AUREA_DINEVIEW` clears houses from that fan.
+The notes below are for the 2026-10-28 version.
 `assets/models/aurea/coenatio.glb` is `models/reader/K5-core.glb` (the finished hall, 24,872 triangles, 18 PNG textures, 2.5 MB) of the
 six-stage model closed on 2026-10-28: `renders/domus-aurea/coenatio-phase2-fixed-20261028/` in the main checkout, generator
 `tools/models/construction/coenatio_phase2/model.py`, review `docs/reviews/coenatio-codex-closeout-20261028.md`. Copy it as it is:
@@ -51,7 +55,13 @@ source rather than editing the GLB. Origin at the foot of the 13 m stone base (t
 nest, timber props and casting debris of Kimi's construction model (`Kimi_Agent_头部重做/金宫铜巨人/rome_colossus_headless.glb` on the backup
 drive), moved onto this body by `tools/models/rome/colossus_works.mjs` (Kimi's own body is the older, shorter-legged one and is not used).
 
-## Golden House: the Oppian halls, the octagon wing (2026-11-09)
+## Golden House: the Oppian halls, the octagon wing (2026-11-09, v2 2026-11-11)
+Since 2026-11-11 the source is `renders/domus-aurea/oppian-model-v2/` (S1, S3 and the new `court`), packed by `oppian_pack.mjs`
+(already quantized files are passed through; nodes matching `site-context|ground-target` are dropped): `oppian_s1.glb` 3.33 MB,
+`oppian_s3.glb` 7.66 MB, `oppian_court.glb` 1.24 MB (the lawn and zigzag stair up from the colonnade's inner gate, state 8);
+`dist/oppian-assets.js` is 8.28 MB. The court's ground is GPT's `court_ground-target.csv`, stored as `OPP_COURT` (2 m cells, Int16 cm) in
+`src/scenes/rome/oppian-court-ground.js` and applied after smoothing by the `post` hook of the 2 m patch `OPP_PATCH=[606,-160,952,184]`.
+The notes below are for v1.
 `assets/models/oppian/oppian_s1.glb` (state 7, 59–68: walls, true openings and timber centring) and `oppian_s3.glb` (state 8, finished: vaults,
 roofs, pavements, paintings, pools, garden) are stages S1 and S3 of GPT's staged model `renders/domus-aurea/oppian-model-v1/` in the main checkout
 (generator `tools/models/construction/oppian/build.py` there, brief `briefs/rome/oppian-model-v1/README.md`). `tools/models/rome/oppian_pack.mjs`
