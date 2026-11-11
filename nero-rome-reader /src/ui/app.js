@@ -55,7 +55,7 @@ const TRIG=[{m:'一年前，尼禄手里镶金的芦苇笔在羊皮图上一圈'
   {m:'园子那处塌了的墙口',v:'aureaLake'},{m:'园子是开春那天开的门',v:'aureaGate'},{m:'到了中午，草地上全是人',v:'aureaLake'},{m:'往东那一段，要从韦利亚的坡顶过',v:'aureaVest'},{m:'湖后来挖完了',v:'aureaLake'},
   {m:'留给讲得最好的那些人',v:'aureaInner'},{m:'他坐在内院的八角厅里',v:'aureaOct'},{m:'第一年刻了十一个名字',v:'aureaPlaque'},{m:'是更老的那一间，在埃斯奎利诺山上',v:'academyOld'}];   // vols 9 and 13 (not yet in data/book.txt): Piso's house burning; the first arc lamp behind the water; then the Golden House excerpts (AUREA_EX; dineSpin: the starry ceiling turns for one night, vol 17)
 function trigOf(t){for(let i=0;i<TRIG.length;i++)if(t.indexOf(TRIG[i].m)>=0)return i;return -1;}
-function applyGates(){if(!W0||!W0.layers)return;const ch=W0.curCh,L=W0.layers,ev=W0.ev||{};const qs=new URLSearchParams(location.search);if(qs.get('ev')==='campus'){ev.campus=1;}
+function applyGates(){if(!W0||!W0.layers)return;W0.sdirty=1;const ch=W0.curCh,L=W0.layers,ev=W0.ev||{};const qs=new URLSearchParams(location.search);if(qs.get('ev')==='campus'){ev.campus=1;}
   const set=(n,v)=>{if(L[n])L[n].visible=!!v;};
   set('bronzeCol',ch!=null?ch>=7:curS>=1);set('villaGarden',ch!=null?ch<7:curS===0);set('campusFest',curS===0&&(ch===3||ch==null||qs.get('ev')==='campus')&&ev.campus);set('claudLamp1',(curS===6||curS===7)&&ev.claudLamp);set('pisoFire',curS===6&&ev.pisoFire);if(L.pisoFire&&L.pisoFire.visible&&L.pisoRuin){L.pisoRuin.visible=false;if(L.pisoSmoke)L.pisoSmoke.visible=false;}
   if(L.balloon&&ch!=null&&ch<=3)L.balloon.visible=ch===3&&!!ev.circus;
@@ -272,6 +272,26 @@ function initUI(){$('#ledgers').innerHTML=HUDK.map((k,j)=>`<div class="led"><b>$
   canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{e.preventDefault();camT=null;view.dist=clamp(view.dist*Math.exp(e.deltaY*.0011),60,9000);},{passive:false});
   addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight')goState(curS+1);if(e.key==='ArrowLeft')goState(curS-1);});addEventListener('resize',resize);}
 const clock=new THREE.Clock();let flashT=-9,nextFlash=3;
+// Shadows on demand: the shadow map is drawn again only when something it shows has changed: the camera (the shadow box, the LOD and the culling follow it),
+// the sun, the season, the story state, the layers, a model that has just arrived, or a mover near the shadow box (shNear, called by the train, the boat,
+// the chariot, the wheel, the balloon). W0.sdirty=1 asks for one from anywhere (chapter gates). Twice a second it is drawn anyway, so a case nobody
+// thought of heals in half a second. The season eases towards its target for ever, so it counts in steps of 1/200; a layer's height counts while it rises.
+// With the camera still (reading), the shadow pass was a third to a half of every frame's triangles.
+const SHK=new Float64Array(512);let shT=0;
+const SHM=new Map(),SHF=new THREE.Frustum(),SHS=new THREE.Sphere(),SHX=new THREE.Matrix4();
+// A mover (key: its mesh) asks for a new shadow map when it is at least three texels of the map wide, it is inside the shadow box, it or its shadow can be in the picture and is at least 4 px there
+// (a sphere of 4 sizes + 30 m against last frame's view), and it has travelled half a texel since the map was last drawn for it (m: metres along its way).
+function shNear(x,y,z,size,key,m){const D0=sun.shadow.camera.right,tex=2*D0/sun.shadow.mapSize.x;if(tex*3>=size)return;const m0=SHM.get(key);if(m0!==undefined&&Math.abs(m-m0)<tex*.5)return;
+  const r=size*4+30;SHS.center.set(x,y,z).applyMatrix4(sun.shadow.camera.matrixWorldInverse);if(Math.abs(SHS.center.x)>D0+r||Math.abs(SHS.center.y)>D0+r)return;   // outside the shadow box (in the light's own axes): it casts nothing
+  SHS.center.set(x,y,z);SHS.radius=r;if(!SHF.intersectsSphere(SHS))return;if(size*renderer.domElement.height<camera.position.distanceTo(SHS.center)*8*Math.tan(camera.fov*DEG/2))return;   // under 4 px on the screen: the twice-a-second redraw will do
+  SHM.set(key,m);W0.sdirty=1;}
+function shadowTick(now){const sm=renderer.shadowMap,en=sm.enabled?1:0;let i=0,ch=!!W0.sdirty||REVIEW||now-shT>500;if(SHK[511]!==en){SHK[511]=en;ch=true;}if(!en)return;
+  const put=v=>{if(SHK[i]!==v){SHK[i]=v;ch=true;}i++;},cp=camera.position,cq=camera.quaternion;
+  put(cp.x);put(cp.y);put(cp.z);put(cq.x);put(cq.y);put(cq.z);put(cq.w);put(camera.fov);put(camera.aspect);put(SUNDIR.x);put(SUNDIR.y);put(SUNDIR.z);
+  put(Math.round(U.uSeason.value*200));put(curS);put(renderer.info.memory.geometries);put(sun.shadow.mapSize.x);put(sun.shadow.camera.right);put(view.tgt.x);put(view.tgt.z);
+  for(const k in W0.layers){const G=W0.layers[k];if(i>500)break;put(G.visible?1:0);put(G.visible&&G.userData.r0?G.position.y:0);}
+  SHF.setFromProjectionMatrix(SHX.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));   // for shNear, next frame
+  if(ch){shT=now;W0.sdirty=0;sm.needsUpdate=true;}}
 function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.1),t=clock.elapsedTime,now=performance.now();U.uTime.value=t;P.comp.uniforms.time.value=t;stepCam(now);
   if(todT){const k=clamp((now-todT.t0)/todT.dur,0,1);ENV.tod=lerp(todT.a,todT.b,easeIO(k));setEnv();if(now-lastEnv>350||k>=1){updateEnv(W0.scene);lastEnv=now;}if(k>=1)todT=null;}
   camApply();for(const k in W0.layers){const G=W0.layers[k];if(G.userData.r0){const kk=clamp((now-G.userData.r0)/1900,0,1);G.position.y=-G.userData.rise*(1-easeIO(kk));if(kk>=1)delete G.userData.r0;}}
@@ -281,17 +301,17 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.
   const D=clamp(view.dist*1.1,250,2600),sc=sun.shadow.camera;sun.position.copy(view.tgt).addScaledVector(SUNDIR,5000);sun.target.position.copy(view.tgt);sun.target.updateMatrixWorld();
   if(sc.right!==D){sc.left=-D;sc.right=D;sc.top=D;sc.bottom=-D;sc.near=500;sc.far=12000;sc.updateProjectionMatrix();}
   rain.visible=ENV.weather==='rain'||ENV.weather==='storm';rain.position.copy(camera.position);skyMesh.position.copy(camera.position);birds.material.uniforms.uC.value.copy(view.tgt);
-  seasonTick();lodUpdate(camera);P.render(W0.scene,camera);if(REVIEW)reviewTick();if(nFrame%2===0)updLabels();if(nFrame%6===0)drawMap();nFrame++;window.__frames=nFrame;}
+  seasonTick();lodUpdate(camera);shadowTick(now);P.render(W0.scene,camera);if(REVIEW)reviewTick();if(nFrame%2===0)updLabels();if(nFrame%6===0)drawMap();nFrame++;window.__frames=nFrame;}
 window.__shot=(i,v,tod)=>{if(tod!=null&&tod>1){SEAS.t=SEAS.v=Math.floor(tod)-1;U.uSeason.value=SEAS.v;tod=tod%1;}if(TEST){const c=renderer.domElement;c.style.position='fixed';c.style.left='0';c.style.top='0';c.style.zIndex='99999';}setState(i,{instant:true});if(v&&W0.views[v])flyTo(vFrom(W0.views[v]),0);if(tod!=null){ENV.tod=tod;setEnv();updateEnv(W0.scene);}todT=null;camT=null;for(const k in W0.layers){W0.layers[k].position.y=0;delete W0.layers[k].userData.r0;}};
-function loadAsset(b64,pos,rot,hide,tag){try{if(!THREE.GLTFLoader||!b64||!pos)return;const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)).buffer;new THREE.GLTFLoader().parse(bin,'',g=>{const o=g.scene;o.position.set(pos[0],pos[1]-.1,pos[2]);o.rotation.y=rot||0;
+function loadAsset(b64,pos,rot,hide,tag){try{if(!THREE.GLTFLoader||!b64||!pos)return;const bin=b64u8(b64).buffer;new THREE.GLTFLoader().parse(bin,'',g=>{const o=g.scene;o.position.set(pos[0],pos[1]-.1,pos[2]);o.rotation.y=rot||0;
   o.traverse(m=>{if(!m.isMesh)return;m.castShadow=m.receiveShadow=true;romeMat(m.material);});o.name='glb_'+tag;if(typeof ROME!=='undefined'&&ROME.hid&&ROME.hid[o.name])o.visible=false;W0.scene.add(o);if(hide)hide.visible=false;window['__'+tag]=1;},e=>{console.warn(tag,e);window['__'+tag]=-1;});}catch(e){console.warn(e);}}
-function loadJOM(){try{if(!THREE.GLTFLoader||typeof JOM_GLB==='undefined'||!W0.jomPos)return;const bin=Uint8Array.from(atob(JOM_GLB),c=>c.charCodeAt(0)).buffer;
+function loadJOM(){try{if(!THREE.GLTFLoader||typeof JOM_GLB==='undefined'||!W0.jomPos)return;const bin=b64u8(JOM_GLB).buffer;
   new THREE.GLTFLoader().parse(bin,'',g=>{const o=g.scene;o.position.set(W0.jomPos[0],W0.jomPos[1]-.15,W0.jomPos[2]);o.traverse(m=>{if(!m.isMesh)return;m.castShadow=m.receiveShadow=true;romeMat(m.material);
       const G={gold:[1,.71,.27,.24,.14,.03,.26],tile:[.95,.66,.25,.18,.1,.02,.32],tile2:[.86,.58,.21,.15,.08,.02,.3]}[m.material.name];   // 【史】Catulus gilded the bronze roof tiles (Pliny NH 33.57): the roof (tile, tile2) is gilt bronze, not terracotta;
       if(G&&!m.material.userData.jomGilt){const t=m.material;t.userData.jomGilt=1;t.metalness=.9;t.roughness=G[6];t.color.setRGB(G[0],G[1],G[2]);t.emissive=new THREE.Color(G[3],G[4],G[5]);}});   // as a metal the sky reflection takes the gold (at .35 the slopes read grey)
     W0.scene.add(o);W0.jomGLB=o;if(W0.jomProc)W0.jomProc.visible=false;window.__jom=1;},e=>{console.warn('JOM glb',e);window.__jom=-1;});}catch(e){console.warn(e);window.__jom=-2;}}
 async function boot(){const msg=async s=>{$('#loadmsg').textContent=s;await nextFrame();};
   try{resize();setEnv();W0=await buildRome(msg);await buildRomeLayers(W0,msg);loadJOM();if(typeof DT_GLB!=='undefined')loadAsset(DT_GLB,W0.dtPos,W0.dtRot,W0.dtProc,'dt');if(typeof CU_GLB!=='undefined'&&W0.cuPos)loadAsset(CU_GLB,W0.cuPos,W0.cuRot,W0.cuProc,'cu');W0.scene.add(skyMesh,sun,sun.target,hemi,rain,birds);updateEnv(W0.scene);
-    initUI();setState(0,{instant:true});initSeasons();initLinks();initEmpire();initUI2();bookInit();resize();$('#loading').classList.add('gone');if(TEST){renderer.shadowMap.enabled=false;settings.paint=false;settings.cryst=false;settings.crystL=false;}if(REVIEW)reviewInit();window.__ready=true;loop();if(typeof antLoadModels==='function')setTimeout(antLoadModels,TEST?0:6000);if(typeof romeLoadModels==='function'&&ROME.GLB.length)setTimeout(romeLoadModels,TEST?0:2500);}
+    initUI();setState(0,{instant:true});initSeasons();initLinks();initEmpire();initUI2();bookInit();resize();renderer.shadowMap.autoUpdate=false;try{renderer.compile(W0.scene,camera);}catch(e){console.warn('compile',e);}$('#loading').classList.add('gone');if(TEST){renderer.shadowMap.enabled=false;settings.paint=false;settings.cryst=false;settings.crystL=false;}if(REVIEW)reviewInit();window.__ready=true;loop();if(typeof antLoadModels==='function')setTimeout(antLoadModels,TEST?0:6000);if(typeof romeLoadModels==='function'&&ROME.GLB.length)setTimeout(romeLoadModels,TEST?0:2500);}
   catch(err){console.error(err);$('#loadmsg').textContent='构建失败：'+err.message;window.__err=String(err&&err.stack||err);}}
 boot();

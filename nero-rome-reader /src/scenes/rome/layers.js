@@ -104,7 +104,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     g.set(6,.5);for(const sx of[-.55,.55]){box(g,F,sx,-19.8,0,.24,1.15,.18,31);lathe(g,F,sx,-18.62,0,[[0,0],[.16,.05],[.17,.2],[0,.36]],8);}   // the two apprentices
     const fl=new THREE.Mesh(new THREE.ConeGeometry(.55,1.6,10),new THREE.MeshBasicMaterial({color:new THREE.Color(1,.62,.22)}));fl.position.set(bx,y0+92-16.1,bz);G.add(fl);   // a small clean flame, no light: every material would pay for one
     const gt=new GB(256);gt.set(3,.4);box(gt,frame(bx,y0,bz,0),0,0,0,.06,71,.06,31);const tether=gt.mesh(MAT.city,false);G.add(tether);
-    W.anim.push(t=>{G.position.y=Math.sin(t*.6)*1.8;const f=W.fx.balloonFill??1;env.scale.set(.2+.8*f,1,.2+.8*f);fl.visible=f>.15;tether.visible=!W.fx.rig;});});
+    W.anim.push(t=>{G.position.y=Math.sin(t*.6)*1.8;if(G.visible)shNear(bx,y0+92,bz,25,G,G.position.y*4);const f=W.fx.balloonFill??1;env.scale.set(.2+.8*f,1,.2+.8*f);fl.visible=f>.15;tether.visible=!W.fx.rig;});});
   // the launch gantry in the middle of the arena: two masts and the beam the crown hangs from while the envelope fills (W.fx.rig)
   L('balloonRig',0,(g,G)=>{const F=frame(bx,gy(bx,bz),bz,CFB.rot);g.set(3,.45);   // masts along the track
     for(const sx of[-15,15]){box(g,F,sx,0,0,.35,37,.35,31);box(g,F,sx,0,0,1.4,.6,1.4,31);}box(g,F,0,36,0,15.6,.6,.4,31);box(g,F,0,34.6,0,.05,1.4,.05,31);
@@ -122,10 +122,10 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     for(let i=P.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[P[i],P[j]]=[P[j],P[i]];[C[i],C[j]]=[C[j],C[i]];}
     const m=new THREE.InstancedMesh(PPLGEO,MAT.people,P.length),M=new THREE.Matrix4(),c=new THREE.Color(),share={fine:1,balanced:.6,smooth:.35};
     P.forEach((p,i)=>{M.makeScale(1,.82,1).setPosition(p[0],p[1],p[2]);m.setMatrixAt(i,M);c.setRGB(...C[i]);m.setColorAt(i,c);});
-    m.frustumCulled=false;m.receiveShadow=true;G.add(m);   // r147 InstancedMesh culls on the one figure's bounds at the origin
+    m.receiveShadow=true;G.add(m);instCull(m);m.geometry.boundingSphere.radius+=2;const lo=instLod(m,PPLGEO_LO,PPL_FAR);   // its own bounds (r147 culls an InstancedMesh on the one figure at the origin), 2 m more for the jump; a far copy on the same buffers
     // W.fx.crowdCheer (0–1): everyone stands and jumps, each on their own beat (509: “然后十五万人一起喊了起来”)
     const ph=P.map(()=>R()*TAU);let was=0;
-    W.anim.push(t=>{const n=Math.round(P.length*(share[perfMode]??.6)),k=W.fx.crowdCheer||0;m.count=n;if(!k&&!was)return;was=k;
+    W.anim.push(t=>{const n=Math.round(P.length*(share[perfMode]??.6)),k=W.fx.crowdCheer||0;m.count=n;if(lo)lo.count=n;if(!k&&!was)return;was=k;
       for(let i=0;i<n;i++){const p=P[i];M.makeScale(1,.82+.18*k,1).setPosition(p[0],p[1]+k*Math.max(0,Math.sin(t*7+ph[i]))*.45,p[2]);m.setMatrixAt(i,M);}
       m.instanceMatrix.needsUpdate=true;});});
   await msg('建造南岸特区：高炉、平炉、玻璃、肥皂、硫酸……');
@@ -250,14 +250,14 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     const lg=new GB(2048);lg.set(18,.2);box(lg,T0,0,.9,0,1.15,1.8,3.4,31);lg.set(3,.3);box(lg,T0,0,.9,-3.2,1.3,2.8,1.2,31);lg.set(18,.2);lathe(lg,T0,0,2.7,2.4,[[.42,0],[.36,1.6],[.6,2.2],[0,2.3]],8);
     const geo=tg.geometry(),cars=[];for(let i=0;i<7;i++){const m=new THREE.Mesh(geo,MAT.city);m.castShadow=true;G.add(m);cars.push(m);}const loco=new THREE.Mesh(lg.geometry(),MAT.city);loco.castShadow=true;G.add(loco);
     const sm=smokeSys([[0,0,0]],{col:[.9,.9,.9],rise:28,size:5,rate:.15,alpha:.6,per:44,drift:[3,0,2]});G.add(sm);const path=movingPath(W,RAIL);const hg=new GB(2048);for(const s of[1,-1]){hg.set(3,.25+(s>0?.1:0));box(hg,T0,s*.55,1.0,0,.28,.62,1.05,31);box(hg,T0,s*.55,1.45,.95,.16,.55,.2,31);box(hg,T0,s*.55,1.85,1.2,.14,.2,.32,31);for(const lz of[-.75,.75])box(hg,T0,s*.55,0,lz,.08,1.0,.08,31);}const horses=new THREE.Mesh(hg.geometry(),MAT.city);G.add(horses);
-    W.anim.push(t=>{if(!G.visible)return;const per=path.L*2/7,ph=(t%per)*7,s0=ph<path.L?ph:2*path.L-ph,dir=ph<path.L?1:-1,p=path.at(s0);loco.position.set(p[0],p[1]+.4,p[2]);loco.rotation.y=p[3]+(dir<0?Math.PI:0);
+    W.anim.push(t=>{if(!G.visible)return;const per=path.L*2/7,ph=(t%per)*7,s0=ph<path.L?ph:2*path.L-ph,dir=ph<path.L?1:-1,p=path.at(s0);if(!W.railIdle)shNear(p[0],p[1],p[2],8,loco,s0);loco.position.set(p[0],p[1]+.4,p[2]);loco.rotation.y=p[3]+(dir<0?Math.PI:0);
       loco.visible=sm.visible=!!W.locoOn&&!W.railIdle;cars.forEach((m,i)=>{m.visible=!W.railIdle;const q=path.at(s0-dir*(W.locoOn?8+i*7:i*7));m.position.set(q[0],q[1]+.4,q[2]);m.rotation.y=q[3];});sm.material.uniforms.uOff.value.set(p[0],p[1]+5.2,p[2]);horses.visible=!W.locoOn&&!W.railIdle;if(horses.visible){const hp=path.at(s0+dir*5.5);horses.position.set(hp[0],hp[1]+.4,hp[2]);horses.rotation.y=hp[3]+(dir<0?Math.PI:0);}});});
   W.pois.push({n:'罗马站',l:'铁路起点',x:-660,z:1430,y:gy(-660,1430)+14,s0:6,s1:99,d:4200,info:'罗马到奥斯提亚铁路在城里的起点，旁边是商港仓库区。'});W.views.railway={n:'铁路与罗马站',pos:[-430,gy(-660,1430)+120,1650],tgt:[-650,gy(-660,1430)+8,1450]};for(const[a,b,t]of[[6,6,'58年通车：木轨包铁皮，马拉的运煤车厢。'],[7,7,'锅炉炸了以后停运。铁轨生锈，没有车。'],[8,99,'布鲁斯号复驶：黑车头，侧面黄铜嵌字 BRVTVS。']])W.pois.push({n:'罗马–奥斯提亚铁轨',l:'12罗马里',x:-470,z:2400,y:gy(-470,2400)+20,s0:a,s1:b,d:3000,info:t});
   L('tug',0,(g,G)=>{const bg=new GB(4096),F=frame(0,0,0,0);bg.set(3,.3);box(bg,F,0,-1,0,2.6,2.6,9,31);bg.set(29,.4);box(bg,F,0,1.6,1,1.8,2,3,31);bg.set(18,.3);for(const s of[1,-1])box(bg,F,s*3.1,-.6,0,.7,3.2,2.2,31);
       lathe(bg,F,0,3.6,1,[[.45,0],[.42,3.6],[.6,4],[0,4.1]],8);const boat=new THREE.Mesh(bg.geometry(),MAT.city);boat.castShadow=true;G.add(boat);
     const cg=new GB(2048);cg.set(3,.3);box(cg,F,0,-1,0,2.8,2.1,10,31);cg.set(20,.3);box(cg,F,0,1,0,2.5,.5,9.4,16);const cgeo=cg.geometry(),bar=[];for(let i=0;i<4;i++){const m=new THREE.Mesh(cgeo,MAT.city);G.add(m);bar.push(m);}
     const sm=smokeSys([[0,0,0]],{col:[.32,.3,.28],rise:40,size:7,rate:.12,alpha:.55,per:40,drift:[4,0,3]});G.add(sm);const path=movingPath(W,TIBER.slice(16,23),RW+.4);
-    W.anim.push(t=>{if(!G.visible)return;const per=path.L*2/3,ph=(t%per)*3,s0=ph<path.L?ph:2*path.L-ph,dir=ph<path.L?1:-1,p=path.at(s0);boat.position.set(p[0],p[1],p[2]);boat.rotation.y=p[3]+(dir<0?Math.PI:0);
+    W.anim.push(t=>{if(!G.visible)return;const per=path.L*2/3,ph=(t%per)*3,s0=ph<path.L?ph:2*path.L-ph,dir=ph<path.L?1:-1,p=path.at(s0);shNear(p[0],p[1],p[2],12,boat,s0);boat.position.set(p[0],p[1],p[2]);boat.rotation.y=p[3]+(dir<0?Math.PI:0);
       bar.forEach((m,i)=>{const q=path.at(s0-dir*(26+i*23));m.position.set(q[0],q[1],q[2]);m.rotation.y=q[3];});sm.material.uniforms.uOff.value.set(p[0],p[1]+8,p[2]);});});
   L('semaphore',18,(g,G)=>{for(const[x,z]of[[254,339],[-480,940],[-470,2520],[-560,3480],[-1460,2380]]){const F=frame(x,gy(x,z),z,.3);g.set(3,.4);for(const[sx,sz]of[[1,1],[1,-1],[-1,1],[-1,-1]])box(g,F,sx*1.6,-1,sz*1.6,.18,17,.18,31);
       for(let y=3;y<16;y+=4){box(g,F,0,y,1.6,1.7,.15,.12,31);box(g,F,0,y,-1.6,1.7,.15,.12,31);box(g,F,1.6,y,0,.12,.15,1.7,31);box(g,F,-1.6,y,0,.12,.15,1.7,31);}
@@ -277,7 +277,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     const path=movingPath(W,pts,F.oy+.3),cg=new GB(2048),T0=frame(0,0,0,0);cg.set(29,.9);box(cg,T0,0,.35,0,.85,.9,.8,31);cg.set(18,.3);for(const s of[-1,1])box(cg,T0,s*1.05,0,0,.1,1.1,.55,31);
     cg.set(29,.6);for(let k=0;k<4;k++){const hx=(k-1.5)*.62;box(cg,T0,hx,.9,3.4,.26,.95,1.15,31);box(cg,T0,hx,1.75,4.6,.16,.5,.3,31);box(cg,T0,hx,0,3.4,.1,.9,.1,31);}
     const m=new THREE.Mesh(cg.geometry(),MAT.city);m.castShadow=true;G.add(m);const du=smokeSys([[0,0,0]],{col:[.8,.7,.5],rise:4,size:2.5,rate:.5,alpha:.4,per:20,drift:[0,0,0]});G.add(du);
-    W.anim.push(t=>{if(!G.visible)return;const p=path.at((t*spd)%path.L);m.position.set(p[0],p[1],p[2]);m.rotation.y=p[3];du.material.uniforms.uOff.value.set(p[0],p[1],p[2]);});});
+    W.anim.push(t=>{if(!G.visible)return;const p=path.at((t*spd)%path.L);shNear(p[0],p[1],p[2],3,m,t*spd);m.position.set(p[0],p[1],p[2]);m.rotation.y=p[3];du.material.uniforms.uOff.value.set(p[0],p[1],p[2]);});});
   race('chariot',W.circF,-188,148,21,26);race('chariotV',W.vatF,-158,158,19,24);
   L('taurus',0,(g)=>{const F=frame(-610,gy(-610,-330),-330,.4),rx=46,rz=34;for(let k=0;k<16;k++){const a=k/16*TAU,a1=(k+1)/16*TAU,p0=[Math.cos(a)*rx,Math.sin(a)*rz],p1=[Math.cos(a1)*rx,Math.sin(a1)*rz],S=F.sub((p0[0]+p1[0])/2,0,(p0[1]+p1[1])/2,Math.atan2(-(p1[1]-p0[1]),p1[0]-p0[0])),len=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])+.6;
       arcade(g,S,0,-1,0,len,10,2,3,2,{span:.3});arcade(g,S,0,9,0,len,8,2,2.6,2,{span:.28});const Pi=(r,aa,y)=>F.p(Math.cos(aa)*r,y,Math.sin(aa)*r*rz/rx);g.set(26,.5);g.poly([Pi(18,a,2),Pi(18,a1,2),Pi(44,a1,16),Pi(44,a,16)],[0,1,0]);g.set(27,.5);g.poly([F.p(0,.3,0),Pi(18,a1,.3),Pi(18,a,.3)],[0,1,0]);}});
@@ -360,7 +360,7 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
    const wheelPit=(g)=>{g.set(20,.4);box(g,FE,WH.x,CE.floor,WH.z,.62,.1,WH.r+.5,31);for(const s of[-1,1])wallFE(g,WH.x+s*.85,WH.z-WH.r-.7,WH.x+s*.85,WH.z+WH.r+.7,yHub+.4,.3,22);};
    const wheelMesh=(G,turn)=>{const wg=new GB(1<<13);wheel(wg,WH.r,1,16,ML.x-ML.hw-WH.x);const m=wg.mesh(MAT.city);if(!m)return;
      const piv=new THREE.Object3D(),spin=new THREE.Object3D(),q=P3(WH.x,yHub,WH.z);piv.position.set(q[0],q[1],q[2]);piv.rotation.y=FE.rot+Math.PI/2;spin.add(m);piv.add(spin);G.add(piv);   // wheel axle = FE +x, into the machine room
-     if(turn)W.anim.push(t=>{if(G.visible&&(curS===6||curS===8))spin.rotation.z=t*.9;});};   // 59-68 the wheel stands (curS is the story state, app.js)
+     if(turn)W.anim.push(t=>{if(G.visible&&(curS===6||curS===8)){spin.rotation.z=t*.9;shNear(q[0],q[1],q[2],8,spin,t*.9*WH.r);}});};   // 59-68 the wheel stands (curS is the story state, app.js)
    // tail race: from the wheel pit down the slope; the water never rises (each point no higher than the last) and follows the ground where the ground is lower
    const race=[[WH.x,WH.z+WH.r+.9],...CE.race.slice(1)],ry=[];{let y=-6.5;for(const[x,z]of densify(race,4)){y=Math.min(y,yG(x,z)+.45);ry.push([x,y,z]);}}
    const tailRace=(g,pg,part,rail)=>{for(let i=0;i<ry.length-1;i++){const a=ry[i],b=ry[i+1],dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1,nx=-dz/l,nz=dx/l,E=(p,o,dy)=>P3(p[0]+nx*o,p[1]+dy,p[2]+nz*o);   // E: offset across the race, height above that point's water
