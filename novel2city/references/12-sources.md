@@ -30,3 +30,6 @@
 - three.js：https://threejs.org/ · Poly Haven（贴图/HDRI）：https://polyhaven.com/ · Sketchfab：https://sketchfab.com/
 
 > 链接会失效。用之前打开核对；引用时写访问日期。
+
+## 模型与素材授权台账
+下载或参考过的每个模型（含预览图）一行：作者、许可、用途（上线 / 仅参考）。没有确认许可的，不进仓库（`10-pitfalls.md` #63）。
