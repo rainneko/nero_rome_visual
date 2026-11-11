@@ -521,9 +521,15 @@ Keep this file current: every promise made to the author goes here until it is d
     - 182 个街坊排成行；
     - 丢弃的地块里，`lotBuild` 盖不下 667 块，碰到占地 781 块；
     - GLB 公寓有 198 次因加深后内院退不出来而没放下。
-    - v2 的 GLB 公寓仍压在占地最低点下 0.7 m（`parcels.js` 传给 `o.glb.put`）。作者 2026-11-08 已定新规则：按门前街面放，最多比最低点高 0.5 m，下面是凝灰岩基座（great-thompson 分支）。旧模型没有基座，所以这里不单独改。那个分支已合了 main（583eece），把变体选择（槽 a/b/c 共 13 种）、两条楼层限制和这条高度规则做成了 `insulaGLB(W,slot,x,z,rot,d,groundMin)`。两边合到一起时，`o.glb.put` 改调它：d 取 `o.glb.spec[slot][1]`，groundMin 由 `parcels.js` 传 `gq.gr.min`。他们新加的部件已改成 50、51 号（aaaf8a9），不再和 main 的 47 号（凝灰岩方石）、48 号（石灰华方石）撞。
-      - 陡地：门前地面比最低点高太多时，上坡一侧的店门会埋进土里。`insulaGLB` 现在遇到门前比 groundMin 高 0.8 m 以上就返回 null（ea31ea4），旧循环会换个地方放（仍是 170 栋，18 处换了地方；门前埋深超过 0.5 m 的从 14 处降到 0，最多 0.3 m）。v2 接入时，`parcels.js` 要接住 `o.glb.put` 返回的 null：记一次 `'uphill'` 落空，改盖程序房子。现在 put 一调用就把这块地记成已建，程序房子只在 `else` 里盖，不接的话这块地会空着。接好后核一次房子数比值。
-      - 变体 n–r 的雨篷和摊棚伸出槽位正面约 0.5 m。v2 的模型正面只比地块正面退 0.15 m（`PCL.glb.front`），所以会伸进支路约 0.35 m；3.2 m 宽的小街要看一眼。
+    - ✅ 2026-11-11 民居分支（`claude/great-thompson-336bb8`）接进 v2：再合一次 main（9e84a74，冲突只在 `templeLinks` 那行，现在是 `templeLinks` → `palTerraceWalls` → `placeShopWares`）。
+      `o.glb.put` 改调 `insulaGLB(W,slot,x,z,rot,d,groundMin)`（d 取槽位深度，groundMin 由 `parcels.js` 传 `gq.gr.min`）：v2 也用 18 种变体、按门前街面放、凝灰岩基座。
+      返回 null（门前比最低点高 0.8 m 以上）时记一次 `'uphill'` 落空，同一块地改盖程序房子（不再是 `else`）。o（布篷摊位）在槽里后退 0.45 m（`INSULA_BACK`），布篷立杆留在地块上。
+      着色器部件：本分支 50（竞选标语）、51（铺面房间），main 用 47–49、60–62，不撞。
+      重烘焙后道路和街网不变（`bake-roads.mjs --check` 两项都是最新）。`city-audit --assert`（低档、桌面档、v2）全过，两种模式下的回归测试和四个 `CITY_V2=1` 测试全过。
+      数字（合并前取自上面 11-09 那条）：v2 全城 25,950 栋（原 25,948），旧城同片 26,601 栋（原 26,608），比值 0.976（原 0.975）；
+      v2 GLB 公寓 133 栋（原 151），`'uphill'` 落空 18 次，都改盖了程序房子；旧循环仍是 170 栋。
+      实测门前埋深：默认模式 170 栋最多 0.30 m，v2 130 栋（`?test` 页）最多 0.29 m，都没有超过 0.5 m 的；基座底没有一处高出地面。
+      街景六张（平地、中坡、陡坡各两张，含一条 3.2 m 小街）：`docs/screenshots/insula-merge-20261111/`。
 - [ ] P5 路口神龛和水池、横街台阶、城郊成簇，默认切到 v2，删掉旧代码。
 - ⚠️ 待作者拍板（设计稿第 11 节）：街坊大小；坡度 > 52% 的地留绿还是盖台地房；大火前后是否同一张路网；64 年以前大街有没有柱廊。
 
