@@ -51,11 +51,15 @@ function stairRun(Ls,dh){const n=Math.max(3,Math.round(dh/.19));let m=Math.max(1
 function stairEdge(W,H,A,B,Ls,yT){if(H(A[0],A[1])<W.gy(A[0],A[1])+.5)return 0;const ux=(B[0]-A[0])/Ls,uz=(B[1]-A[1])/Ls;let s=0;
   while(s<Ls-3&&H(A[0]+ux*(s+.25),A[1]+uz*(s+.25))>yT-.3)s+=.25;return s>0?Math.min(s+.5,Ls-3):0;}
 // what a hill stair stands on: the terrain, or the floor of a Palatine garden terrace where one lies over it (palatine.js palTerraces, 1.25 m raster)
-function stairGround(W){if(W.stairGround)return W.stairGround;const gy=W.gy,T=W.foot.list.filter(f=>f.palTer!=null);if(!T.length)return W.stairGround=gy;
+function stairGround(W){if(W.stairGround)return W.stairGround;const gy=W.gy,T=W.foot.list.filter(f=>f.palTer!=null),PP=W.palPlats||[];if(!T.length&&!PP.length)return W.stairGround=gy;
   let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(const f of T){x0=Math.min(x0,f.cx-f.r);z0=Math.min(z0,f.cz-f.r);x1=Math.max(x1,f.cx+f.r);z1=Math.max(z1,f.cz+f.r);}
+  for(const P of PP)for(const q of P.W){x0=Math.min(x0,q[0]-2);z0=Math.min(z0,q[1]-2);x1=Math.max(x1,q[0]+2);z1=Math.max(z1,q[1]+2);}   // H1: the closed terraces (palatine-h1.js), world outlines P.W
   const cs=1.25,nx=Math.ceil((x1-x0)/cs),nz=Math.ceil((z1-z0)/cs),Y=new Float32Array(nx*nz).fill(-1e9);
   for(const f of T)for(let j=Math.max(0,Math.floor((f.cz-f.r-z0)/cs));j<=Math.min(nz-1,Math.floor((f.cz+f.r-z0)/cs));j++)for(let i=Math.max(0,Math.floor((f.cx-f.r-x0)/cs));i<=Math.min(nx-1,Math.floor((f.cx+f.r-x0)/cs));i++){
     const dx=x0+(i+.5)*cs-f.cx,dz=z0+(j+.5)*cs-f.cz;if(Math.abs(f.c*dx-f.s*dz)<=f.hw-1&&Math.abs(f.s*dx+f.c*dz)<=f.hd-1)Y[j*nx+i]=Math.max(Y[j*nx+i],f.palTer);}   // the foot rect less its 1 m margin
+  for(const P of PP){let px0=1e9,pz0=1e9,px1=-1e9,pz1=-1e9;for(const q of P.W){px0=Math.min(px0,q[0]);pz0=Math.min(pz0,q[1]);px1=Math.max(px1,q[0]);pz1=Math.max(pz1,q[1]);}
+    for(let j=Math.max(0,Math.floor((pz0-z0)/cs));j<=Math.min(nz-1,Math.floor((pz1-z0)/cs));j++)for(let i=Math.max(0,Math.floor((px0-x0)/cs));i<=Math.min(nx-1,Math.floor((px1-x0)/cs));i++){
+      const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs;if(!inPolyXZ(x,z,P.W)||nearPoly(x,z,[...P.W,P.W[0]],1))continue;Y[j*nx+i]=Math.max(Y[j*nx+i],P.y);}}   // the outline less 1 m
   return W.stairGround=(x,z)=>{const g=gy(x,z),i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);return i<0||j<0||i>=nx||j>=nz?g:Math.max(g,Y[j*nx+i]);};}
 // the landings of a hill stair: the ends, the turns, and the edge of a terrace where the route steps off it (the next flight runs down in front of its wall)
 function stairLandings(W,R){const H=stairGround(W),L=new Set([0,...R.corners,R.length-1]),h=R.map(p=>H(p[0],p[1]));
@@ -94,7 +98,8 @@ function tlWalk(W,N,x,z,Rr,seeds,own,y0,stairs){const S=W.street,{x0,z0,cs,nx,nz
   if(w<1||h<1)return null;const D=new Float64Array(w*h).fill(1e9),Hc=new Float32Array(w*h).fill(NaN),Fl=new Int8Array(w*h).fill(-1),O=new Int8Array(w*h),Q=[];
   const cx=q=>x0+(q%w+i0+.5)*cs,cz=q=>z0+(Math.floor(q/w)+j0+.5)*cs,K=q=>(Math.floor(q/w)+j0)*nx+(q%w+i0);
   const floor=q=>{if(Fl[q]<0)Fl[q]=solid[K(q)]&&own(cx(q),cz(q))?1:0;return Fl[q];},   // a building cell of the own ground: the precinct floor, at the temple's level
-    ht=q=>{if(floor(q))return y0;if(Number.isNaN(Hc[q]))Hc[q]=gy(cx(q),cz(q));return Hc[q];},pass=q=>{const k=K(q);return!water[k]&&(!solid[k]||floor(q));};
+    PF=W.palFloorY,Py=PF?new Float32Array(w*h).fill(NaN):null,pf=q=>{if(!Py)return null;if(Number.isNaN(Py[q])){const y=PF(cx(q),cz(q));Py[q]=y==null?-1e9:y;}return Py[q]>-1e8?Py[q]:null;},   // the Palatine's terrace floors (H1): walked at their level, their reserved ground is solid in the raster
+    ht=q=>{if(floor(q))return y0;const p=pf(q);if(p!=null)return p;if(Number.isNaN(Hc[q]))Hc[q]=gy(cx(q),cz(q));return Hc[q];},pass=q=>{const k=K(q);return!water[k]&&(!solid[k]||floor(q)||pf(q)!=null);};
   const push=(q,d)=>{Q.push([d,q]);let i=Q.length-1;while(i>0){const p=(i-1)>>1;if(Q[p][0]<=Q[i][0])break;[Q[p],Q[i]]=[Q[i],Q[p]];i=p;}},
     pop=()=>{const top=Q[0],last=Q.pop();if(Q.length){Q[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<Q.length&&Q[l][0]<Q[m][0])m=l;if(r<Q.length&&Q[r][0]<Q[m][0])m=r;if(m===i)break;[Q[m],Q[i]]=[Q[i],Q[m]];i=m;}}return top;};
   seeds.forEach((f,o)=>{const i=Math.floor((f.x-x0)/cs)-i0,j=Math.floor((f.z-z0)/cs)-j0;if(i<0||j<0||i>=w||j>=h)return;const q=j*w+i;if(D[q]>0){D[q]=0;O[q]=o;push(q,0);}});

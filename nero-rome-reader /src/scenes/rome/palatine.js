@@ -16,8 +16,8 @@ const PAL_ASSETS=[
   {n:'rome_domus_augusti',lx:-47,lz:106,turn:0,hw:38,hd:41,y:56.6},
   {n:'rome_magna_mater',lx:-154,lz:100,turn:0,hw:32,hd:46,y:56.6},
   {n:'rome_victoria',lx:-110,lz:132,turn:0,hw:29,hd:40,y:52},
-  {n:'rome_domus_a',lx:190,lz:-72,turn:90,hw:16,hd:26,y:57.3},
-  {n:'rome_domus_b',lx:196,lz:36,turn:90,hw:16,hd:26,y:52.9},
+  {n:'rome_domus_a_belt',lx:202.6,lz:-72,turn:90,hw:15.5,hd:23,y:42},   // H1 (palatine-plan.js villas): the east villas cut down to the belt (42), their gardens 36 and 30
+  {n:'rome_domus_b_belt',lx:202.6,lz:36,turn:90,hw:15.5,hd:23,y:42},
   {n:'rome_domus_a',lx:62,lz:-142,turn:180,hw:16,hd:26,y:52.1},
   {n:'rome_domus_b',lx:-30,lz:-128,turn:180,hw:16,hd:26,y:55.9}];
 // terrain pads under the models (cut the hill to their floors); [lx0,lx1,lz0,lz1,y]
@@ -39,9 +39,9 @@ const PAL_BL=[
   ['b',-38,14,0,56.4],['a',-51,43,0,56.4],                   // south basin
   ['b',-130,39,0,61.4],                                      // south of the Tiberiana (plateau strip)
   ['d',34,8,0,61.4],['d',75,8,0,61.4],                       // between Transitoria and Apollo
-  ['c',156,-14,90,64],['a',153,26,90,60],                    // east of the Transitoria, fronts to the east slope
+  ['c',156,-14,90,65],['a',153,26,90,60],                    // east of the Transitoria, fronts to the east slope: low floors on the summit rim (55, H1)
   ['c',-66,-123,180,44.5],['c',15,-135,180,50],              // north slope towards the Forum
-  ['b',5,148,0,38],['b',5,171,0,28],['b',5,194,0,18.5]];     // south slope: three long colonnaded ranges stacked down the hill, seen from the Circus
+  ['b',5,148,0,47],['b',5,171,0,31],['b',5,194,0,18.5]];     // south slope: three long colonnaded ranges stacked down the hill, seen from the Circus; low floors on the belt (42) and the foot terrace (26), H1
 const palBL=PAL_BL.map(([t,lx,lz,tn,y])=>{const k=PAL_BLK[t],q=tn*Math.PI/180;return{t,lx,lz,tn,y,hw:k.w/2,hd:k.d/2,dr:k.dr,c:Math.cos(q),s:Math.sin(q),n:k.n};});
 // rebuilt ledge-rock hills (palrock.js, from tools/pal_rock.mjs): outline edges [x,z,nx,nz] of the lowest bench in the model's axes
 const PAL_NOROCK=typeof location!=='undefined'&&/[?&]norock/.test(location.search);   // diagnostics: ?norock switches the rock-foot terrain off
@@ -58,10 +58,11 @@ function palShape(x,z,h){const[lx,lz]=palL(x,z);if(lx<-260||lx>300||lz<-220||lz>
         ft=A.y+(lerp(lerp(G.h[k],G.h[k+1],a),lerp(G.h[k+G.nx],G.h[k+G.nx+1],a),b))/10-.25;
       C.push([d<=2.6?1:1-sstep(2.6,20,d),ft]);}   // the rock's own foot reaches 2.6 m beyond its outline (the terrain mesh cannot step at the very rim)
     C.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);for(const[w,ft]of C)h=lerp(h,ft,w*(1-sstep(8,22,h-ft)));}   // (1-sstep): on the inland side, where the ground is far above the foot, the rock stays buried
+  h=palPlatShape(lx,lz,h);   // H1: the closed terraces of the east and south slopes (palatine-h1.js)
   // office blocks last: their pads win over a neighbour's rock skirt
   for(const B of palBL){const dx=lx-B.lx,dz=lz-B.lz,u=B.c*dx-B.s*dz,v=B.s*dx+B.c*dz,e=Math.min(B.hw+1.5-Math.abs(u),B.hd+1.5-Math.abs(v));
     if(e>-3)h=Math.min(h,lerp(h,lerp(B.y-.5,B.y-B.dr-.5,sstep(-4,4,v)),clamp((e+3)/4,0,1)));
-    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb)h=lerp(h,yb,clamp((e2+8)/8,0,1));}   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m
+    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb){const Pl=palPlIn(lx,lz);if(!(Pl&&Pl.y<yb))h=lerp(h,yb,clamp((e2+8)/8,0,1));}}   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m; not on a lower H1 terrace, which has its own floor
   return h;}
 const palInBasin=(lx,lz,m=0)=>PAL_BASIN.some(([x0,x1,z0,z1])=>lx>x0-m&&lx<x1+m&&lz>z0-m&&lz<z1+m);
 function palInAsset(lx,lz,m){for(const A of PAL_ASSETS){const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;
@@ -165,16 +166,16 @@ const PAL_LV=[51,44,37,30,23,16],PAL_ROCK_CLEAR=10;
 function palRockD(lx,lz){let best=1e9;for(const A of PAL_ASSETS){const E=palRockE[A.n];if(!E)continue;const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;
     let d=-1e9;for(const[px,pz,nx,nz]of E)d=Math.max(d,(u-px)*nx+(v-pz)*nz);best=Math.min(best,d);}return best;}
 const palTerSkip=(lx,lz)=>palSkip(lx,lz)||palRockD(lx,lz)<PAL_ROCK_CLEAR||palNearSC(lx,lz,8);
-function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W.routeGround||W,a,b,{lim:.15,half:34,step:2.5});W.palClivus=R;PAL_CL.length=0;for(const p of R)PAL_CL.push(palL(p[0],p[1]));}
+function palTerraces(W){{const R=palClivusRoute(W);W.palClivus=R;PAL_CL.length=0;for(const p of R)PAL_CL.push(palL(p[0],p[1]));}   // H1: down the ravine east of the south terraces (palatine-h1.js)
   const P=(lx,lz)=>palW(lx,lz),H=(lx,lz)=>{const q=P(lx,lz);return W.gy(q[0],q[1]);},C=[20,-15],segs=[],
     RG=W.routeGround||W,Hp=(lx,lz)=>{const q=P(lx,lz);return RG.gy(q[0],q[1]);};   // Hp: the plan (where each terrace runs) on the desktop tier's ground at every tier, so its footprints and walls are the same at both tiers (the street fabric's key); H: the heights, on this tier's ground
   W.palWalls=0;W.palTerSegs=segs;
   PAL_LV.forEach((yk,ki)=>{const tk=yk-6,S=[];
-    for(let a=-42;a<=208;a+=1.5){const th=a*DEG,dx=Math.cos(th),dz=Math.sin(th);let rIn=null,rOut=null;
+    for(let a=-42;a<=208;a+=1.5){const th=a*DEG,dx=Math.cos(th),dz=Math.sin(th);let rIn=null,rOut=null;if(a>=PAL_PLAN.rayCut[0]&&a<=PAL_PLAN.rayCut[1]){S.push(null);continue;}   // H1: the east and south slopes are closed terraces (palPlatReserve)
       for(let r=36;r<430;r+=1.2){const h=Hp(C[0]+dx*r,C[1]+dz*r);if(rIn===null&&h<yk)rIn=r;if(h<tk){rOut=r;break;}}
       if(rIn===null||rOut===null||rOut-rIn<6){S.push(null);continue;}
       const o=[C[0]+dx*rOut,C[1]+dz*rOut],i=[C[0]+dx*rIn,C[1]+dz*rIn],m=[(o[0]+i[0])/2,(o[1]+i[1])/2];
-      S.push(palTerSkip(o[0],o[1])||palTerSkip(i[0],i[1])||palTerSkip(m[0],m[1])?null:{o,i,d:rOut-rIn,a,n:[dx,dz]});}
+      S.push(palTerSkip(o[0],o[1])||palTerSkip(i[0],i[1])||palTerSkip(m[0],m[1])||[o,i,m].some(q=>palInZoneL(q[0],q[1],6))?null:{o,i,d:rOut-rIn,a,n:[dx,dz]});}
     for(let k=1;k<S.length-1;k++){const A=S[k-1],B=S[k],Cc=S[k+1];if(A&&B&&Cc){B.o=[(A.o[0]+2*B.o[0]+Cc.o[0])/4,(A.o[1]+2*B.o[1]+Cc.o[1])/4];B.i=[(A.i[0]+2*B.i[0]+Cc.i[0])/4,(A.i[1]+2*B.i[1]+Cc.i[1])/4];}}
     /* hill base after rock_and_base.md: runs of pale ashlar with a batter and a coping, set back by 0-2.4 m from sector to sector, square buttresses,
        a ledge-rock band at the foot (uneven blocks), gardens instead of paving, stairs along the wall, and gaps (gardens/slope with trees) where a run or a whole sector has no wall */
@@ -197,6 +198,7 @@ function palTerraces(W){{const a=palW(48,132),b=palW(54,240),R=hillRoute(W.route
         const Lw0=Math.hypot(wB0[0]-wA0[0],wB0[1]-wA0[1]);sg.sA=rec.S.length-1;rec.L+=Lw0;rec.S.push(Object.assign(smp(wB0,ybB),{s:rec.L}));sg.sB=rec.S.length-1;rec.brk.push(rec.L);rec.k=k;sg.rec=rec;   // the ledge band (below) runs under the whole segment
         const t0=rec.S[0],t1=rec.S[rec.S.length-1],tl=Math.hypot(t1.x-t0.x,t1.z-t0.z)||1;rec.ux=(t1.x-t0.x)/tl;rec.uz=(t1.z-t0.z)/tl;}
       const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr,'open').palTer=yk;}});   // 'open': garden terraces count as vegetation for the street raster; palTer: the floor, for the hill stairs (temple-links.js)
+  palPlatReserve(W);   // H1: the closed terraces' ground, before the roads and the houses (palatine-h1.js)
   flushColumns(W);}
 // the walls of the terraces planned by palTerraces, opened where a hill stair goes through (W.hillStairs: every one is built by now). Dice keyed to the segment.
 function palTerraceWalls(W){const segs=W.palTerSegs||[];if(!segs.length)return;
@@ -245,7 +247,7 @@ function palTerraceWalls(W){const segs=W.palTerSegs||[];if(!segs.length)return;
         const q=xyz(at(t,-.25),0),PF=frame(q[0],0,q[2],wr);g.set(60,wseed,1,0);box(g,PF,0,yk+.1,0,.45,1.18,.45,15);g.set(60,.5,1,2);box(g,PF,0,yk+1.28,0,.5,.12,.5,31);st.topPiers++;}}
       // B5: by an opening the parapet ends in a pier with a statue or a bronze tripod (the next segment's opening counts: a point 0.6 m on)
       for(const[t,dir]of[[a0,-1],[a1,1]]){const edge=(dir<0&&t===0)||(dir>0&&t===1),j=Math.round(t*ns),open=edge?near(at(t+dir*.6/L,0)):op[j+dir];if(!open)continue;
-        const tp=t-dir*.45/L,q=xyz(at(tp,-.1),0),gF=lerp(ybA,ybB,tp)+1.6,PF=frame(q[0],0,q[2],wr);g.set(60,wseed,1,1);box(g,PF,0,gF-1.2,0,.7,yk+1.3-gF+1.2,.7,31&~32);g.set(60,.5,1,2);box(g,PF,0,yk+1.3,0,.8,.16,.8,31);
+        const tp=t-dir*.45/L,q=xyz(at(tp,-.1),0),gF=lerp(ybA,ybB,tp)+1.6,PF=frame(q[0],0,q[2],wr);(W.wallPiers=W.wallPiers||[]).push([q[0],q[2],.7]);g.set(60,wseed,1,1);box(g,PF,0,gF-1.2,0,.7,yk+1.3-gF+1.2,.7,31&~32);g.set(60,.5,1,2);box(g,PF,0,yk+1.3,0,.8,.16,.8,31);
         if(teH(q[0],q[2],5)<.5)pedestalStatue(g,PF,0,0,yk+1.46,2.6,{gilt:teH(q[0],q[2],6)<.4});else tripod(g,PF,0,0,yk+1.46,1.25);st.piers++;}}
     // M3: a corner pier 1.2 m square where the wall line ends or turns back (set-back), on the coping
     for(const[cnd,t]of[[(!sg.prevW||Math.abs(sg.prevSb-sb)>.05)&&!op[0],.6/L],[!sg.nextW&&!op[ns],1-.6/L]]){if(!cnd||near(at(t,0),1))continue;const q=xyz(at(t,-.25),0),PF=frame(q[0],0,q[2],wr);
@@ -296,7 +298,7 @@ const PFR=frame(PALF.ox,0,PALF.oz,PALF.rot);                       // the Palati
 const PAL_OBS=[[104,123,-1,34]];                                    // extra obstacles (Jupiter Victor temple with stair and altar)
 const PAL_ZONES=[[-215,-72,16,60],[10,140,-14,30],[136,180,-50,55]]; // plateau strips that get paved ground
 const PAL_FILLED=[...PAL_BASIN,...PAL_ZONES];                       // where the old street-grid generator must stay out
-const palFilled=(x,z)=>{const[lx,lz]=palL(x,z);return PAL_FILLED.some(([x0,x1,z0,z1])=>lx>x0-12&&lx<x1+12&&lz>z0-12&&lz<z1+12);};
+const palFilled=(x,z)=>{const[lx,lz]=palL(x,z);return PAL_FILLED.some(([x0,x1,z0,z1])=>lx>x0-12&&lx<x1+12&&lz>z0-12&&lz<z1+12)||palInZoneL(lx,lz,12);};   // and the H1 terraces
 // stand-in for rome_pal_block_*: nominal sizes (a 36x30, b 60x16, c 30x30, d 34x26), low floor at -dr, high floor at 0, front = +z
 function palBlockStand(W,g,F,B){const dr=B.dr,L=-dr,R=RNG(Math.abs(Math.round(B.lx*31+B.lz*17))+5),sd=.06+R()*.85;
   const fac=o=>Object.assign({part:0,seed:sd,sty:3,fl:8|32,nSt:2,gH:4.4,sH:3.5,lit:.8},o);
@@ -426,6 +428,7 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
 // paved ground on the plateau strips (follows the terrain), Jupiter Victor temple with stair and altar
 function palStrips(W){const g=new GB(1<<15),O=palObstacles();g.set(60,.35,1,3);   // H0 (palatine-masterplan.md 2.3): grade 5, the slabs of the terrace floors, not the city paving (part 11, lighter than the copings)
   for(const[x0,x1,z0,z1]of PAL_ZONES)for(let lx=x0;lx<x1;lx+=6)for(let lz=z0;lz<z1;lz+=6){const w=Math.min(6,x1-lx),d=Math.min(6,z1-lz);if(palClear(O,lx+w/2,lz+d/2)<-.5)continue;if(palInAsset(lx+w/2,lz+d/2,-1))continue;
+      if(palPlIn(lx+w/2,lz+d/2))continue;   // H1: a closed terrace has its own floor (palPlatFloor)
       const pt=(a,b)=>{const q=PFR.p(a,0,b);return[q[0],W.gy(q[0],q[2])+.13,q[2]];};g.poly([pt(lx,lz+d),pt(lx+w,lz+d),pt(lx+w,lz),pt(lx,lz)],[0,1,0]);}
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);
   {const gt=new GB(1<<14),[x,z]=palW(113.5,10),F0=frame(x,0,z,PALF.rot),y=maxGround(W,F0,0,0,8,12)+.3;

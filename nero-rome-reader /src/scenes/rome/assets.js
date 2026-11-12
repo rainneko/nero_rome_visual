@@ -152,4 +152,83 @@ window.__wallFootCheck=(opt)=>{const W=W0,maxL=opt&&opt.maxL||20,minL=opt&&opt.m
     for(const q of S){if(q.road&&!q.open&&q.h>=1)road++;if(q.open||q.road||q.h<1||hit(q.s)){flush();continue;}run.push(q);}flush();}
   const E=(W.terraceEdges||[]).filter(e=>e.band!=null),band=E.length?Math.min(...E.map(e=>e.band)):null;
   const r={walls:(W.wallFeet||[]).length,seams:seams.sort((a,b)=>b.len-a.len),long,road,band,bandEdges:E.length};console.log('wall feet',JSON.stringify({walls:r.walls,seams:seams.length,long,road,band}));return r;};
+/* TEST tools of the Palatine H1 (briefs/rome/palatine-masterplan.md section 4, the H1 checklist). PAL_PLAN.zones (palatine-plan.js) is the rebuilt ground:
+   the east and south-east slopes, and the south; the ravine between them lies outside the foot wall. All four run on the old rings too (the numbers before H1).
+   __palOpenEnds(): every run of wall (W.wallFeet, palette 1, samples 1 m or more out of the ground) in the zone, both ends: an end is closed when the wall
+     dies into the ground there ('grade'), another wall goes on from it within 1.6 m ('wall'), a full-height pier stands there (W.wallPiers: end piers at
+     openings, corner piers) ('pier'), it meets a hero model's rock base or a rock band ('rock'), or a villa model's own wall ('model'). Returns {ends, open, by, list}.
+   __palBaseCheck(): every building on the east and south slopes (and, for H2, the north villas): its main floor, the level it stands on (the floor of the
+     terrace that holds its middle; elsewhere the lowest ground round its whole footprint, so a rock tower counts as its own base), the base between them,
+     its eaves height above that floor and whether the base is over half the eaves. Hero models on the summit stand on the summit terrace (its wall is the hill's).
+   __palBareSlope(): 1.5 m cells in the zone steeper than 30 degrees that are not a terrace floor, a wall (within 1.6 m of its line), a stair, a building,
+     rock (a hero model's rock base, a rock band) or the terrain's own rock shading (sl>.64): their area in m2, and the worst places.
+   __palReach(): the terraces (W.palPlats; before H1 the old ring floors, grouped by level into connected pieces) and the stairs between them (W.palStairs, the
+     hill stairs): which can be reached from the street, and the stairs that cross a terrace diagonally (a stretch more than 4 m over its floor
+     whose direction is more than 20 degrees off both the normal and the line of every wall within 30 m). */
+function palPolyD(lx,lz,P){let d=1e9;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];d=Math.min(d,segD(lx,lz,a[0],a[1],b[0],b[1]));}return d;}
+const palInZone=(x,z,m=0)=>{const[lx,lz]=palL(x,z);return PAL_PLAN.zones.some(Z=>inPolyXZ(lx,lz,Z)||(m>0&&palPolyD(lx,lz,Z)<m));};
+const palPlatAt=(x,z)=>{const[lx,lz]=palL(x,z);for(const P of W0.palPlats||[])if(inPolyXZ(lx,lz,P.pts))return P;return null;};
+window.__palOpenEnds=(opt={})=>{const W=W0,R=W.wallFeet||[],PI=W.wallPiers||[],ends=[],by={};
+  const pts=[];R.forEach((r,ri)=>{if(r.pal!==1)return;r.S.forEach((q,k)=>{if(!q.open&&q.h>=1)pts.push([q.x,q.z,ri,k]);});});
+  const model=(x,z)=>(W.palFeet||[]).some(f=>{const dx=x-f.cx,dz=z-f.cz;return Math.abs(f.c*dx-f.s*dz)<f.hw+1.5&&Math.abs(f.s*dx+f.c*dz)<f.hd+1.5;});
+  const rock=(x,z)=>{const[lx,lz]=palL(x,z);return palRockD(lx,lz)<2.5||(W.palRocks||[]).some(b=>Math.hypot(b[0]-x,b[1]-z)<b[2]+2.5);};
+  for(let ri=0;ri<R.length;ri++){const r=R[ri],S=r.S;if(r.pal!==1||r.natural)continue;let k=0;
+    while(k<S.length){if(S[k].open||S[k].h<1){k++;continue;}let k1=k;while(k1+1<S.length&&!S[k1+1].open&&S[k1+1].h>=1)k1++;
+      for(const[e,nb]of[[k,k-1],[k1,k1+1]]){const q=S[e];if(!palInZone(q.x,q.z,opt.m??3))continue;const N=S[nb];let why=null;
+        if(N&&!N.open&&N.h<1)why='grade';
+        if(!why&&pts.some(p=>(p[2]!==ri||Math.abs(p[3]-e)>3)&&Math.hypot(p[0]-q.x,p[1]-q.z)<1.6))why='wall';
+        if(!why&&PI.some(p=>Math.hypot(p[0]-q.x,p[1]-q.z)<(p[2]||1)+1.6))why='pier';
+        if(!why&&rock(q.x,q.z))why='rock';
+        if(!why&&model(q.x,q.z))why='model';
+        by[why||'open']=(by[why||'open']||0)+1;const[lx,lz]=palL(q.x,q.z);ends.push({tag:r.tag,lx:+lx.toFixed(1),lz:+lz.toFixed(1),h:+q.h.toFixed(1),why});}
+      k=k1+1;}}
+  const open=ends.filter(e=>!e.why),r={ends:ends.length,open:open.length,by,list:open.slice(0,60)};console.log('pal open ends',JSON.stringify({ends:r.ends,open:r.open,by}));return r;};
+window.__palBaseCheck=()=>{const W=W0,out=[],gy=W.gy,HERO=/tiberiana|transitoria|apollo|domus_augusti|magna_mater|victoria/;
+  const EAV={rome_domus_a:8.82,rome_domus_b:8.82,rome_domus_a_belt:8.82,rome_domus_b_belt:8.82};   // rome_domus_a.py NB; office blocks: rome_pal_blocks.py NB 8.8 over the high floor, the low floor dr below it
+  const TIER={rome_domus_a:5,rome_domus_b:5,rome_domus_a_belt:4,rome_domus_b_belt:4};
+  const rect=(lx,lz,hw,hd,tn)=>{const t=tn*DEG,c=Math.cos(t),s=Math.sin(t);return(u,v)=>[lx+c*u+s*v,lz-s*u+c*v];};
+  const inB=(lx,lz,self)=>PAL_ASSETS.some(A=>A!==self&&(()=>{const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz;return Math.abs(c*dx-s*dz)<A.hw&&Math.abs(s*dx+c*dz)<A.hd;})())||palBL.some(B=>B!==self&&(()=>{const dx=lx-B.lx,dz=lz-B.lz;return Math.abs(B.c*dx-B.s*dz)<B.hw&&Math.abs(B.s*dx+B.c*dz)<B.hd;})());
+  const stand=(self,lx,lz,hw,hd,tn)=>{const P=rect(lx,lz,hw,hd,tn),L=[],a=hw+1.5,b=hd+1.5,ring=[];for(let u=-a;u<=a;u+=2)ring.push([u,-b],[u,b]);for(let v=-b;v<=b;v+=2)ring.push([-a,v],[a,v]);
+    for(const[u,v]of ring){const[p,q]=P(u,v);if(inB(p,q,self))continue;const[x,z]=palW(p,q);L.push(gy(x,z));}return L.length?Math.min(...L):null;};
+  const one=(n,A,lx,lz,hw,hd,tn,floor,eav,tier)=>{const[x,z]=palW(lx,lz),inz=palInZone(x,z,8),pl=palPlatAt(x,z);let st,on;
+    if(HERO.test(n)){st=floor;on='summit terrace';}else if(pl){st=pl.y;on=pl.id;}else{st=stand(A,lx,lz,hw,hd,tn);on='ground';}
+    const base=+(floor-st).toFixed(1);out.push({n,lx:+lx.toFixed(0),lz:+lz.toFixed(0),zone:inz?'H1':'other',tier,eaves:eav,floor:+floor.toFixed(1),on,stand:st==null?null:+st.toFixed(1),base,max:eav?+(eav/2).toFixed(1):null,over:eav?base>eav/2+.05:null});};
+  for(const A of PAL_ASSETS){const isD=/domus_[ab]/.test(A.n);if(!isD&&!HERO.test(A.n))continue;one(A.n,A,A.lx,A.lz,A.hw,A.hd,A.turn,A.y,EAV[A.n]||null,TIER[A.n]||null);}
+  for(const B of palBL){const[x,z]=palW(B.lx,B.lz);if(!palInZone(x,z,16))continue;one(B.n,B,B.lx,B.lz,B.hw,B.hd,B.tn,B.y-B.dr,+(B.dr+8.8).toFixed(1),B.t==='b'?4:6);}
+  const r={list:out,over:out.filter(o=>o.over).map(o=>o.n+'@'+o.lx+','+o.lz+' base '+o.base+'/'+o.max)};console.log('pal base',JSON.stringify(r.over));return r;};
+window.__palBareSlope=(opt={})=>{const W=W0,gy=W.gy,cs=opt.cs||1.5,lim=Math.tan((opt.deg||30)*DEG),rows=[];let n=0,cells=0;
+  const R=(W.wallFeet||[]).filter(r=>r.pal===1),SP=[];for(const r of R)for(const q of r.S)if(q.h>=.5)SP.push([q.x,q.z]);
+  for(const h of W.hillStairs||[])for(let i=1;i<h.R.length;i++)SP.push(...[0,.25,.5,.75].map(t=>[lerp(h.R[i-1][0],h.R[i][0],t),lerp(h.R[i-1][1],h.R[i][1],t),h.w/2+1]));
+  for(const s of W.palStairs||[])for(const p of s.pts||[])SP.push([p[0],p[1],s.w/2+1]);
+  const G=new Map(),gk=(x,z)=>Math.floor(x/8)+','+Math.floor(z/8);for(const p of SP){const k=gk(p[0],p[1]);(G.get(k)||G.set(k,[]).get(k)).push(p);}
+  const near=(x,z)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const L=G.get((Math.floor(x/8)+i)+','+(Math.floor(z/8)+j));if(L)for(const p of L)if(Math.hypot(p[0]-x,p[1]-z)<(p[2]||1.6))return true;}return false;};
+  const bld=(x,z)=>W.foot.hits(x,z,.1,.1,0,0,f=>f.tag==='open'||f.tag==='precinct'||f.tag==='road'||f.palTer!=null);
+  for(const Z of PAL_PLAN.zones){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of Z){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
+    for(let lz=z0+cs/2;lz<z1;lz+=cs)for(let lx=x0+cs/2;lx<x1;lx+=cs){if(!inPolyXZ(lx,lz,Z))continue;const[x,z]=palW(lx,lz);cells++;
+      const sl=Math.hypot(gy(x+.75,z)-gy(x-.75,z),gy(x,z+.75)-gy(x,z-.75))/1.5;if(sl<=lim)continue;
+      if(palPlatAt(x,z))continue;if(palRockD(lx,lz)<.5)continue;if(1-1/Math.sqrt(1+sl*sl)>.64)continue;   // a terrace floor; a rock base; the terrain shader draws rock there (builders.js: smoothstep(.5,.78,sl))
+      if((W.palRocks||[]).some(b=>Math.hypot(b[0]-x,b[1]-z)<b[2]))continue;if(near(x,z)||bld(x,z))continue;
+      n++;if(rows.length<400)rows.push([+lx.toFixed(0),+lz.toFixed(0),+(Math.atan(sl)/DEG).toFixed(0)]);}}
+  const area=+(n*cs*cs).toFixed(0),r={area,cells:n,of:cells,worst:rows.sort((a,b)=>b[2]-a[2]).slice(0,30)};console.log('pal bare slope',JSON.stringify({area,cells:n}));return r;};
+window.__palReach=()=>{const W=W0,units=[],gy=W.gy;
+  if(W.palPlats)for(const P of W.palPlats)units.push({id:P.id,y:P.y,pts:P.pts,poly:true});
+  else{const T=W.foot.list.filter(f=>f.palTer!=null&&palInZone(f.cx,f.cz,3));const par=T.map((f,i)=>i),fd=i=>par[i]===i?i:(par[i]=fd(par[i]));
+    for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++)if(T[i].palTer===T[j].palTer&&Math.hypot(T[i].cx-T[j].cx,T[i].cz-T[j].cz)<T[i].r+T[j].r+1)par[fd(i)]=fd(j);
+    const G=new Map();T.forEach((f,i)=>{const k=fd(i);(G.get(k)||G.set(k,[]).get(k)).push(f);});for(const[k,L]of G)units.push({id:'ring'+L[0].palTer+'#'+k,y:L[0].palTer,feet:L});}
+  const inU=(u,x,z)=>{if(u.poly){const[lx,lz]=palL(x,z);return inPolyXZ(lx,lz,u.pts);}return u.feet.some(f=>{const dx=x-f.cx,dz=z-f.cz;return Math.abs(f.c*dx-f.s*dz)<f.hw&&Math.abs(f.s*dx+f.c*dz)<f.hd;});};
+  const S=[];for(const s of W.palStairs||[])S.push({id:s.id,R:s.pts,Y:s.Y,links:s.links||null});
+  for(const h of W.hillStairs||[]){if(h.pal||!h.R||!h.R.some(p=>palInZone(p[0],p[1],10)))continue;S.push({id:h.temple?'temple:'+h.temple:'hill@'+h.R[0].map(Math.round),R:h.R,Y:hillStairHeights(W,h.R,h.top)});}
+  const adj=new Map(),link=(a,b)=>{(adj.get(a)||adj.set(a,new Set()).get(a)).add(b);(adj.get(b)||adj.set(b,new Set()).get(b)).add(a);},diag=[];
+  // diagonal: a stretch of more than 4 m over a terrace's floor (higher than it by 1.6 m) whose direction (first to last point of the stretch) is more than 20 degrees
+  // off both the normal and the line of every wall within 30 m: a stair runs along a wall or square to it, never across a terrace on a slant
+  for(const s of S){const on=new Set(s.links||[]);let over=0,ov=null,i1=-1;
+    for(let i=0;i<s.R.length;i++){const[x,z]=s.R[i],y=s.Y?s.Y[i]:gy(x,z);if(W.streetAt&&W.streetAt(x,z)&&Math.abs(gy(x,z)-y)<1.6)on.add('street');
+      for(const u of units)if(inU(u,x,z)){if(Math.abs(y-u.y)<1.6)on.add(u.id);else if(y>u.y+1.6&&i>0){const d=Math.hypot(x-s.R[i-1][0],z-s.R[i-1][1]);over+=d;ov=ov||{u:u.id,i:i-1};i1=i;}}}
+    if(over>4&&ov){const A=s.R[ov.i],B=s.R[i1],ux=B[0]-A[0],uz=B[1]-A[1],l=Math.hypot(ux,uz)||1,mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2;let best=90;
+      for(const r of W.wallFeet||[]){if(!r.S.some(q=>Math.hypot(q.x-mx,q.z-mz)<30+l/2))continue;const a=Math.acos(Math.min(1,Math.abs((ux*r.nx+uz*r.nz)/l)))/DEG;best=Math.min(best,a,90-a);}
+      if(best>20)diag.push({stair:s.id,over:+over.toFixed(1),unit:ov.u,angle:+best.toFixed(0)});}
+    const L=[...on];for(let a=0;a<L.length;a++)for(let b=a+1;b<L.length;b++)link(L[a],L[b]);s.on=L;}
+  const seen=new Set(['street']),Q=['street'];while(Q.length){const a=Q.shift();for(const b of adj.get(a)||[])if(!seen.has(b)){seen.add(b);Q.push(b);}}
+  const un=units.filter(u=>!seen.has(u.id)).map(u=>u.id);
+  const r={units:units.length,reached:units.length-un.length,unreached:un,diagonal:diag,stairs:S.map(s=>({id:s.id,on:s.on}))};console.log('pal reach',JSON.stringify({units:r.units,reached:r.reached,diagonal:diag.length}));return r;};
 window.__temple=on=>{U.uDbg.value.z=on?0:1;W0.scene.traverse(m=>{if(m.isMesh&&m.material&&m.material.userData.oc){const W={marble:1,travertine:1,plaster:1,plaster2:1,plaster3:1,stone:1,tuff:1}[m.material.name];if(W){if(!m.material.userData.nc)m.material.userData.nc=m.material.color.clone();m.material.color.copy(on?m.material.userData.nc:m.material.userData.oc);}}});};

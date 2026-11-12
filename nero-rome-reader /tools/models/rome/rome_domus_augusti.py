@@ -83,14 +83,14 @@ retaining_wall(None, [(-36.0, 0.0), (4.0, 0.0)], z_top=0.0, z_bot=-5.0, buttress
 retaining_wall(None, [(11.0, 0.0), (30.6, 0.0)], z_top=0.0, z_bot=-5.0, buttress='square', parapet='wall')
 
 # ---- south edge: two steps down (4 m, then 5 m) with round buttresses, a paved and planted ledge, rock at the foot
-retaining_wall(None, [(-36.0, -29.0), (36.0, -29.0)], z_top=-5.0, z_bot=-9.0, buttress='round', b_size=1.2,
+retaining_wall(None, [(-36.0, -29.0), (36.0, -29.0)], z_top=-5.0, z_bot=-9.0, buttress='square', b_size=1.2,
                every=8.0, parapet='wall')
 box(None, 0, -32, -16, 72, 6, 7, 'tuff')                    # ledge body, z -16..-9
 box(None, 0, -32, -9, 72, 6, PAVE, 'paving')                # ledge paving at -9
 box(None, 0, -31.8, -8.88, 72, 2.0, 0.06, 'grass')          # planted strip
-# the wall that faces the slope: pale stone, D bastions (7.5 m across, every 16 m, 0.8 m taller), coping band
-retaining_wall(None, [(-36.0, -35.0), (36.0, -35.0)], z_top=-9.0, z_bot=-14.0, t=2.2, mat='stone', buttress=None,
-               bastion='d', b_size=7.5, every=16.0, b_rise=0.8, coping=True, parapet='wall')
+# the wall that faces the slope: pale stone, square buttresses (R7, every 10 m, as on the Tiberiana), coping band
+retaining_wall(None, [(-36.0, -35.0), (36.0, -35.0)], z_top=-9.0, z_bot=-14.0, t=2.2, mat='stone',
+               buttress='square', every=10.0, coping=True, parapet='wall')
 # ledge rock below it, its top just above the wall foot; rock chunks seated along the foot
 rock_top = rock_mass(None, [(-36.0, -44.0), (36.0, -44.0), (36.0, -30.0), (-36.0, -30.0)], -20.0, -13.0,
                      seed=7, band=3.0, boulders=6)

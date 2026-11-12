@@ -74,7 +74,7 @@ def block_a():
     # ---- foundations and retaining wall (buttressed, between the levels) ----
     box(F, 0, 7.5, GROUND, 36, 15, -GROUND, 'tuff')                             # core under the high part (top at z 0)
     box(F, 3, -9, GROUND, 30, 12, -GROUND - 4.8, 'tuff')                        # core under the low range
-    retaining_wall(F, [(-12, 0), (18, 0)], 0.0, GROUND, t=2.2, buttress='round', every=9.0, parapet=None, courses=2.5,
+    retaining_wall(F, [(-12, 0), (18, 0)], 0.0, GROUND, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
                    coping=True)
     retaining_wall(F, [(-18, 0), (-12, 0)], 0.0, GROUND, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
                    coping=True)
@@ -136,7 +136,7 @@ def block_b():
     PL2, RED = 'plaster2', 'red'
     # foundations and the retaining wall between the levels
     box(F, 0, -4, GROUND, 60, 8, -GROUND - 5, 'tuff')                         # low range foundation, top z -5
-    retaining_wall(F, [(-30, 0), (30, 0)], 0.0, GROUND, t=2.2, buttress='round', every=10.0, parapet=None, courses=2.5,
+    retaining_wall(F, [(-30, 0), (30, 0)], 0.0, GROUND, t=2.2, buttress='square', every=10.0, parapet=None, courses=2.5,
                    coping=True)
     foot_rocks(F, [(-27, 0), (27, 0)], (GROUND, GROUND + 1.0), seed=4, blocks=10)  # wall feet sit on rock
     # low range core (front at y -7.5 so the portico arcade stays open) and the shop shutters
@@ -204,11 +204,11 @@ def block_c():
     flower_bed(F, 1.0, -6.5, 0.0, 3.0, 4.0)
     hedge(F, -15, 6, -15, -10, 0, 0.6, 0.5)
     # drop to the lower terrace: buttressed retaining walls on the west and south (gap for the covered stair)
-    retaining_wall(F, [(-15, 6), (-15, -10)], 0.0, GROUND, t=2.2, bastion='d', b_size=6.0, b_rise=0.8, coping=True, every=14.0, parapet='balustrade',
+    retaining_wall(F, [(-15, 6), (-15, -10)], 0.0, GROUND, t=2.2, buttress='square', coping=True, every=10.0, parapet='balustrade',
                    courses=2.5)
-    retaining_wall(F, [(-15, -10), (-8.3, -10)], 0.0, GROUND, t=2.2, bastion='d', b_size=6.0, b_rise=0.8, coping=True, every=14.0, parapet='balustrade',
+    retaining_wall(F, [(-15, -10), (-8.3, -10)], 0.0, GROUND, t=2.2, buttress='square', coping=True, every=10.0, parapet='balustrade',
                    courses=2.5)
-    retaining_wall(F, [(-5.7, -10), (5, -10)], 0.0, GROUND, t=2.2, bastion='d', b_size=6.0, b_rise=0.8, coping=True, every=14.0, parapet='balustrade',
+    retaining_wall(F, [(-5.7, -10), (5, -10)], 0.0, GROUND, t=2.2, buttress='square', coping=True, every=10.0, parapet='balustrade',
                    courses=2.5)
     # rock at the foot of the drop walls, so they rise from the rock
     foot_rocks(F, [(-15, 4), (-15, -8)], (GROUND - 0.5, GROUND + 0.5), seed=5, blocks=4)

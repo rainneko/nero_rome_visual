@@ -57,11 +57,12 @@ STAIRS = [
     ('B', '东北阶（圣道—宅带—东宫）', (300, 300, 302, 302)),
     ('A', '胜利坡 Clivus Victoriae【史】', (150, 176, 206, 214)), ('A', '帕拉蒂尼坡 Clivus Palatinus【史】', (318, 332, 346, 350)),
     ('C', '', (38, 44, 50, 50)), ('C', '', (62, 56, 50, 50)), ('C', '', (108, 113, 118, 118)), ('C', '', (190, 196, 200, 200)), ('C', '', (275, 270, 266, 266)), ('C', '', (342, 20, 24, 24))]
+PLOTS = [(-66, -123), (-30, -128), (15, -135), (62, -142), (190, -72), (196, 36)]   # villas and court blocks that stand on rock towers at the top level now
 FOUNT = [('belt', 2, '半圆壁泉'), ('belt', 70, '壁泉'), ('belt', 112, '壁泉'), ('belt', 300, '宅带水槽'), ('foot', 40, '街泉'), ('foot', 150, '卢佩卡尔泉【史】'), ('foot', 262, '街泉')]
 ZONES = [  # which line, angle, metres outside (+) or inside (-) of it, text
     ('foot', 14, 44, '东坡 · 半圆花园\n悬铃木列、黄杨花坛、壁泉'), ('foot', 46, 34, '东南坡 · 葡萄架与果园'),
     ('foot', 112, 30, '南坡 · 观赛长廊，俯瞰大竞技场\n脚台朝竞技场开商铺拱'), ('foot', 152, 34, '西南坡 · 圣林\n冬青栎、月桂、石松'), ('foot', 200, 34, '西坡 · 露山岩，少砌墙'),
-    ('foot', 250, 28, '提比略宫的崖壁和台地花园\n已经做好，不动'), ('foot', 292, 26, '北坡 · 元老宅带：宅地排在同一级台上\n脚台朝圣道开商铺拱'), ('foot', 336, 34, '东北坡 · 宅带延伸')]
+    ('foot', 250, 28, '提比略宫的崖壁和台地花园\n已经做好，不动'), ('foot', 292, 26, '北坡 · 内廷宅带：皇家收购的旧宅排在同一级台上\n脚台朝圣道开商铺拱'), ('foot', 336, 34, '东北坡 · 宅带延伸')]
 plan = dict(note='Palatine master plan, draft of 2026-11-11: wall traces fitted to the page ground (the hill grid, palW(lx, lz)); to be adjusted by +-5 m on site.',
             centre=C, levels=LEVELS, trace_ground=dict(summit=48, belt=37, foot=21),
             traces={k: [[round(p[0], 1), round(p[1], 1)] for p in v] for k, v in T.items()},
@@ -127,6 +128,11 @@ def planned():
             a, b = P[i], P[(i + 1) % len(P)]; ang = math.degrees(math.atan2((a[1] + b[1]) / 2 - C[1], (a[0] + b[0]) / 2 - C[0])) % 360; rock = 168 <= ang <= 262
             o.append('<path d="%s" class="wl %s%s"/>' % (path([a, b], False), k, ' rock' if rock else ''))
             if not rock: o.append('<rect x="%.1f" y="%.1f" width="7" height="7" class="pier"/>' % (X(a[0]) - 3.5, Y(a[1]) - 3.5))
+    for (x, z) in PLOTS:      # each goes down to the belt: its floor at 42 m, two garden steps (36, 30 m) in front
+        a = math.degrees(math.atan2(z - C[1], x - C[0])) % 360; b = at(T['belt'], a); t = math.radians(a); n = (b[0] - math.cos(t) * 17, b[1] - math.sin(t) * 17)
+        o.append('<path d="M%.1f %.1fL%.1f %.1f" class="mv"/><rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" class="plot"/><text x="%.1f" y="%.1f" class="an">宅 42</text>' % (
+            X(x), Y(z), X(n[0]), Y(n[1]), X(n[0] - 17), Y(n[1] - 14), 34 * S, 28 * S, X(n[0]), Y(n[1]) + 4))
+        for k, w in ((8, 30), (15, 26)): g = (b[0] + math.cos(t) * k, b[1] + math.sin(t) * k); o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" class="gstep"/>' % (X(g[0] - w / 2), Y(g[1] - 3), w * S, 6 * S))
     for cls, name, a in STAIRS:
         P = spts(a); t = math.radians(a[3])
         o.append('<path d="%s" class="st st%s"/>' % (path(P, False), cls))
@@ -151,7 +157,7 @@ text{font:11px -apple-system,"PingFang SC","Hiragino Sans GB",sans-serif;fill:#1
 .as{fill:#e9d9c4;stroke:#7b6a55;stroke-width:1}.as2{fill:#f3e7d6;stroke:#7b6a55;stroke-width:1}.bk{fill:#d8cfc0;stroke:#a09280;stroke-width:.6}.an{text-anchor:middle;font-size:10.5px;fill:#4a3f33}
 .ws{stroke-width:2.6;fill:none}.gp{stroke-width:1;stroke-dasharray:2 3;fill:none}.st0{stroke:#555;stroke-width:2;stroke-dasharray:5 3;fill:none}
 .band{fill:none;stroke-width:%(bw).1fpx}.band.b{stroke:#e2c58c;opacity:.85}.band.f{stroke:#ead9b5;opacity:.85}.top{fill:#f7edd9;stroke:none;opacity:.7}
-.wl{fill:none;stroke:#5a4632;stroke-linejoin:miter}.wl.summit{stroke-width:2.2}.wl.belt{stroke-width:3.2}.wl.foot{stroke-width:2.4}.pier{fill:#5a4632}.wl.rock{stroke:#9a8a72;stroke-dasharray:3 4}
+.wl{fill:none;stroke:#5a4632;stroke-linejoin:miter}.wl.summit{stroke-width:2.2}.wl.belt{stroke-width:3.2}.wl.foot{stroke-width:2.4}.pier{fill:#5a4632}.plot{fill:#f6d9a8;stroke:#8a2f1d;stroke-width:1.6}.gstep{fill:#9fca85;stroke:#4f7f3f;stroke-width:.8}.mv{stroke:#8a2f1d;stroke-width:1.2;stroke-dasharray:3 3;fill:none}.wl.rock{stroke:#9a8a72;stroke-dasharray:3 4}
 .st{fill:none;stroke-linecap:round}.stB{stroke:#b0281a;stroke-width:4}.stA{stroke:#b0281a;stroke-width:2.6;stroke-dasharray:9 4}.stC{stroke:#d0603f;stroke-width:1.8}
 .sn{font-size:11px;fill:#8a2f1d;font-weight:600}.fo{fill:#5fb3e0;stroke:#1f6f9c;stroke-width:1.2}.zn{text-anchor:middle;font-size:11px;font-weight:600;fill:#3a2f24;paint-order:stroke;stroke:#fff8;stroke-width:3px}.zn.z2{font-weight:400;font-size:10px}
 .note{background:#fff;border:1px solid #e2dacd;border-left:4px solid var(--acc);border-radius:6px;padding:10px 14px;margin:12px 0}.note ul{margin:4px 0;padding-left:20px}
@@ -163,7 +169,8 @@ text{font:11px -apple-system,"PingFang SC","Hiragino Sans GB",sans-serif;fill:#1
 <li>现状：墙是沿等高线“扫”出来的，每 7 m 一圈，共 6 圈、%(nseg)d 段，从上面看就是等高线，没有主次。</li>
 <li>方案：全山只有三条墙线。山顶边墙托着宫殿和神庙；腰台（42 m）是一圈 16 m 宽的花园、宅地和长廊；脚台（26 m）朝街开商铺拱。三条线之间露出山岩。</li>
 <li>墙走直线，每 %(r0).0f–%(r1).0f m 一个转折，转折处一个方墩台。阶梯只在墩台和折角处起落，分三等。</li>
-<li>各坡的用途、材质和水景位置都标在图上；提比略宫北面的崖壁和台地花园不动。</li></ul></div>
+<li>各坡的用途、材质和水景位置都标在图上；提比略宫北面的崖壁和台地花园不动。</li>
+<li>橙色方块是宅第的新位置：从山顶边上的岩塔下到腰台（地面 42 m），宅前两级绿色花园台（36、30 m）。虚线连着它现在的位置。</li></ul></div>
 </main><script>const t=[...document.querySelectorAll('.tabs button')],p=[...document.querySelectorAll('.pane')];t.forEach((b,i)=>b.onclick=()=>{t.forEach((x,j)=>x.setAttribute('aria-selected',i===j));p.forEach((x,j)=>x.classList.toggle('on',i===j));});</script></body></html>'''
 Rb = runs(T['belt'])
 page = PAGE

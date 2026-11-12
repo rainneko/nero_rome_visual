@@ -145,7 +145,7 @@ ZM = -6.0                                   # lower terrace level: foot of the u
 LOW = -H - 8.0                              # south line of the lower terrace wall (y = -55)
 YU = -H + 0.66                              # balustrade on the upper south wall, inside its top (batter 0.36 + 0.3)
 YL = LOW + 0.66                             # balustrade on the lower south wall, same offset
-BUT = dict(buttress='round', every=10.0, b_size=2.2, parapet=None)
+BUT = dict(buttress='square', every=10.0, b_size=2.2, parapet=None)
 
 # upper terrace (floor z 0): south wall 0 -> -6 standing on the lower terrace; east, north, west walls 0 -> -12
 retaining_wall(F, [(-H, -H), (H, -H)], 0.0, z_bot=ZM, **BUT)
@@ -156,11 +156,11 @@ terrace_floor(F, SQ, 0.0, 'paving')
 
 # lower terrace (floor z -6): a strip of paving, a 6 m south wall rising out of rock, short returns at the corners
 terrace_floor(F, [(-H, LOW), (H, LOW), (H, -H), (-H, -H)], ZM, 'paving')
-# the lower walls stand on rock: D bastions (7 m across, 0.8 m proud, own coping), pale 'stone' ashlar
-BAST = dict(parapet=None, bastion='d', b_size=7.0, b_rise=0.8, coping=True)
-retaining_wall(F, [(-H, LOW), (H, LOW)], ZM, z_bot=-12.0, mat='stone', every=16.0, **BAST)
-retaining_wall(F, [(H, LOW), (H, -H)], ZM, z_bot=-12.0, mat='stone', every=8.0, **BAST)
-retaining_wall(F, [(-H, -H), (-H, LOW)], ZM, z_bot=-12.0, mat='stone', every=8.0, **BAST)
+# the lower walls stand on rock: square buttresses (R7, as on the Tiberiana), pale 'stone' ashlar
+BAST = dict(parapet=None, buttress='square', coping=True)
+retaining_wall(F, [(-H, LOW), (H, LOW)], ZM, z_bot=-12.0, mat='stone', every=10.0, **BAST)
+retaining_wall(F, [(H, LOW), (H, -H)], ZM, z_bot=-12.0, mat='stone', every=10.0, **BAST)
+retaining_wall(F, [(-H, -H), (-H, LOW)], ZM, z_bot=-12.0, mat='stone', every=10.0, **BAST)
 # ledge rock under the lower walls: footprint reaches under the lower terrace; top kept above the wall foot (-12)
 rock_top = rock_mass(F, [(-62.0, -66.0), (62.0, -66.0), (62.0, -42.0), (-62.0, -42.0)], -20.0, -9.0,
                      seed=3, step=2.5, jitter=2.0, strata=5, dip=3.0)

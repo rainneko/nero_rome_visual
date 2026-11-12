@@ -112,7 +112,10 @@ function rgJoin(W,net,o,log){const st={pair:0,ext:0,bridge:0,open:0},ends=[],loo
   let retry=true;const left=[];
   while(loose.length){let L=null,C=null;for(const E of loose){const c=rgCands(net,ends,E);if(c.length&&(!C||c[0].score<C[0].score)){L=E;C=c;}}
     if(!L){left.push(...loose);break;}
-    let r=null;{const seen=new Set();let best=null;   // route the four best targets (one point per road) and keep the shortest, weighed like the candidates
+    // o.pins: [{from, to, P}] a loose end of road `from` at P[0] joins road `to` along P as given, not routed (monuments.js PAL_PINS); its turn in the queue is as before
+    let r=null;const pin=(o.pins||[]).find(q=>q.from===L.e.name&&Math.hypot(q.P[0][0]-L.p[0],q.P[0][1]-L.p[1])<1),pf=pin&&net.find(g=>g.name===pin.to&&(g.kind==='main'||g.kind==='join'));
+    if(pf){const e=pin.P[pin.P.length-1];r={P:pin.P.map(p=>p.slice()),w:L.w,len:rgLen(pin.P),c:{f:pf,x:e[0],z:e[1],s:Math.hypot(e[0]-L.p[0],e[1]-L.p[1]),pair:null}};log.push({k:'pinned',road:L.e.name,to:pin.to});}
+    else{const seen=new Set();let best=null;   // route the four best targets (one point per road) and keep the shortest, weighed like the candidates
       for(const c of C){if(seen.size>=4)break;const key=c.pair?'end:'+ends.indexOf(c.pair):'road:'+net.indexOf(c.f);if(seen.has(key))continue;seen.add(key);
         const q=rgRoute(W,net,o,L,c);if(!q)continue;const sc=q.len*c.score/Math.max(1,c.s);if(!best||sc<best.sc)best={sc,q};}
       r=best&&best.q;}
@@ -228,7 +231,7 @@ const CD={cs:4,cliff:.52,ring:4.5,ringMin:8,area:300,thick:11,strip:8};
 function cityDistricts(W){if(W.city)return W.city;const t0=performance.now(),o=W.roadOpts||{},cs=CD.cs,country=o.country||(()=>false);
   let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(let z=-3000;z<=3400;z+=40)for(let x=-3200;x<=3000;x+=40)if(!country(x,z)){x0=Math.min(x0,x);x1=Math.max(x1,x);z0=Math.min(z0,z);z1=Math.max(z1,z);}
   x0-=80;z0-=80;x1+=80;z1+=80;const nx=Math.ceil((x1-x0)/cs),nz=Math.ceil((z1-z0)/cs),N=nx*nz,C=new Uint8Array(N),OUT=0,WATER=1,ROAD=2,PREC=3,RING=4,CLIFF=5,BUILD=6;
-  const Y=new Float32Array((nx+1)*(nz+1)),G=W.routeGround||W;for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++)Y[j*(nx+1)+i]=G.gy(x0+i*cs,z0+j*cs);
+  const Y=new Float32Array((nx+1)*(nz+1)),G=fbGround(W);for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++)Y[j*(nx+1)+i]=G.gy(x0+i*cs,z0+j*cs);
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const x=x0+(i+.5)*cs,z=z0+(j+.5)*cs,k=j*nx+i;if(country(x,z)){C[k]=OUT;continue;}
     const a=Y[j*(nx+1)+i],b=Y[j*(nx+1)+i+1],c=Y[(j+1)*(nx+1)+i],d=Y[(j+1)*(nx+1)+i+1];C[k]=Math.hypot(b-a+d-c,c-a+d-b)/(2*cs)>CD.cliff?CLIFF:BUILD;}
   const stamp=(cx,cz,hw,hd,c,s,circ,pad,fn)=>{const r=Math.hypot(hw,hd)+pad;for(let j=Math.max(0,Math.floor((cz-r-z0)/cs));j<=Math.min(nz-1,Math.floor((cz+r-z0)/cs));j++)
@@ -237,11 +240,13 @@ function cityDistricts(W){if(W.city)return W.city;const t0=performance.now(),o=W
   if(o.river){const{P,hw}=o.river;for(let k=1;k<P.length;k++){const a=P[k-1],b=P[k],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(!l)continue;const r=Math.atan2(-dz,dx);   // the river (its half-width: hw)
     stamp((a[0]+b[0])/2,(a[1]+b[1])/2,l/2+hw,hw,Math.cos(r),Math.sin(r),false,0,k2=>{if(C[k2]!==OUT)C[k2]=WATER;});}}
   // precincts and their rings, then the road corridors over them (a road through a precinct is still a road)
-  const fixed=W.foot.list.slice(0,(W.footMark&&W.footMark.houses)||0).filter(f=>f.tag!=='road');
+  const fixed=fbPrecincts(W).map(o=>o.f);   // the fabric's view (fabric.js): inside the Palatine's fence, H0's
   for(const f of fixed){const ring=f.tag!=='open'&&Math.max(f.hw,f.hd)>=CD.ringMin;stamp(f.cx,f.cz,f.hw,f.hd,f.c,f.s,f.circ,ring?CD.ring:0,(k,d)=>{const v=C[k];if(v===OUT||v===WATER)return;if(d<0)C[k]=PREC;else if(v!==PREC)C[k]=RING;});}
   const road=(P,half)=>{for(let k=1;k<P.length;k++){const a=P[k-1],b=P[k],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);if(!l)continue;const r=Math.atan2(-dz,dx);
     stamp((a[0]+b[0])/2,(a[1]+b[1])/2,l/2+half,half,Math.cos(r),Math.sin(r),false,0,k2=>{if(C[k2]!==OUT)C[k2]=ROAD;});}};
-  for(const[w,P]of W.roadList||[])road(P,w/2+(w>=7?2.6:1.2));for(const b of W.bridges||[]){const lx=-b.uz,lz=b.ux,h=b.len/2;road([[b.x-lx*h,b.z-lz*h],[b.x+lx*h,b.z+lz*h]],b.w/2);}
+  for(const[w,P]of fbRoads(W))road(P,w/2+(w>=7?2.6:1.2));for(const b of W.bridges||[]){const lx=-b.uz,lz=b.ux,h=b.len/2;road([[b.x-lx*h,b.z-lz*h],[b.x+lx*h,b.z+lz*h]],b.w/2);}
+  {const F=fbFence();if(F){const c=F.cells,di=(c.x0-x0)/cs,dj=(c.z0-z0)/cs;if(di!==Math.round(di)||dj!==Math.round(dj))console.warn('palatine-fence.js: its raster is not on the districts\' grid');   // the fence: H0's classes inside R
+    else{let k=0;for(const[,ch,nr]of c.rle.matchAll(/([a-g.])(\d+)/g))for(let r=+nr;r>0;r--,k++){if(ch==='.')continue;const i=di+k%c.nx,j=dj+((k-k%c.nx)/c.nx);if(i>=0&&j>=0&&i<nx&&j<nz)C[j*nx+i]=ch.charCodeAt(0)-97;}}}}
   // connected buildable pieces (4-neighbours), their size, thickness (chamfer distance to anything not buildable) and what they touch
   const lab=new Int32Array(N).fill(-1),D=new Float32Array(N),pieces=[],Q=new Int32Array(N);
   for(let k=0;k<N;k++)D[k]=C[k]===BUILD?1e9:0;
