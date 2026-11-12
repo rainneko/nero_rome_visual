@@ -41,8 +41,10 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
     // the stair walks from the first leg's s0 (its head, an opening in that terrace's parapet when top is its floor) down to the floor 'floor' (null: the ground)
     stairs:[
       {id:'eastB',cls:'B',w:6,from:'beltE',to:'street',via:'footE',axis:[[207,-18],[300,-18]]},
-      {id:'eastPn',cls:'B',w:2.8,from:'summit',to:'beltE',top:55,floor:42,legs:[['sumE',1,100.1,56,1.9]],land:['sumE',1,102,4]},
-      {id:'eastPs',cls:'B',w:2.8,from:'summit',to:'beltE',top:55,floor:42,legs:[['sumE',1,103.9,148,1.9]],land:['sumE',1,102,4]},
+      // the paired flights flank the hemicycle (the review of 2026-11-12, after H2-B): each head 14 m off the axis (s 102), down and out along the summit wall
+      // towards the villas; the wall between the heads is clear for the string course and the wall fountain on the axis
+      {id:'eastPn',cls:'B',w:2.8,from:'summit',to:'beltE',top:55,floor:42,legs:[['sumE',1,88,50,1.9]]},
+      {id:'eastPs',cls:'B',w:2.8,from:'summit',to:'beltE',top:55,floor:42,legs:[['sumE',1,116,154,1.9]]},
       {id:'sumS',cls:'C',w:2.6,from:'summit',to:'beltE',top:55,floor:42,legs:[['sumE',3,30,64,1.6]]},   // from the summit rim by the Jupiter Victor temple down to the belt's south arm
       {id:'neC',cls:'C',w:2.6,from:'beltE',to:'footE',top:42,floor:26,legs:[['beltE',1,28,6,1.6],['footE',0,1.6,24,-6]]},   // the second leg 6 m in from the foot wall: clear of the corner pier
       {id:'seC',cls:'C',w:2.6,from:'beltE',to:'footE',top:42,floor:26,legs:[['beltE',23,2,42.4,1.6],['beltE',24,.5,10,1.6]]},

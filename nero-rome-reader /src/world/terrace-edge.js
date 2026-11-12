@@ -20,10 +20,15 @@ function terraceReserve(W,F,P,o={}){const Q=P.map(p=>{const q=F.p(p[0],0,p[1]);r
       more: a solid pluteus (default), or piers and stone grilles (o.rail[i]='transenna', round temple courts). B3 square buttresses every 6-8 m where the wall
       is higher than 2.5 m, blind arches (substructure()) over 9 m, piers at the corners. B4 half-round projections at the rock-spur corners in o.spur (a
       reconstruction). B5 at each opening the wall ends in a pier with a statue or a bronze tripod and turns back into the slope in a stepped wing wall.
+   o.butt (H1, palatine-masterplan.md 4, the review of 2026-11-12) in place of B3's rule: {min, sp, turn, avoid(x,z), sym:{i: s}}: a buttress only where
+   the wall is min m high or more, one every sp m along a run of walls that turn less than turn degrees at each vertex (a curve is one wall: a run of
+   8 m or less has none), evenly from end to end, or on edge i out from s both ways; none where avoid(x,z) (a stair along the wall); no corner pier at such a turn.
+   o.noLump(x,z): no rock lumps at the foot of the rock face there (a paved garden at its foot).
    o.skip: edges with no wall (shared with a higher terrace); o.footY[i]: the edge stands on a lower floor at that level (local), not on the ground;
    o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms). o.wing=false: no wing walls at the openings (a stair
    with its own cheek walls comes through).
-   Records: W.wallFeet (the samples and what breaks the line of the wall foot: read by terraceFeet and __wallFootCheck) and W.terraceEdges (the band). */
+   Records: W.wallFeet (the samples and what breaks the line of the wall foot: read by terraceFeet and __wallFootCheck), W.terraceEdges (the band) and
+   W.wallButt ([x, z, tag:edge, 'b3' | 'corner', height] per buttress and corner pier: the counts in palatine-masterplan.md 9). */
 function terraceEdge(W,g,P,yTop,o={}){
   const F=o.F,top=F.oy+yTop,yW=top-.35,gy=W.gy,n=P.length,Q=P.map(p=>{const q=F.p(p[0],0,p[1]);return[q[0],q[2]];});let A2=0;
   for(let i=0;i<n;i++){const a=Q[i],b=Q[(i+1)%n];A2+=a[0]*b[1]-b[0]*a[1];}
@@ -38,6 +43,12 @@ function terraceEdge(W,g,P,yTop,o={}){
       e.S.push({s,x,z,gF,h:yW-gF,open:(o.open&&o.open(x,z,i,s))||false,room:!!(rm&&s>rm[0]-.01&&s<rm[1]+.01)});}
     const S=e.S;for(const q of S){q.rk=o.rock&&q.h>9.8?yW-9.5:null;q.gW=q.rk??q.gF;if(q.rk!=null)q.h=yW-q.rk;}   // o.rock (H1, palatine-masterplan.md 2.1): over 9.8 m the masonry stands on the hill's rock, 9.5 m of wall at most
     for(let k=0;k<=ns;k++){let lo=k,hi=k;while(lo>0&&S[lo-1].h>9&&!S[lo-1].open)lo--;while(hi<ns&&S[hi+1].h>9&&!S[hi+1].open)hi++;S[k].sub=!o.rock&&S[k].h>9&&S[hi].s-S[lo].s>=12&&!S[k].room;S[k].bat=S[k].sub||S[k].room?0:.04;}}
+  const bPos=new Map(),BT=o.butt?Math.cos((o.butt.turn||20)*DEG):2;   // o.butt: the buttresses' places along each edge (s), by runs of walls that turn less than BT
+  if(o.butt){const soft=v=>{const e0=E[(v+n-1)%n],e1=E[v];return!e0.skip&&!e1.skip&&e0.ux*e1.ux+e0.uz*e1.uz>BT;},put=(i,s)=>{if(!bPos.has(i))bPos.set(i,[]);bPos.get(i).push(s);};
+    for(let v=0;v<n;v++){if(soft(v))continue;const ch=[];let u=v;do{if(E[u].skip)break;ch.push(E[u]);u=(u+1)%n;}while(soft(u)&&u!==v);if(!ch.length)continue;
+      const sym=ch.length===1&&o.butt.sym&&o.butt.sym[ch[0].i]!=null?o.butt.sym[ch[0].i]:null,Lc=ch.reduce((a,e)=>a+e.L,0),sp=o.butt.sp;
+      if(sym!=null){for(let s=sym;s<Lc-1.5;s+=sp)put(ch[0].i,s);for(let s=sym-sp;s>1.5;s-=sp)put(ch[0].i,s);continue;}
+      const nb=Lc<=8?0:Math.max(1,Math.round(Lc/sp));for(let j=0;j<nb;j++){let s=Lc*(j+.5)/nb;for(const e of ch){if(s<=e.L){put(e.i,s);break;}s-=e.L;}}}}
   const bodyAt=(e,k)=>{const q=e.S[k],f=Math.min(q.rk!=null?q.rk:q.gF-1.2,yW);return[f,q.bat*(yW-f)];},M3=!!o.m3;
   for(const e of E){if(e.skip)continue;const S=e.S,ns=S.length-1,{Wp,EF,X,nx,nz}=e,want=[nx,0,nz],seed=.3+.4*teH(e.a[0],e.a[1],1);
     const runs=[];for(let k=0;k<=ns;){if(S[k].open){k++;continue;}let k1=k;while(k1<ns&&!S[k1+1].open)k1++;if(k1>k)runs.push([k,k1]);k=k1+1;}
@@ -53,7 +64,7 @@ function terraceEdge(W,g,P,yTop,o={}){
       if(o.rock){for(let k=k0;k<k1;k++){const A=S[k],B=S[k+1];if(A.rk==null&&B.rk==null)continue;const ra=A.rk??A.gW,rb=B.rk??B.gW,j=t=>.35+.5*teH(e.a[0]+t,e.a[1]-t,21);   // the rock face: battered, its top edge uneven
           g.set(61,.25+.45*teH(A.x,A.z,22),pal,0);g.poly([Wp(A.s,1.1+j(A.s),A.gF-1.2),Wp(B.s,1.1+j(B.s),B.gF-1.2),Wp(B.s,.12,rb+.05),Wp(A.s,.12,ra+.05)],[nx,.35,nz]);
           g.poly([Wp(A.s,.12,ra+.05),Wp(B.s,.12,rb+.05),Wp(B.s,-.1,rb+.05),Wp(A.s,-.1,ra+.05)],[0,1,0]);
-          if(k%2===0){const m=Wp((A.s+B.s)/2,1.2+.6*teH(A.x,A.z,23),0),C=frame(m[0],0,m[2],EF.rot+(teH(A.z,A.x,24)-.5)*.4),hh=Math.min(ra,rb)-Math.min(A.gF,B.gF);
+          if(k%2===0&&!(o.noLump&&o.noLump(A.x,A.z))){const m=Wp((A.s+B.s)/2,1.2+.6*teH(A.x,A.z,23),0),C=frame(m[0],0,m[2],EF.rot+(teH(A.z,A.x,24)-.5)*.4),hh=Math.min(ra,rb)-Math.min(A.gF,B.gF);
             if(hh>1.2){rockLump(g,C,1.1+.8*teH(A.x,A.z,25),.9+.5*teH(A.x,A.z,26),Math.min(A.gF,B.gF)-.6,Math.min(hh*.7,1.2+2.2*teH(A.x,A.z,27)),pal,teH(A.x,A.z,28),[m[0],m[2]]);(W.palRocks=W.palRocks||[]).push([m[0],m[2],2]);}}}}
       // B2 coping and parapet
       const tA=cA&&spur(e.i)?TRIM:0,tB=cB&&spur(e.i+1)?TRIM:0,xa=Math.max(sA-(cA&&!tA?.3:0),tA),xb=Math.min(sB+(cB&&!tB?.3:0),e.L-tB);trimSet(g,pal,.45);if(M3)box(g,EF,X((xa+xb)/2),yW,-.2,(xb-xa)/2,.45,.45,31);else box(g,EF,X((xa+xb)/2),yW,-.075,(xb-xa)/2,.45,.375,31);   // M3 (H0): 0.45 m thick, 0.25 m out, 0.9 m deep
@@ -65,9 +76,10 @@ function terraceEdge(W,g,P,yTop,o={}){
           else{g.set(60,seed,pal,0);box(g,EF,X((ra+rb)/2),top+.1,-.12,(rb-ra)/2,.88,.2,31);trimSet(g,pal,.5);box(g,EF,X((ra+rb)/2),top+.98,-.12,(rb-ra)/2+.04,.1,.25,31);}}
         k=k2+1;}
       // B3 buttresses (or blind arches where the wall is higher than 9 m)
-      const Lr=sB-sA,m=Math.max(1,Math.round(Lr/7));
-      for(let j=0;j<m;j++){const s=sA+Lr*(j+.5)/m,k=Math.min(ns-1,Math.floor(s/(e.L/ns))),t=(s-S[k].s)/(S[k+1].s-S[k].s),gF=lerp(S[k].gW,S[k+1].gW,t),h=yW-gF;
-        if(h<=2.5||S[k].sub||S[k+1].sub||S[k].room||S[k+1].room)continue;buttress(g,e,s,S[k].rk!=null?gF:gF-1.2,yW-.12,S[k].bat,pal,seed);e.brk.push(s);}
+      const Lr=sB-sA,BP=o.butt?(bPos.get(e.i)||[]).filter(s=>(cA?s>=0:s>sA+1.2)&&(cB?s<=e.L:s<sB-1.2)&&!(o.piers&&((o.piers.includes(e.i)&&s<4.2)||(o.piers.includes((e.i+1)%n)&&s>e.L-4.2)))):null,m=BP?BP.length:Math.max(1,Math.round(Lr/7));
+      for(let j=0;j<m;j++){const s=BP?BP[j]:sA+Lr*(j+.5)/m,k=Math.min(ns-1,Math.floor(s/(e.L/ns))),t=(s-S[k].s)/(S[k+1].s-S[k].s),gF=lerp(S[k].gW,S[k+1].gW,t),h=yW-gF;
+        if(h<=(o.butt?o.butt.min:2.5)||S[k].sub||S[k+1].sub||S[k].room||S[k+1].room)continue;if(o.butt&&o.butt.avoid){const q=Wp(s,.6,0);if(o.butt.avoid(q[0],q[2]))continue;}buttress(g,e,s,S[k].rk!=null?gF:gF-1.2,yW-.12,S[k].bat,pal,seed);e.brk.push(s);
+          {const q=Wp(s,0,0);(W.wallButt=W.wallButt||[]).push([q[0],q[2],tag+':'+e.i,'b3',+h.toFixed(1)]);}}
       for(let k=k0;k<=k1;){if(!S[k].sub){k++;continue;}let k2=k;while(k2<k1&&S[k2+1].sub)k2++;const s0=S[k].s,s1=S[k2].s;
         if(s1-s0>=12){const SS=EF.sub(X((s0+s1)/2),0,0,0),nb=Math.max(1,Math.round((s1-s0)/7));substructure(W,g,SS,s1-s0,yW,0,1,{pil:60,sty:pal,bay:7});for(let j=0;j<=nb;j++)e.brk.push(s0+(s1-s0)*j/nb);}k=k2+1;}
       // B8 rooms in the wall
@@ -80,9 +92,9 @@ function terraceEdge(W,g,P,yTop,o={}){
   // corners: a pier where two walls meet at an outer corner, a half-round projection at the rock spurs
   for(let v=0;v<n;v++){const e0=E[(v+n-1)%n],e1=E[v];if(e0.skip||e1.skip)continue;const q0=e0.S[e0.S.length-1],q1=e1.S[0];if(q0.open||q1.open)continue;
     const cr=e0.ux*e1.uz-e0.uz*e1.ux;if(cr*(A2>0?1:-1)<=0)continue;const gF=Math.min(q0.gF,q1.gF);if(top-gF<.6)continue;let bx=e0.nx+e1.nx,bz=e0.nz+e1.nz;const bl=Math.hypot(bx,bz)||1;bx/=bl;bz/=bl;
-    const[vx,vz]=Q[v],sp=o.spur&&o.spur.includes(v);if(o.piers&&o.piers.includes(v))continue;
+    const[vx,vz]=Q[v],sp=o.spur&&o.spur.includes(v);if(o.piers&&o.piers.includes(v))continue;if(o.butt&&e0.ux*e1.ux+e0.uz*e1.uz>BT)continue;   // o.butt: a curve's facets meet with no pier
     if(sp){out.spurs.push(spurTower(W,g,vx,vz,bx,bz,gF,top,pal,Q));e0.brk.push(e0.L);e1.brk.push(0);continue;}
-    const C=frame(vx+bx*.3,0,vz+bz*.3,Math.atan2(bx,bz));(W.wallPiers=W.wallPiers||[]).push([vx+bx*.3,vz+bz*.3,.85]);g.set(60,.5,pal,1);box(g,C,0,gF-1.2,0,.85,top+1.2-gF+1.2,.85,31&~32);trimSet(g,pal,.5);box(g,C,0,top+1.2,0,.95,.18,.95,31);e0.brk.push(e0.L);e1.brk.push(0);}
+    const C=frame(vx+bx*.3,0,vz+bz*.3,Math.atan2(bx,bz));(W.wallPiers=W.wallPiers||[]).push([vx+bx*.3,vz+bz*.3,.85]);(W.wallButt=W.wallButt||[]).push([vx,vz,tag+':'+v,'corner',+(top-gF).toFixed(1)]);g.set(60,.5,pal,1);box(g,C,0,gF-1.2,0,.85,top+1.2-gF+1.2,.85,31&~32);trimSet(g,pal,.5);box(g,C,0,top+1.2,0,.95,.18,.95,31);e0.brk.push(e0.L);e1.brk.push(0);}
   // H1 (palatine-masterplan.md 2.2): a square pier about 6 x 6 m, 0.6 m above the wall top, at each turn of the wall line and where a wall ends on rock or a model
   for(const v of o.piers||[]){const e0=E[(v+n-1)%n],e1=E[v],w0=!e0.skip&&e0.S.length>0,w1=!e1.skip&&e1.S.length>0;if(!w0&&!w1)continue;const[vx,vz]=Q[v];
     let ux=(w0?e0.ux:0)+(w1?e1.ux:0),uz=(w0?e0.uz:0)+(w1?e1.uz:0);const ul=Math.hypot(ux,uz)||1;ux/=ul;uz/=ul;const C=frame(vx,0,vz,Math.atan2(-uz,ux));

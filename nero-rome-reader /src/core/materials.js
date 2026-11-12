@@ -165,7 +165,7 @@ vec3 stoneC(vec2 p,float s,vec3 base,float bw,float bh,float aa){float n=fbm2(p*
 float pjL(float d,float w,float px,float per){float ww=max(w,px*.5);return (1.-smoothstep(ww,ww+px*.75,d))*mix(1.,.72,smoothstep(w,w*4.,ww))*(1.-smoothstep(.3,.5,px/per));}
 vec2 pjB(float u,float row,float bl){float t=u/bl+h12(vec2(row,7.1))*1.7,i=floor(t),b0=i+(h12(vec2(i,row))-.5)*.25,b1=i+1.+(h12(vec2(i+1.,row))-.5)*.25,id=i;   // (block id, distance to its nearest head joint) for blocks bl +- 25 % long
  if(t<b0){b1=b0;id=i-1.;b0=i-1.+(h12(vec2(i-1.,row))-.5)*.25;}else if(t>b1){b0=b1;id=i+1.;b1=i+2.+(h12(vec2(i+2.,row))-.5)*.25;}return vec2(id,min(t-b0,b1-t)*bl);}
-const vec3 PS_G2=vec3(.276,.245,.179),PS_G3=vec3(.346,.309,.233),PS_G4=vec3(.578,.517,.382),PS_G5=vec3(.467,.405,.291);   // rusticated, ashlar, travertine, paving (linear albedo)
+const vec3 PS_G2=vec3(.276,.245,.179),PS_G3=vec3(.346,.309,.233),PS_G4=vec3(.578,.517,.382),PS_G5=vec3(.482,.401,.279);   // rusticated, ashlar, travertine, paving (linear albedo; paving warmed 2026-11-12, the H1 review: sRGB #b8aa92, H 38, S 21 %, the same luminance)
 vec3 palStone(vec3 wp,vec3 N,vec2 uv,vec4 A,float fl){vec3 c;float j=0.;bool vert=abs(N.y)<.6;
  vec2 pl=vec2(.8660254*wp.x+.5*wp.z,-.5*wp.x+.8660254*wp.z);   // the Palatine's own axes (PALF)
  if(fl<1.5){
