@@ -769,3 +769,15 @@ Keep this file current: every promise made to the author goes here until it is d
 - [ ] 分件文件里外墙只有外皮，没有内侧墙面和天花；进 Unity 做室内时要补。
 - [ ] 内殿 S01 的位置待文案组核对（平面里写了“待核对”）。
 
+
+### 2026-11-13 宅 A/B 南面敞廊改成柱廊（作者经城市生成总监转来，分支 `claude/domus-loggia`）
+作者：南面两层七孔拱券敞廊（石灰华墩子）远看是一面米色实墙。改成柱廊：下层多立克，上层爱奥尼亚加矮栏杆，每层一道完整檐部，单坡瓦顶不变；
+柱后是暗红/赭色墙裙和门洞，远看要读得出是敞开的；拱券只留在基座里。截图 `docs/screenshots/domus-loggia-20261113/`（左改前，右改后，同一季节）。
+- [x] `tools/models/rome/rome_domus_a.py` 的 `loggia()`：9 开间，每间 3.2 m，中间一间对着中轴，两端是墙垛；下层 8 根多立克柱，上层 8 根爱奥尼亚柱，柱间栏杆；
+  两道檐部；上层楼板下面是木顶棚。`house()` 两座宅、两种截断件都用它。
+- [x] 后墙 `_painted_face()`：深色墙裙、赭色细带、暗红墙面、檐下一道赭色饰带，每层 5 个门洞（石灰华门框和过梁）。
+- [x] `tools/models/rome/rk.py` 加 `wallred`、`dado`、`doorway` 三种材质。页面把 `dark` 当成廊内墙面提亮（`assets.js` 第 72 行），`red` 在页面上又很艳：
+  用 `red`、`dark` 的时候，门洞成了浅色板子，墙成了大红布。
+- [x] 重新导出 `rome_domus_a`、`rome_domus_a_belt`、`rome_domus_b`、`rome_domus_b_belt`：每座多约 3 600 个三角形（+22–25 %），`rome-assets.js` 9.62 → 9.76 MB。
+  `rome_domus_b.glb` 原来是 11-04 导出的旧件，这次照现在的脚本导出，H1 R7 的方扶壁也带上了。
+- [x] 检查：`npm run check`、`bake-roads.mjs --check`、`city-audit.mjs --assert`、`test:boot` 通过；模型不改占地，不用重新烘焙。

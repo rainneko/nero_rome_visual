@@ -47,6 +47,9 @@ _bk.PAL.update({
     'linen':      ((0.92, 0.90, 0.84), 0.0, 0.95),   # laundry, awnings
     'awning':     ((0.76, 0.58, 0.32), 0.0, 0.95),
     'flame':      ((1.00, 0.55, 0.15), 0.0, 1.00),   # fire in braziers (the page makes it glow)
+    'wallred':    ((0.40, 0.11, 0.08), 0.0, 0.90),   # dark Pompeian red of painted wall fields (the page shows 'red' bright: keep that for bands)
+    'dado':       ((0.20, 0.07, 0.06), 0.0, 0.85),   # the dark dado under the painted fields
+    'doorway':    ((0.08, 0.065, 0.05), 0.0, 1.00),  # the dark of a room seen through a door (the page lights 'dark' as a gallery interior)
 })
 
 ROT = {'-Y': 0.0, '+X': 90.0, '+Y': 180.0, '-X': 270.0}
