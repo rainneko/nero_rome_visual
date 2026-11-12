@@ -31,6 +31,25 @@ the model cannot load.
 ## Rome generators
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
 
+## Domus Tiberiana: built from a plan (2026-11-12)
+`tools/models/rome/rome_tiberiana.py` (Blender, `tib_plan.py`) builds the palace above the platform from
+`tools/models/rome/tiberiana_plan.json`: the rooms of each floor and the roof blocks, written and checked by
+`python3 tools/plan/tiberiana_plan.py` (which also writes the drawings, `briefs/rome/plans/tiberiana-plan.html`). To change the
+palace, change the plan and run both again. One run writes three files:
+* `assets/models/rome/rome_tiberiana.glb`, the web file (one mesh per material, no rooms);
+* `assets/models/rome/parts/rome_tiberiana_parts.glb`, the same model in seven parts (`tib_base`, `tib_b1`, `tib_garden`, `tib_f1`,
+  `tib_f2`, `tib_f3`, `tib_roof`) with the rooms: one child object `room_<id>` per room, partitions, doors, stairs. It is for
+  taking the floors apart and for Unity; the page's pack does not read the `parts/` folder;
+* `assets/models/tiberiana.glb`, the light stand-in the page has inline (`DT_GLB`) until the model arrives (it used to be
+  written by `tools/models/tiberiana_model.py`).
+It prints `TIB_PLANTS` (for `palatine.js`) and `TIB_BLOCKS` (for the procedural stand-in in `monuments.js`): paste them again
+after a change. The page's terrain under a hill model comes from the lowest model height per 4 m cell (`tools/pal_rock.mjs`), and
+the street fabric's bake is keyed to that ground: after any change run `node tools/test/bake-roads.mjs --check`, and keep the
+palace above z = 0 (`briefs/rome/tiberiana.md`, "v2 (2026-11)"). The tool lifts each cell toward its neighbours' lowest points
+(at most 2.5 m) and the page draws the terrain 0.25 m under that, bilinear between the cells' centres: near a cliff the ground
+is a bank up to 2.25 m above the model's own lowest surface, and it covers whatever of the model lies under it. Anything that
+has to meet the ground (the north-west stair's foot) is laid out against that bank (`NW_PAGE`, `_page` in `rome_tiberiana.py`).
+
 ## Golden House: the round dining hall (2026-10-28, v3 2026-11-11)
 Since 2026-11-11 the file is GPT's v3 (`renders/domus-aurea/coenatio-v3/models/coenatio.glb` in the main checkout, 2.45 MB, brief
 `briefs/rome/aurea-refine-v2/`): the front wall is opened to the lake and a dais added; `ROTATING_CEILING` is kept. The view
