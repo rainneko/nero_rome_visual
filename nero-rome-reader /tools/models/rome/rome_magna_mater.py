@@ -85,16 +85,13 @@ solid(F, -19.8, -29.8, 19.8, 29.8, -16.0, FILL, 'tuff')
 floor_top(F, [(-22, -32), (22, -32), (22, 32), (-22, 32)], ZM, 'paving')
 # south wall: the arcaded hall is built against it, so no buttresses here
 retaining_wall(F, [(-22, -32), (22, -32)], 0.0, -16.0, buttress=None, batter=0.0)
-retaining_wall(F, [(-22, 32), (-22, -32)], 0.0, -16.0, mat='stone', bastion='d', every=22.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04)
+retaining_wall(F, [(-22, 32), (-22, -32)], 0.0, -16.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04)
 # east wall: no parapet over the stair landing (balustrade pieces below leave the gap)
-retaining_wall(F, [(22, -32), (22, 32)], 0.0, -16.0, mat='stone', bastion='d', every=22.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04, parapet=None)
+retaining_wall(F, [(22, -32), (22, 32)], 0.0, -16.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04, parapet=None)
 balustrade(F, 21.7, -32.0, 21.7, -23.5, 0.35, 1.05, 'marble', 2.2, 0.28)
 balustrade(F, 21.7, -20.5, 21.7, 32.0, 0.35, 1.05, 'marble', 2.2, 0.28)
 # north wall (toward the hilltop): only down to -2
-retaining_wall(F, [(22, 32), (-22, 32)], 0.0, -2.0, mat='stone', bastion='d', every=16.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04)
+retaining_wall(F, [(22, 32), (-22, 32)], 0.0, -2.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04)
 solid(F, -22.0, 29.8, 22.0, 32.0, -16.0, -2.0, 'tuff')     # solid under the north wall: no floating base
 
 # ---- temple on the podium, stair to the south
@@ -123,13 +120,10 @@ solid(F, 22.0, -31.8, 29.8, 31.8, -16.0, ZL - 0.05, 'tuff')
 floor_top(F, [(-30, -48), (30, -48), (30, -32), (-30, -32)], ZL, 'paving')
 floor_top(F, [(-30, -32), (-22, -32), (-22, 32), (-30, 32)], ZL, 'paving')
 floor_top(F, [(22, -32), (30, -32), (30, 32), (22, 32)], ZL, 'paving')
-retaining_wall(F, [(-30, -48), (30, -48)], ZL, -16.0, mat='stone', bastion='d', every=16.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04)
-retaining_wall(F, [(30, -48), (30, 32)], ZL, -16.0, mat='stone', bastion='d', every=16.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04)
-retaining_wall(F, [(-30, 32), (-30, -32)], ZL, -16.0, mat='stone', bastion='d', every=16.0, b_size=8.0,
-               b_rise=0.8, coping=True, batter=0.04)
-retaining_wall(F, [(-30, -40), (-30, -48)], ZL, -16.0, buttress='round', every=8.0, b_size=2.0,
+retaining_wall(F, [(-30, -48), (30, -48)], ZL, -16.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04)
+retaining_wall(F, [(30, -48), (30, 32)], ZL, -16.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04)
+retaining_wall(F, [(-30, 32), (-30, -32)], ZL, -16.0, mat='stone', buttress='square', every=10.0, coping=True, batter=0.04)
+retaining_wall(F, [(-30, -40), (-30, -48)], ZL, -16.0, buttress='square', every=8.0, b_size=2.0,
                batter=0.0)         # gap at y -40..-32 where the west stair comes up
 # wall feet on the ledges: irregular chunks overlapping the foot, seated on each band's top (the west stair foot is clear)
 foot_rocks(F, [(-30, -48), (30, -48)], (-14.0, -12.0), seed=21, blocks=10, top_z=S_TOP)

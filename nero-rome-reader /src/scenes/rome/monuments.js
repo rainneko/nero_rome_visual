@@ -170,7 +170,7 @@ async function buildRome(msg){
   THP.h=romeH(THP.x,THP.z);THP.on=true;
   {const y0c=romeH(CAPF.cx,CAPF.cz);let yt=0;for(const[px,pz]of CAPF.T[0])yt=Math.max(yt,romeH(CAPF.cx+px*.8,CAPF.cz+pz*.8)-y0c);CAPF.y=y0c+Math.max(.15,yt-2.2);CAPF.on=true;}   // terrace level as the Capitol block computes it (before the embankment exists)
   const GRID_N=500;buildGrid(W,R_EXT,Q.name==='low'?320:GRID_N,romeH);   // the low tier's grid is coarser
-  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
+  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH,post:palPlatPost},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
   W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
@@ -556,13 +556,17 @@ async function buildRome(msg){
   // LATE_JOIN: monuments placed after the roads that the joins pass (the main roads keep off theirs through LATE): the temple by the Porta Trigemina,
   // the crossroads shrine at the Meta Sudans, the raised market square of the Forum Holitorium, and the wall stubs either side of each gate (drawn with
   // the gates below: a join goes through the arch).
+  // PAL_PINS (palatine-masterplan.md 9, H1): joins that keep the line they had at H0. The Via Appia's link to the Via Sacra was routed round the old
+  // ring terraces of the Palatine's east slope; with them gone (H1) the router takes a line up to 10-40 m nearer the hill, which moved the districts
+  // and streets east and south-east of the Palatine. The Palatine's own work must not move the city outside it, so the H0 line is kept.
+  const PAL_PINS=[{from:'Via Appia',to:'Via Sacra',P:[[330,520],[355.2,463.7],[380.4,407.5],[400.8,362.1],[406.3,345.3],[408.2,327.7],[408.2,265.7],[408.2,225.7],[410.3,209.5],[416.6,197.1],[438.2,170],[441.4,165.3]]}];
   const GATES=[['Porta Collina',970,-1390,.8],['Porta Viminalis',1260,-1056,0],['Porta Trigemina',-418,598,1.2],['Porta Carmentalis',-338,142,-.6],['Porta Caelimontana',1094,778,.3]],
-    LATE_JOIN=[[-330,560,11,22,Math.PI-30*DEG],[448,176,3],[-418,160,42,24,0],...GATES.flatMap(([,x,z,r])=>[1,-1].map(sd=>[x+sd*36*Math.cos(r),z-sd*36*Math.sin(r),20,3,r]).filter(([x,z])=>polyDist(x,z,TIBER)[0]>RTW+26))],P0={names:MAIN.map(m=>m[2]),fixed:[[6,W.palClivus,{name:'Clivus Palatinus'}],[6,clCap,{name:'Clivus Capitolinus'}]],bridges:W.bridges,island:[['Pons Fabricius','Pons Cestius']],
+    LATE_JOIN=[[-330,560,11,22,Math.PI-30*DEG],[448,176,3],[-418,160,42,24,0],...GATES.flatMap(([,x,z,r])=>[1,-1].map(sd=>[x+sd*36*Math.cos(r),z-sd*36*Math.sin(r),20,3,r]).filter(([x,z])=>polyDist(x,z,TIBER)[0]>RTW+26))],P0={names:MAIN.map(m=>m[2]),fixed:[[6,W.palClivus,{name:'Clivus Palatinus'}],[6,clCap,{name:'Clivus Capitolinus'}]],bridges:W.bridges,island:[['Pons Fabricius','Pons Cestius']],pins:PAL_PINS,
     termini:[{name:'Forum Romanum',plaza:true,F:FF,u:[-150,170],v:[-75,75],m:25},{name:'Capitolium',x:clCap[clCap.length-1][0],z:clCap[clCap.length-1][1],r:20},{name:'Palatium',x:W.palClivus[0][0],z:W.palClivus[0][1],r:20},
       ...GATES.map(([name,x,z])=>({name,x,z,r:35}))],
     steps:['Argiletum','Vicus Patricius','Vicus Tuscus','Alta Semita','west bank road'],river:{P:TIBER,hw:RTW},   // the city streets that may climb by steps; the consular and processional roads keep their switchbacks
     ro:Object.assign({},RO,{avoid:LATE.concat(LATE_JOIN.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)}))}),country:(x,z)=>dCity(x,z)<.25};
-  const joinKey=rgHash(JSON.stringify([roadKey,RG,P0.fixed,P0.bridges,P0.termini.map(t=>[t.name,t.x,t.z,t.r,t.u,t.v,t.m]),LATE_JOIN,P0.steps,P0.island])),bakedJ=baked&&ROME_ROADS_BAKED.joinKey===joinKey;
+  const joinKey=rgHash(JSON.stringify([roadKey,RG,P0.fixed,P0.bridges,P0.termini.map(t=>[t.name,t.x,t.z,t.r,t.u,t.v,t.m]),LATE_JOIN,P0.steps,P0.island,P0.pins])),bakedJ=baked&&ROME_ROADS_BAKED.joinKey===joinKey;
   if(baked&&!bakedJ)console.warn('road-network.js: the joins are stale, joining the roads live (run node tools/test/bake-roads.mjs)');
   const joined=bakedJ?ROME_ROADS_BAKED.joined:roadGraphJoin(W,routed,P0),tG=performance.now();W.roadJoined=joined;W.roadJoinKey=joinKey;W.roadOpts=P0;   // P1 (roadGraph, cityDistricts) reads the termini and the island from W.roadOpts
   if(bakedJ)W.roadJoin={baked:true,stats:ROME_ROADS_BAKED.joinStats,log:[]};
@@ -793,7 +797,7 @@ async function buildRome(msg){
   /* road-first city, P3 (briefs/rome/road-first-city.md 10; parcels.js): ?city=v2 builds the houses of the blocks the fabric cut (fabric.js) lot by
      lot; the old generators below keep out of that area (W.v2At). The Palatine, the valley, the noble core and the Campus stay with their own generators. */
   const V2=/[?&]city=v2/.test(location.search),v2Skip=(x,z)=>!!W.v2At&&W.v2At(x,z);
-  W.v2Excl=(x,z)=>inPal(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core'||CAMPN(x,z);if(V2)cityParcelsArea(W,{excl:W.v2Excl});   // v2Excl: city-audit.mjs counts the houses of that area without the flag too
+  const PF=fbFence();W.v2Excl=(x,z)=>inPal(x,z)||(PF&&fbInFence(PF,x,z))||VAL(x,z)||nobleQuarterAt(x,z)==='core'||CAMPN(x,z);if(V2)cityParcelsArea(W,{excl:W.v2Excl});   // v2Excl: city-audit.mjs counts the houses of that area without the flag too; nothing of v2 inside the Palatine's fence (PAL_FENCE)
   buildScenicEstates(W);
   buildAcademyHousing(W);
   buildNobleQuarter(W);
@@ -883,8 +887,10 @@ async function buildRome(msg){
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
    const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
+   palPlatStairs(W);   // H1: the stairs of the closed Palatine terraces, before the temple links (they join the hill stairs; palatine-h1.js)
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
+   palPlatWalls(W);   // H1: floors, walls, piers and cut walls of the closed terraces, the hemicycle garden (palatine-h1.js)
    placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,

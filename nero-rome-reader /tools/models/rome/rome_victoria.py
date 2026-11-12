@@ -13,12 +13,12 @@ reset()
 F = Frame()                               # origin = centre of the terrace; z = 0 = terrace floor
 
 # ---- terrace 40 x 50 m (x -20..20, y -25..25): walls 10 m high on W/S/E, 2 m on N --------------
-# Walls in the rock's pale stone ('rock'), D bastions (8 m across; 6 m on the north wall), 0.6-1 m above the wall,
+# Walls in the rock's pale stone ('rock'), square buttresses (R7: 1.8 m, every 10 m, as on the Tiberiana),
 # each with a coping band. The south wall is cut between x -8.4 and 0.4 (a pier either side): the stair head.
-WALL = dict(mat='rock', bastion='d', every=15.0, coping=True)
-retaining_wall(F, [(-20, 25), (-20, -25), (-8.4, -25)], 0.0, z_bot=-10.0, b_size=8.0, b_rise=1.0, **WALL)  # W + SW
-retaining_wall(F, [(0.4, -25), (20, -25), (20, 25)], 0.0, z_bot=-10.0, b_size=8.0, b_rise=1.0, **WALL)     # SE + E
-retaining_wall(F, [(20, 25), (-20, 25)], 0.0, z_bot=-2.0, b_size=6.0, b_rise=0.6, **WALL)                  # north
+WALL = dict(mat='rock', buttress='square', every=10.0, coping=True)
+retaining_wall(F, [(-20, 25), (-20, -25), (-8.4, -25)], 0.0, z_bot=-10.0, **WALL)  # W + SW
+retaining_wall(F, [(0.4, -25), (20, -25), (20, 25)], 0.0, z_bot=-10.0, **WALL)     # SE + E
+retaining_wall(F, [(20, 25), (-20, 25)], 0.0, z_bot=-2.0, **WALL)                  # north
 terrace_floor(F, [(-20, -25), (20, -25), (20, 25), (-20, 25)], 0.0, mat='paving')
 
 # ---- hill base: ledge rock (rock_mass) that the walls stand in, and rock chunks at the wall foot ---------------
