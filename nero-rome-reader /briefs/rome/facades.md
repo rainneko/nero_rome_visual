@@ -38,6 +38,12 @@ Evidence: the Ostia house-front scan (`refs/arch/ostia_front.jpg`) and the Hercu
   ground storey leaves 1.3 m above the 2.6 m opening, `wallS` paints a 0.6 × 0.55 m window 0.45 m over the lintel (the
   pergula, the shopkeeper's loft) and a brick relieving arch with voussoir joints over lintel and window.
   【史】Ostia, Herculaneum and Trajan's Market (`refs/arch/trajan_market_LATE.jpg`, later: construction only).
+* Shop life (2026-11-08, `ground-floor.md`):
+  - Square-headed shops show a trade on the back wall, chosen by a hash of bay and seed: shelves of jars, amphorae,
+    loaves, or dyed cloth on a rod; the rest stay plain.
+  - About 14 % stand shut with vertical boards in the threshold groove by day, and most at night.
+  - About 22 % of the piers between openings carry an election notice: part 50 (47–49 are taken on main), red strokes on whitewash, one quad.
+  - `placeShopWares` sets goods (`rome_wares_*`) in front of about a third of the shop fronts that face a side street.
 
 Studied: `罗马风格参考/民居参考/` (luxury city houses, noble villa, mid-income, low-income; contact sheets in the
 scratchpad) and `refs/houses_*.jpg`. Today's procedural houses (src/world/lots.js + the facade shader driven by

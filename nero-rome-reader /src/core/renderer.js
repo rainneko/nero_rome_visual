@@ -12,6 +12,7 @@ function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=x
   const a=hash2(xi,yi),b=hash2(xi+1,yi),c=hash2(xi,yi+1),d=hash2(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
 function fbm(x,y,o=4){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f+i*13.7,y*f-i*7.3);f*=2.03;a*=.5;}return s;}
 const nextFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+function b64u8(s){const b=atob(s),n=b.length,u=new Uint8Array(n);for(let i=0;i<n;i++)u[i]=b.charCodeAt(i);return u;}   // base64 to bytes (the model packs): a plain loop, not Uint8Array.from(string,fn)
 const TEST=/[?&]test/.test(location.search);
 const PERF_PROFILES={smooth:{pr:1,shadow:1024,msaa:0,oil:.5},balanced:{pr:1.25,shadow:2048,msaa:2,oil:.5},fine:{pr:1.5,shadow:4096,msaa:4,oil:1}};
 let perfMode='balanced';

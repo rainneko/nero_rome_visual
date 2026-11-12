@@ -57,7 +57,7 @@ function antPutModels(n,scene){scene.traverse(m=>{if(!m.isMesh)return;m.castShad
     if(n==='ant_tower'&&W0.layers.antiumLab){o.updateMatrixWorld(true);const mv=[];o.traverse(m=>{if(m.isMesh&&m.material&&/^(iron|silver|copper)/.test(m.material.name))mv.push(m);});for(const m of mv)W0.layers.antiumLab.attach(m);}}}
 function antLoadModels(){if(ANT.loadState||typeof W0==='undefined'||!W0)return;ANT.loadState=1;
   const go=()=>{const D=window.ANT_GLB;if(!D)return;ANT.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__antReady=true;};
-    for(const n of new Set(ANT.GLB.map(p=>p.n))){if(!D[n])continue;left++;try{const bin=Uint8Array.from(atob(D[n]),c=>c.charCodeAt(0)).buffer;new THREE.GLTFLoader().parse(bin,'',gl=>{antPutModels(n,gl.scene);fin();},e=>{console.warn('antium glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
+    for(const n of new Set(ANT.GLB.map(p=>p.n))){if(!D[n])continue;left++;try{const bin=b64u8(D[n]).buffer;new THREE.GLTFLoader().parse(bin,'',gl=>{antPutModels(n,gl.scene);fin();},e=>{console.warn('antium glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
     if(!left)window.__antReady=true;};
   if(window.ANT_GLB){go();return;}window.antAssetsLoaded=go;const s=document.createElement('script');s.src='antium-assets.js';
   s.onerror=()=>{console.warn('antium-assets.js not found: procedural stand-ins stay');window.__antReady=true;};document.head.appendChild(s);}

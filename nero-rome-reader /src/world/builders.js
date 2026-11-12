@@ -356,11 +356,15 @@ const WAT={n:0,add(x,z,r,hd=0,rot=0){if(this.n<56){U.uWatR.value[this.n]=rot;U.u
 /* ---------- people ---------- */
 const PPLGEO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,6);a.translate(0,.68,0);const b=new THREE.SphereGeometry(.17,6,5);b.translate(0,1.5,0);
   const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
+// the far copy of a figure (instLod): a five-sided body and an eight-faced head, 18 triangles for 72; at the switch a figure is under 4 px tall
+const PPLGEO_LO=(()=>{const a=new THREE.CylinderGeometry(.17,.3,1.35,5,1,true);a.translate(0,.68,0);const b=new THREE.OctahedronGeometry(.19);b.translate(0,1.5,0);
+  const P=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array];const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.computeVertexNormals();return G;})();
+const PPL_FAR=350;
 const PPLCOL=[[.75,.72,.65],[.6,.25,.14],[.2,.3,.5],[.55,.42,.2],[.3,.4,.25],[.45,.3,.4],[.7,.6,.45],[.35,.2,.15]];
 function flushPeople(W,list,parent){if(list.length>9000){const k=9000/list.length;list=list.filter(p=>placeDie(p,2)<k);}if(!list.length)return null;const out=[];   // the cap thins the list that is drawn (it used to thin W.people, a copy nobody drew), by each figure's place
   for(const T of instTiles(list.length,i=>[list[i][0],list[i][2]])){const m=new THREE.InstancedMesh(PPLGEO,MAT.people,T.length),M=new THREE.Matrix4(),c=new THREE.Color();
     T.forEach((i,j)=>{const p=list[i];M.makeTranslation(p[0],p[1],p[2]);m.setMatrixAt(j,M);const k=PPLCOL[Math.floor(placeDie(p,4)*PPLCOL.length)];c.setRGB(k[0],k[1],k[2]);m.setColorAt(j,c);});
-    layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
+    layTag(instCull(m),'people');m.castShadow=false;m.receiveShadow=true;(parent||W.scene).add(m);instLod(m,PPLGEO_LO,PPL_FAR);out.push(m);}return out[0]||null;}   // tiles with their own bounds (instCull): the copies' own sphere at the origin would hide a crowd far from it
 
 /* ---------- monument generators (into GB g) ---------- */
 function statue(g,F,x,y,z,h,gilt=false,spear=false){   // a standing figure (phase 5): drapery block for the legs, torso with square shoulders, head, one arm hanging and one raised diagonally; dark bronze (gilt=true) or marble ivory; gilding only on a small detail in the raised hand

@@ -119,6 +119,12 @@ def _rafters(F, p0, p1, z, out, every=0.8):
         box(S, (k + 0.5) * L / n, -(0.2 + out) / 2, z - 0.15, 0.13, out - 0.2, 0.14, 'wood')
 
 
+def _plinth(F, w, d, h=1.6):
+    """【史】A tuff footing under the whole block, its top 3 cm below the floor: on a slope the page sets the floor at the
+    street in front, and up to about half a metre of this base course shows on the downhill side."""
+    box(F, 0, 0, -h, w + 0.06, d + 0.06, h - 0.03, 'tuff')
+
+
 def _pot(F, x, y, z, r=0.18, hh=0.34):
     """A terracotta flower pot with a clipped 'hedge' top; z = the surface it stands on."""
     cyl(F, x, y, z, r, hh, 'tile', 8, r_top=r * 0.8)
@@ -142,6 +148,7 @@ def build_insula_a():
     rafter ends under a low hipped tile roof."""
     w, d = 14.0, 12.0
     F = Frame()
+    _plinth(F, w, d)
     ln = _lines(w, d)
     H_g, H_f = 4.2, 3.0
     eave = H_g + H_f * 4                                        # 16.2 m
@@ -194,6 +201,7 @@ def build_insula_b():
     The S half of the roof is hipped tile, the N half a paved terrace with a pergola and parapets; a water jar by the door."""
     w, d = 12.0, 12.0
     F = Frame()
+    _plinth(F, w, d)
     ln = _lines(w, d)
     H_g, H_f = 4.2, 3.0
     H = H_g + H_f * 3                                           # 13.2
@@ -270,6 +278,7 @@ def build_insula_c():
     rafter ends along the sides; a laundry pole with a cloth from the third floor."""
     w, d = 8.0, 12.0
     F = Frame()
+    _plinth(F, w, d)
     ln = _lines(w, d)
     H_g, H_f = 4.2, 3.0
     H = H_g + H_f * 3                                           # 13.2
