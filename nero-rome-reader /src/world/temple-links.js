@@ -12,24 +12,24 @@
 function hillStair(W,R,w,top){const gy=W.gy,H=stairGround(W),ix=stairLandings(W,R),gS=new GB(1<<15);let yT=top??H(R[0][0],R[0][1]);const y0=yT,st={steps:0,landings:0,rock:0,parapets:0};
   const slope=(x,z)=>Math.hypot(gy(x+2,z)-gy(x-2,z),gy(x,z+2)-gy(x,z-2))/4;
   for(let l=0;l<ix.length-1;l++){const A=R[ix[l]],B=R[ix[l+1]],Ls=Math.hypot(B[0]-A[0],B[1]-A[1]);if(Ls<3)continue;const yB=H(B[0],B[1]),dh=yT-yB;if(dh<.5){yT=Math.min(yT,yB);continue;}
-    const F=frame(A[0],0,A[1],Math.atan2(-(B[1]-A[1]),B[0]-A[0])),o0=stairEdge(W,H,A,B,Ls,yT),run=stairRun(Ls-o0,dh),pal=hillPal(A[0],A[1]),rks=[];
-    if(o0>0){const q=F.p(o0/2,0,0),gb=Math.min(gy(q[0],q[2]),yT)-2.5;gS.set(6,.4);box(gS,F,o0/2,gb,0,o0/2+.02,yT-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,o0/2,gb,sd*(w/2+.3),o0/2+.02,yT-gb+.9,.3,31);
-      gS.set(48,.5);for(const sd of[1,-1])box(gS,F,o0/2,yT+.9,sd*(w/2+.3),o0/2+.06,.12,.36,31);st.landings++;}   // podium p3: the landing out to the terrace's edge, where the steps begin
+    const F=frame(A[0],0,A[1],Math.atan2(-(B[1]-A[1]),B[0]-A[0])),o0=stairEdge(W,H,A,B,Ls,yT),run=stairRun(Ls-o0,dh),pal=hillPal(A[0],A[1]),rks=[],stS=(pt,sd,fl)=>pal===1?gS.set(60,sd,1,fl):gS.set(pt,sd);   // M6 (palatine-masterplan.md, H0): on the Palatine the treads travertine, the cheeks the wall's ashlar, the bases rusticated
+    if(o0>0){const q=F.p(o0/2,0,0),gb=Math.min(gy(q[0],q[2]),yT)-2.5;stS(6,.4,2);box(gS,F,o0/2,gb,0,o0/2+.02,yT-gb,w/2,31);stS(6,.55,0);for(const sd of[1,-1])box(gS,F,o0/2,gb,sd*(w/2+.3),o0/2+.02,yT-gb+.9,.3,31);
+      trimSet(gS,pal,.5);for(const sd of[1,-1])box(gS,F,o0/2,yT+.9,sd*(w/2+.3),o0/2+.06,.12,.36,31);st.landings++;}   // podium p3: the landing out to the terrace's edge, where the steps begin
     for(const p of run.P){const s2=o0+p.s+p.len/2,yS=yT-p.i*run.rise-(p.land?0:run.rise),q=F.p(s2,0,0),gb=Math.min(gy(q[0],q[2]),yS)-2.5;
-      if(p.land){gS.set(6,.4);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.9,.3,31);
-        gS.set(48,.5);for(const sd of[1,-1])box(gS,F,s2,yS+.9,sd*(w/2+.3),p.len/2+.06,.12,.36,31);st.landings++;continue;}   // E2: a landing between two flights, its cheeks a little higher
+      if(p.land){stS(6,.4,2);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);stS(6,.55,0);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.9,.3,31);
+        trimSet(gS,pal,.5);for(const sd of[1,-1])box(gS,F,s2,yS+.9,sd*(w/2+.3),p.len/2+.06,.12,.36,31);st.landings++;continue;}   // E2: a landing between two flights, its cheeks a little higher
       const ql=F.p(s2,0,w/2+1),qr=F.p(s2,0,-w/2-1),rk=Math.max(slope(q[0],q[2]),slope(ql[0],ql[2]),slope(qr[0],qr[2]))>.52;st.steps++;
       if(rk){gS.set(61,.35+.3*teH(q[0],q[2],70),pal,0);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);st.rock++;rks.push({s0:o0+p.s,s1:o0+p.s+p.len,y:yS});continue;}   // E1: cut in the rock (the banks on both sides below)
-      gS.set(6,.4);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);gS.set(6,.55);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.75,.3,31);   // pale treads between low pale cheek walls
-      if(p.i%3===0){gS.set(2,.6);for(const sd of[1,-1])box(gS,F,s2,yS+.7,sd*(w/2+.3),p.len*1.5+.02,.14,.4,31);}}   // coping
+      stS(6,.4,2);box(gS,F,s2,gb,0,p.len/2+.02,yS-gb,w/2,31);stS(6,.55,0);for(const sd of[1,-1])box(gS,F,s2,gb,sd*(w/2+.3),p.len/2+.02,yS-gb+.75,.3,31);   // pale treads between low pale cheek walls
+      if(p.i%3===0){stS(2,.6,2);for(const sd of[1,-1])box(gS,F,s2,yS+.7,sd*(w/2+.3),p.len*1.5+.02,.14,.4,31);}}   // coping
     // E1: the rock left standing on both sides of the cut steps, in banks about 2.4 m long that follow the slope of the flight, sheer on the stair side
     for(let i=0;i<rks.length;){let j=i;while(j+1<rks.length&&rks[j+1].s0-rks[j].s1<.05&&rks[j].s1-rks[i].s0<2.2)j++;const a0=rks[i],b0=rks[j];
       for(const sd of[1,-1])rockBank(gS,F,a0.s0-.04,b0.s1+.04,a0.y,b0.y,sd,w,pal);i=j+1;}
-    if(l<ix.length-2){const FL=frame(B[0],0,B[1],F.rot),hw=w/2+.9,gb=Math.min(gy(B[0],B[1]),yB)-2.5;gS.set(6,.4);box(gS,FL,0,gb,0,hw,yB-gb,hw,31);gS.set(2,.45);box(gS,FL,0,yB,0,w/2+1.1,.3,w/2+1.1,31);
+    if(l<ix.length-2){const FL=frame(B[0],0,B[1],F.rot),hw=w/2+.9,gb=Math.min(gy(B[0],B[1]),yB)-2.5;stS(6,.4,1);box(gS,FL,0,gb,0,hw,yB-gb,hw,31);stS(2,.45,2);box(gS,FL,0,yB,0,w/2+1.1,.3,w/2+1.1,31);
       // E2: the turning landing's parapet, on each side that is neither where the flights come in (-x) and go out, where the ground outside is 0.6 m or more below
       const C2=R[ix[l+2]],el=Math.hypot(C2[0]-B[0],C2[1]-B[1])||1,lx=((C2[0]-B[0])*FL.c-(C2[1]-B[1])*FL.s)/el,lz=((C2[0]-B[0])*FL.s+(C2[1]-B[1])*FL.c)/el,ex=Math.abs(lx)>Math.abs(lz)?(lx>0?0:-1):(lz>0?1:2);
       for(const[f,nx,nz]of[[0,1,0],[1,0,1],[2,0,-1]]){if(f===ex)continue;const o=FL.p(nx*(hw+1),0,nz*(hw+1));if(yB+.3-gy(o[0],o[2])<.6)continue;const px=nx*(hw-.15),pz=nz*(hw-.15),ax=nx?.15:hw,az=nx?hw:.15;
-        gS.set(60,.5,pal,0);box(gS,FL,px,yB+.3,pz,ax,.9,az,31);gS.set(48,.5);box(gS,FL,px,yB+1.2,pz,ax+.04,.1,az+.06,31);st.parapets++;}}
+        gS.set(60,.5,pal,0);box(gS,FL,px,yB+.3,pz,ax,.9,az,31);trimSet(gS,pal,.5);box(gS,FL,px,yB+1.2,pz,ax+.04,.1,az+.06,31);st.parapets++;}}
     yT=yB;}
   for(let i=1;i<R.length-1;i+=4){const A=R[i],B=R[i+1],ux=B[0]-A[0],uz=B[1]-A[1],l=Math.hypot(ux,uz)||1,sd=(i>>2)%2?1:-1,off=w/2+2.2+((i*7)%3)*.5;   // cypresses and umbrella pines along both sides: a garden stair, not a cut
     const tx=A[0]-uz/l*off*sd,tz=A[1]+ux/l*off*sd;if(!W.foot.hits(tx,tz,1,1,0,0))W.trees.push([tx,gy(tx,tz),tz,((i>>2)%3)?'cyp':'pine',.8+((i*13)%5)*.07]);}

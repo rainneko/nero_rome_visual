@@ -8,12 +8,15 @@ const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,rock3:10,rock4:10
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 // the hills' wild grass through the year, as the terrain draws it (builders.js): green in winter and spring, straw in summer, with bare earth
+// 1 on the Palatine, 0 off it: within 185-205 m of its ridge (HILLS in monuments.js, as hillPal)
+float palHill(vec2 p){vec2 d=p-vec2(0.,280.),e=vec2(230.,40.);return 1.-smoothstep(185.,205.,length(d-e*clamp(dot(d,e)/dot(e,e),0.,1.)));}
 vec3 hillGrass(vec2 p){float sS=uSeason,dryA=smoothstep(.4,.95,sS)*(1.-smoothstep(1.45,1.95,sS));
  vec3 gSp=vec3(.103,.345,.036),gAu=vec3(.038,.169,.037),gWi=vec3(.047,.169,.044);
  vec3 gS=sS<2.?mix(gSp,gAu,sS*.5):sS<3.?mix(gAu,gWi,sS-2.):mix(gWi,gSp,sS-3.);
  vec3 gr=gS*mix(.82,1.18,fbm2(p*.05));gr=mix(vec3(dot(gr,vec3(.3,.5,.2))),gr,.78);
  vec3 c=mix(gr,vec3(.54,.42,.16)*mix(.85,1.15,fbm2(p*.03+7.)),dryA*(.9+.1*fbm2(p*.02+3.)));
- return mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),smoothstep(.62,.8,fbm2(p*.2+7.))*.6);}
+ c=mix(c,vec3(.25,.18,.1)*(.8+.35*fbm2(p*.3)),smoothstep(.62,.8,fbm2(p*.2+7.))*.6);
+ return mix(vec3(dot(c,vec3(.3,.5,.2))),c,1.-.4*palHill(p));}   // H0: 40 % duller on the Palatine, as the terrain
 vec3 romePat(vec3 c,vec3 wp,float pat){
  vec3 n=normalize(cross(dFdx(wp),dFdy(wp)));vec3 an=abs(n);bool flr=an.y>.7;
  vec2 uv=flr?wp.xz:(an.x>an.z?vec2(wp.z,wp.y):vec2(wp.x,wp.y));
@@ -36,7 +39,11 @@ vec3 romePat(vec3 c,vec3 wp,float pat){
   vec3 g=hillGrass(wp.xz);g=mix(vec3(dot(g,vec3(.3,.5,.2))),g,.75)*vec3(.9,.95,.88)*(.74+.26*vn2(wp.xz*1.3));
   vec3 soil=mix(vec3(.27,.21,.13),vec3(.2,.155,.095),fbm2(wp.xz*.12+5.))*(.88+.24*vn2(wp.xz*2.3+wp.y*.7));   // the hill's earth, darker than its rock in sun
   float e=smoothstep(.42,.72,.55*fbm2(wp.xz*.3+3.1)+.25*vn2(wp.xz*1.7+wp.y)+.55*(1.-smoothstep(.5,.92,n.y)));c=mix(g,soil,e*.9);}
- else if(pat>9.5){   // natural rock (the hills' tufa and limestone): wavy beds of uneven thickness (about 1.4-3.4 m), each its own tone, fractures at uneven spacing
+ else if(pat>9.5){   // natural rock (the hills' tufa and limestone)
+  // H0 (palatine-masterplan.md M1): on the Palatine the models' rock (rock, rock2; the Tiberiana's darker rock3, rock4) is grade 1 of the hill's stone family:
+  // the material's colour duller and its tones drawn together (rock a little darker, the Tiberiana's cliff a little lighter), before the pattern
+  {float l=dot(c,vec3(.3,.59,.11)),l2=.222*pow(max(l,1e-4)/.2444,.42);c=mix(c,l2*vec3(1.127,.988,.719),palHill(wp.xz));}
+  // wavy beds of uneven thickness (about 1.4-3.4 m), each its own tone, fractures at uneven spacing
   // through a few beds, ochre stains, dark rain streaks, the hill grass on up-facing ledges. (rock and rock2 used the ashlar courses of pattern 1, so the hill bases
   // read as cut stone or concrete: the author, 2026-11-03. Round 3, 2026-11-08: even 2.3 m beds with near-regular joints still read as courses on big faces.)
   // Every field here is a function of the world position alone: a pattern laid out in the face's own uv broke at each polygon edge

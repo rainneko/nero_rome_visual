@@ -139,7 +139,7 @@ const PAL_SC={land:[[-120.5,166],[-107.5,166],[-107.5,176.8],[-120.5,176.8]],y:4
 const palNearSC=(lx,lz,m)=>lx>-120.5-m&&lx<-107.5+m&&lz>166-m&&lz<176.8+m;
 function palScalae(W){const F=PFR,g=new GB(1<<15),y=PAL_SC.y,P=PAL_SC.land;
   terraceReserve(W,F,P,{skip:[0,3]});
-  g.set(11,.35);g.poly([F.p(P[3][0],y+.06,P[3][1]),F.p(P[2][0],y+.06,P[2][1]),F.p(P[1][0],y+.06,P[1][1]),F.p(P[0][0],y+.06,P[0][1])],[0,1,0]);   // the paving
+  g.set(60,.35,1,3);g.poly([F.p(P[3][0],y+.06,P[3][1]),F.p(P[2][0],y+.06,P[2][1]),F.p(P[1][0],y+.06,P[1][1]),F.p(P[0][0],y+.06,P[0][1])],[0,1,0]);   // the paving
   W.palSCEdge=terraceEdge(W,g,P,y,{F,tag:'palSC',skip:[0,3],pal:1});   // 0: against the outcrops and the model's stair; 3: the Scalae Caci
   for(const c of[P[0],P[3]]){const q=F.p(c[0]+.75,0,c[1]+(c===P[0]?.75:-.75)),gF=W.gy(q[0],q[2]),PF=frame(q[0],0,q[2],PALF.rot);g.set(60,.5,1,1);box(g,PF,0,Math.min(gF,y)-1.2,0,.7,y+1.3-Math.min(gF,y)+1.2,.7,31&~32);
     g.set(48,.5);box(g,PF,0,y+1.3,0,.8,.16,.8,31);if(teH(q[0],q[2],5)<.5)pedestalStatue(g,PF,0,0,y+1.46,2.6,{gilt:teH(q[0],q[2],6)<.4});else tripod(g,PF,0,0,y+1.46,1.25);}   // B5: a pier each side of the opening
@@ -204,7 +204,7 @@ function palTerraceWalls(W){const segs=W.palTerSegs||[];if(!segs.length)return;
   const ST=(W.hillStairs||[]).filter(h=>h.R&&h.R.length>1).map(h=>{let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of h.R){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}return{R:h.R,r:h.w/2+1.2,x0,x1,z0,z1};});
   const nearW=(x,z,m)=>ST.some(h=>{const r=h.r+m;if(x<h.x0-r||x>h.x1+r||z<h.z0-r||z>h.z1+r)return false;for(let i=1;i<h.R.length;i++)if(segD(x,z,h.R[i-1][0],h.R[i-1][1],h.R[i][0],h.R[i][1])<r)return true;return false;}),
     near=(l,m=0)=>{const q=P(l[0],l[1]);return nearW(q[0],q[1],m);};
-  const st=W.palTerStats={walls:0,openings:0,piers:0,skipped:0};
+  const st=W.palTerStats={walls:0,openings:0,piers:0,skipped:0,wallLen:0,ledgeLen:0,topPiers:0,beds:0};
   for(const sg of segs){const{yk,k,A,B,L,nx,nz,ux,uz,wr,wn,gap,sb,oA,oB,iA,iB,ybA,ybB,ht}=sg,R=RNG(57+sg.ki*7919+k*131),sh=(Q,n,d)=>[Q[0]+n[0]*d,Q[1]+n[1]*d],off=(Q,d)=>[Q[0]+nx*d,Q[1]+nz*d];
     if(gap){   // garden gap: the slope stays; cypresses and pines in loose groups, shrubs and flowers
       if(k%3===0){const t=off(A.o,-3-R()*3),q=xyz(t,0),y=H(t[0],t[1]),kind=R()<.55?'cyp':'pine',s=.8+R()*.4;if(!near(t,1))W.trees.push([q[0],y,q[2],kind,s]);}
@@ -215,40 +215,61 @@ function palTerraceWalls(W){const segs=W.palTerSegs||[];if(!segs.length)return;
     const ns=Math.max(2,Math.ceil(L/.25)),op=[];for(let j=0;j<=ns;j++)op.push(near(at(j/ns,0)));
     const keep=[];for(let j=0;j<=ns;){if(op[j]){j++;continue;}let j1=j;while(j1<ns&&!op[j1+1])j1++;keep.push([j/ns,j1/ns]);j=j1+1;}
     const opened=op.some(v=>v);if(opened){st.openings++;const R0=sg.rec;if(R0){if(op[0])R0.S[sg.sA].open='stair';if(op[ns])R0.S[sg.sB].open='stair';R0.brk.push(R0.S[sg.sA].s,R0.S[sg.sB].s);}}
-    // floor: a garden terrace (gravel path along the edge), paving only behind the porticoes
-    const wp=sg.wp;g.set(wp?11:23,.4);g.poly([xyz(oA,yk+.06),xyz(oB,yk+.06),xyz(iB,yk+.06),xyz(iA,yk+.06)],[0,1,0]);
-    g.set(5,.4);g.poly([xyz(sh(oA,A.n,-.4),yk+.09),xyz(sh(oB,B.n,-.4),yk+.09),xyz(sh(oB,B.n,-2.4),yk+.09),xyz(sh(oA,A.n,-2.4),yk+.09)],[0,1,0]);
+    // floor (H0, M5 of palatine-masterplan.md): gravel with a band of stone slabs inside the parapet; paving behind the porticoes. No lawn: the green is in the
+    // small garden beds (below), the trees and the slopes. Every stone here is part 60 on palette 1 (palStone in materials.js): flag 1 rusticated, 2 travertine, 3 paving, 4 gravel
+    const wp=sg.wp;g.set(60,.4,1,wp?3:4);g.poly([xyz(oA,yk+.06),xyz(oB,yk+.06),xyz(iB,yk+.06),xyz(iA,yk+.06)],[0,1,0]);
+    if(!wp){g.set(60,.4,1,3);g.poly([xyz(sh(oA,A.n,-.66),yk+.09),xyz(sh(oB,B.n,-.66),yk+.09),xyz(sh(oB,B.n,-1.86),yk+.09),xyz(sh(oA,A.n,-1.86),yk+.09)],[0,1,0]);}
     // retaining wall with a 4 % batter (behind a stair it stays: the stair stands in front of it)
-    const bt=.04*ht,lA=sh(oA,A.n,bt),lB=sh(oB,B.n,bt),wseed=.3+hz2(sg.ki,k)*.5;
-    g.set(60,wseed,1,0);g.poly([xyz(lA,ybA),xyz(lB,ybB),xyz(oB,yk+.1),xyz(oA,yk+.1)],wn);   // B1 (podium-stairs-rock.md G1): the Palatine's wall stone (palette 1, terrace-edge.js)
-    {const hA=yk+.1-ybA,hB=yk+.1-ybB;if(hA>3.4&&hB>3.4){const fa=bt*(1-2.6/hA)+.07,fb=bt*(1-2.6/hB)+.07;g.set(60,wseed,1,1);   // the bottom metre above the ground in big blocks
-      g.poly([xyz(sh(oA,A.n,bt+.07),ybA),xyz(sh(oB,B.n,bt+.07),ybB),xyz(sh(oB,B.n,fb),ybB+2.6),xyz(sh(oA,A.n,fa),ybA+2.6)],wn);g.poly([xyz(sh(oA,A.n,fa),ybA+2.6),xyz(sh(oB,B.n,fb),ybB+2.6),xyz(sh(oB,B.n,fb-.08),ybB+2.6),xyz(sh(oA,A.n,fa-.08),ybA+2.6)],[0,1,0]);}}
+    const bt=.04*ht,lA=sh(oA,A.n,bt),lB=sh(oB,B.n,bt),wseed=.3+hz2(sg.ki,k)*.5,R0=sg.rec,u0=R0?(R0.ax*.37+R0.az*.53)%97:0,uA=u0+(R0?R0.S[sg.sA].s:0),uB=u0+(R0?R0.S[sg.sB].s:L),
+      uv0=(a,b)=>[[a,0],[b,0],[b,0],[a,0]];   // the wall's own length as the stone's u: the blocks run on from segment to segment (palStone)
+    g.set(60,wseed,1,0);g.poly([xyz(lA,ybA),xyz(lB,ybB),xyz(oB,yk+.1),xyz(oA,yk+.1)],wn,uv0(uA,uB));   // B1 (podium-stairs-rock.md G1): the Palatine's wall stone (palette 1, terrace-edge.js)
+    st.wallLen+=L;
+    // M2: the bottom 2.4 m above the ground in rusticated courses (0.9 m, counted down from the band's top), standing 7 cm proud with a weathered top
+    const fA=ybA+1.6,fB=ybB+1.6,tA=Math.min(fA+2.4,yk-.8),tB=Math.min(fB+2.4,yk-.8),plinth=tA-fA>.6&&tB-fB>.6;
+    if(plinth){const hA=yk+.1-ybA,hB=yk+.1-ybB,fa=bt*(1-(tA-ybA)/hA)+.07,fb=bt*(1-(tB-ybB)/hB)+.07;g.set(60,wseed,1,1);
+      g.poly([xyz(sh(oA,A.n,bt+.07),ybA),xyz(sh(oB,B.n,bt+.07),ybB),xyz(sh(oB,B.n,fb),tB),xyz(sh(oA,A.n,fa),tA)],wn,[[uA,tA],[uB,tB],[uB,tB],[uA,tA]],1);
+      g.poly([xyz(sh(oA,A.n,fa),tA),xyz(sh(oB,B.n,fb),tB),xyz(sh(oB,B.n,fb-.08),tB),xyz(sh(oA,A.n,fa-.08),tA)],[0,1,0]);}
     // coping and parapet (B2, a solid pluteus with a travertine cap: coping and parapet 1.37 m) on the stretches no stair goes through; a pier at each side of an opening
     const iw=[-wn[0],0,-wn[2]];
+    const ua=t=>lerp(uA,uB,t);
     for(const[t0,t1]of keep){if((t1-t0)*L<.3)continue;const a0=t0,a1=t1,Q=(t,d)=>at(t,d);
-      g.set(48,.5);g.poly([xyz(Q(a0,.35),yk+.5),xyz(Q(a1,.35),yk+.5),xyz(Q(a1,-.45),yk+.5),xyz(Q(a0,-.45),yk+.5)],[0,1,0]);g.poly([xyz(Q(a0,.35),yk-.05),xyz(Q(a1,.35),yk-.05),xyz(Q(a1,.35),yk+.5),xyz(Q(a0,.35),yk+.5)],wn);
-      g.set(60,wseed,1,0);g.poly([xyz(Q(a0,.2),yk+.5),xyz(Q(a1,.2),yk+.5),xyz(Q(a1,.2),yk+1.22),xyz(Q(a0,.2),yk+1.22)],wn);g.poly([xyz(Q(a1,-.12),yk+.5),xyz(Q(a0,-.12),yk+.5),xyz(Q(a0,-.12),yk+1.22),xyz(Q(a1,-.12),yk+1.22)],iw);
-      g.set(48,.5);g.poly([xyz(Q(a0,.26),yk+1.32),xyz(Q(a1,.26),yk+1.32),xyz(Q(a1,-.18),yk+1.32),xyz(Q(a0,-.18),yk+1.32)],[0,1,0]);
-      g.poly([xyz(Q(a0,.26),yk+1.22),xyz(Q(a1,.26),yk+1.22),xyz(Q(a1,.26),yk+1.32),xyz(Q(a0,.26),yk+1.32)],wn);g.poly([xyz(Q(a1,-.18),yk+1.22),xyz(Q(a0,-.18),yk+1.22),xyz(Q(a0,-.18),yk+1.32),xyz(Q(a1,-.18),yk+1.32)],iw);
+      // M3 (H0): a travertine coping 0.45 m thick, 0.25 m out over the face and 0.9 m deep; on it a parapet 0.6 m thick and 1.0 m high: ashlar with a travertine cap
+      g.set(60,.5,1,2);g.poly([xyz(Q(a0,.25),yk+.1),xyz(Q(a1,.25),yk+.1),xyz(Q(a1,-.65),yk+.1),xyz(Q(a0,-.65),yk+.1)],[0,1,0]);
+      g.poly([xyz(Q(a0,.25),yk-.35),xyz(Q(a1,.25),yk-.35),xyz(Q(a1,.25),yk+.1),xyz(Q(a0,.25),yk+.1)],wn,uv0(ua(a0),ua(a1)));g.poly([xyz(Q(a0,0),yk-.35),xyz(Q(a1,0),yk-.35),xyz(Q(a1,.25),yk-.35),xyz(Q(a0,.25),yk-.35)],[0,-1,0]);
+      g.set(60,wseed,1,0);g.poly([xyz(Q(a0,.05),yk+.1),xyz(Q(a1,.05),yk+.1),xyz(Q(a1,.05),yk+1),xyz(Q(a0,.05),yk+1)],wn,uv0(ua(a0),ua(a1)));g.poly([xyz(Q(a1,-.55),yk+.1),xyz(Q(a0,-.55),yk+.1),xyz(Q(a0,-.55),yk+1),xyz(Q(a1,-.55),yk+1)],iw,uv0(ua(a1),ua(a0)));
+      g.set(60,.5,1,2);g.poly([xyz(Q(a0,.09),yk+1.1),xyz(Q(a1,.09),yk+1.1),xyz(Q(a1,-.59),yk+1.1),xyz(Q(a0,-.59),yk+1.1)],[0,1,0]);
+      g.poly([xyz(Q(a0,.09),yk+1),xyz(Q(a1,.09),yk+1),xyz(Q(a1,.09),yk+1.1),xyz(Q(a0,.09),yk+1.1)],wn,uv0(ua(a0),ua(a1)));g.poly([xyz(Q(a1,-.59),yk+1),xyz(Q(a0,-.59),yk+1),xyz(Q(a0,-.59),yk+1.1),xyz(Q(a1,-.59),yk+1.1)],iw,uv0(ua(a1),ua(a0)));
+      // M3: a pier 0.9 m square every 4.5 m of the wall's length, 0.3 m above the parapet (not by an opening: the B5 piers stand there)
+      if(R0){const sa=ua(a0)-u0,sz=ua(a1)-u0;for(let n=Math.ceil((sa+(a0>0?1.2:0))/4.5);n*4.5<sz-(a1<1?1.2:0);n++){const t=(u0+n*4.5-uA)/(uB-uA);if(near(at(t,0),1.6))continue;   // (a pier on a segment's end belongs to the next segment)
+        if((t*L<1.4&&(!sg.prevW||Math.abs(sg.prevSb-sb)>.05))||((1-t)*L<1.4&&!sg.nextW))continue;   // the corner piers stand there
+        const q=xyz(at(t,-.25),0),PF=frame(q[0],0,q[2],wr);g.set(60,wseed,1,0);box(g,PF,0,yk+.1,0,.45,1.18,.45,15);g.set(60,.5,1,2);box(g,PF,0,yk+1.28,0,.5,.12,.5,31);st.topPiers++;}}
       // B5: by an opening the parapet ends in a pier with a statue or a bronze tripod (the next segment's opening counts: a point 0.6 m on)
       for(const[t,dir]of[[a0,-1],[a1,1]]){const edge=(dir<0&&t===0)||(dir>0&&t===1),j=Math.round(t*ns),open=edge?near(at(t+dir*.6/L,0)):op[j+dir];if(!open)continue;
-        const tp=t-dir*.45/L,q=xyz(at(tp,-.1),0),gF=lerp(ybA,ybB,tp)+1.6,PF=frame(q[0],0,q[2],wr);g.set(60,wseed,1,1);box(g,PF,0,gF-1.2,0,.7,yk+1.3-gF+1.2,.7,31&~32);g.set(48,.5);box(g,PF,0,yk+1.3,0,.8,.16,.8,31);
+        const tp=t-dir*.45/L,q=xyz(at(tp,-.1),0),gF=lerp(ybA,ybB,tp)+1.6,PF=frame(q[0],0,q[2],wr);g.set(60,wseed,1,1);box(g,PF,0,gF-1.2,0,.7,yk+1.3-gF+1.2,.7,31&~32);g.set(60,.5,1,2);box(g,PF,0,yk+1.3,0,.8,.16,.8,31);
         if(teH(q[0],q[2],5)<.5)pedestalStatue(g,PF,0,0,yk+1.46,2.6,{gilt:teH(q[0],q[2],6)<.4});else tripod(g,PF,0,0,yk+1.46,1.25);st.piers++;}}
+    // M3: a corner pier 1.2 m square where the wall line ends or turns back (set-back), on the coping
+    for(const[cnd,t]of[[(!sg.prevW||Math.abs(sg.prevSb-sb)>.05)&&!op[0],.6/L],[!sg.nextW&&!op[ns],1-.6/L]]){if(!cnd||near(at(t,0),1))continue;const q=xyz(at(t,-.25),0),PF=frame(q[0],0,q[2],wr);
+      g.set(60,wseed,1,0);box(g,PF,0,yk+.1,0,.6,1.18,.6,15);g.set(60,.5,1,2);box(g,PF,0,yk+1.28,0,.66,.12,.66,31);st.topPiers++;}
+    // a run of coping (0.45 m) and parapet (1.0 m) on a side wall, from local p0 to p1 (part of M3)
+    const parRun=(p0,p1)=>{const a=P(p0[0],p0[1]),b=P(p1[0],p1[1]),l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(l<.3)return;const F=frame((a[0]+b[0])/2,0,(a[1]+b[1])/2,Math.atan2(-(b[1]-a[1]),b[0]-a[0]));
+      g.set(60,.5,1,2);box(g,F,0,yk-.35,0,l/2,.45,.45,31);g.set(60,wseed,1,0);box(g,F,0,yk+.1,0,l/2,.9,.3,15);g.set(60,.5,1,2);box(g,F,0,yk+1,0,l/2+.02,.1,.34,31);};
     // where the set-back changes from the segment before: a return wall between the two wall lines; where the wall stops (a garden gap, the end of the level)
     // the side of the terrace is walled back into the slope, from the wall's corner to where the floor meets the ground
     if(sg.prevW&&Math.abs(sg.prevSb-sb)>.05&&!near(A.o,.5)){const p0=sh(A.o,A.n,-sg.prevSb),p1=oA,yb=Math.min(ybA,H(p0[0],p0[1])-1.6),un=[ux*PALF.c+uz*PALF.s,0,-ux*PALF.s+uz*PALF.c],s=sg.prevSb>sb?1:-1;
-      g.set(60,wseed,1,0);g.poly([xyz(p0,yb),xyz(p1,yb),xyz(p1,yk+.1),xyz(p0,yk+.1)],[un[0]*-s,0,un[2]*-s]);g.set(48,.5);g.poly([xyz(sh(p0,A.n,.3),yk+.5),xyz(sh(p1,A.n,.3),yk+.5),xyz(sh(p1,A.n,-.3),yk+.5),xyz(sh(p0,A.n,-.3),yk+.5)],[0,1,0]);}
+      g.set(60,wseed,1,0);g.poly([xyz(p0,yb),xyz(p1,yb),xyz(p1,yk+.1),xyz(p0,yk+.1)],[un[0]*-s,0,un[2]*-s]);parRun(sh(p0,A.n,.25),sh(p1,A.n,.25));}
     for(const[end,o0,i0,s]of[[!sg.prevW,oA,iA,-1],[!sg.nextW,oB,iB,1]]){if(!end||near(o0,.5))continue;const un=[ux*PALF.c+uz*PALF.s,0,-ux*PALF.s+uz*PALF.c],n=5;let prev=null;
       for(let j=0;j<=n;j++){const t=j/n,p=[lerp(o0[0],i0[0],t),lerp(o0[1],i0[1],t)],gp=H(p[0],p[1]),cur={p,gp};if(prev&&(yk-prev.gp>.3||yk-gp>.3)){
-        g.set(60,wseed,1,0);g.poly([xyz(prev.p,prev.gp-1),xyz(p,gp-1),xyz(p,yk+.1),xyz(prev.p,yk+.1)],[un[0]*s,0,un[2]*s]);g.set(48,.5);
-        const c0=sh(prev.p,[ux,uz],s*.25),c1=sh(p,[ux,uz],s*.25),c2=sh(p,[ux,uz],-s*.25),c3=sh(prev.p,[ux,uz],-s*.25);g.poly([xyz(c0,yk+.5),xyz(c1,yk+.5),xyz(c2,yk+.5),xyz(c3,yk+.5)],[0,1,0]);}prev=cur;}}
+        g.set(60,wseed,1,0);g.poly([xyz(prev.p,prev.gp-1),xyz(p,gp-1),xyz(p,yk+.1),xyz(prev.p,yk+.1)],[un[0]*s,0,un[2]*s]);
+        if(yk-prev.gp>.6||yk-gp>.6)parRun(sh(prev.p,[ux,uz],-s*.3),sh(p,[ux,uz],-s*.3));else{g.set(60,.5,1,2);const c0=sh(prev.p,[ux,uz],s*.25),c1=sh(p,[ux,uz],s*.25),c2=sh(p,[ux,uz],-s*.25),c3=sh(prev.p,[ux,uz],-s*.25);g.poly([xyz(c0,yk+.12),xyz(c1,yk+.12),xyz(c2,yk+.12),xyz(c3,yk+.12)],[0,1,0]);}}prev=cur;}}
     // B3: square buttresses every ~7 m where the wall is higher than 2.5 m (the author, 2026-11-04: half-round projections only at rock-spur corners); not where a stair goes
     const wA=P(oA[0],oA[1]),wB=P(oB[0],oB[1]),Lw=Math.hypot(wB[0]-wA[0],wB[1]-wA[1])||1,eux=(wB[0]-wA[0])/Lw,euz=(wB[1]-wA[1])/Lw,eW={ux:eux,uz:euz,nx:wn[0],nz:wn[2],Wp:(s,d,y)=>[wA[0]+eux*s+wn[0]*d,y,wA[1]+euz*s+wn[2]*d]};
-    if(ht>2.5&&(k%2===0||L>7)&&!near(at(.5,1),.8))buttress(g,eW,Lw/2,Math.max(ybA,ybB)-.2,yk-.17,.04,1,wseed);
-    if(ht>3.2){g.set(48,.5);g.poly([xyz(sh(oA,A.n,bt*.5+.04),yk-2.6),xyz(sh(oB,B.n,bt*.5+.04),yk-2.6),xyz(sh(oB,B.n,bt*.5+.04),yk-2.35),xyz(sh(oA,A.n,bt*.5+.04),yk-2.35)],wn);}
+    if(ht>2.5&&(k%2===0||L>7)&&!near(at(.5,1),.8))buttress(g,eW,Lw/2,Math.max(ybA,ybB)-.2,yk-.35,.04,1,wseed);
+    // M2: a 0.3 m travertine string course every 6 m of height, the first about 3 m under the coping on a course line, never on the plinth
+    for(let yc=Math.floor((yk-3)/.6)*.6;yc>(plinth?Math.max(tA,tB):Math.max(fA,fB))+.6;yc-=6){const dA=bt*(yk+.1-yc)/(yk+.1-ybA)+.06,dB=bt*(yk+.1-yc)/(yk+.1-ybB)+.06;g.set(60,.5,1,2);
+      g.poly([xyz(sh(oA,A.n,dA),yc),xyz(sh(oB,B.n,dB),yc),xyz(sh(oB,B.n,dB),yc+.3),xyz(sh(oA,A.n,dA),yc+.3)],wn,uv0(uA,uB));g.poly([xyz(sh(oA,A.n,dA),yc+.3),xyz(sh(oB,B.n,dB),yc+.3),xyz(sh(oB,B.n,dB-.08),yc+.3),xyz(sh(oA,A.n,dA-.08),yc+.3)],[0,1,0]);}
     // ledge-rock band at the foot: uneven blocks of grey bedded stone, a few on top of one another, never one straight line
     {const d1=1.4+R()*1.2,pp=sh([(oA[0]+oB[0])/2,(oA[1]+oB[1])/2],A.n,d1+bt),qq=xyz(pp,0),gh=H(pp[0],pp[1]),F=frame(qq[0],gh-2,qq[2],wr+(R()-.5)*.5),hx=L*.5+.5+R()*.7,hd=1.3+R()*1.3,h1=Math.min(2.4,(yk-gh)*.14+.5+R()*.7),r2=R(),r3=R();
-      if(!near(pp,hd+.5)){g.set(61,.2+R()*.5,1,0);box(g,F,0,0,0,hx,h1+2,hd,31);   // a continuous, uneven ledge: each block overlaps its neighbours; a second course on some, a jutting block now and then
+      if(!near(pp,hd+.5)){st.ledgeLen+=L;g.set(61,.2+R()*.5,1,0);box(g,F,0,0,0,hx,h1+2,hd,31);   // a continuous, uneven ledge: each block overlaps its neighbours; a second course on some, a jutting block now and then
         if(r2<.55){g.set(61,.2+R()*.5,1,0);box(g,frame(qq[0]+(R()-.5)*L*.4,gh+h1-.35,qq[2]+(R()-.5)*.8,wr+(R()-.5)*.6),0,0,0,hx*.6,.6+R()*.5,hd*.7,31);}
         if(r3<.22){const p3=sh(pp,A.n,2.2+R()*1.4),q3=xyz(p3,0),g3=H(p3[0],p3[1]);if(!near(p3,1.5)){g.set(61,.5,1,0);box(g,frame(q3[0],g3-1.2,q3[2],R()*3),0,0,0,1.2+R()*1.1,1.3+R()*.8,1+R()*.8,31);}}}}
     // portico against the slope (stacked colonnades seen from the Circus), only on some runs of the two porch levels, and not where a stair crosses the terrace
@@ -259,12 +280,13 @@ function palTerraceWalls(W){const segs=W.palTerSegs||[];if(!segs.length)return;
       const eA=[cA2[0]+A.n[0]*.6,cA2[1]+A.n[1]*.6],eB=[cB2[0]+B.n[0]*.6,cB2[1]+B.n[1]*.6];
       g.set(1,.5);g.poly([xyz(eA,yk+6),xyz(eB,yk+6),xyz(iB,yk+7.4),xyz(iA,yk+7.4)],[0,1,0]);g.poly([xyz(iA,yk+7.3),xyz(iB,yk+7.3),xyz(eB,yk+5.9),xyz(eA,yk+5.9)],[0,-1,0]);}
     else{if(k%4===0&&A.d>6){const t=sh(oA,A.n,-2.2),q=xyz(t,yk),kind=R()<.62?'cyp':'pine',s=.8+R()*.3;if(!near(t,1))W.trees.push([q[0],yk,q[2],kind,s]);}
-      if(k%3===1&&A.d>5){const t2=sh(oA,A.n,-3.4-R()*Math.max(1,A.d-6)*.5),q=xyz(t2,yk),kind=impGarden(R()),s=.7+R()*.6;if(!near(t2,1))W.trees.push([q[0],yk,q[2],kind,s,null,1]);}}
+      if(k%3===1&&A.d>5){const t2=sh(oA,A.n,-3.4-R()*Math.max(1,A.d-6)*.5),q=xyz(t2,yk),kind=impGarden(R()),s=.7+R()*.6;if(!near(t2,1)){W.trees.push([q[0],yk,q[2],kind,s,null,1]);
+        const BF=frame(q[0],0,q[2],wr);g.set(60,.5,1,2);box(g,BF,0,yk,0,1.3,.2,1,31);g.set(23,.4);g.poly([BF.p(-1.16,yk+.205,-.86),BF.p(1.16,yk+.205,-.86),BF.p(1.16,yk+.205,.86),BF.p(-1.16,yk+.205,.86)],[0,1,0]);st.beds++;}}}   // M5: the planting in a small lawn bed with a travertine kerb (the only lawn on the terraces)
     if(!sg.wp&&!(yk===44||yk===30)&&k%17===5&&A.d>13){const c=[(A.o[0]+A.i[0])/2,(A.o[1]+A.i[1])/2],q=xyz(c,yk);if(!near(c,4))fountain(W,g,q[0],q[2],{hx:2.6,hz:2.6,y:yk+.05,statue:1.8});}
     if(k%11===3){const t=sh(oA,A.n,-1.1),q=xyz(t,yk);if(!near(t,1.5))pedestalStatue(g,frame(q[0],yk,q[2],0),0,0,0,2.4,{gilt:R()<.2});}
-    // stairs climbing along the wall face to the terrace below, with a cheek wall on the open side (not where a hill stair comes through)
+    // stairs climbing along the wall face to the terrace below, with a cheek wall on the open side (not where a hill stair comes through). M6: travertine treads, the cheek in the wall's ashlar
     if(sg.along&&![0,4,8,12].some(t=>near([oA[0]+ux*t+nx*2.1,oA[1]+uz*t+nz*2.1],1.5))){const run=12,n=36;
-      for(let s=0;s<n;s++){const t=(s+.5)/n*run,p=[oA[0]+ux*t+nx*2.1,oA[1]+uz*t+nz*2.1],q=xyz(p,0),ys=yk-7+(s+1)*7/n;g.set(48,.42);box(g,frame(q[0],0,q[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5),1.3,31);
+      for(let s=0;s<n;s++){const t=(s+.5)/n*run,p=[oA[0]+ux*t+nx*2.1,oA[1]+uz*t+nz*2.1],q=xyz(p,0),ys=yk-7+(s+1)*7/n;g.set(60,.42,1,2);box(g,frame(q[0],0,q[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5),1.3,31);
         const p2=[p[0]+nx*1.55,p[1]+nz*1.55],q2=xyz(p2,0);g.set(60,.55,1,0);box(g,frame(q2[0],0,q2[2],wr),0,yk-7.5,0,run/n/2+.02,ys-(yk-7.5)+.7,.18,31);}}}
   flushColumns(W);W.cols=C0;const m=g.mesh(MAT.city);if(m){m.name='palTerraces';W.scene.add(m);}}
 const hz2=(ki,k)=>hash2(ki*97+Math.floor(k/8)*13+30,ki*7+3+66);   // the wall stone's shade, per 12 m run (as before)
@@ -351,7 +373,7 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
       else box(g,PFR,(x0+x1)/2,yy-.6,lerp(z0,z1,(t0+t1)/2),wd/2,.6+Math.abs(y1-y0)*(y1>y0?t1:1-t0),Math.abs(z1-z0)/n/2+.02,31);}
     if(cheek)for(const sd of[1,-1]){if(ax==='x')box(g,PFR,(x0+x1)/2,Math.min(y0,y1)-.6,(z0+z1)/2+sd*(wd/2+.4),Math.abs(x1-x0)/2,Math.abs(y1-y0)+1.7,.4,31);else box(g,PFR,(x0+x1)/2+sd*(wd/2+.4),Math.min(y0,y1)-.6,(z0+z1)/2,.4,Math.abs(y1-y0)+1.7,Math.abs(z1-z0)/2,31);}};
   // paved deck of the basins, kerbs along the walls
-  g.set(11,.3);for(const[x0,x1,z0,z1]of PAL_BASIN)g.poly(qd(x0,x1,z0,z1,dk),[0,1,0]);
+  g.set(60,.3,1,3);for(const[x0,x1,z0,z1]of PAL_BASIN)g.poly(qd(x0,x1,z0,z1,dk),[0,1,0]);
   // retaining walls: the plateau is 5 m above the deck on the east (strip A) and the west (south of the Tiberiana)
   const topY=PAL_TOP,wh=topY-(PAL_DECK-.6);
   // east wall (lx 8.8..10, z -10..26, stair opening 5.5..10.5) and west wall (lx -72..-70.8, z 22..76, opening 66..71): plateau side higher by 5 m
@@ -359,7 +381,7 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
     for(let k=za+3;k<zb-1;k+=9){g.set(22,.5);box(g,PFR,cx+fx*.9,PAL_DECK-.6,k,.9,wh-.5,.7,31);}
     g.set(2,.5);for(let k=za+.5;k<=zb-.4;k+=2.4)box(g,PFR,cx-fx*.2,topY+.05,k,.14,.9,.14,31);}
   // rim promenades on the plateau side of both walls (flat, flush with the wall tops: they also cover the small ditch behind)
-  g.set(11,.35);g.poly(qd(8.8,17,-10,26,topY+.06),[0,1,0]);g.poly(qd(-79,-70.8,22,76,topY+.06),[0,1,0]);
+  g.set(60,.35,1,3);g.poly(qd(8.8,17,-10,26,topY+.06),[0,1,0]);g.poly(qd(-79,-70.8,22,76,topY+.06),[0,1,0]);
   // north edge (cliff top above the Forum slope): where the ground beyond is lower than the deck the wall faces out and carries a parapet, where it is higher the wall retains it
   for(let x=-72;x<10;x+=4){const gq=a=>{const q=PFR.p(a,0,-108);return W.gy(q[0],q[2]);},gyc=Math.min(gq(x),gq(x+2),gq(x+4));
     if(gyc<PAL_DECK-.3){g.set(22,.45);box(g,PFR,x+2,gyc-1.6,-106.2,2.03,PAL_DECK-gyc+1.6,.6,31);if(((x+72)/4|0)%2===0){g.set(22,.5);box(g,PFR,x+2,gyc-1.6,-107.2,.8,PAL_DECK-gyc+1.2,.7,31);}
@@ -375,8 +397,11 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
   // a fountain in the corner of the south basin, planters along the lanes
   fountain(W,g,PFR.p(1,0,13)[0],PFR.p(1,0,13)[2],{hx:3.2,hz:3.2,y:dk,statue:2.6,rot:PALF.rot});
   palGallery(W,g);
-  // watered ground (cisterns and pipes): palace gardens stay green all summer, the bare slopes outside dry to straw
-  for(const[lx,lz,r]of[[-138,-30,80],[73,-63,66],[37,74,68],[-47,100,52],[-154,100,44],[-24,-30,72],[-100,-80,40],[190,-30,52]]){const q=PFR.p(lx,0,lz);WAT.add(q[0],q[2],r);}
+  // watered ground (cisterns and pipes): palace gardens stay green all summer, the bare slopes outside dry to straw. H0 (palatine-masterplan.md M5: lawn only in
+  // enclosed gardens): each palace's own footprint, a rectangle, where there were discs of 44-80 m that spilt onto the open hilltop and slopes (the Magna Mater
+  // grove, the ground round the Tiberiana and Apollo), one on the open east slope between the two houses ([190,-30,52]), and 30 m discs round every cluster of
+  // garden trees (below). The sunken basins are paved.
+  for(const A of PAL_ASSETS)if(/tiberiana|transitoria|apollo|domus_augusti/.test(A.n)){const q=PFR.p(A.lx,0,A.lz);WAT.add(q[0],q[2],A.hw-6,A.hd-6,PALF.rot);}
   {const dq=(lx,lz)=>{const q=PFR.p(lx,0,lz);return[q[0],W.gy(q[0],q[2]),q[2]];};   // Suetonius, Aug. 92: a date palm sprang up between the paving stones before the house; two laurels flank the door
    for(const lx of[-52,-43]){const q=dq(lx,74.5);W.trees.push([q[0],q[1],q[2],'broad',.5,[.04,.085,.03],1]);}
    {const q=dq(-30,73);W.trees.push([q[0],q[1],q[2],'palm',1,null,1]);}}
@@ -396,11 +421,10 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
   // phase 3: more rim cells found with __floatCheck (world x, z, height of the model's lowest geometry there): a small plinth under each
   for(const[wx,wz,top]of[[234,234,42.7],[-22,345,55.6],[44,376,55.6],[46,372,55.6],[-34,367,50.6],[-32,363,50.6],[-28,355,50.6],[28,403,50.6],[33,394,50.6],[30,399,50.6],[-81,392,41.5],[155,155,31.7],[118,215,51.2]]){
     const[lx,lz]=palL(wx,wz),gh=W.gy(wx,wz);if(top-gh<.3)continue;g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,2.3,top-gh+1.55,2.3,31);(ROME.supports=ROME.supports||[]).push({x:wx,z:wz,c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:3.3,hd:3.3});}
-  {const cell=new Map();for(const t of W.trees){if(t[6]!==1)continue;const k=Math.floor(t[0]/48)+','+Math.floor(t[2]/48),c=cell.get(k)||[0,0,0];c[0]+=t[0];c[1]+=t[2];c[2]++;cell.set(k,c);}for(const c of cell.values())if(c[2]>=2)WAT.add(c[0]/c[2],c[1]/c[2],30);}   // every imperial garden cluster is watered (green all summer)
   W.foot.add(PFR.p(-31,0,-40)[0],PFR.p(-31,0,-40)[2],56,76,PALF.rot);
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);flushColumns(W);}
 // paved ground on the plateau strips (follows the terrain), Jupiter Victor temple with stair and altar
-function palStrips(W){const g=new GB(1<<15),O=palObstacles();g.set(11,.35);
+function palStrips(W){const g=new GB(1<<15),O=palObstacles();g.set(60,.35,1,3);   // H0 (palatine-masterplan.md 2.3): grade 5, the slabs of the terrace floors, not the city paving (part 11, lighter than the copings)
   for(const[x0,x1,z0,z1]of PAL_ZONES)for(let lx=x0;lx<x1;lx+=6)for(let lz=z0;lz<z1;lz+=6){const w=Math.min(6,x1-lx),d=Math.min(6,z1-lz);if(palClear(O,lx+w/2,lz+d/2)<-.5)continue;if(palInAsset(lx+w/2,lz+d/2,-1))continue;
       const pt=(a,b)=>{const q=PFR.p(a,0,b);return[q[0],W.gy(q[0],q[2])+.13,q[2]];};g.poly([pt(lx,lz+d),pt(lx+w,lz+d),pt(lx+w,lz),pt(lx,lz)],[0,1,0]);}
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);

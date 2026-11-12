@@ -156,6 +156,33 @@ float openM(vec2 q,float hw,float h,float ar,float aa){
 float joint(float x,float per,float w,float aa){float d=abs(fract(x/per+.5)-.5)*per;return (1.-smoothstep(w,w+aa+.01,d))*(1.-smoothstep(.04,.12,aa));}
 vec3 stoneC(vec2 p,float s,vec3 base,float bw,float bh,float aa){float n=fbm2(p*1.3+s*9.);float row=floor(p.y/bh);
  float j=max(joint(p.y,bh,.01,aa),joint(p.x+fract(row*.5)*bw,bw,.01,aa));vec3 c=base*(.86+.24*n)*(.94+.1*h12(vec2(floor(p.x/bw+fract(row*.5)),row)+s));return c*(1.-.22*j);}
+// H0 (briefs/rome/palatine-masterplan.md 2.3, M1-M2, 2026-11-11): the Palatine's one stone family, from rough and dark at the foot to smooth and light at the top.
+// Part 60 on palette 1, by flag: 0 ashlar (the wall body: 0.6 m courses, blocks 0.9-1.5 m), 1 rusticated (0.9 m courses: the bottom 2.4 m of a wall, buttresses,
+// stair bases), 2 travertine (coping, string course, parapet caps, treads), 3 paving (1.2 x 0.6 m slabs), 4 gravel. The courses run in world height, so they line up
+// from wall to wall; the blocks run along the face's u (a terrace wall gives its own length, so the pattern does not restart at each 1.5 deg segment). Joints are
+// about 25 % darker (the head joints 70 % of that) and kept about a pixel wide, so the courses still read from 200 m (the old joint() faded them out at 0.1 m a pixel); one block in three or
+// four is 8 % lighter or darker. Colours: sunlit at noon (the shots of tools/plan/palatine_survey.mjs) they come out near the plan's targets.
+float pjL(float d,float w,float px,float per){float ww=max(w,px*.5);return (1.-smoothstep(ww,ww+px*.75,d))*mix(1.,.72,smoothstep(w,w*4.,ww))*(1.-smoothstep(.3,.5,px/per));}
+vec2 pjB(float u,float row,float bl){float t=u/bl+h12(vec2(row,7.1))*1.7,i=floor(t),b0=i+(h12(vec2(i,row))-.5)*.25,b1=i+1.+(h12(vec2(i+1.,row))-.5)*.25,id=i;   // (block id, distance to its nearest head joint) for blocks bl +- 25 % long
+ if(t<b0){b1=b0;id=i-1.;b0=i-1.+(h12(vec2(i-1.,row))-.5)*.25;}else if(t>b1){b0=b1;id=i+1.;b1=i+2.+(h12(vec2(i+2.,row))-.5)*.25;}return vec2(id,min(t-b0,b1-t)*bl);}
+const vec3 PS_G2=vec3(.276,.245,.179),PS_G3=vec3(.346,.309,.233),PS_G4=vec3(.578,.517,.382),PS_G5=vec3(.467,.405,.291);   // rusticated, ashlar, travertine, paving (linear albedo)
+vec3 palStone(vec3 wp,vec3 N,vec2 uv,vec4 A,float fl){vec3 c;float j=0.;bool vert=abs(N.y)<.6;
+ vec2 pl=vec2(.8660254*wp.x+.5*wp.z,-.5*wp.x+.8660254*wp.z);   // the Palatine's own axes (PALF)
+ if(fl<1.5){
+  if(vert){float rus=fl,yy=A.z>.5&&rus>.5?A.y-wp.y:wp.y,ch=mix(.6,.9,rus),bl=mix(1.2,1.6,rus),row=floor(yy/ch);   // a terrace wall's plinth (A.z 1) gives its top in A.y: courses down from it
+   vec2 B=pjB(uv.x,row,bl);float dy=abs(fract(yy/ch+.5)-.5)*ch;j=max(pjL(dy,.022,fwidth(wp.y),ch),.7*pjL(B.y,.022,fwidth(uv.x),bl));   // the bed joints carry the courses; the head joints a little softer
+   float hb=h12(vec2(B.x,row)+3.7),hs=h12(vec2(B.x,row)+9.1);c=mix(PS_G3,PS_G2,rus)*(1.+(hb<.3?sign(hs-.5)*.08:(hs-.5)*.05));
+   c*=rus>.5?.9+.2*fbm2(vec2(uv.x,wp.y)*2.1+row*3.1):.95+.1*fbm2(vec2(uv.x,wp.y)*.9+row);}   // the rusticated face rough, the ashlar dressed
+  else c=mix(PS_G3,PS_G2,fl)*(.93+.12*fbm2(wp.xz*.8));
+  c*=.95+.09*fbm2(vec2(uv.x*.05,wp.y*.09)+3.);}   // weathering, over metres
+ else if(fl<2.5){vec2 q=vert?vec2(uv.x,wp.y):pl;float ch=vert?.45:.6,row=floor(q.y/ch);vec2 B=pjB(q.x,row,1.8);   // travertine: long smooth blocks with fine horizontal pits
+  j=pjL(B.y,.015,fwidth(q.x),1.8)*.75;c=PS_G4*(1.+(h12(vec2(B.x,row)+5.3)-.5)*.06)*(1.-.08*smoothstep(.55,.8,vn2(vec2(q.x*1.6,q.y*13.))))*(.95+.08*fbm2(q*.5));}
+ else if(fl<3.5){float row=floor(pl.y/.6);vec2 B=pjB(pl.x,row,1.2);float dy=abs(fract(pl.y/.6+.5)-.5)*.6;   // paving 1.2 x 0.6 m, broken joints
+  j=max(pjL(dy,.012,fwidth(pl.y),.6),pjL(B.y,.012,fwidth(pl.x),1.2));float hb=h12(vec2(B.x,row)+1.3),hs=h12(vec2(B.x,row)+4.9);
+  c=PS_G5*(1.+(hb<.28?sign(hs-.5)*.07:(hs-.5)*.05))*(.94+.1*fbm2(pl*.35));}
+ else{float gr=mix(vn2(pl*9.)*.6+vn2(pl*23.)*.4,.5,smoothstep(.02,.08,fwidth(pl.x)));   // gravel: fine grit (its mean far off), worn patches
+  c=PS_G5*vec3(.95,.94,.92)*(.86+.24*gr)*(.92+.12*fbm2(pl*.25));}
+ return c*(1.-.25*j);}
 vec3 marbleC(vec3 p,float s){float n=fbm3(p*.3+s*3.);float vv=abs(sin((p.x*.7+p.y*1.1+p.z*.5)*.8+n*7.));vec3 c=vec3(.56,.515,.44)*(.94+.1*n);
  c*=1.-.1*pow(1.-vv,12.);c*=mix(1.,.84,smoothstep(.62,.86,fbm3(p*.07+s)));return c;}
 void roofS(inout PS S,vec3 N,float gilt,float aa){vec2 uv=vA.xy;float seed=floor(vB.x*4096.+.5)/4096.;float pt=.47;float col=floor(uv.x/pt);float xr=(fract(uv.x/pt)-.5)*pt;
@@ -393,13 +420,14 @@ else if(P>47.5&&P<48.5){S.alb=stoneC(uv,seed,vec3(.66,.61,.5),1.5,.6,aa)*(1.-.13
 else if(P>48.5&&P<49.5){float row=floor(uv.y/.6);vec2 id=vec2(floor(uv.x/1.2+fract(row*.5)),row);float j=max(joint(uv.y,.6,.008,aa),joint(uv.x+fract(row*.5)*1.2,1.2,.008,aa));   // open courts: white marble / travertine slabs 1.2 x 0.6 m, broken joints
  S.alb=vec3(.7,.675,.61)*(.9+.12*h12(id+seed))*(.94+.08*fbm2(uv*.3))*(1.-.3*j);S.rough=.55-uWet*.3;}
 else if(P>59.5&&P<62.5){float k=floor(vB.z+.5);   // hill palette (hillPal in terrace-edge.js; the author, 2026-11-04: one wall stone and one rock per hill), index in sty: 0 Capitoline, 1 Palatine, 2 the rest
- vec3 wc=k<.5?vec3(.307,.293,.266):k<1.5?vec3(.366,.328,.274):vec3(.4,.37,.31),rc=k<.5?vec3(.47,.43,.32):k<1.5?vec3(.355,.305,.228):vec3(.42,.38,.3);
- if(P<60.5){float big=step(.5,vB.w);vec3 c=stoneC(uv,seed,wc,mix(1.2,1.8,big),mix(.6,.9,big),aa);   // 60 terrace wall: opus quadratum, 2 x 4 ft blocks; fl 1 = the plinth course of big blocks
+ vec3 wc=k<.5?vec3(.307,.293,.266):k<1.5?vec3(.366,.328,.274):vec3(.4,.37,.31),rc=k<.5?vec3(.47,.43,.32):k<1.5?vec3(.262,.228,.162):vec3(.42,.38,.3);   // Palatine rock: grade 1 of its stone family (H0)
+ if(P<60.5&&k>.5&&k<1.5){S.alb=palStone(vWP,N,uv,vA,floor(vB.w+.5));S.rough=vB.w>1.5&&vB.w<2.5?.75:.9;}   // H0: the Palatine's stone family (palStone)
+ else if(P<60.5){float big=step(.5,vB.w);vec3 c=stoneC(uv,seed,wc,mix(1.2,1.8,big),mix(.6,.9,big),aa);   // 60 terrace wall: opus quadratum, 2 x 4 ft blocks; fl 1 = the plinth course of big blocks
   c*=1.-.16*step(.8,vn2(uv*9.+seed*7.))*step(k,.5);S.alb=c*(.93+.1*fbm2(vWP.xz*.05+vWP.y*.04));S.rough=.9;}   // peperino ('peppered'): dark specks
  else if(P<61.5){vec3 p=vWP;float bed=fract((p.y+p.x*.07+p.z*.05+fbm2(p.xz*.07)*1.1)/1.55),jt=abs(fract((p.x*.6+p.z*.8)/3.8+fbm2(p.xz*.05+3.)*.6)-.5);   // 61 rock: bedding a few degrees off level, joints every 3-5 m
   vec3 c=rc*(.8+.32*fbm2(p.xz*.3+p.y*.25));c*=1.-.3*(1.-smoothstep(0.,.08,bed))-.1*smoothstep(.82,1.,bed);c*=1.-.32*(1.-smoothstep(0.,.035,jt));
-  c=mix(c,vec3(.13,.16,.065)*(.8+.4*fbm2(p.xz*.6)),smoothstep(.6,.9,N.y)*.7);S.alb=c;S.rough=.96;}   // moss on the tops
- else{vec2 p=vWP.xz;vec3 m=vec3(.115,.145,.06)*(.75+.5*fbm2(p*.8));S.alb=mix(m,rc*.55,smoothstep(.55,.78,fbm2(p*.35+4.))*.45);S.rough=.97;}}   // 62 moss and grass at the wall foot
+  c=mix(c,vec3(.13,.16,.065)*(.8+.4*fbm2(p.xz*.6)),smoothstep(.6,.9,N.y)*(k>.5&&k<1.5?.2*step(.55,fbm2(p.xz*.4)):.7));S.alb=c;S.rough=.96;}   // moss on the tops (on the Palatine only in patches: the ledge band is the family's rock, H0)
+ else{vec2 p=vWP.xz;vec3 m=vec3(.115,.145,.06)*(.75+.5*fbm2(p*.8));if(k>.5&&k<1.5)m=mix(vec3(dot(m,vec3(.3,.59,.11))),m,.6);S.alb=mix(m,rc*.55,smoothstep(.55,.78,fbm2(p*.35+4.))*.45);S.rough=.97;}}   // 62 moss and grass at the wall foot
 else{S.alb=vec3(.86,.87,.85);S.rough=.25;}
 S.alb*=1.-.42*min(1.,uBurn*vC.z);if(vC.z>1.5)S.alb*=mix(.3,.55,fbm2(vWP.xz*.25+vWP.y*.35));   // burn 1: sooty while uBurn is on (the state of the fire); burn 2: black in every state
 `;
