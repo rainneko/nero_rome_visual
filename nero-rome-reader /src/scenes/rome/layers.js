@@ -302,7 +302,10 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
     portico(W,g,BF,-60,-88,60,-88,0,6,-5,3.4,[1,.96,.9]);});
   W.pois.push({n:'阿格里帕花园',l:'Horti Agrippae',x:-895,z:-834,y:gy(-895,-834)+16,s0:0,s1:2,d:1600,info:'后来尼禄大浴场的地基，在此之前是阿格里帕留给市民的花园。'});
   /* Claudius precinct on the Caelian (novel vols 9-13 and 20; 小说文本/发电房建设线_阶段与核算.md). The platform, its west arcade and the east water-works site (W.claudEast) are in monuments.js.
-     claudSite  [0,6]  the building site round the temple: stone piles, a treadwheel crane, the NE corner of the platform still open masonry
+     claudSite  [0,5]  the building site round the temple: stone piles, a treadwheel crane
+     claudFaces [2,5]  the platform's dressed faces, the NE corner still open masonry
+     claudPodE  [2,8]  the platform's east part (local x 35-90), whole
+     claudPodHalf [0,1] AD 54-55: Agrippina has only begun it, so the east part is still courses 6-13 m under the top, its west edge open masonry
      claudOldTemple [0,5]  the stalled temple: rough podium, column stumps, low cella walls in scaffolding
      claudHall  [6,8]  the old hall roofed in 58 (vol 10: "台基上旧殿，补梁，盖瓦，防渗"): walls brought up, new red tiles; that counts as the temple finished
      claudWeeds [3,5]  grass in the joints (vol 10: "石料堆在台基旁边，草从缝里长出来")
@@ -348,8 +351,18 @@ async function buildRomeLayers(W,msg){const gy=(x,z)=>W.gy(x,z),L=(n,r,f)=>makeL
    L('claudHall',0,(g)=>{podium(g);stumps(g,.9,5.5);const top=14.5;g.set(22,.44);for(const[x,z,hx,hz]of[[-9.6,-4,.6,13.6],[9.6,-4,.6,13.6],[0,-17,9.6,.6],[-6.6,9,3,.6],[6.6,9,3,.6]])box(g,TF,x,4,z,hx,top-4,hz,31);box(g,TF,0,10.2,9,3.6,top-10.2,.6,31);   // walls brought up; the door left open below the lintel
      g.set(7,.3);g.poly([TF.p(-3.6,4.05,9.62),TF.p(3.6,4.05,9.62),TF.p(3.6,10.15,9.62),TF.p(-3.6,10.15,9.62)],TF.d(0,0,1));
      roof(g,TF,'gableZ',0,-4,20.4,27.4,top,20*DEG,.8,.207,{part:22,seed:.44,nSt:1,gH:top-4,sH:4,floorY:4});});   // new red tiles over the old hall (seed .207: the reddest roof colour)
-   L('claudSite',0,(g)=>{substructFaces(W,g,F,0,0,90,100,F.oy,{unf:{N:{x0:60,x1:90},E:{x0:-100,x1:-70}}});
-     for(let k=0;k<11;k++){const q=F.p(-60+R()*120,0,(R()<.5?-1:1)*(34+R()*40)),S=frame(q[0],F.oy,q[2],R()*TAU),n=2+Math.floor(R()*4);g.set(2,.35+R()*.15);   // stone piles: squared blocks and column drums
+   // the platform's east part (local x 35-90): whole from 56, still rising in 54-55 (Agrippina began it after Claudius died in October 54)
+   {const PE=W.claudPodE,cx=(PE.x0+PE.x1)/2,hx=(PE.x1-PE.x0)/2;
+    L('claudPodE',0,(g)=>{g.set(22,.4);box(g,F,cx,-PE.D,0,hx,PE.D,100,31);});
+    L('claudFaces',0,(g)=>substructFaces(W,g,F,0,0,90,100,F.oy,{unf:{N:{x0:60,x1:90},E:{x0:-100,x1:-70}}}));
+    L('claudPodHalf',0,(g)=>{substructFaces(W,g,F,-27.5,0,62.5,100,F.oy,{unf:{E:{x0:-100,x1:100}}});   // the built part's dressed faces; its east edge left as open masonry
+     const R3=RNG(5403);g.set(6,.32);for(let i=0;i<8;i++){const z0=-100+i*25,top=-6-R3()*7;box(g,F,cx,-PE.D,z0+12.5,hx,PE.D+top,12.5,31);   // the east part in courses of uneven height, 6-13 m under the top
+       if(R3()<.6){const st=-1.6-R3()*1.2;box(g,F,PE.x0+4+R3()*14,top,z0+12.5,3+R3()*5,-st,4+R3()*6,31);}}   // a few blocks set on the course above
+     // where the hill already stands at the top (local z > -55): a dug work floor, and the substructure's cells set out in walls 0.4-2.2 m high
+     g.set(21,.42);g.poly([F.p(PE.x0,.05,-55),F.p(PE.x1,.05,-55),F.p(PE.x1,.05,98),F.p(PE.x0,.05,98)],[0,1,0]);
+     g.set(6,.32);for(let x=PE.x0+2;x<=PE.x1-2;x+=13)for(let z=-50;z<92;z+=12){const h=.4+R3()*1.8;if(R3()<.82)box(g,F,x,0,z+6,.6,h,6,31);if(R3()<.7)box(g,F,x+6.5,0,z,6.5,.4+R3()*1.6,.6,31);}});}
+   L('claudSite',0,(g)=>{
+     for(let k=0;k<11;k++){const q=F.p(Math.min(30,-60+R()*120),0,(R()<.5?-1:1)*(34+R()*40)),S=frame(q[0],F.oy,q[2],R()*TAU),n=2+Math.floor(R()*4);g.set(2,.35+R()*.15);   // stone piles: squared blocks and column drums
        for(let i=0;i<n;i++){const ox=(i%2)*1.5-.75,oz=Math.floor(i/2)*1.1;if(R()<.35)lathe(g,S,ox,0,oz,[[.7,0],[.7,.9],[0,.9]],10);else box(g,S,ox,0,oz,.7,.75,.5,31);}if(n>3)box(g,S,0,.75,.5,.7,.75,.5,31);}
      {const q=F.p(30,0,30),C=frame(q[0],F.oy,q[2],.4),B=C.p(0,15,-6),J=C.p(0,9,-13);g.set(32,.42);   // treadwheel crane: three raking legs, a jib, the walking wheel at its foot
       prism(g,C.p(0,0,0),B,[1,0,0],.35,.35);prism(g,C.p(3,0,-1),B,[1,0,0],.3,.3);prism(g,C.p(-3,0,-1),B,[1,0,0],.3,.3);prism(g,B,J,[1,0,0],.25,.25);g.set(3,.4);prism(g,J,C.p(0,1.2,-13),[1,0,0],.04,.04);
