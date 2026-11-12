@@ -2,7 +2,7 @@
 const GALBA_EAST=true; // 加尔巴仓：true=小说写的“城东”；false=史实位置（城南台伯河边，今泰斯塔乔）
 const RW=1.5,RTW=56,R_EXT=[-3200,-2800,2800,3600];
 const TIBER=[[-1350,-2800],[-1219,-1968],[-1000,-1600],[-912,-1390],[-1020,-1201],[-1300,-1110],[-1575,-1068],[-1666,-912],[-1741,-734],[-1700,-600],[-1567,-489],[-1400,-250],[-1235,-44],[-1036,133],[-830,165],[-630,156],[-464,300],[-490,500],[-522,667],[-688,945],[-895,1279],[-1100,1550],[-1326,1868],[-1350,2100],[-1268,2280],[-1000,2600],[-688,2836],[-564,3336],[-937,3892],[-1683,4448],[-2600,4900]];
-const HILLS=[[-262,40,-205,-225,112,31],[0,280,230,320,175,36],[-640,860,-330,1150,250,33],[-60,1150,150,1350,190,24],[560,640,1250,760,200,33],[480,-40,1250,-170,210,36],[760,-480,1400,-560,175,39],[1500,-500,2700,0,620,42],[500,-760,1350,-1080,170,41],[-60,-560,900,-1520,230,43],[-650,-2050,150,-2300,330,42],[-1700,-500,-1780,1500,360,62],[-1500,2200,-1650,2700,250,28],[-2900,-1700,-2500,-1400,420,46],[360,120,430,80,110,16]];
+const HILLS=[[-262,40,-205,-225,112,31],[0,280,230,320,175,36],[-640,860,-330,1150,250,33],[-60,1150,150,1350,190,24],[560,640,1250,760,200,33],[480,-40,1250,-170,210,36],[760,-480,1400,-560,175,39],[1500,-500,2700,0,620,42],[500,-760,1350,-1080,170,41],[-60,-560,900,-1520,230,43],[-650,-2050,150,-2300,330,42],[-1700,-500,-1780,1500,360,62],[-1500,2200,-1650,2700,250,28],[-2900,-1700,-2500,-1400,420,46],[360,120,430,80,110,16],[1150,610,2150,190,160,33]];   // last: the Caelian's ridge east to the great gate (Arcus Neroniani run on it, 10-20 m arches)
 const GALBA=GALBA_EAST?[1760,140]:[-690,1560];
 // GLB apartment blocks: the model drawn in a placement slot (rome_insula_a/b/c) and its floor height. One rule for the old
 // scatter in buildRome and the v2 lots (parcels.js o.glb.put, P4): the variant is keyed to the place (no extra dice), a cut
@@ -34,7 +34,9 @@ function romeRaw(x,z){let h=RW+7.5+5*(fbm(x*.0011+3,z*.0011,3)-.5);const n=fbm(x
   return h+hm*VEX;}
 function romeFar(x,z){const r=Math.hypot(x,z);let h=12+34*fbm(x*.0004,z*.0004,4)*sstep(3000,9000,r);
   h+=950*Math.exp(-(((x-14500)/6500)**2+((z-16500)/6000)**2));h+=1100*Math.exp(-(((x-26000)/5000)**2+((z+9000)/12000)**2))*(.7+.3*fbm(x*.0003,z*.0003,3));
-  h+=420*Math.exp(-(((x+21000)/9000)**2+((z+15000)/7000)**2));h+=110*Math.exp(-(((x+3600)/900)**2+((z+3800)/1300)**2));return h;}
+  h+=420*Math.exp(-(((x+21000)/9000)**2+((z+15000)/7000)**2));h+=110*Math.exp(-(((x+3600)/900)**2+((z+3800)/1300)**2));
+  h=Math.max(h,58*sstep(1700,2500,x)*(1-sstep(1400,3200,Math.abs(z-60))));   // the Campagna east of the walls: the plateau the aqueducts come in on (the great gate stands on it, ~60 m)
+  return h;}
 // Aqua Claudia terminal: terrain flattened under the tower (footprint + 3 m), blended into the slope over ~10 m (h is set in buildRome from the mean ground under the footprint)
 const CLP=(()=>{const P0=[2790,-60],P1=[2545,56],L=Math.hypot(P0[0]-P1[0],P0[1]-P1[1]),ux=(P0[0]-P1[0])/L,uz=(P0[1]-P1[1])/L,tx=P1[0]+ux*18,tz=P1[1]+uz*18,rot=Math.atan2(-uz,ux),c=Math.cos(rot),s=Math.sin(rot),lx=5,lz=6;
   return{tx,tz,rot,c,s,cx:tx+lx*c+lz*s,cz:tz-lx*s+lz*c,hw:24,hd:14,on:false,h:0};})();
@@ -168,7 +170,7 @@ async function buildRome(msg){
   THP.h=romeH(THP.x,THP.z);THP.on=true;
   {const y0c=romeH(CAPF.cx,CAPF.cz);let yt=0;for(const[px,pz]of CAPF.T[0])yt=Math.max(yt,romeH(CAPF.cx+px*.8,CAPF.cz+pz*.8)-y0c);CAPF.y=y0c+Math.max(.15,yt-2.2);CAPF.on=true;}   // terrace level as the Capitol block computes it (before the embankment exists)
   const GRID_N=500;buildGrid(W,R_EXT,Q.name==='low'?320:GRID_N,romeH);   // the low tier's grid is coarser
-  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
+  const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH,post:palPlatPost},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
   W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
@@ -404,7 +406,7 @@ async function buildRome(msg){
   W.foot.add(-620,-100,160,52,0,'open');
   {const F=frame(900,gy(900,640),640,0);W.claudF=F;gM.set(22,.4);
     {let mg=1e9;for(let t=0;t<=40;t++){const a=-90+180*t/40,b=-100+200*t/40;for(const[lx,lz]of[[a,-100],[a,100],[-90,b],[90,b]]){const q=F.p(lx,0,lz);mg=Math.min(mg,gy(q[0],q[2]));}}
-     const D=SUB_ON?Math.min(60,Math.max(14,F.oy-mg+2)):14;box(gM,F,0,-D,0,90,D,100,31);}   // the podium reaches the lowest ground round its edge (phase 5b: was 14 m deep, the 24-33 m walls below it were separate set-back blocks)
+     const D=SUB_ON?Math.min(60,Math.max(14,F.oy-mg+2)):14;box(gM,F,-27.5,-D,0,62.5,D,100,31);W.claudPodE={x0:35,x1:90,D};}   // west of local x 35 always; the east part is a layer (claudPodE full, claudPodHalf: AD 54-55, half-built)   // the podium reaches the lowest ground round its edge (phase 5b: was 14 m deep, the 24-33 m walls below it were separate set-back blocks)
     // dressed faces, temple, colonnades and the east water works follow the story: layers claud* (layers.js)
     arcade(gM,F.sub(-91,0,0,-Math.PI/2),0,-14,0,200,14,14,3,22,{span:.32});W.foot.add(900,640,94,104,0);
     // Novel vols 10-13 (小说文本/发电房建设线_阶段与核算.md): the water works stand on the EAST face ("旧台基东面"), on its north half, where the ground falls away
@@ -485,15 +487,19 @@ async function buildRome(msg){
   poi('台伯河','Tiberis',-1650,-760,12,0,99,'',4500);
   /* ---- aqueduct (Aqua Claudia + Arcus Neroniani) ---- */
   if(!MAT.aqWater)MAT.aqWater=waterMat('aqueduct',[.035,.17,.21],.12);const aqStrip=(grp,F,sl,h)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(sl+.3,1.5).rotateX(-Math.PI/2),MAT.aqWater),q=F.p(0,h+3.64,0);m.position.set(q[0],q[1],q[2]);m.rotation.y=F.rot;grp.add(m);};const aqS=new THREE.Group(),aqL=new THREE.Group();
-  {const gAq=new GB(1<<15);const P=[[2790,-60],[2545,56],[2200,180],[1800,330],[1400,520],[1100,620],[994,632]];let top=97;
+  // one aqueduct pier line: bays of ~8 m (pier 2.6, opening 5.4); above 28 m two orders, the lower one heavier (a 0.4 m offset where they meet)
+  const aqArc=(g,F,sl,h,part)=>{const nA=Math.max(2,Math.round(sl/8));if(h>28){const h1=Math.round(h*.55);arcade(g,F,0,0,0,sl+.3,h1+2,nA,6.4,part,{span:.34,attic:2.4,pilasters:false});arcade(g,F,0,h1+2,0,sl+.3,h-h1,nA,5.6,part,{span:.34,attic:2.2,pilasters:false,cornice:false});}
+    else arcade(g,F,0,0,0,sl+.3,h+2,nA,5.6,part,{span:.34,attic:2.6,pilasters:false});};
+  {const gAq=new GB(1<<15);const P=[[2790,-60],[2545,56],[2200,180],[1800,330],[1400,520],[1100,620],[994,632]];let top=97,aqS1=.004;
     // AD 56 terminal (rome_claudia_terminal): the tower stands 18 m upstream of the great gate, its channel arrives along local +x at 11.6 m; segment 0 is re-levelled to end there
     const aqU=[(P[0][0]-P[1][0])/Math.hypot(P[0][0]-P[1][0],P[0][1]-P[1][1]),(P[0][1]-P[1][1])/Math.hypot(P[0][0]-P[1][0],P[0][1]-P[1][1])],aqT=[P[1][0]+aqU[0]*18,P[1][1]+aqU[1]*18],aqR=Math.atan2(-aqU[1],aqU[0]),aqY=gy(aqT[0],aqT[1])+.6,aqB0=[aqT[0]+aqU[0]*25.5,aqT[1]+aqU[1]*25.5],aqLen0=Math.hypot(P[0][0]-P[1][0],P[0][1]-P[1][1]);
-    for(let i=0;i<P.length-1;i++){const gQ=i>=1?gAq:gM;const a=P[i],b=i===0?aqB0:P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/66);
+    {let Lm=0,Lp=0;for(let i=1;i<P.length-1;i++)Lm+=Math.hypot(P[i+1][0]-P[i][0],P[i+1][1]-P[i][1]);const PBv=[[994,632],[1003,690],[1003,752],[815,752],[660,660],[505,575],[372,500],[305,430],[262,382]];for(let i=0;i<PBv.length-1;i++)Lp+=Math.hypot(PBv[i+1][0]-PBv[i][0],PBv[i+1][1]-PBv[i][1]);
+      W.aqFall={gate:aqY+11.6,end:gy(262,382)+10,len:Lm+Lp};aqS1=Math.max(.0003,(aqY+11.6-.3-W.aqFall.end)/(Lm+Lp));}   // water runs downhill: the slope from the terminal's channel to the castellum on the Palatine
+    for(let i=0;i<P.length-1;i++){const gQ=i>=1?gAq:gM;if(i===1)top=aqY+11.6-.3;const a=P[i],b=i===0?aqB0:P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/66);
       for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,x0=lerp(a[0],b[0],t0),z0=lerp(a[1],b[1],t0),x1=lerp(a[0],b[0],t1),z1=lerp(a[1],b[1],t1),mx=(x0+x1)/2,mz=(z0+z1)/2,sl=L/n;
-        let gmin=1e9;for(let j=0;j<=4;j++)gmin=Math.min(gmin,gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4)));top-=sl*.004;const h=Math.max(8,(i===0?aqY+11.6+(1-(t0+t1)/2)*.004*L:top)-gmin);   // segment 0: the channel falls to aqY+11.6 at the terminal (arches 11 m at the gate, taller upstream)
-        const F=frame(mx,gmin-2,mz,Math.atan2(-(z1-z0),x1-x0));if(h>32){const h1=h*.56;arcade(gQ,F,0,0,0,sl+.3,h1+2,Math.max(2,Math.round(sl/10)),6,22,{span:.33,attic:3,pilasters:false});arcade(gQ,F,0,h1+2,0,sl+.3,h-h1,Math.max(3,Math.round(sl/7)),4.6,22,{span:.3,attic:2.6,pilasters:false,cornice:false});}else arcade(gQ,F,0,0,0,sl+.3,h+2,Math.max(2,Math.round(sl/10)),5.5,22,{span:.33,attic:3.4,pilasters:false});
+        let gmin=1e9;for(let j=0;j<=4;j++)gmin=Math.min(gmin,gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4)));top-=sl*(i===0?.004:aqS1);const h=Math.max(8,(i===0?aqY+11.6+(1-(t0+t1)/2)*.004*L:top)-gmin);   // segment 0: the channel falls to aqY+11.6 at the terminal (arches 11 m at the gate, taller upstream)
+        const F=frame(mx,gmin-2,mz,Math.atan2(-(z1-z0),x1-x0));aqArc(gQ,F,sl,h,22);
         gQ.set(14,.4);box(gQ,F,0,h+2,0,sl/2+.2,1.6,2.9,31);gQ.set(22,.45);for(const sd of[1,-1])box(gQ,F,0,h+3.6,sd*1.08,sl/2+.2,.55,.3,31);aqStrip(i>=1?aqL:aqS,F,sl,h);W.foot.add(mx,mz,sl/2,4,F.rot);}}
-    top=97-aqLen0*.004;   // (segment 1 keeps the author's profile)
     {const TF=frame(aqT[0],aqY,aqT[1],aqR);   // terrain is flattened under the tower (CLP); a 0.6 m grey-beige stone plinth carries it, 2 steps on the town side (+z) and the upstream-free end (-x)
       gM.set(37,.5);box(gM,TF,5,-2,6,21.4,2,11.4,31);
       for(const k of[0,1]){const e=.9*(k+1),t=.4-.2*k;gM.set(37,.5);box(gM,TF,5,-1.8,6+11.4+e/2,10-k*1.2,1.2+t,e/2+.01,31);box(gM,TF,-16.4-e/2,-1.8,6,e/2+.01,1.2+t,9-k*1.2,31);}
@@ -504,8 +510,7 @@ async function buildRome(msg){
     {const Ys=top,PB=[[994,632],[1003,690],[1003,752],[815,752],[660,660],[505,575],[372,500],[305,430],[262,382]],Ye=gy(262,382)+10;let acc=0,tot=0;for(let i=0;i<PB.length-1;i++)tot+=Math.hypot(PB[i+1][0]-PB[i][0],PB[i+1][1]-PB[i][1]);
      for(let i=0;i<PB.length-1;i++){const a=PB[i],b=PB[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/52);for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,x0=lerp(a[0],b[0],t0),z0=lerp(a[1],b[1],t0),x1=lerp(a[0],b[0],t1),z1=lerp(a[1],b[1],t1),mx=(x0+x1)/2,mz=(z0+z1)/2,sl=L/n;
        let gmin=1e9;for(let j=0;j<=4;j++)gmin=Math.min(gmin,gy(lerp(x0,x1,j/4),lerp(z0,z1,j/4)));const Yt=lerp(Ys,Ye,(acc+sl*(k+.5))/tot),h=Math.max(8,Yt-gmin),F=frame(mx,gmin-2,mz,Math.atan2(-(z1-z0),x1-x0));
-       if(h>30){const h1=h*.55;arcade(gAq,F,0,0,0,sl+.3,h1+2,Math.max(2,Math.round(sl/10)),6,9,{span:.33,attic:3,pilasters:false});arcade(gAq,F,0,h1+2,0,sl+.3,h-h1,Math.max(3,Math.round(sl/7)),4.6,9,{span:.3,attic:2.6,pilasters:false,cornice:false});}
-       else arcade(gAq,F,0,0,0,sl+.3,h+2,Math.max(2,Math.round(sl/10)),5.5,9,{span:.33,attic:3.4,pilasters:false});gAq.set(14,.4);box(gAq,F,0,h+2,0,sl/2+.2,1.6,2.9,31);gAq.set(22,.45);for(const sd of[1,-1])box(gAq,F,0,h+3.6,sd*1.08,sl/2+.2,.55,.3,31);aqStrip(aqL,F,sl,h);W.foot.add(mx,mz,sl/2,4,F.rot);}acc+=L;}}
+       aqArc(gAq,F,sl,h,9);gAq.set(14,.4);box(gAq,F,0,h+2,0,sl/2+.2,1.6,2.9,31);gAq.set(22,.45);for(const sd of[1,-1])box(gAq,F,0,h+3.6,sd*1.08,sl/2+.2,.55,.3,31);aqStrip(aqL,F,sl,h);W.foot.add(mx,mz,sl/2,4,F.rot);}acc+=L;}}
     {const cx=258,cz=377,cy=gy(cx,cz),CF=frame(cx,cy,cz,Math.atan2(-(382-430),262-305));// rome_castellum GLB (tower, last two arches, basin, pipes, keeper's room) in the arcusNero layer; its channel (18 m up) meets the aqueduct's channel (ground + 11.6 m)
       {const ca=Math.atan2(-.74,.67),CF2=frame(cx,gy(262,382)-6.36,cz,ca);let gm=1e9;for(let t=0;t<=44;t+=4)for(const sd of[-7,0,7]){const q=CF2.p(t,0,sd);gm=Math.min(gm,gy(q[0],q[2]));}if(gm<CF2.oy-.4){gAq.set(9,.5);box(gAq,CF2,26,gm-CF2.oy-1.5,0,19,CF2.oy-gm+1.5,7.5,31);(ROME.supports=ROME.supports||[]).push({x:cx,z:cz,c:Math.cos(ca),s:Math.sin(ca),hw:50,hd:11});}}   // solid pier base under the arches where the ground falls away
       ROME.GLB.push({n:'rome_castellum',x:cx,y:gy(262,382)+11.64-18,z:cz,r:Math.atan2(-.74,.67),o:{parentLayer:'arcusNero'}});W.foot.add(cx,cz,40,14,Math.atan2(-.74,.67));
@@ -556,13 +561,17 @@ async function buildRome(msg){
   // LATE_JOIN: monuments placed after the roads that the joins pass (the main roads keep off theirs through LATE): the temple by the Porta Trigemina,
   // the crossroads shrine at the Meta Sudans, the raised market square of the Forum Holitorium, and the wall stubs either side of each gate (drawn with
   // the gates below: a join goes through the arch).
+  // PAL_PINS (palatine-masterplan.md 9, H1): joins that keep the line they had at H0. The Via Appia's link to the Via Sacra was routed round the old
+  // ring terraces of the Palatine's east slope; with them gone (H1) the router takes a line up to 10-40 m nearer the hill, which moved the districts
+  // and streets east and south-east of the Palatine. The Palatine's own work must not move the city outside it, so the H0 line is kept.
+  const PAL_PINS=[{from:'Via Appia',to:'Via Sacra',P:[[330,520],[355.2,463.7],[380.4,407.5],[400.8,362.1],[406.3,345.3],[408.2,327.7],[408.2,265.7],[408.2,225.7],[410.3,209.5],[416.6,197.1],[438.2,170],[441.4,165.3]]}];
   const GATES=[['Porta Collina',970,-1390,.8],['Porta Viminalis',1260,-1056,0],['Porta Trigemina',-418,598,1.2],['Porta Carmentalis',-338,142,-.6],['Porta Caelimontana',1094,778,.3]],
-    LATE_JOIN=[[-330,560,11,22,Math.PI-30*DEG],[448,176,3],[-418,160,42,24,0],...GATES.flatMap(([,x,z,r])=>[1,-1].map(sd=>[x+sd*36*Math.cos(r),z-sd*36*Math.sin(r),20,3,r]).filter(([x,z])=>polyDist(x,z,TIBER)[0]>RTW+26))],P0={names:MAIN.map(m=>m[2]),fixed:[[6,W.palClivus,{name:'Clivus Palatinus'}],[6,clCap,{name:'Clivus Capitolinus'}]],bridges:W.bridges,island:[['Pons Fabricius','Pons Cestius']],
+    LATE_JOIN=[[-330,560,11,22,Math.PI-30*DEG],[448,176,3],[-418,160,42,24,0],...GATES.flatMap(([,x,z,r])=>[1,-1].map(sd=>[x+sd*36*Math.cos(r),z-sd*36*Math.sin(r),20,3,r]).filter(([x,z])=>polyDist(x,z,TIBER)[0]>RTW+26))],P0={names:MAIN.map(m=>m[2]),fixed:[[6,W.palClivus,{name:'Clivus Palatinus'}],[6,clCap,{name:'Clivus Capitolinus'}]],bridges:W.bridges,island:[['Pons Fabricius','Pons Cestius']],pins:PAL_PINS,
     termini:[{name:'Forum Romanum',plaza:true,F:FF,u:[-150,170],v:[-75,75],m:25},{name:'Capitolium',x:clCap[clCap.length-1][0],z:clCap[clCap.length-1][1],r:20},{name:'Palatium',x:W.palClivus[0][0],z:W.palClivus[0][1],r:20},
       ...GATES.map(([name,x,z])=>({name,x,z,r:35}))],
     steps:['Argiletum','Vicus Patricius','Vicus Tuscus','Alta Semita','west bank road'],river:{P:TIBER,hw:RTW},   // the city streets that may climb by steps; the consular and processional roads keep their switchbacks
     ro:Object.assign({},RO,{avoid:LATE.concat(LATE_JOIN.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)}))}),country:(x,z)=>dCity(x,z)<.25};
-  const joinKey=rgHash(JSON.stringify([roadKey,RG,P0.fixed,P0.bridges,P0.termini.map(t=>[t.name,t.x,t.z,t.r,t.u,t.v,t.m]),LATE_JOIN,P0.steps,P0.island])),bakedJ=baked&&ROME_ROADS_BAKED.joinKey===joinKey;
+  const joinKey=rgHash(JSON.stringify([roadKey,RG,P0.fixed,P0.bridges,P0.termini.map(t=>[t.name,t.x,t.z,t.r,t.u,t.v,t.m]),LATE_JOIN,P0.steps,P0.island,P0.pins])),bakedJ=baked&&ROME_ROADS_BAKED.joinKey===joinKey;
   if(baked&&!bakedJ)console.warn('road-network.js: the joins are stale, joining the roads live (run node tools/test/bake-roads.mjs)');
   const joined=bakedJ?ROME_ROADS_BAKED.joined:roadGraphJoin(W,routed,P0),tG=performance.now();W.roadJoined=joined;W.roadJoinKey=joinKey;W.roadOpts=P0;   // P1 (roadGraph, cityDistricts) reads the termini and the island from W.roadOpts
   if(bakedJ)W.roadJoin={baked:true,stats:ROME_ROADS_BAKED.joinStats,log:[]};
@@ -793,7 +802,7 @@ async function buildRome(msg){
   /* road-first city, P3 (briefs/rome/road-first-city.md 10; parcels.js): ?city=v2 builds the houses of the blocks the fabric cut (fabric.js) lot by
      lot; the old generators below keep out of that area (W.v2At). The Palatine, the valley, the noble core and the Campus stay with their own generators. */
   const V2=/[?&]city=v2/.test(location.search),v2Skip=(x,z)=>!!W.v2At&&W.v2At(x,z);
-  W.v2Excl=(x,z)=>inPal(x,z)||VAL(x,z)||nobleQuarterAt(x,z)==='core'||CAMPN(x,z);if(V2)cityParcelsArea(W,{excl:W.v2Excl});   // v2Excl: city-audit.mjs counts the houses of that area without the flag too
+  const PF=fbFence();W.v2Excl=(x,z)=>inPal(x,z)||(PF&&fbInFence(PF,x,z))||VAL(x,z)||nobleQuarterAt(x,z)==='core'||CAMPN(x,z);if(V2)cityParcelsArea(W,{excl:W.v2Excl});   // v2Excl: city-audit.mjs counts the houses of that area without the flag too; nothing of v2 inside the Palatine's fence (PAL_FENCE)
   buildScenicEstates(W);
   buildAcademyHousing(W);
   buildNobleQuarter(W);
@@ -883,8 +892,10 @@ async function buildRome(msg){
      zone:(x,z)=>{if(nobleQuarterAt(x,z))return 2;const r=Math.hypot(x-17,z+22);if(r<400)return 2;if(x<-560&&x>-1150&&z>1050&&z<1950)return 1;if(SUBR(x,z)||VELR(x,z))return 1;if(x>-820&&x<-300&&z>-460&&z<160)return 2;if((gy(x,z)-RW-8)/VEX>15)return 2;return r<800?2:1;}});
    const goneRoad=(x,z)=>AUREA_SITE(x,z)||AUREA_VEST_COURT(x,z)||AUREA_EAST(x,z)||AUREA_OPPIAN(x,z)?'aureaSite':null;   // the Via Sacra's straight keeps its kerbs after the fire, not its stalls
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
+   palPlatStairs(W);   // H1: the stairs of the closed Palatine terraces, before the temple links (they join the hill stairs; palatine-h1.js)
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
+   palPlatWalls(W);   // H1: floors, walls, piers and cut walls of the closed terraces, the hemicycle garden (palatine-h1.js)
    placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,

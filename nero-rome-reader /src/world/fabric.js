@@ -123,19 +123,44 @@ function fbCrossings(rings,max=1e9){const E=[],out=[];rings.forEach((P,r)=>{for(
   return out;}
 function fbSelfX(rings){return fbCrossings(rings,1).length>0;}
 
+/* ---------- the fence (palatine-masterplan.md 9): an outline whose inside the districts and streets see as it was when it was frozen ----------
+   PAL_FENCE (src/scenes/rome/palatine-fence.js, written by tools/test/pal-fence.mjs from the H0 build): inside its outline R the district raster's
+   classes, the precincts (by their centre), the Palatine's own roads (by name: the Clivus Palatinus), the road junctions and the ground near the
+   districts are H0's. So what is built on the Palatine after H0 moves no district and no street of the city, inside or outside the fence; the
+   districts that reach into the fence keep their H0 outline and cut there, and v2 builds nothing inside it (monuments.js W.v2Excl). Without the
+   file everything is live. fbPrecincts, fbRoads, fbNodes and fbGround are the fabric's (and cityDistricts') view of the city. */
+function fbFence(){const F=typeof PAL_FENCE!=='undefined'?PAL_FENCE:null;if(F&&!F.ready){let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(const p of F.R){x0=Math.min(x0,p[0]);z0=Math.min(z0,p[1]);x1=Math.max(x1,p[0]);z1=Math.max(z1,p[1]);}
+    F.box=[x0,z0,x1,z1];F.precF=F.prec.map(([i,cx,cz,hw,hd,c,s,circ,tag,poly])=>({i,f:Object.assign({cx,cz,hw,hd,c,s,tag},circ?{circ:true}:{},poly?{poly}:{})}));
+    F.outI=[];for(const[a,n]of F.outRuns)for(let k=0;k<n;k++)F.outI.push(a+k);
+    const g=F.ground;F.gmap=new Map();let k=0,m=0;for(const[,ch,nr]of g.mask.matchAll(/([yn])(\d+)/g))for(let r=+nr;r>0;r--,k++)if(ch==='y'){const i=k%g.nx,j=(k-i)/g.nx;F.gmap.set((g.i0+i)+','+(g.j0+j),g.h[m++]);}
+    F.ready=true;}return F;}
+function fbInFence(F,x,z){const B=F.box;if(x<B[0]||x>B[2]||z<B[1]||z>B[3])return false;let c=false;const P=F.R;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
+// the precincts (the footprints placed before the houses, roads aside) as {f, i}: i is the footprint's index; inside the fence H0's, at H0's indices
+function fbPrecincts(W){const L=W.foot.list.slice(0,(W.footMark&&W.footMark.houses)||0).map((f,i)=>({f,i})).filter(({f})=>f.tag!=='road'),F=fbFence();if(!F)return L;
+  const out=L.filter(({f})=>!fbInFence(F,f.cx,f.cz));if(out.length!==F.outI.length){if(!F.warned)console.warn('palatine-fence.js: '+out.length+' precincts outside the fence, '+F.outI.length+' at H0: their indices are not H0\'s');F.warned=true;}
+  if(!F.checked){F.checked=true;for(const{f}of L){if(!fbInFence(F,f.cx,f.cz))continue;const pad=f.tag!=='open'&&Math.max(f.hw,f.hd)>=8?FAB.ring:0,a=f.hw+pad,b=f.hd+pad;   // a live precinct inside the fence that reaches out of it (its outline with the ring): the districts outside do not see it
+    for(let k=0;k<32;k++){const t=k/32*Math.PI*2;let u,v;if(f.circ){u=a*Math.cos(t);v=a*Math.sin(t);}else{const q=Math.max(Math.abs(Math.cos(t))/a,Math.abs(Math.sin(t))/b);u=Math.cos(t)/q;v=Math.sin(t)/q;}
+      if(!fbInFence(F,f.cx+f.c*u+f.s*v,f.cz-f.s*u+f.c*v)){console.warn('palatine-fence.js: the precinct at '+Math.round(f.cx)+', '+Math.round(f.cz)+' reaches out of the fence: grow the fence (tools/test/pal-fence.mjs)');break;}}}}
+  return out.map(({f},k)=>({f,i:k<F.outI.length?F.outI[k]:1e6+k})).concat(F.precF).sort((a,b)=>a.i-b.i);}
+// the drawn roads ([w, points, meta]), the Palatine's own (PAL_FENCE.roads, by name) as at H0
+function fbRoads(W){const L=W.roadList||[],F=fbFence();if(!F)return L;return L.map(r=>{const P=r[2]&&F.roads[r[2].name];return P?[r[0],P,r[2]]:r;});}
+// the road junctions (3 roads or more meet) the compita look for: inside the fence H0's
+function fbNodes(W,G){const N=G.nodes.filter(n=>n.deg>=3),F=fbFence();if(!F)return N;return N.filter(n=>!fbInFence(F,n.x,n.z)).concat(F.nodes.map(([x,z])=>({x,z,deg:3})));}
+// the desktop tier's ground (W.routeGround) on the 4 m lattice: H0's at the lattice points inside the fence near a district
+function fbGround(W){const G=W.routeGround||W,F=fbFence();if(!F)return G;return{gy:(x,z)=>{if(x%4===0&&z%4===0){const v=F.gmap.get((x/4)+','+(z/4));if(v!==undefined)return v;}return G.gy(x,z);}};}
+
 /* ---------- the direction field (4.3): two perpendicular directions at every point, on a 4 m grid, blended as doubled angles ---------- */
-function fbPrecincts(W){return W.foot.list.slice(0,(W.footMark&&W.footMark.houses)||0).map((f,i)=>({f,i})).filter(({f})=>f.tag!=='road');}
 function fbRect(f,off){const c=f.c,s=f.s,hw=f.hw+off,hd=f.hd+off;return[[-1,-1],[1,-1],[1,1],[-1,1],[-1,-1]].map(([a,b])=>[f.cx+c*a*hw+s*b*hd,f.cz-s*a*hw+c*b*hd]);}   // a footprint's box (u along (c,-s))
 function fbField(W,B){const o=FAB.field,cs=o.cs,x0=Math.floor(B[0]/cs)*cs,z0=Math.floor(B[1]/cs)*cs,nx=Math.ceil((B[2]-x0)/cs)+1,nz=Math.ceil((B[3]-z0)/cs)+1,N=nx*nz,
     C=new Float32Array(N),S=new Float32Array(N),Wt=new Float32Array(N);
   const add=(a,b,wt,sig)=>{const dx=b[0]-a[0],dz=b[1]-a[1],l2=dx*dx+dz*dz;if(!l2)return;const R=3*sig,R2=R*R,s2=sig*sig,th=Math.atan2(dz,dx),c2=Math.cos(2*th),n2=Math.sin(2*th);
     const i0=Math.max(0,Math.floor((Math.min(a[0],b[0])-R-x0)/cs)),i1=Math.min(nx-1,Math.ceil((Math.max(a[0],b[0])+R-x0)/cs)),j0=Math.max(0,Math.floor((Math.min(a[1],b[1])-R-z0)/cs)),j1=Math.min(nz-1,Math.ceil((Math.max(a[1],b[1])+R-z0)/cs));
     for(let j=j0;j<=j1;j++){const z=z0+j*cs;for(let i=i0;i<=i1;i++){const x=x0+i*cs,d2=fbSegD2(x,z,a,b);if(d2>=R2)continue;const g=wt*Math.exp(-d2/s2),k=j*nx+i;C[k]+=g*c2;S[k]+=g*n2;Wt[k]+=g;}}};
-  for(const[w,P]of W.roadList||[]){const Q=fbDP(P,1.5);for(let k=1;k<Q.length;k++)add(Q[k-1],Q[k],w/8,o.road);}   // main roads: their tangent, (w/8)·exp(-(d/75)²)
+  for(const[w,P]of fbRoads(W)){const Q=fbDP(P,1.5);for(let k=1;k<Q.length;k++)add(Q[k-1],Q[k],w/8,o.road);}   // main roads: their tangent, (w/8)·exp(-(d/75)²)
   for(const{f}of fbPrecincts(W)){if(f.tag==='open'||f.circ)continue;const R=fbRect(f,FAB.ring);if(4*(f.hw+FAB.ring)*(f.hd+FAB.ring)<900)continue;   // precinct rings: their sides, exp(-(d/32)²)
     for(let k=0;k<4;k++)if(Math.hypot(R[k+1][0]-R[k][0],R[k+1][1]-R[k][1])>12)add(R[k],R[k+1],1,o.prec);}
   const rv=W.roadOpts&&W.roadOpts.river;if(rv&&rv.P)for(let k=1;k<rv.P.length;k++)add(rv.P[k-1],rv.P[k],1,o.river);   // the Tiber's banks
-  const H=new Float32Array((nx+2)*(nz+2)),G=W.routeGround||W;for(let j=0;j<nz+2;j++)for(let i=0;i<nx+2;i++)H[j*(nx+2)+i]=G.gy(x0+(i-1)*cs,z0+(j-1)*cs);   // the desktop tier's ground at every tier (W.routeGround): one network at every tier
+  const H=new Float32Array((nx+2)*(nz+2)),G=fbGround(W);for(let j=0;j<nz+2;j++)for(let i=0;i<nx+2;i++)H[j*(nx+2)+i]=G.gy(x0+(i-1)*cs,z0+(j-1)*cs);   // the desktop tier's ground at every tier (W.routeGround): one network at every tier
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const h=(a,b)=>H[(j+1+b)*(nx+2)+i+1+a],gx=(h(1,0)-h(-1,0))/(2*cs),gz=(h(0,1)-h(0,-1))/(2*cs),g=clamp((Math.hypot(gx,gz)-.1)/.15,0,1)*2;
     if(g<=0)continue;const th=Math.atan2(gz,gx)+Math.PI/2,k=j*nx+i;C[k]+=g*Math.cos(2*th);S[k]+=g*Math.sin(2*th);Wt[k]+=g;}   // slopes over 10 %: the contours
   const b=o.base*DEG;for(let k=0;k<N;k++){C[k]+=.03*Math.cos(2*b);S[k]+=.03*Math.sin(2*b);Wt[k]+=.03;}   // the old grid's -30°, faintly
@@ -152,11 +177,11 @@ function fbTrace(Y,F,p0,a0){const[th0]=fbFieldAt(F,p0[0],p0[1]),fam=fbAD(a0,th0)
 
 /* ---------- a district's polygon: the raster outline moved back onto road corridors and precinct rings ---------- */
 function fbCtx(W,D,G,B){const segs=[],grid=new Map(),gc=40,key=(i,j)=>i*100003+j;
-  (W.roadList||[]).forEach(([w,P],ri)=>{const half=w/2+(w>=7?2.6:1.2),meta={k:'road',w,id:ri};for(let k=1;k<P.length;k++){const a=P[k-1],b=P[k];if(a[0]===b[0]&&a[1]===b[1])continue;
+  fbRoads(W).forEach(([w,P],ri)=>{const half=w/2+(w>=7?2.6:1.2),meta={k:'road',w,id:ri};for(let k=1;k<P.length;k++){const a=P[k-1],b=P[k];if(a[0]===b[0]&&a[1]===b[1])continue;
     const s={a,b,half,ri,key:'r'+ri+':'+k,meta},m=half+FAB.snap+2;segs.push(s);
     for(let i=Math.floor((Math.min(a[0],b[0])-m)/gc);i<=Math.floor((Math.max(a[0],b[0])+m)/gc);i++)for(let j=Math.floor((Math.min(a[1],b[1])-m)/gc);j<=Math.floor((Math.max(a[1],b[1])+m)/gc);j++){const g=key(i,j);let A=grid.get(g);if(!A)grid.set(g,A=[]);A.push(s);}}});
   const rings=fbPrecincts(W).filter(({f})=>f.tag!=='open'&&Math.max(f.hw,f.hd)>=8).filter(({f})=>f.cx>B[0]-200&&f.cx<B[2]+200&&f.cz>B[1]-200&&f.cz<B[3]+200).map(({f,i})=>({f,i,meta:{k:'ring',id:i}}));
-  return{W,D,segs,near:(x,z)=>grid.get(key(Math.floor(x/gc),Math.floor(z/gc)))||[],rings,nodes:G.nodes.filter(n=>n.deg>=3)};}
+  return{W,D,segs,near:(x,z)=>grid.get(key(Math.floor(x/gc),Math.floor(z/gc)))||[],rings,nodes:fbNodes(W,G)};}
 function fbSnapAt(ctx,x,z){let best=null;   // the nearest corridor or ring line within FAB.snap of where the raster put the outline
   for(const s of ctx.near(x,z)){const{a,b}=s,dx=b[0]-a[0],dz=b[1]-a[1],l2=dx*dx+dz*dz,t=((x-a[0])*dx+(z-a[1])*dz)/l2;if(t<-.05||t>1.05)continue;const tt=clamp(t,0,1),fx=a[0]+dx*tt,fz=a[1]+dz*tt,d=Math.hypot(x-fx,z-fz);
     const err=Math.abs(d-s.half);if(err>=FAB.snap||d<1e-6||(best&&err>=best.err))continue;const l=Math.sqrt(l2);best={err,x:fx+(x-fx)/d*s.half,z:fz+(z-fz)/d*s.half,ux:dx/l,uz:dz/l,key:s.key,src:'r'+s.ri,meta:s.meta};}
@@ -261,13 +286,15 @@ function fbReplaySub(Y,lv,did,out,T){const t=T.a[T.i++];
 /* ---------- the bake (P4): the fabric as data, and what it was cut from ---------- */
 function fbCm(v){return Math.round(v*100)/100;}
 // a hash of what the districts and their streets are drawn from, the zones and this code aside: FAB and CD, the precincts (the footprints before the
-// houses), the roads, the join's options (termini, bridges, the island, the river) and the desktop tier's ground every 64 m in the city
+// houses), the roads, the join's options (termini, bridges, the island, the river) and the desktop tier's ground every 64 m in the city; inside the
+// fence (PAL_FENCE) its frozen key instead, so work on the Palatine leaves the key as it was
 function fbKey(W){let h1=0x9e3779b9|0,h2=0x85ebca6b|0;const add=v=>{const x=Math.round(v)|0;h1=Math.imul(h1^x,0x01000193);h2=Math.imul(h2^x,0x5bd1e995);h2^=h2>>>13;},str=s=>{for(let i=0;i<s.length;i++)add(s.charCodeAt(i));};
   str(JSON.stringify(FAB));str(JSON.stringify(typeof CD!=='undefined'?CD:null));
   for(const{f}of fbPrecincts(W)){add(f.cx*100);add(f.cz*100);add(f.hw*100);add(f.hd*100);add(f.c*1e4);add(f.s*1e4);add(f.circ?1:0);str(f.tag||'');if(f.poly)for(const p of f.poly){add(p[0]*100);add(p[1]*100);}}
-  for(const[w,P]of W.roadList||[]){add(w*100);for(const p of P){add(p[0]*100);add(p[1]*100);}}
-  str(JSON.stringify(W.roadOpts||{}));   // its functions (the country) drop out; the ground below stands for them
-  const G=W.routeGround||W,out=W.roadOpts&&W.roadOpts.country||(()=>false);for(let z=-3008;z<=3392;z+=64)for(let x=-3200;x<=3008;x+=64)if(!out(x,z))add(G.gy(x,z)*10);
+  for(const[w,P]of fbRoads(W)){add(w*100);for(const p of P){add(p[0]*100);add(p[1]*100);}}
+  const F=fbFence(),RO=W.roadOpts||{},ro=F?Object.assign({},RO,{fixed:(RO.fixed||[]).map(r=>F.roads[r[2]&&r[2].name]?[r[0],F.roads[r[2].name],r[2]]:r),termini:(RO.termini||[]).filter(t=>t.x==null||!fbInFence(F,t.x,t.z))}):RO;
+  str(JSON.stringify(ro));if(F)str(F.key);   // its functions (the country) drop out; the ground below stands for them. The fence: its own roads and termini as frozen
+  const G=W.routeGround||W,out=W.roadOpts&&W.roadOpts.country||(()=>false);for(let z=-3008;z<=3392;z+=64)for(let x=-3200;x<=3008;x+=64)if(!out(x,z)&&!(F&&fbInFence(F,x,z)))add(G.gy(x,z)*10);
   return(h1>>>0).toString(36)+'.'+(h2>>>0).toString(36);}
 // the record of a live cut (W.fabric.bake) as plain data: per district its polygon (centimetres, each point after the first as a step from the one
 // before) and fbSub's record (a block: 0, its pole, its class; a street: its kind, width, which pieces are fragments, its line); a district not cut
@@ -279,7 +306,7 @@ function fbPack(F){const metas=[],mi=new Map(),M=e=>{let i=mi.get(e);if(i===unde
 // a fabric from fbPack's record: the district polygons, their compita and the same cuts (null, with a warning, when the record does not fit)
 function fbReplay(W,B){const metas=B.metas.map(m=>Object.assign({},m)),dec=A=>{const P=[];let x=0,z=0;for(let i=0;i<A.length;i+=2){x+=A[i];z+=A[i+1];P.push([x/100,z/100]);}return P;},
     Yu=Y=>Y.map(([A,E])=>({P:dec(A),E:E.map(i=>metas[i])}));
-  const ctx={nodes:roadGraph(W).nodes.filter(n=>n.deg>=3)},out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:B.tried,cuts:0},per=[],sqMeta={k:'square'};
+  const ctx={nodes:fbNodes(W,roadGraph(W))},out={blocks:[],streets:[],squares:[],opens:[],dY:[],tried:B.tried,cuts:0},per=[],sqMeta={k:'square'};
   try{for(const d of B.D){if(d.length===5){out.opens.push({Y:Yu(d[4]),area:d[3]/100,why:d[2],district:d[0]});per.push({id:d[0],cls:d[1],skipped:true});continue;}
       const[id,cls,as,ha,Yr,tok]=d,Y=Yu(Yr),nb=out.blocks.length,nc=out.cuts,T={a:tok,i:0};out.dY.push({id,Y});const fk=fbForks(ctx,Y,sqMeta);for(const s of fk.squares)out.squares.push({...s,district:id});
       for(const R of fk.rest){const a=fbArea(R);if(a>FAB.keep)fbReplaySub(R,0,id,out,T);else out.opens.push({Y:R,area:a,why:'small',district:id});}
