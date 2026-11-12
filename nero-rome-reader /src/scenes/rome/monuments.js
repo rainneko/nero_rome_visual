@@ -535,7 +535,7 @@ async function buildRome(msg){
     LATE=LATE0.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)});
   const RO={free:30,cs:6,lim:.14,max:.3,keep:.2,pull:.2,turn:30,avoid:LATE,wet:(x,z,r)=>polyDist(x,z,TIBER)[0]<RTW+r+4};
   const MAIN=[[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[428,112],[520,180],[700,200]],'Via Sacra'],   // Via Sacra over the Velia, north of the Colossus base
-    [7,[[40,45],[-22,59],[-60,120],[-185,200],[-235,330],[-262,470]],'Vicus Tuscus'],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill). (-22,59): 12 m off the Domus Tiberiana rock's north-west corner; the router does not see the rock, and once the rock's north foot came down to the valley floor (2026-11-08) the road cut 4 m into the corner
+    [7,[[40,45],[-22,59],[-60,120],[-147,152],[-185,200],[-235,330],[-262,470]],'Vicus Tuscus'],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill). (-147,152): where the Palatine's old ring terraces on the west slope bent the route; H2 took them down (palatine-masterplan.md 10), and the point keeps the road, and the city along it, where it was (the hill's phases move no street). (-22,59): 12 m off the Domus Tiberiana rock's north-west corner; the router does not see the rock, and once the rock's north foot came down to the valley floor (2026-11-08) the road cut 4 m into the corner
     [10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]],'Via Appia'],   // Via Appia
     [10,[[-400,605],[-612,1250],[-600,1700],[-500,2400],[-440,2950],[-520,3600]],'Via Ostiensis'],   // Via Ostiensis from the Porta Trigemina (it used to start in the river)
     [12,[[-215,-372],[-480,-1100],[-720,-2300],[-900,-2800]],'Via Lata'],   // Via Lata / Flaminia, from the Capitol's north foot by the tomb of Bibulus
@@ -891,6 +891,7 @@ async function buildRome(msg){
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
    palPlatWalls(W);   // H1: floors, walls, piers and cut walls of the closed terraces, the hemicycle garden (palatine-h1.js)
+   palWestSlope(W);   // H2: rock and grove on the west and south-west slopes, no walls (palatine-h1.js)
    placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,

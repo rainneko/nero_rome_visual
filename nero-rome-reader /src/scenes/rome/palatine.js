@@ -18,8 +18,8 @@ const PAL_ASSETS=[
   {n:'rome_victoria',lx:-110,lz:132,turn:0,hw:29,hd:40,y:52},
   {n:'rome_domus_a_belt',lx:202.6,lz:-72,turn:90,hw:15.5,hd:23,y:42},   // H1 (palatine-plan.js villas): the east villas cut down to the belt (42), their gardens 36 and 30
   {n:'rome_domus_b_belt',lx:202.6,lz:36,turn:90,hw:15.5,hd:23,y:42},
-  {n:'rome_domus_a',lx:62,lz:-142,turn:180,hw:16,hd:26,y:52.1},
-  {n:'rome_domus_b',lx:-30,lz:-128,turn:180,hw:16,hd:26,y:55.9}];
+  {n:'rome_domus_b_belt',lx:84,lz:-153.1,turn:180,hw:15.5,hd:23,y:42},   // H2 (palatine-plan.js villas): the north houses 2 and 4 (were the full models on rock towers at -30,-128 and 62,-142)
+  {n:'rome_domus_a_belt',lx:155.5,lz:-153.1,turn:180,hw:15.5,hd:23,y:42}];
 // terrain pads under the models (cut the hill to their floors); [lx0,lx1,lz0,lz1,y]
 const PAL_PADS=[[-84,-10,104,120,51.3],[-84,-10,120,146,47],[-186,-122,56,132,56.3],[-139,-81,92,160,51.7],[-209,-63,-93,24,54.3]];
 /* ---- the crowded saddle (Intermontium): a sunken basin between the two summits, packed with office blocks ----
@@ -40,7 +40,7 @@ const PAL_BL=[
   ['b',-130,39,0,61.4],                                      // south of the Tiberiana (plateau strip)
   ['d',34,8,0,61.4],['d',75,8,0,61.4],                       // between Transitoria and Apollo
   ['c',156,-14,90,65],['a',153,26,90,60],                    // east of the Transitoria, fronts to the east slope: low floors on the summit rim (55, H1)
-  ['c',-66,-123,180,44.5],['c',15,-135,180,50],              // north slope towards the Forum
+  ['c',46,-145.5,180,42],['c',117.5,-145.5,180,42],         // north slope towards the Forum (H2): the north houses 1 and 3 on the belt (42), their own lower terrace on the garden terrace 32 (were at -66,-123 and 15,-135)
   ['b',5,148,0,47],['b',5,171,0,31],['b',5,194,0,18.5]];     // south slope: three long colonnaded ranges stacked down the hill, seen from the Circus; low floors on the belt (42) and the foot terrace (26), H1
 const palBL=PAL_BL.map(([t,lx,lz,tn,y])=>{const k=PAL_BLK[t],q=tn*Math.PI/180;return{t,lx,lz,tn,y,hw:k.w/2,hd:k.d/2,dr:k.dr,c:Math.cos(q),s:Math.sin(q),n:k.n};});
 // rebuilt ledge-rock hills (palrock.js, from tools/pal_rock.mjs): outline edges [x,z,nx,nz] of the lowest bench in the model's axes
@@ -62,7 +62,7 @@ function palShape(x,z,h){const[lx,lz]=palL(x,z);if(lx<-260||lx>300||lz<-220||lz>
   // office blocks last: their pads win over a neighbour's rock skirt
   for(const B of palBL){const dx=lx-B.lx,dz=lz-B.lz,u=B.c*dx-B.s*dz,v=B.s*dx+B.c*dz,e=Math.min(B.hw+1.5-Math.abs(u),B.hd+1.5-Math.abs(v));
     if(e>-3)h=Math.min(h,lerp(h,lerp(B.y-.5,B.y-B.dr-.5,sstep(-4,4,v)),clamp((e+3)/4,0,1)));
-    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb){const Pl=palPlIn(lx,lz);if(!(Pl&&Pl.y<yb))h=lerp(h,yb,clamp((e2+8)/8,0,1));}}   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m; not on a lower H1 terrace, which has its own floor
+    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb&&!palLaneAt(lx,lz,1)){const Pl=palPlIn(lx,lz);if(!(Pl&&Pl.y<yb))h=lerp(h,yb,clamp((e2+8)/8,0,1));}}   // not in a stair lane (H2: its ground follows the flight)   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m; not on a lower H1 terrace, which has its own floor
   return h;}
 const palInBasin=(lx,lz,m=0)=>PAL_BASIN.some(([x0,x1,z0,z1])=>lx>x0-m&&lx<x1+m&&lz>z0-m&&lz<z1+m);
 function palInAsset(lx,lz,m){for(const A of PAL_ASSETS){const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;
@@ -198,6 +198,7 @@ function palTerraces(W){{const R=palClivusRoute(W);W.palClivus=R;PAL_CL.length=0
         const Lw0=Math.hypot(wB0[0]-wA0[0],wB0[1]-wA0[1]);sg.sA=rec.S.length-1;rec.L+=Lw0;rec.S.push(Object.assign(smp(wB0,ybB),{s:rec.L}));sg.sB=rec.S.length-1;rec.brk.push(rec.L);rec.k=k;sg.rec=rec;   // the ledge band (below) runs under the whole segment
         const t0=rec.S[0],t1=rec.S[rec.S.length-1],tl=Math.hypot(t1.x-t0.x,t1.z-t0.z)||1;rec.ux=(t1.x-t0.x)/tl;rec.uz=(t1.z-t0.z)/tl;}
       const mx=(A.o[0]+B.i[0])/2,mz=(A.o[1]+B.i[1])/2,q=P(mx,mz);W.foot.add(q[0],q[1],Math.max(L,4)/2+1,(A.d+B.d)/4+1,wr,'open').palTer=yk;}});   // 'open': garden terraces count as vegetation for the street raster; palTer: the floor, for the hill stairs (temple-links.js)
+  palWestReserve(W);   // H2: the west slope's rock and grove as open land, and the old rings' land outside the fence (palatine-h1.js)
   palPlatReserve(W);   // H1: the closed terraces' ground, before the roads and the houses (palatine-h1.js)
   flushColumns(W);}
 // the walls of the terraces planned by palTerraces, opened where a hill stair goes through (W.hillStairs: every one is built by now). Dice keyed to the segment.
@@ -418,10 +419,12 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
     else if(c>2.4&&R()<.7){const r=R();W.trees.push([q[0],y,q[2],nAp?(r<.8?'broad':'cyp'):nMM?'pine':(r<.5?'cyp':r<.75?'broad':'plane'),.55+R()*.3,nAp||r>=.5&&r<.75?[.04,.085,.03]:null,1]);lastP.push([lx,lz,0]);}
     else if(R()<.55){W.trees.push([q[0],y,q[2],impGarden(R()),.7+R()*.5,null,1]);lastP.push([lx,lz,0]);}}
   {let nb=0;for(const[lx,lz,yy]of spots){if(nb>110)break;if(hash2(lx*.53,lz*.47)>.34)continue;const c=palClear(O,lx+1.5,lz+1.5);if(c<1.2)continue;const q=PFR.p(lx+1.5,0,lz+1.5),y=yy??W.gy(q[0],q[2]);W.trees.push([q[0],y,q[2],'flower',.5+R()*.4,null,1]);nb++;}W.palBeds=nb;}   // imperial rose and flower beds (the richest planting in Rome; a few roses stay in flower all winter, forced with warm water: Seneca, Ep. 122.8)
-  // buttress blocks under the last rim cells where a hill model's lowest ledge still hangs above the terrain (found with __floatCheck)
-  for(const[lx,lz,hw,top]of[[62,-125,6,42.9],[6,25,6,53.9],[-10,80,5,55.9]]){const q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,hw,top-gh+1.5,hw,31);(ROME.supports=ROME.supports||[]).push({x:q[0],z:q[2],c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:hw+2,hd:hw+2});}
-  // phase 3: more rim cells found with __floatCheck (world x, z, height of the model's lowest geometry there): a small plinth under each
-  for(const[wx,wz,top]of[[234,234,42.7],[-22,345,55.6],[44,376,55.6],[46,372,55.6],[-34,367,50.6],[-32,363,50.6],[-28,355,50.6],[28,403,50.6],[33,394,50.6],[30,399,50.6],[-81,392,41.5],[155,155,31.7],[118,215,51.2]]){
+  // buttress blocks under the last rim cells where a hill model's lowest ledge still hangs above the terrain (found with __floatCheck; H2: the one at
+  // 62,-125 under the old north house's rock tower went with it, it stood in the belt lane at the head of the stair lane g1C)
+  for(const[lx,lz,hw,top]of[[6,25,6,53.9],[-10,80,5,55.9]]){const q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,hw,top-gh+1.5,hw,31);(ROME.supports=ROME.supports||[]).push({x:q[0],z:q[2],c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:hw+2,hd:hw+2});}
+  // phase 3: more rim cells found with __floatCheck (world x, z, height of the model's lowest geometry there): a small plinth under each (H2: the one under the
+  // old north house 2's rock tower, 155,155, went with it)
+  for(const[wx,wz,top]of[[234,234,42.7],[-22,345,55.6],[44,376,55.6],[46,372,55.6],[-34,367,50.6],[-32,363,50.6],[-28,355,50.6],[28,403,50.6],[33,394,50.6],[30,399,50.6],[-81,392,41.5],[118,215,51.2]]){
     const[lx,lz]=palL(wx,wz),gh=W.gy(wx,wz);if(top-gh<.3)continue;g.set(33,.5);box(g,PFR,lx,gh-1.5,lz,2.3,top-gh+1.55,2.3,31);(ROME.supports=ROME.supports||[]).push({x:wx,z:wz,c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:3.3,hd:3.3});}
   W.foot.add(PFR.p(-31,0,-40)[0],PFR.p(-31,0,-40)[2],56,76,PALF.rot);
   const m=g.mesh(MAT.city);if(m)W.scene.add(m);flushColumns(W);}

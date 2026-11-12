@@ -161,7 +161,8 @@ window.__wallFootCheck=(opt)=>{const W=W0,maxL=opt&&opt.maxL||20,minL=opt&&opt.m
      terrace that holds its middle; elsewhere the lowest ground round its whole footprint, so a rock tower counts as its own base), the base between them,
      its eaves height above that floor and whether the base is over half the eaves. Hero models on the summit stand on the summit terrace (its wall is the hill's).
    __palBareSlope(): 1.5 m cells in the zone steeper than 30 degrees that are not a terrace floor, a wall (within 1.6 m of its line), a stair, a building,
-     rock (a hero model's rock base, a rock band) or the terrain's own rock shading (sl>.64): their area in m2, and the worst places.
+     rock (a hero model's rock base, a rock band) or the terrain's own rock shading (sl>.64): their area in m2, and the worst places. H2: the zones and the
+     west slope's rock band (PAL_PLAN.west.rock: no foot wall there, the rock outcrops of palWestSlope count).
    __palReach(): the terraces (W.palPlats; before H1 the old ring floors, grouped by level into connected pieces) and the stairs between them (W.palStairs, the
      hill stairs): which can be reached from the street, and the stairs that cross a terrace diagonally (a stretch more than 4 m over its floor
      whose direction is more than 20 degrees off both the normal and the line of every wall within 30 m). */
@@ -203,7 +204,7 @@ window.__palBareSlope=(opt={})=>{const W=W0,gy=W.gy,cs=opt.cs||1.5,lim=Math.tan(
   const G=new Map(),gk=(x,z)=>Math.floor(x/8)+','+Math.floor(z/8);for(const p of SP){const k=gk(p[0],p[1]);(G.get(k)||G.set(k,[]).get(k)).push(p);}
   const near=(x,z)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const L=G.get((Math.floor(x/8)+i)+','+(Math.floor(z/8)+j));if(L)for(const p of L)if(Math.hypot(p[0]-x,p[1]-z)<(p[2]||1.6))return true;}return false;};
   const bld=(x,z)=>W.foot.hits(x,z,.1,.1,0,0,f=>f.tag==='open'||f.tag==='precinct'||f.tag==='road'||f.palTer!=null);
-  for(const Z of PAL_PLAN.zones){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of Z){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
+  for(const Z of[...PAL_PLAN.zones,...(PAL_PLAN.west?[PAL_PLAN.west.rock]:[])]){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of Z){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
     for(let lz=z0+cs/2;lz<z1;lz+=cs)for(let lx=x0+cs/2;lx<x1;lx+=cs){if(!inPolyXZ(lx,lz,Z))continue;const[x,z]=palW(lx,lz);cells++;
       const sl=Math.hypot(gy(x+.75,z)-gy(x-.75,z),gy(x,z+.75)-gy(x,z-.75))/1.5;if(sl<=lim)continue;
       if(palPlatAt(x,z))continue;if(palRockD(lx,lz)<.5)continue;if(1-1/Math.sqrt(1+sl*sl)>.64)continue;   // a terrace floor; a rock base; the terrain shader draws rock there (builders.js: smoothstep(.5,.78,sl))
