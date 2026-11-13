@@ -2,7 +2,8 @@
 
 Plot x -15..15, y -23..23. Upper part (y -2.4..23, z 0): entrance on the north wall between two Doric half-columns,
 an atrium with impluvium and compluvium, a tablinum, a peristyle garden (court 14 x 10, stone Doric columns, hedges,
-small round fountain) and a two-storey arcaded loggia on the south edge. Below it the hill steps down to the south in
+small round fountain) and a two-storey loggia on the south edge: Doric columns below, Ionic columns and a balustrade
+above, each storey with its entablature, before a back wall painted dark red with doors (loggia()). Below it the hill steps down to the south in
 three levels: garden terrace T1 (z -6) with a fountain statue group, statues, a pergola and a fish pond, and a portico
 on its south edge stacked under the loggia; lower terrace T2 (z -12) with statues; the foot of the lowest wall (z -18)
 stands on ledge rock. Ledge rock hugs the platform and terrace sides; square buttresses on the two lower walls (R7).
@@ -187,6 +188,81 @@ def belt_base(F):
         _cheek(F, 'x', r, -16.4, -16.1, T2 - 0.3)
 
 
+# the south loggia: columns on y LOG_Y, the painted face of its back wall at y LOG_BACK (the wall itself y LOG_BACK..2.5)
+LOG_Y = -1.75
+LOG_BACK = 2.0
+LOG_X = 14.4     # inner faces of the two end walls (antae, x 14.4..15)
+FL = 0.05        # loggia floor (paving z 0..0.05, a step up from the platform's edge)
+G_TOP = 4.6      # ground storey: Doric columns FL..3.9, entablature 3.9..4.6; the upper floor is laid on it
+U_TOP = 8.2      # upper storey: Ionic columns 4.6..7.55, entablature 7.55..8.2, under the lean-to roof (8.22 at its eave)
+
+
+def _painted_face(F, z0, h, doors, dado=0.9):
+    """One storey of the loggia's back wall face, y LOG_BACK - 0.12..LOG_BACK, x -LOG_X..LOG_X: dark red fields over a
+    darker dado, an ochre band on the dado and an ochre frieze under the ceiling (Pompeian, as in the houses of the
+    period), and doors (x centre, width, height) as dark openings with travertine frames, so that the loggia reads
+    as open from far away."""
+    t, yc = 0.12, LOG_BACK - 0.06
+    cuts = sorted((xc - w / 2, xc + w / 2, hd) for xc, w, hd in doors)
+    free, a = [], -LOG_X
+    for (d0, d1, hd) in cuts:
+        free.append((a, d0))
+        a = d1
+    free.append((a, LOG_X))
+    for (u0, u1) in free:                                                     # wall between the doors
+        if u1 - u0 < 0.01:
+            continue
+        box(F, (u0 + u1) / 2, yc, z0, u1 - u0, t, dado, 'dado')
+        box(F, (u0 + u1) / 2, yc - 0.01, z0 + dado, u1 - u0, t + 0.02, 0.12, 'ochre')
+        box(F, (u0 + u1) / 2, yc, z0 + dado + 0.12, u1 - u0, t, h - dado - 0.12, 'wallred')
+    for (d0, d1, hd) in cuts:                                                 # over the doors, and the doors themselves
+        xc, w = (d0 + d1) / 2, d1 - d0
+        box(F, xc, yc, z0 + hd, w, t, h - hd, 'wallred')
+        box(F, xc, LOG_BACK - 0.01, z0, w, 0.02, hd, 'doorway')               # the dark of the room behind
+        for sx in (-1, 1):
+            box(F, xc + sx * (w / 2 + 0.09), yc - 0.03, z0, 0.18, t + 0.06, hd + 0.18, 'travertine')   # jambs
+        box(F, xc, yc - 0.04, z0 + hd, w + 0.36, t + 0.08, 0.2, 'travertine')                           # lintel
+    box(F, 0, yc - 0.015, z0 + h - 0.5, 2 * LOG_X, t + 0.03, 0.22, 'ochre')   # frieze band under the ceiling
+
+
+def loggia(F, wall):
+    """The two-storey loggia on the south edge, x -15..15: a columnar portico like the front of a peristyle.
+    Ground storey: eight Doric columns on y LOG_Y with a travertine entablature (frieze in the wall's plaster).
+    Upper storey: eight Ionic columns over them, a low balustrade between them, an entablature; the lean-to roof
+    (house()) covers both. Behind the columns the back wall (y LOG_BACK..2.5) is painted dark red over a darker dado,
+    with doors; a timber ceiling under the upper floor. End walls (antae) in the facing plaster at x +-(14.4..15).
+    Nine bays of 3.2 m between the antae, the middle one on the axis. No arches here: they belong to the substructures."""
+    n_bay = 9
+    sp = 2 * LOG_X / n_bay
+    xs = [-LOG_X + k * sp for k in range(1, n_bay)]
+    depth = 2.5 - (LOG_Y - 0.35)
+    # floor, back wall, end walls, the timber ceiling under the upper floor and that floor
+    box(F, 0, (LOG_Y - 0.55 + LOG_BACK) / 2, 0.0, 2 * LOG_X, LOG_BACK - (LOG_Y - 0.55), FL, 'paving')
+    box(F, 0, (LOG_BACK + 2.5) / 2, 0.0, 30, 2.5 - LOG_BACK, NB, wall)
+    for sx in (-1, 1):
+        _slab(F, 'y', LOG_Y - 0.35, 2.5, sx * LOG_X, sx * 15.0, 0.0, (U_TOP, NB - 0.01), wall)   # top just under the roof
+        box(F, sx * (LOG_X + 0.3), 2.5 - depth / 2, 0.0, 0.72, depth + 0.12, 0.45, 'travertine')   # anta bases
+        box(F, sx * (LOG_X + 0.3), 2.5 - depth / 2, G_TOP - 0.7, 0.66, depth + 0.06, 0.25, 'travertine')   # anta capitals
+    box(F, 0, (LOG_Y + 0.3 + LOG_BACK) / 2, G_TOP - 0.4, 2 * LOG_X, LOG_BACK - (LOG_Y + 0.3), 0.4, 'wood')
+    box(F, 0, (LOG_Y + 0.3 + LOG_BACK) / 2, G_TOP, 2 * LOG_X, LOG_BACK - (LOG_Y + 0.3), 0.04, 'paving')
+    # the painted back wall: doors to the court walk below, to the upper rooms above
+    _painted_face(F, FL, G_TOP - 0.4 - FL, [(x, 1.6, 2.9) for x in (-12.8, -6.4, 0.0, 6.4, 12.8)])
+    _painted_face(F, G_TOP + 0.04, U_TOP - 0.1 - G_TOP - 0.04, [(x, 1.3, 2.4) for x in (-12.8, -6.4, 0.0, 6.4, 12.8)], dado=0.75)
+    # ground storey: Doric, then the entablature (its cornice top is the upper floor's edge)
+    for x in xs:
+        column(F, x, LOG_Y, FL, 3.9 - FL, 0.25, 'travertine', 'doric', 0, 12)
+    entablature(F, -LOG_X - 0.3, LOG_Y, LOG_X + 0.3, LOG_Y, 3.9, G_TOP - 3.9, 0.62, 'travertine', frieze_mat=wall)
+    # upper storey: Ionic over the Doric, a balustrade in each bay, the entablature under the roof
+    for x in xs:
+        column(F, x, LOG_Y, G_TOP, 7.55 - G_TOP, 0.18, 'travertine', 'ionic', 0, 12)
+    for k in range(n_bay):
+        a, b = -LOG_X + k * sp, -LOG_X + (k + 1) * sp
+        balustrade(F, a + (0.02 if k == 0 else 0.25), LOG_Y, b - (0.02 if k == n_bay - 1 else 0.25), LOG_Y, G_TOP,
+                   h=0.95, mat='travertine', post_every=3.0, t=0.22)
+    entablature(F, -LOG_X - 0.3, LOG_Y, LOG_X + 0.3, LOG_Y, 7.55, U_TOP - 7.55, 0.5, 'travertine', frieze_mat=wall,
+                cornice_proj=0.1)
+
+
 def house(name, wall, belvedere_on, cut=False):
     """One terrace house. wall: facing material ('plaster2' or 'plaster3'). belvedere_on: tower and roof terrace (B).
     cut: the variant for the hill's belt (belt_base instead of the rock, fills, T1/T2 walls and W2; see the top)."""
@@ -242,14 +318,8 @@ def house(name, wall, belvedere_on, cut=False):
     for x in (-13.0, 13.0):
         statue(F, x, -17.5, -12.0, 2.2, 'marble', pedestal=0.9, ped_mat='giallo')
 
-    # loggia on the south edge: front y -2.0, back y 2.5, two storeys of arches, travertine piers
-    bay = 30 / 7.0
-    arcade(F, -15, 0.25, 15, 0.25, 0.0, 4.6, 4.5, 7, 'plaster', open_w=bay * 0.62, open_h=3.7, back='dark')
-    arcade(F, -15, 0.25, 15, 0.25, 4.6, 4.2, 4.5, 7, 'plaster', open_w=bay * 0.5, open_h=3.3, back='dark')
-    for k in range(1, 7):
-        x = -15 + k * bay
-        box(F, x, 0.25, 0.0, bay * 0.38, 4.6, 4.6, 'travertine')
-        box(F, x, 0.25, 4.6, bay * 0.5, 4.6, 4.2, 'travertine')
+    # loggia on the south edge: a two-storey colonnade (Doric below, Ionic and a balustrade above) before a painted wall
+    loggia(F, wall)
     lean_roof(F, -15, 2.5, 15, 2.5, NB, 4.5, 0.6)
 
     # peristyle court x -7..7, y 4.5..14.5 (open to the sky), roofed walks, stone Doric colonnade, fountain
