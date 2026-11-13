@@ -763,7 +763,8 @@ Keep this file current: every promise made to the author goes here until it is d
 - [x] 页面：陶鹰标签、石榴小院（`W.pomePos` 和四个标签，文字未动）移进模型；无花果树约 8.5 m；模型到来前的替身（内嵌的 `assets/models/tiberiana.glb` 和程序化替身）都按屋顶块重做，页面小了 1.2 MB。
 - [x] 分件文件 `assets/models/rome/parts/rome_tiberiana_parts.glb`：七个部件（`tib_base`、`tib_b1`、`tib_garden`、`tib_f1`、`tib_f2`、`tib_f3`、`tib_roof`），141 个 `room_<编号>` 楼板，隔墙、108 个门洞、7 跑楼梯、中庭十柱、宴会厅 26 根缠金箔的柱、地下暗廊和浴室。79 464 个三角形。
 - [x] 检查：网页文件 67 488 个三角形（上限 80 000）；`npm run check`、`test:boot`、`bake-roads.mjs --check`、`city-audit.mjs --assert` 通过；悬空和墙脚检查与 main 相同；广场视角帧时间中位数 +0.8%。
-- [ ] 下次重烘街区时删掉两处临时保留：`monuments.js` 里旧石榴小院的两个占地（那块地现在空着）；模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）。两者只为让现有烘焙不过期。
+- [x] `monuments.js` 里旧石榴小院的两个占地已删（2026-11-14，补丁分支；删后重烘 `road-network.js`、`street-fabric.js` 与原文件逐字节相同）；`gP` 变空后页面不再把空值加进场景（原来控制台报 `THREE.Object3D.add`，`noble-quarter`、`neighborhood-regression` 因此不过）。
+- [ ] 模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）还留着，只为让地面网格不变；下次动模型并重烘时删。
 - [ ] 西北台阶脚到图斯库斯街的最后 6 m（落差约 1.7 m）在模型之外，归台地那边铺；铺的时候别在台阶脚前面种灌木和柏树（`terraceFeet` 沿山石脚线种）。
 - [ ] 暗阁还没有位置（等文案组给出原文段落），平面和模型里都没有。
 - [ ] 分件文件里外墙只有外皮，没有内侧墙面和天花；进 Unity 做室内时要补。
