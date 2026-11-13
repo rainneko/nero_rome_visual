@@ -342,7 +342,7 @@ function palHemicycle(W,g){const H=PAL_HEMI,y=PAL_PLAN.levels.belt,fy=PAL_PLAN.l
    base walls (their models, square buttresses since R7). The Tiberiana's cliff and its foot stay as they are (nothing within 3 m of its rock outline).
    palWestSlope(W), after the hill stairs, the temple links and the terrace walls (it keeps off them, the streets, the houses and the models):
    - rock (PAL_PLAN.west.rock): outcrops of grade-1 rock (rockLump, as the ledge at the foot walls), ledges 4.8-8 m long along the contour with their face
-     downhill where it is steep, a lone boulder now and then on the gentler slope, and a lump off the lattice on any cell over 27 degrees still bare (R5 says 30); scrub, figs
+     downhill where it is steep, a lone boulder now and then on the gentler slope, and a lump off the lattice on any cell of __palBareSlope's lattice over 29.5 degrees still bare (R5 says 30; 27 laid scree over whole slopes); scrub, figs
      and a few stone pines between them;
    - grove (PAL_PLAN.west.grove, the shelf west of the Magna Mater and the south-west slope round the Scalae Caci): holm oaks, laurels and stone pines.
    Dice keyed to the place (teH); the trees keep their kind (owner 3). W.palWest: the counts.
@@ -384,7 +384,7 @@ function palWestSlope(W){const Wd=PAL_PLAN.west;if(!Wd)return;const gy=W.gy,g=ne
   // R5: then every 1.5 m cell over 30 degrees (on __palBareSlope's lattice) that no outcrop covers yet gets a small one
   const cov=(x,z)=>rocks.some(b=>Math.abs(b[0]-x)<b[2]&&Math.abs(b[1]-z)<b[2]&&Math.hypot(b[0]-x,b[1]-z)<b[2]);
   for(let lz=-40.75;lz<=216;lz+=1.5)for(let lx=-268.75;lx<=-90;lx+=1.5){if(!inPolyXZ(lx,lz,Wd.rock))continue;const[x,z]=palW(lx,lz),sl=Math.hypot(gy(x+.75,z)-gy(x-.75,z),gy(x,z+.75)-gy(x,z-.75))/1.5;
-    if(sl<=Math.tan(27*DEG)||cov(x,z)||busy(lx,lz,x,z,1.5,0,1))continue;   // 27: 3 degrees below the check (__palBareSlope), a margin; r 1.5: the street raster 0.9 m round
+    if(sl<=Math.tan(29.5*DEG)||cov(x,z)||busy(lx,lz,x,z,1.5,0,1))continue;   // 29.5: the check's (__palBareSlope) lattice and slope, half a degree under its 30; r 1.5: the street raster 0.9 m round
     // a lump 1.2-2 m long along the contour, set off the lattice by up to 0.6 m so the fill makes no rows, and large enough to cover the cells round it;
     // where that does not fit, a small one on the cell itself
     let hl=1.2+.8*teH(x,z,112),hd=.75+.4*teH(x,z,113),px=x+(teH(x,z,114)-.5)*1.2,pz=z+(teH(x,z,115)-.5)*1.2;

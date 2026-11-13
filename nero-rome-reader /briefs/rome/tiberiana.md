@@ -242,3 +242,150 @@ Asked whether the lawn should become a street with shops or a terrace garden, th
       and the arches open onto it as a portico
 - [x] Round 3: the rock is one natural cliff (varying bench, ragged lip, fissures, soil tongues, scree, ivy, shrubs); no
       saturated green, no yellow sheets; foot outline kept (NW corner chamfered 1.5 m)
+
+## v2 (2026-11): the palace above the platform, rebuilt from a plan
+Brief: `briefs/rome/tiberiana-v2.md`. Plan data: `tools/models/rome/tiberiana_plan.json` (written and checked by
+`python3 tools/plan/tiberiana_plan.py`; drawings `briefs/rome/plans/tiberiana-plan.html`). This section replaces "Shape and size"
+above for everything over z = 0. The hill base of the 2026-11-08 rework (arcade, terrace garden, cliff, walls, towers, the
+north-west stair) is as it was.
+
+**Why** (the author, 2026-11-11): the roofs were single tiled sheets up to 130 m long over wings 28–33 m deep; the hall had four
+storeys; the palace should be a senator's house enlarged, at most three storeys with a tall ground floor, below the Golden House
+in rank; and the floors must come apart, for Unity.
+
+**What it is now**
+- 141 rooms (81 on F1, 48 on F2, 3 on F3, 9 in the basement) and 35 roof blocks, six open courts. Storeys 6.5 / 4.5 / 3.8 m.
+  Three storeys only at the south-west tower (M12) and the north frontispiece (M02); the highest ridge is 17.2 m (it was 21.6).
+- Roofs by block: gable, hip, pyramid, lean-to, compluviate (the two atria), flat. No tiled plane runs more than 7.6 m. Tile ribs
+  every 1.0 m (2 251), ridge tiles on every ridge and hip. Where a gable ends against a neighbour's slope it runs on into it (a
+  valley); lean-to roofs of equal height are mitred at corners; a wall above a lower tiled roof has a travertine flashing course.
+  Flat roofs are opus signinum (`plaster3`), the solarium is paved. No ridge runs more than 45 m at one height: the north range
+  is 0.6 m higher behind the loggia, the council room and the inner hall stand 0.8 m over their ranges, the inner ranges have
+  parapet gables at the corners of the peristyle, the south front has a gate pavilion and the south portico a gate porch.
+- North front: porch (four columns), the loggia on F2 (54 m, Ionic columns on a parapet), the frontispiece with three arched
+  openings and a pediment on F3. South front (toward the Area Palatina): two storeys behind the portico, the gate pavilion 1.2 m
+  over the eaves with a pediment. Banquet hall: nave 14.5 m to the eaves over lean-to aisles, 14 arched clerestory windows a side,
+  one gilt band under the cornice, a pediment on each gable. West side hall with the pomegranate court. The tower with a
+  three-bay loggia on F3, the solarium beside the bedroom with six bronze awning posts, the broken eagle on the west apex of the
+  old house's study (M15), the fig tree's bed in the paved court. Kitchen with a ridge vent; no chimneys, no dormers, no glass.
+- Walls: travertine plinth, a red dado band 2.2 m up, small high windows on the ground floor (sill 3.8 m; none on stairs, stores,
+  guard rooms and the treasury), a red string course at each floor of a block, lattice windows above, a cornice. 371 windows, 8
+  doors, 162 columns in 148 bays (ground floor Ionic 4.2 m on a stylobate in the courts and 4.05 m on the platform wall's coping at
+  the south and east edges; the peristyle's upper order Corinthian 2.8 m, standing on the floor with the parapet between: the
+  most that fits under the lean-to at 9.6 m with a 0.3 m beam; 【史】 Vitruvius 5.1.3 has the upper columns a quarter shorter
+  than the lower, which would be 3.15 m).
+- Courts: the peristyle garden (45 × 29 m) with the pool whose inner wall alternates rectangular and semicircular niches, the
+  round basin, the wall fountain and the book's pavilion; the fish-pond garden with the oval pond, eight herms and the Hermaeum;
+  fig court, pomegranate court, service court, kitchen court.
+- Below z = 0 only this changed: three arched windows of the underground bath (y 8.5, 17.0, 22.5) and a smoke opening (y 31)
+  in the upper west platform wall; and the way down from the side door (next point).
+- **The way down** (addendum `briefs/rome/tiberiana-v2-stairs.md`; the author on the round 2 pictures: "有一个台阶 走到尽头路断了";
+  the book: "我们从宫殿的侧门出去，沿着山坡往下走。"). It is one connected way now:
+  - the side door at the west end of the broad corridor (y −29.5), a landing, and a stair going down NORTH along the west
+    platform wall, outside its buttresses, to the −7 strip: three flights of 13 risers with two landings (it was one flight
+    of 39 going south to a dead end by the corner tower). South of the landing the strip is closed with a parapet;
+  - north along the strip to the north-west corner pier, then the two old flights of the north-west stair (−7 → −16 →
+    −25.77: the lower one now ends on a landing 0.7 m above the ledge it used to stop on);
+  - the new lower part, 106 risers in eight flights, none over 15 risers, on the north face inside the rock's foot outline:
+    an inner lane east along the cliff's bench (5 risers, a level walk at −26.6, 15 risers to the turning landing at −29.3,
+    x −39.1…−35.1), an outer lane back west (five flights of 15 risers, landings 2.8 m, to the last landing at −43.0,
+    x −74.1…−71.3), and at the west end a last flight of 11 risers going north, down the bank at the rock's foot, to the hem.
+    Flights 3.6 m wide, risers 0.18 to 0.20 m, treads 0.27 to 0.28 m, travertine treads, solid tuff bases and parapets
+    with travertine copings, four buttresses on the outer wall.
+  - **Foot:** model (−75.9, 110.1, −45.15) = hill grid (lx −214.3, lz −139.9), the lowest tread's top at page y 9.65; it
+    faces north. The drawn ground at its front edge is 0.17 m (east end), 0.33 m (middle), 0.56 m (west end) lower; the
+    paved edge of the Vicus Tuscus is 6 m north and about 1.7 m lower. That last stretch is outside this model (the terrace
+    session's). The page plants shrubs and cypresses along the rock's outline (`terraceFeet`): none stands in front of the
+    foot now.
+  - Why it folds instead of running straight on as in the reference picture: a straight flight from the ledge needs 38 m to
+    the north, and the outline ends 5 m north of the ledge.
+  - Why the outer lane stops 2.7 m above the hem and the last flight turns north: the page's ground under a hill model is not
+    the model's lowest surface. `pal_rock.mjs` lifts each 4 m cell toward its neighbours' lowest points (at most 2.5 m), the
+    page puts the terrain 0.25 m under that, and the Palatine's terrain patch is smoothed three times (`buildPatch`). What is
+    drawn along the north face is a bank from −43.3 (the lane's south edge) down to −45.5 at the hem, and it covers
+    whatever lies under it: a first version with its last landing at −44.85 had half the landing and six steps under earth.
+    A flight along the face cannot come down such a bank, only one that crosses it. The landing sits 0.3 m over the bank's
+    top; between it and the last flight's head the turn is 1.3 m wide (the bank leaves 4 m for the head and eleven treads).
+  - Check: `node tools/plan/tiberiana_stair_ground.mjs <log of rome_tiberiana.py> [low]` compares all 115 treads and landings
+    with the drawn ground (`W0.gy`). Desktop tier: none under the ground, least clearance 0.07 m (the lowest tread's east
+    end). Low tier (touch or small screens: coarser terrain, 0.3 m higher at the hem): the east ends of the three lowest
+    treads lie under 0.02, 0.13 and 0.24 m of earth; the middle of the foot is 0.06 m above the ground.
+  - Nothing of this moved the ground grid: every base goes down to its cell's old lowest point and no further, no tread
+    reaches under it, and the rock was cut back (8 points) only where no face ends lower in any cell than before
+    (`NW_FLOOR`, `_solid`, `_carve`). The raw grid equals the old one in all 3 591 cells; both bakes are up to date.
+- 【史】 What the plan takes from the excavations, and that the unified platform is Neronian and later than AD 64, is in the
+  brief. The plan is this project's, not the excavated one. 暗阁 (the book's hidden closet) has no place yet: the passage has
+  not come back from the copy session.
+
+**Files**
+- `tools/models/rome/tib_plan.py` builds from the JSON (no palace numbers in it); `tools/models/rome/rome_tiberiana.py` holds the
+  hill base and what the plan only notes in words (`OPTS`, `EXTRA`, the gardens, the stair). One run (15 s) writes:
+  - `assets/models/rome/rome_tiberiana.glb`, the web file: 67 488 triangles (limit 80 000; 62 639 before);
+  - `assets/models/rome/parts/rome_tiberiana_parts.glb`, for taking apart and for Unity: seven objects `tib_base`, `tib_b1`
+    (the basement: the secret corridor ring with its link, the underground bath), `tib_garden`, `tib_f1`, `tib_f2`, `tib_f3`,
+    `tib_roof`, and 141 child objects `room_<id>` (the floor slab of each room). The storeys carry partitions (0.45 m), 108
+    doors, 7 stair flights, the state atrium's ten columns (【史】 a Corinthian atrium, Vitruvius 6.3.1), the hall's 26 columns
+    with a gilt band round the lower third (the book: "屋子很长，两边一排一排的柱子，柱子上缠着金箔"), the real basins. 79 464 triangles (limit 110 000). The page's pack does not take the `parts/` folder (`build.config.json`: the
+    Rome pack is not recursive; 77 models as before);
+  - `assets/models/tiberiana.glb`, the light stand-in the page has inline (`DT_GLB`) and shows until the model arrives: one box
+    per roof block with a ridge prism, 615 triangles, 34 KB (the old four-storey block was 931 KB; the page is 1.2 MB smaller).
+    The procedural stand-in behind it (`monuments.js`) is built the same way from `TIB_BLOCKS`.
+  - it prints `TIB_PLANTS` (paste into `palatine.js`) and `TIB_BLOCKS` (paste into `monuments.js`) after a change of plan.
+- Renders: `renders/rome_tiberiana/` (`top`, `top_palace`, `se_high`, `apart`, `f1_rooms`, `f2_rooms`, `b1_rooms`; close-ups with
+  `TIB_ZOOM=...`). Page views: `node tools/plan/tiberiana_shots.mjs <dir> [prefix]` (`STANDIN=1` shoots the stand-in).
+
+**In the page**
+- The eagle's label follows the eagle (`monuments.js`). The west side hall's court with the pomegranate tree is court W14 of the
+  model: `W.pomePos` and the four labels moved there with their texts unchanged; the separate block at world (−118, 252) is gone.
+- Two things are kept only so that the bakes stay valid, and go at the next re-bake of the street fabric:
+  - the old pomegranate block's two footprints (its own and its court reservation), one line in `monuments.js`: they were
+    placed before the houses and `fbKey` (fabric.js) hashes them;
+  - 27 hidden 0.2 m triangles in the model ("ground anchors", `rome_tiberiana.py`). The page's terrain under a hill model is
+    the lowest model height in each 4 m cell (`tools/pal_rock.mjs` → `palrock.js`), `fbKey` hashes that ground, and in those
+    cells the lowest point was a piece of the old palace. For the same reason nothing of the palace reaches below z = 0, and
+    the web file's two impluvia are water sheets 0.55 m up (the real basins are in the parts file).
+  `palrock.js` differs from before only in the model's top (21.6 → 17.4), which the page does not read.
+
+**Checks** (2026-11-12, `dist/test.html?test`): `tiberiana_plan.py` passes · `npm run check` · `build:test` + `test:boot`, no page
+errors · `bake-roads.mjs --check`: road network and street fabric up to date · `city-audit.mjs --assert`: no errors ·
+`__floatCheck()`: 281 entries as on main, this model 0 floating, 0 buried · `__wallFootCheck()`: 108 walls, no seam over 20 m,
+the longest on this model 11.9 m, as on main · the raw ground grid of the new file equals the old one in all 3 591 cells ·
+`perf-shadow.mjs 0:forum`, seven alternating runs of main and the round 2 build: medians 47.1 → 47.5 ms (+0.8 %), p95 +2.3 %
+(single runs scatter by about ±10 %; round 3 changed nothing in the web file but the state atrium's opening).
+After the stairs (same day): all of these again on the final build; `perf-shadow.mjs 0:forum`, three runs: mean 47.5, 39.1,
+39.7 ms (round 2: median 47.5; not run against main this time; the stairs add 3 188 triangles to the hill base); `__wallFootCheck()` is unchanged (108 walls, no seam over 20 m, the longest on this model 11.9 m);
+`tiberiana_stair_ground.mjs` as under "The way down".
+
+**Shots** (`docs/screenshots/tiberiana-v2-20261112/`; `page_*`: main on the left, v2 on the right): `page_tib_roofs`,
+`page_tib_north`, `page_top`, `page_saddle`, `page_west`, `page_tib_sw`, `page_tib_close`, `page_tib_plan`; the model:
+`r3_model_se_high`, `r3_model_top_palace`, `r3_model_apart`, `r3_model_f1_rooms` (read it against the plan's F1 drawing),
+`r3_model_f2_rooms`, `r3_model_b1_rooms`, `r3_model_north_front`, `r3_model_south_front`, `r3_model_west_front`,
+`r3_model_peristyle`, `r3_model_sw_corner`, `r3_model_fishpond`, `r3_model_hall`; the stand-in: `r3_page_standin`;
+`r1_*`, `r2_*`: the first two rounds.
+The way down: `stairs_page_way` (the whole way), `stairs_page_nw`, `stairs_page_foot`, `stairs_page_side`, `stairs_page_tib_north`
+and `stairs_page_tib_sw` (round 3 on the left, now on the right), `stairs_model_way_down`, `stairs_model_nw_north`,
+`stairs_model_nw_nw`, `stairs_model_nw_foot`, `stairs_model_side_w`. Cameras `tib_nw`, `tib_foot`, `tib_side`, `tib_way` in
+`tiberiana_shots.mjs`.
+
+### v2 checklist (2026-11-12)
+- [x] No part over three storeys; three storeys only at M12 and M02; highest ridge 17.2 m
+- [x] F1 6.5 m, F2 4.5 m, F3 3.8 m; string courses at 6.5 and 11.0 at each floor of a block
+- [x] 35 roof blocks as in the JSON; no tiled plane with a run over 7.6 m; ridges, hips and tile ribs on every tiled roof
+- [x] Six open courts: peristyle garden, fig court, pomegranate court, service court, kitchen court, fish-pond garden
+- [x] Peristyle garden with the niched pool, the round basin and the book's pavilion; two-storey walks on the north and west
+- [x] North front: porch, loggia 54 m long on F2, frontispiece with a pediment on F3
+- [x] Banquet hall: nave over aisles, clerestory, gold band, two pediments; 14.5 m to the eaves
+- [x] South front two storeys behind the portico, gate pavilion with a pediment
+- [x] No white flat roofs; no ridge over 45 m without a break (portico lean-tos run the length of their colonnade)
+- [x] South-west: tower, solarium with awning posts, the broken eagle on M15's west apex, fig bed in the paved court
+- [x] West side hall with the pomegranate court (labels and `W.pomePos` moved); bath windows; kitchen ridge vent; no chimneys
+- [x] Fish-pond garden with the oval pond, the herms and the Hermaeum
+- [x] Side door at the west end of the corridor with its stair (north, three flights); the cryptoporticus door (y 35.3)
+      inside the page's gallery
+- [x] One connected way down: side door → stair → −7 strip → north-west stair → the ground at the hem by the Vicus Tuscus
+      (foot: hill grid −214.3, −139.9; page y 9.65); no stair ends nowhere; no flight over 15 risers; every tread above
+      the drawn ground on the desktop tier
+- [x] Foot outline and ground grid unchanged; road and fabric bakes up to date
+- [x] Web file 67 488 triangles; parts file with `tib_base`, `tib_b1`, `tib_garden`, `tib_f1`, `tib_f2`, `tib_f3`, `tib_roof`
+- [x] `room_<id>` slabs for all 141 rooms, partitions, doors, stairs; `apart` and `f1_rooms` renders
+- [ ] 暗阁: no place in the plan yet
