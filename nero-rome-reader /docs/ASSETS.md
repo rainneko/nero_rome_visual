@@ -32,6 +32,8 @@ the model cannot load.
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
 
 ## Domus Tiberiana: built from a plan (2026-11-12)
+(The Domus Transitoria is built the same way since 2026-11-14: `rome_transitoria.py`, `transitoria_plan.json`, parts file
+`rome_transitoria_parts.glb`; see `briefs/rome/transitoria.md`, "v2 (2026-11)".)
 `tools/models/rome/rome_tiberiana.py` (Blender, `tib_plan.py`) builds the palace above the platform from
 `tools/models/rome/tiberiana_plan.json`: the rooms of each floor and the roof blocks, written and checked by
 `python3 tools/plan/tiberiana_plan.py` (which also writes the drawings, `briefs/rome/plans/tiberiana-plan.html`). To change the

@@ -84,7 +84,12 @@ function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);
       continue;}
     romeStand(W,A.n,x,z,y,rot,(g,F)=>{
       if(A.n==='rome_apollo'){terraceRect(W,g,F,0,0,47,47,0,34);temple(W,g,{x,y,z:z,rot,W:24,L:40,podH:5,colH:14,nf:6,rows:2,peri:true,colTint:[1,1,.97],seed:.21,pave:false});}
-      else if(A.n==='rome_transitoria'){courtBlock(W,g,F,{cx:0,cz:0,w:112,d:92,y0:0,nSt:2,sH:4.8,gH:6,cw:64,cd:48,part:24,seed:.83,sty:15,fl:8|32|4|256});tower(g,F,50,0,12,0,6,5,{part:24,seed:.84});}
+      else if(A.n==='rome_transitoria'){   // the stand-in until the model arrives: one box per roof block of the palace plan (TR_BLOCKS: model x0, y0 (north +), x1, y1, wall top, storeys, roof 0 flat, 1 ridge east-west, 2 ridge north-south, 3 hipped; printed by tools/models/rome/rome_transitoria.py)
+        const TR_BLOCKS=[[-44,36,44,46,12.0,2,1],[-7,36,7,46,14.0,2,2],[-44,24,44,36,12.0,2,1],[-56,24,-44,46,14.0,2,3],[44,24,56,46,14.0,2,3],[44,-6,56,6,34.0,6,3],[32,-6,44,6,12.0,2,1],[38,6,50,24,12.0,2,2],[32,6,38,24,10.56,2,0],[50,6,56,24,11.6,2,0],[38,-24,50,-6,12.0,2,2],[32,-24,38,-6,10.56,2,0],[50,-24,56,-6,11.6,2,0],[-32,-36,32,-24,16.2,3,1],[-32,-46,32,-36,12.0,2,1],[38,-36,56,-24,14.0,2,3],[38,-46,56,-36,7.0,1,0],[32,-46,38,-24,10.56,2,0],[-56,-46,-44,-24,8.0,1,0],[-44,-46,-32,-24,8.0,1,0],[-56,-24,-44,24,7.6,1,2],[-44,-24,-32,24,7.6,1,2],[-32,19,32,24,10.6,2,0],[-32,-24,32,-19,10.6,2,0],[27,-19,32,19,10.6,2,0],[-32,-19,-27,19,5.6,1,0]];
+        {const P0=[[-56,-46],[56,-46],[56,46],[-56,46]].map(q=>{const p=F.p(q[0],0,q[1]);return[p[0],p[2]];});if(typeof reserveResidentialArea==='function')reserveResidentialArea(W,P0,'authored-courtyard-estate');}   // the reservation the old stand-in's courtBlock made: placed before the houses, the street fabric is keyed to it
+        g.set(23,.5);g.poly([F.p(-56,.05,46),F.p(56,.05,46),F.p(56,.05,-46),F.p(-56,.05,-46)],[0,1,0]);
+        for(const[x0,y0,x1,y1,h,n,k]of TR_BLOCKS){const cx=(x0+x1)/2,cz=-(y0+y1)/2,w=x1-x0,d=y1-y0;rectWalls(g,F,cx,cz,w,d,-1,h,0,{part:24,seed:.83,sty:15,fl:8|32,nSt:Math.min(n,3),gH:Math.min(7,h),sH:5,lit:1});
+          roof(g,F,k===0?'flat':k===1?'gableX':k===2?'gableZ':'hip',cx,cz,w,d,h,22*DEG,.5,.83+.1);}}
       else if(A.n==='rome_domus_augusti')courtBlock(W,g,F,{cx:0,cz:-8,w:70,d:52,y0:0,nSt:1,sH:4,gH:5,cw:34,cd:22,part:0,seed:.55,sty:0,fl:8|16});
       else if(A.n==='rome_magna_mater')temple(W,g,{x,y,z,rot,W:17.5,L:33,podH:6,colH:12,nf:6,rows:3,seed:.4,name:'众神之母神庙（库柏勒）'});
       else if(A.n==='rome_victoria')temple(W,g,{x,y,z,rot,W:16,L:28,podH:4,colH:10,nf:6,rows:2,seed:.45,name:'胜利女神神庙'});

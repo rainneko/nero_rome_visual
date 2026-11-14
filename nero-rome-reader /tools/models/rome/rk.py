@@ -27,6 +27,7 @@ _bk.PAL.update({
     'grey':       ((0.60, 0.61, 0.62), 0.0, 0.45),   # grey marble (bardiglio)
     'giallo':     ((0.86, 0.72, 0.42), 0.0, 0.45),   # giallo antico, yellow Numidian marble
     'porphyry':   ((0.46, 0.17, 0.18), 0.0, 0.40),   # rosso antico / porphyry
+    'pavonazzetto': ((0.86, 0.82, 0.85), 0.0, 0.42),   # pavonazzetto: near-white marble with a pale violet-grey cast (Transitoria v2, east front)
     'granite':    ((0.58, 0.40, 0.35), 0.0, 0.55),   # red Egyptian granite (obelisks)
     'peperino':   ((0.43, 0.42, 0.39), 0.0, 0.92),   # dark grey volcanic stone (old podia)
     'travertine': ((0.84, 0.80, 0.70), 0.0, 0.85),
