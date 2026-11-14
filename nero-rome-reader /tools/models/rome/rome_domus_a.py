@@ -12,10 +12,12 @@ NB = 8.82        # eave height of the two-storey blocks (ground storey 4.62 + fl
 TOP = -0.15      # top of the platform; the floors are laid on it (z -0.15..0)
 GROUND = -24.0   # lowest level of the model: everything rests on it
 
-# cut variant (house(..., cut=True)): levels and the tops of T1's walls (their copings end flush with the T1 floor)
-T1 = -6.0        # garden terrace T1
-T2 = -12.0       # lower terrace T2: a paved strip z -12.3..-12, the lowest level of the cut model
-T1W = -6.35      # z_top of T1's retaining walls: coping z -6.4..-6.0
+# Levels. The cut variant (the Palatine's belt) follows the hill's rule R10: no wall of the house's own shows more than
+# 0.75 of a storey (4.5 m x 0.75 = 3.38 m), so its garden terrace T1 lies 3.4 m under the house floor and the model stops
+# at BASE. The full variant (used elsewhere in the city) keeps T1 at -6 over its own T2 and rock. _set_levels() sets
+# everything that depends on T1; house() calls it.
+BASE = -6.0      # lowest level of the cut model: the hill's own terrace (36 on the Palatine) carries it from there
+T2 = -12.0       # lower terrace T2 of the full variant (the cut model has none)
 BOX_FACES = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
 
 
@@ -127,26 +129,37 @@ def hedge_bed(F, cx, cy, z0, w, d, flower='flowerR'):
     box(F, cx, cy, zh, wi - 2 * t, di - 2 * t, 0.25, flower)
 
 
-ENTRY_RISE = 0.18
-ENTRY_STEPS = 6
+ENTRY_STEPS = 6                                       # risers on the axis, from the landing to the central bay
 ENTRY_TREAD = 0.34
-LANDING_Z = FLOOR - ENTRY_STEPS * ENTRY_RISE          # the landing before the central bay, z -1.03
 ENTRY_FOOT = PORCH_EDGE - (ENTRY_STEPS - 1) * ENTRY_TREAD
-
 # The garden stair: from T1 two mirrored dog-leg flights climb to that landing. Seen from the garden, each side has a
 # lower flight in the front band (it starts beside the central niche and rises outward), a half-landing at the outer
 # end, and an upper flight in the back band rising inward to the landing. Everything under the treads is solid masonry.
-STAIR_RISERS = 13                                     # per flight; 26 risers of 0.191 m for the 4.97 m
-STAIR_RISE = (LANDING_Z - T1) / (2 * STAIR_RISERS)
 STAIR_TREAD = 0.30
-STAIR_MID = LANDING_Z - STAIR_RISERS * STAIR_RISE     # the half-landings, z -3.515
 CORE_X = 2.30                                         # half width of the central block (landing above, niche in its face)
-STAIR_TURN = CORE_X + (STAIR_RISERS - 1) * STAIR_TREAD   # x where the flights meet the half-landing, 5.90
-STAIR_END = STAIR_TURN + 1.30                         # outer edge of the half-landing, 7.20
 BAND_A = (-5.55, -4.30)                               # upper flights, y (1.25 m clear)
 BAND_B = (-7.10, -5.85)                               # lower flights, y; the spine wall stands between the bands
 STAIR_FRONT = BAND_B[0] - 0.30                        # outer face of the front cheek, y -7.40
-STAIR_BOT = T1 - 0.12
+
+
+def _set_levels(cut):
+    """cut: T1 -3.4, 2 x 6 + 6 = 18 risers of 0.192 m, landing -1.10, half-landings -2.25, stair block x +-5.4.
+    full: T1 -6.0, 2 x 13 + 6 = 32 risers (six of 0.18, 26 of 0.191), landing -1.03, half-landings -3.515, x +-7.5."""
+    global CUT, T1, T1W, STAIR_RISERS, ENTRY_RISE, LANDING_Z, STAIR_RISE, STAIR_MID, STAIR_TURN, STAIR_END, STAIR_BOT
+    CUT = cut
+    T1 = -3.4 if cut else -6.0
+    T1W = T1 - 0.35                                   # z_top of T1's retaining walls: coping flush with the T1 floor
+    STAIR_RISERS = 6 if cut else 13                   # per flight
+    ENTRY_RISE = (FLOOR - T1) / (2 * STAIR_RISERS + ENTRY_STEPS) if cut else 0.18
+    LANDING_Z = FLOOR - ENTRY_STEPS * ENTRY_RISE      # the landing before the central bay
+    STAIR_RISE = (LANDING_Z - T1) / (2 * STAIR_RISERS)
+    STAIR_MID = LANDING_Z - STAIR_RISERS * STAIR_RISE
+    STAIR_TURN = CORE_X + (STAIR_RISERS - 1) * STAIR_TREAD   # x where the flights meet the half-landing
+    STAIR_END = STAIR_TURN + 1.30                     # outer edge of the half-landing
+    STAIR_BOT = T1 - 0.12
+
+
+_set_levels(True)
 
 
 def _south_foundation(F, zbot):
@@ -163,22 +176,23 @@ def _south_foundation(F, zbot):
     for z in range(int(zbot)+2,-1,2):
         edge = y + 0.03 * (z - zbot)
         _block(F,-15,15,edge-0.22,edge+0.09,z,z+0.21,'travertine')
-    for x in (-11.5, 11.5):
-        _sq_buttress(F, x, -2.25, -0.25, zbot)
+    if not CUT:                                                      # square buttresses only on the 6 m wall (R7)
+        for x in (-11.5, 11.5):
+            _sq_buttress(F, x, -2.25, -0.25, zbot)
     for side in (-1, 1):
         a, b = sorted((side * PAVILION_INNER_X, side * 14.99))
         _block(F, a, b, PAVILION_Y - 0.09, -2.09, T1 - 0.18, -0.14, 'stone')
-        for z in (-4.5, -2.4):
+        for z in ((-1.75,) if CUT else (-4.5, -2.4)):
             _block(F, a, b, PAVILION_Y - 0.12, PAVILION_Y - 0.06, z, z + 0.13, 'travertine')
 
 
-def _landing_guard(F, x0, x1, y0, y1, z=LANDING_Z):
+def _landing_guard(F, x0, x1, y0, y1, z):
     """A solid parapet with the profile of _cheek: 1 m of stone, a travertine coping."""
     _block(F, x0, x1, y0, y1, z, z + 1.0, 'stone')
     _block(F, x0 - 0.05, x1 + 0.05, y0 - 0.05, y1 + 0.05, z + 1.0, z + 1.12, 'travertine')
 
 
-def _niche(F, y_face, y_back, z0, z_top, half=1.10, spring=1.90, seg=10):
+def _niche(F, y_face, y_back, z0, z_top, half, spring, seg=10):
     """The face of the central block (x -CORE_X..CORE_X, y y_face..y_back) with a shallow round-headed niche in it,
     and a basin on a foot in the niche. The block behind it closes the niche's back."""
     zs = z0 + spring
@@ -195,18 +209,20 @@ def _niche(F, y_face, y_back, z0, z_top, half=1.10, spring=1.90, seg=10):
     for (ua, za), (ub, zb) in zip(arch, arch[1:]):                                         # the soffit of the arch
         add_mesh('stone', [F.p(ua, y_face, za), F.p(ua, y_back, za), F.p(ub, y_back, zb), F.p(ub, y_face, zb)],
                  [(0, 1, 2, 3)])
-    box(F, 0, y_face - 0.03, zs + half - 0.12, 0.42, 0.10, 0.62, 'travertine')             # keystone
+    k = half / 1.10                                                                        # 1 for the tall niche
+    box(F, 0, y_face - 0.03, zs + half - 0.12 * k, 0.42 * k, 0.10, 0.62 * k, 'travertine')             # keystone
     box(F, 0, y_back - 0.03, z0, 2 * half, 0.06, spring, 'wallred')                        # painted back, to the springing
     yb = y_back - 0.50                                                                     # basin: a labrum on a foot
-    lathe(F, 0, yb, [(0.24, z0), (0.24, z0 + 0.10), (0.13, z0 + 0.16), (0.11, z0 + 0.74), (0.30, z0 + 0.80),
-                     (0.62, z0 + 0.94), (0.62, z0 + 0.99), (0.52, z0 + 0.99)], 'marble', 12)
-    cyl(F, 0, yb, z0 + 0.90, 0.52, 0.06, 'water', 12)
-    box(F, 0, y_back - 0.09, z0 + 1.28, 0.22, 0.10, 0.22, 'bronze')                        # the spout's mask
+    h = 0.99 if spring > 1.5 else 0.83                                                     # rim height
+    lathe(F, 0, yb, [(0.24, z0), (0.24, z0 + 0.10), (0.13, z0 + 0.16), (0.11, z0 + h - 0.25), (0.30, z0 + h - 0.19),
+                     (0.62 * h, z0 + h - 0.05), (0.62 * h, z0 + h), (0.52 * h, z0 + h)], 'marble', 12)
+    cyl(F, 0, yb, z0 + h - 0.09, 0.52 * h, 0.06, 'water', 12)
+    box(F, 0, y_back - 0.09, z0 + h + 0.27, 0.22, 0.10, 0.22, 'bronze')                    # the spout's mask
 
 
 def garden_entry(F):
     """The way up from the garden terrace T1 to the house, on the axis.
-    Six risers lead from the landing (z -1.03) to the central bay, between two piers. Below the landing the central
+    Six risers lead from the landing (z -1.10) to the central bay, between two piers. Below the landing the central
     block has a niche with a basin in its face. Either side of the niche a lower flight rises outward to a half-landing
     and an upper flight returns to the landing (see STAIR_*). Behind the upper flights a raised planting bed fills the
     space to the house's foundation wall, so that no part of the stair spans a void."""
@@ -226,9 +242,9 @@ def garden_entry(F):
     niche_back = spine_n + 0.25                                  # y -5.30
     _block(F, -CORE_X, CORE_X, ENTRY_FOOT, -2.13, STAIR_BOT, LANDING_Z - 0.42, 'stone')
     _block(F, -CORE_X, CORE_X, niche_back, ENTRY_FOOT, STAIR_BOT, LANDING_Z - 0.08, 'stone')
-    _niche(F, spine_s, niche_back, T1, LANDING_Z)
+    _niche(F, spine_s, niche_back, T1, LANDING_Z, *((0.80, 0.90) if CUT else (1.10, 1.90)))
     _block(F, -CORE_X, CORE_X, niche_back, ENTRY_FOOT, LANDING_Z - 0.08, LANDING_Z, 'paving')
-    _landing_guard(F, -CORE_X, CORE_X, spine_s, spine_n)         # the landing's parapet over the niche
+    _landing_guard(F, -CORE_X, CORE_X, spine_s, spine_n, LANDING_Z)      # the landing's parapet over the niche
 
     for side in (-1, 1):
         # upper flight (back band): from the landing outward and down to the half-landing
@@ -259,49 +275,44 @@ def garden_entry(F):
         hedge_bed(F, side * (2.14 + STAIR_END + 0.30) / 2, (BAND_A[1] - 2.13) / 2 - 0.05, LANDING_Z + 0.40,
                   STAIR_END + 0.30 - 2.14 - 0.50, 1.60, 'flowerR' if side < 0 else 'flowerY')
         # a statue in the recess between the stair's end and the end room's plinth
-        statue(F, side * 8.45, -3.25, T1, 2.4, 'marble', pedestal=1.0, ped_mat='porphyry')
+        if not CUT:
+            statue(F, side * 8.45, -3.25, T1, 2.4, 'marble', pedestal=1.0, ped_mat='porphyry')
 
 
 def belt_base(F):
-    """Original belt base with the garden floors and the lower stair to T2."""
-    box(F, 0, 11.35, T2, 30, 23.3, TOP - T2, 'tuff')
-    _south_foundation(F, T2)
-
-    # garden terrace T1: fill, gravel floor inside the copings, side walls, W1 with a buttress and a parapet
-    _block(F, -14.5, 14.5, -14.0, -2.4, T2, -6.3, 'tuff')                    # fill, behind the battered wall faces
-    _block(F, -12.63, 12.63, -12.13, -2.22, -6.3, T1, 'gravel')              # floor, up to the copings
-    retaining_wall(F, [(15, -14.5), (15, -2.4)], T1W, T2, buttress='square', every=9.0, parapet=None, courses=2.0, mat='stone')
-    retaining_wall(F, [(-15, -2.4), (-15, -14.5)], T1W, T2, buttress='square', every=9.0, parapet=None, courses=2.0, mat='stone')
-    retaining_wall(F, [(-15, -14.5), (15, -14.5)], T1W, T2, buttress=None, parapet=None, courses=2.0, mat='stone')
-    _sq_buttress(F, -7.5, -14.5, T1W, T2)                                    # flight b buttresses the east half
-    for a, b in ((-15.0, 10.6), (12.6, 15.0)):                               # parapet on W1's coping, open at x 10.6..12.6
-        _block(F, a, b, -14.3, -13.85, T1, T1 + 1.0, 'stone')
-        _block(F, a - 0.05, b, -14.35, -13.8, T1 + 1.0, T1 + 1.12, 'travertine')
-    for x, y, w, d, fl in ((-5.35,-8.6,2.4,1.9,'flowerR'),(-5.35,-10.95,2.4,1.9,'flowerY'),   # clear of the garden stair
-                           (10.6,-6.0,2.4,2.4,'flowerY'),(11.0,-10.0,1.8,2.4,'flowerR')):
+    """The hill part of the cut variant, z BASE..0: the core under the floors, the garden terrace T1 (z -3.4) with its
+    side walls and W1 (2.6 m, a solid parapet on W1). No lower terrace and no stair down: below BASE the hill's own
+    terraces and stairs take over."""
+    box(F, 0, 11.35, BASE, 30, 23.3, TOP - BASE, 'tuff')
+    _south_foundation(F, BASE)
+    _block(F, -14.5, 14.5, -14.0, -2.4, BASE, T1 - 0.3, 'tuff')              # fill, behind the wall faces
+    _block(F, -12.63, 12.63, -12.13, -2.22, T1 - 0.3, T1, 'gravel')          # floor, up to the copings
+    for a, b in (((15, -14.5), (15, -2.4)), ((-15, -2.4), (-15, -14.5)), ((-15, -14.5), (15, -14.5))):
+        retaining_wall(F, [a, b], T1W, BASE, buttress=None, batter=0.03, parapet=None, courses=0, mat='stone')
+    # W1's edge: a stone balustrade between piers 4.35 m apart, four of them carrying a small statue; a 3 m opening on
+    # the axis (the way down to the hill's terrace, when the scene builds it) with a paved landing inside it
+    yb, piers = -14.08, (1.80, 6.15, 10.50, 14.70)
+    for side in (-1, 1):
+        for i, x in enumerate(piers):
+            box(F, side * x, yb, T1, 0.60, 0.60, 1.10, 'travertine')
+            box(F, side * x, yb, T1 + 1.10, 0.72, 0.72, 0.14, 'marble')
+            if i in (1, 2):
+                statue(F, side * x, yb, T1 + 1.24, 1.5, 'marble', pedestal=0)
+        for a, b in zip(piers, piers[1:]):
+            x0, x1 = sorted((side * (a + 0.30), side * (b - 0.30)))
+            balustrade(F, x0, yb, x1, yb, T1, h=1.0, mat='travertine', post_every=5.0, t=0.24)
+    _block(F, -1.50, 1.50, -14.45, -12.60, T1, T1 + 0.03, 'paving')
+    for x, y, w, d, fl in ((-4.6,-10.3,2.4,2.4,'flowerR'),(4.6,-10.3,2.4,2.4,'flowerY'),   # either side of the fountain
+                           (-7.0,-6.0,2.0,2.4,'flowerY'),(7.0,-6.0,2.0,2.4,'flowerR')):     # at the stair's two ends
         hedge_bed(F, x, y, T1, w, d, fl)
-
-    # lower terrace T2: paved strip (the scene builds the wall on its outer edge)
-    box(F, 0, -17.5, T2 - 0.3, 30, 6.0, 0.3, 'paving')                       # z -12.3..-12, y -20.5..-14.5
-
-    # landing at the head of flight b, outside W1 (its top stops at W1's coping), parapets south and east
-    _block(F, 10.6, 14.9, -16.4, -14.1, T2 - 0.3, -6.4, 'stone')
-    _block(F, 10.6, 14.9, -16.4, -14.39, -6.4, T1, 'stone')
-    _block(F, 10.6, 14.9, -16.4, -16.1, T1, T1 + 1.0, 'stone')
-    _block(F, 10.6, 14.95, -16.45, -16.05, T1 + 1.0, T1 + 1.12, 'travertine')
-    _block(F, 14.5, 14.9, -16.1, -14.54, T1, T1 + 1.0, 'stone')
-    _block(F, 14.45, 14.95, -16.1, -14.54, T1 + 1.0, T1 + 1.12, 'travertine')
-    # flight b: from the landing (x 10.6) west to T2 at x -1.54, 1.6 m clear, a cheek on the open (south) side
-    _, _, runs = _stair(F, 'x', 10.6, -1, -16.1, -14.1, T1, (15, 15), T2 - 0.3)
-    for r in runs:
-        _cheek(F, 'x', r, -16.4, -16.1, T2 - 0.3)
 
 
 def house(name, wall, belvedere_on, cut=False):
     """One terrace house. wall: facing material ('plaster2' or 'plaster3'). belvedere_on: tower and roof terrace (B).
     cut: the variant for the hill's belt (belt_base instead of the rock, fills, T1/T2 walls and W2; see the top)."""
     reset()
-    preview_ground(T2 - 0.3 if cut else GROUND)
+    _set_levels(cut)
+    preview_ground(BASE if cut else GROUND)
     F = Frame()
 
     if cut:
@@ -324,10 +335,10 @@ def house(name, wall, belvedere_on, cut=False):
         _south_foundation(F, T1)
 
         # garden terrace T1 (z -6): fill, lawn, side walls, wall W1 (z -12..-6) with square buttresses on its south edge (R7)
-        box(F, 0, -8.45, GROUND, 30, 12.1, -6.3 - GROUND, 'tuff')                # fill, y -14.5..-2.4
-        box(F, 0, -8.45, -6.3, 30, 12.1, 0.3, 'grass')                           # lawn, z -6.3..-6
+        box(F, 0, -8.45, GROUND, 30, 12.1, T1 - 0.3 - GROUND, 'tuff')            # fill, y -14.5..-2.4
+        box(F, 0, -8.45, T1 - 0.3, 30, 12.1, 0.3, 'grass')                       # lawn
         retaining_wall(F, [(15, -14.5), (15, -2.4)], T1W, -13.2, buttress='square', every=9.0, parapet=None, courses=2.0, mat='stone')
-        retaining_wall(F, [(-15, -2.4), (-15, -14.5)], -6.0, -13.2, buttress='square', every=9.0, parapet=None, courses=2.0, mat='stone')
+        retaining_wall(F, [(-15, -2.4), (-15, -14.5)], T1W, -13.2, buttress='square', every=9.0, parapet=None, courses=2.0, mat='stone')
         retaining_wall(F, [(-15, -14.5), (15, -14.5)], T1W, -12.0, buttress='square', every=10.0,
                        coping=True, parapet=None, courses=2.0, mat='stone')
 
@@ -339,18 +350,21 @@ def house(name, wall, belvedere_on, cut=False):
 
     garden_entry(F)
 
-    # garden T1: fountain statue group, fish pond, pergola, a row of statues, the portico on W1 (stacked under the loggia)
-    fountain(F, 0, -10.3, -6.0, r=1.8, angles=(270, 30, 150))               # south of the stair's foot
-    pond(F, 7.0, -10.0, -6.0, 4.6, 2.6)
-    pergola(F, -13.0, -12.0, -7.5, -4.5, -6.0, h=2.6, mat='wood', vine='hedge')
-    n_col, x_end = 8, 13.5
-    for i in range(n_col):
-        column(F, -13.5 + 27.0 / (n_col - 1) * i, -13.4, T1, 3.4, 0.22, 'stone', 'doric', 0, 10, cap_mat='travertine')
-    entablature(F, -13.5, -13.4, x_end, -13.4, -2.6, 0.5, 0.5, 'stone')
-    lean_roof(F, x_end + 0.5, -13.4, -14.0, -13.4, -2.1, 2.0, 0.8)           # lean-to roof over the portico walk
-    # garden T2: statues on the planting strip, clear of the buttresses of W1
-    for x in (-13.0, 13.0):
-        statue(F, x, -17.5, -12.0, 2.2, 'marble', pedestal=0.9, ped_mat='giallo')
+    # garden T1
+    if cut:   # the fountain south of the stair's foot, a fish pond east, a pergola west; its statues stand on W1's piers
+        fountain(F, 0, -10.3, T1, r=1.8, angles=())
+        pond(F, 9.2, -9.4, T1, 4.6, 2.6)
+        pergola(F, -12.6, -9.4, -8.4, -4.6, T1, h=2.4, mat='wood', vine='hedge')
+    else:     # fountain statue group, fish pond, pergola, the portico on W1; statues on the planting strip T2
+        fountain(F, 0, -10.3, T1, r=1.8, angles=(270, 30, 150))
+        pond(F, 7.0, -10.0, T1, 4.6, 2.6)
+        pergola(F, -13.0, -12.0, -7.5, -4.5, T1, h=2.6, mat='wood', vine='hedge')
+        for i in range(8):
+            column(F, -13.5 + 27.0 / 7 * i, -13.4, T1, 3.4, 0.22, 'stone', 'doric', 0, 10, cap_mat='travertine')
+        entablature(F, -13.5, -13.4, 13.5, -13.4, T1 + 3.4, 0.5, 0.5, 'stone')
+        lean_roof(F, 14.0, -13.4, -14.0, -13.4, T1 + 3.9, 2.0, 0.8)          # lean-to roof over the portico walk
+        for x in (-13.0, 13.0):
+            statue(F, x, -17.5, T2, 2.2, 'marble', pedestal=0.9, ped_mat='giallo')
 
     front(F, wall)
 
@@ -403,7 +417,7 @@ def house(name, wall, belvedere_on, cut=False):
         belvedere(F, 10.9, 18.9, 8.0, 15.0, wall)                                            # belvedere, NE corner
 
     if cut:
-        human(F, -4.0, -18.0, T2)                                            # preview scale figure only
+        human(F, -3.6, -8.6, T1)                                            # preview scale figure only
     else:
         human(F, 0.0, -32.0, GROUND)                                         # preview scale figure only
     return finish(name, front='-Y')

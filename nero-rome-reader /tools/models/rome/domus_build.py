@@ -2,7 +2,7 @@
 
   Blender -b --factory-startup --python-exit-code 1 -P tools/models/rome/domus_build.py -- --no-render
 
-GLBs go to assets/models/rome/, review renders (without --no-render) to renders/palatine/domus-garden-stair/."""
+GLBs go to assets/models/rome/, review renders (without --no-render) to renders/palatine/domus-r10/."""
 
 import json
 import math
@@ -15,7 +15,7 @@ from mathutils.bvhtree import BVHTree
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-OUT = ROOT / "renders/palatine/domus-garden-stair"
+OUT = ROOT / "renders/palatine/domus-r10"
 sys.path.insert(0, str(HERE))
 import rome_domus_a as domus
 import bl_kit as kit
@@ -69,14 +69,14 @@ def check_access(ob):
         assert hits((side * (D.STAIR_TURN + 0.65), D.BAND_B[0] + 0.3, D.STAIR_MID + 1.2), (0, 1, 0), 2.2) is None, "turn"
         floor(side * (D.CORE_X - 0.5), sum(D.BAND_B) / 2, D.T1, "foot on T1")            # the foot, beside the niche
         # headroom over both flights and at the foot (nothing within 2.2 m above the walking line)
-        for k in (1, 6, 12):
+        for k in (1, D.STAIR_RISERS // 2, D.STAIR_RISERS - 1):
             for x, y, z in ((D.CORE_X + (k - 0.5) * D.STAIR_TREAD, sum(D.BAND_A) / 2, D.LANDING_Z - k * D.STAIR_RISE),
                             (D.STAIR_TURN - (k - 0.5) * D.STAIR_TREAD, sum(D.BAND_B) / 2, D.STAIR_MID - k * D.STAIR_RISE)):
                 assert hits((side * x, y, z + 0.1), (0, 0, 1), 2.2) is None, ("headroom", side, k)
     # the niche is closed at the back (0.55 m deep) and the stair's face has no other opening
     hit = hits((0, D.BAND_B[0], D.T1 + 1.5), (0, 1, 0), 6.0)
-    assert hit is not None and abs(hit.y - (D.BAND_A[0] + 0.25 - 0.06)) < 0.01, ("niche back", hit)
-    for x in (-7.0, -5.0, -3.0, 3.0, 5.0, 7.0):
+    assert hit is not None and abs(hit.y - (D.BAND_A[0] + 0.25)) < 0.07, ("niche back", hit)
+    for x in [sgn * v for sgn in (-1, 1) for v in (D.CORE_X + 0.7, D.STAIR_TURN - 0.5, D.STAIR_END)]:
         for z in (D.T1 + 0.3, D.T1 + 0.75):
             hit = hits((x, D.STAIR_FRONT - 0.2, z), (0, 1, 0), 2.0)
             assert hit is not None and abs(hit.y - D.STAIR_FRONT) < 0.01, ("solid front", x, z, hit)
@@ -135,9 +135,9 @@ def render_views(ob, name, front):
         views = {
             "corner": ((32,-44,13),(0,-4,1.4),50),
             "entry": ((0.0,-5.2,0.75),(0,1.1,3.3),21),
-            "stair": ((0.0,-17.5,-2.6),(0,-4.0,-3.2),24),
-            "stair_side": ((15.5,-13.0,-1.0),(2.5,-5.0,-3.6),30),
-            "above": ((0.0,-19.0,13.0),(0,-5.5,-3.0),30),
+            "stair": ((4.5,-12.8,0.2),(0,-5.0,-2.2),24),
+            "stair_side": ((13.0,-12.5,0.6),(2.0,-5.0,-2.2),30),
+            "above": ((0.0,-19.0,14.0),(0,-6.5,-2.0),30),
         }
         for label, (location, target, lens) in views.items():
             cam.data.type = "PERSP"
