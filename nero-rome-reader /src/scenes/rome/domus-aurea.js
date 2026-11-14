@@ -81,13 +81,13 @@ function buildDomusAurea(W,L,gy){const LK=AUREA.lake,R0=RNG(6464);
       W.trees.push([sx+1.2,gy(sx+1.2,sz+1.4),sz+1.4,'flower',.35,null,2]);}});
 
   /* ---- the Transitoria tower's loggia: glazed in 58 (vol 13 露台), burnt in 64, glazed again later ---- */
-  const TW=frame(237.9,0,306.8,-Math.PI/6),glaze=(g,gl,burnt)=>{const yb=84,yt=88.4,e=8.25;
+  const TW=frame(238.33,0,307.01,-Math.PI/6),glaze=(g,gl,burnt)=>{const yb=87.72,yt=90.3,e=5.8,hw=5.3;   // rome_transitoria v2: tower centre model (50, 0), terrace parapet top 31.0, beam 33.6, between the corner piers
     for(let k=0;k<4;k++){const S=TW.sub(0,0,0,k*Math.PI/2);
-      if(!burnt){gl.set(0,.5);box(gl,S,0,yb,e,8,yt-yb,.04,31);}
-      g.set(burnt?22:12,burnt?.9:.4);for(let x=-8;x<=8.01;x+=2)box(g,S,x,yb,e,.06,yt-yb,.07,31);box(g,S,0,yb-.08,e,8.1,.1,.09,31);box(g,S,0,yt,e,8.1,.1,.09,31);}};
-  L('transGlass',0,(g,G,gl)=>{glaze(g,gl,false);const m=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),lampMat(1,.78,.42,22));m.position.set(237.9,85.6,306.8);G.add(m);});   // 58: plate glass in gilded frames, a lamp at night
+      if(!burnt){gl.set(0,.5);box(gl,S,0,yb,e,hw,yt-yb,.04,31);}
+      g.set(burnt?22:12,burnt?.9:.4);for(const x of[-1.77,1.77])box(g,S,x,yb,e,.06,yt-yb,.07,31);box(g,S,0,yb-.08,e,hw+.1,.1,.09,31);box(g,S,0,yt,e,hw+.1,.1,.09,31);}};
+  L('transGlass',0,(g,G,gl)=>{glaze(g,gl,false);const m=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),lampMat(1,.78,.42,22));m.position.set(238.33,89.2,307.01);G.add(m);});   // 58: plate glass in gilded frames, a lamp at night
   L('transBurnt',0,(g)=>{glaze(g,null,true);});   // 64-68: the glass burst in the fire, the frames black
-  L('transGlass2',0,(g,G,gl)=>{glaze(g,gl,false);const m=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),lampMat(1,.78,.42,22));m.position.set(237.9,85.6,306.8);G.add(m);});
+  L('transGlass2',0,(g,G,gl)=>{glaze(g,gl,false);const m=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),lampMat(1,.78,.42,22));m.position.set(238.33,89.2,307.01);G.add(m);});
 
   /* ---- the gilded colonnade (59-68 in part scaffolded, from 68 whole): three storeys over a podium that follows the valley floor ---- */
   const porticus=(g,scaff)=>{const P=AUREA.route;
