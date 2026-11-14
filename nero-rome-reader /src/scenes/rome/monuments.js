@@ -152,10 +152,31 @@ function theatre(W,g,F,o){const R=o.R,h=o.h,r0=R*.3,seg=16;g.set(26,.5);
   g.set(1,.4);g.poly([F.p(-R*.7,h*.66,3.2),F.p(R*.7,h*.66,3.2),F.p(R*.7,h*.6,-6.6),F.p(-R*.7,h*.6,-6.6)],[0,1,0]);g.poly([F.p(R*.7,h*.66,3.2),F.p(-R*.7,h*.66,3.2),F.p(-R*.7,h*.6,-6.6),F.p(R*.7,h*.6,-6.6)],[0,-1,0]);
   },{dy:.6,sx:R/62,sy:h/32,sz:R/62});   // dy: the model's z 0 is the orchestra floor, drawn .6 m up
   const c=F.p(0,0,-R*.4+8);W.foot.add(c[0],c[2],R+4,R*.6+12,F.rot);}
-function bridgeAt(g,x,z,ux,uz,len,nA,w,h,part,wood,gyF){const F=frame(x,RW-3,z,Math.atan2(-ux,-uz));if(gyF){const dk=h+.35;for(const sd of[1,-1]){const e1=F.p(sd*len/2,0,0),e2=F.p(sd*(len/2+16),0,0),gE=gyF(e1[0],e1[2])-F.oy+.35,gO=gyF(e2[0],e2[2])-F.oy+.35;if(gE<dk-.3){g.set(2,.42);box(g,F,sd*(len/2+1.6),gE-2.4,0,1.7,dk-gE+2.4,w/2,31);}const dh=dk-Math.max(gO,gE);if(dh>.4){const rl=Math.min(42,dh*7);g.set(10,.3);g.poly([F.p(sd*(len/2),dk,-w/2+.6),F.p(sd*(len/2+rl),dk-dh,-w/2+.6),F.p(sd*(len/2+rl),dk-dh,w/2-.6),F.p(sd*(len/2),dk,w/2-.6)],[0,1,0]);g.set(2,.42);box(g,F,sd*(len/2+rl/2),dk-dh-2.5,0,rl/2,dh+2.4,w/2-.5,31);}}}
-  if(wood){g.set(3,.4);for(let i=-len/2;i<=len/2;i+=9)box(g,F,i,0,0,.5,h,w/2-.6,31);box(g,F,0,h,0,len/2,.6,w/2,31);}
-  else{arcade(g,F,0,0,0,len,h,nA,w,part,{span:.36,attic:2.2,pilasters:false,cornice:false});g.set(10,.3);box(g,F,0,h,0,len/2,.35,w/2-.6,16);}
-  g.set(2,.4);box(g,F,0,h,w/2-.4,len/2,1.1,.4,31);box(g,F,0,h,-w/2+.4,len/2,1.1,.4,31);}
+/* The Tiber bridges of AD 56 (briefs/rome/bridges.md): a GLB each (tools/models/rome/rome_pons_*.py), this table and a plain stand-in until it loads.
+   Y: the deck-end level, where the banks reach it (measured on the desktop tier's ground, 2026-11-14), so the decks land on the bank tops and the roads
+   join them there; off: the midpoint's shift along the bridge axis from the river station (between the two landings); L, w: deck length and width;
+   zw: the water, relative to Y; arch: [centre, clear span, springing, rise] of the main arches (equal ones); P(x): the deck profile above Y. */
+const brFlat=(h,r,a,e)=>x=>{const u=Math.abs(x);return u<=a?h+r*(1-(x/a)**2):h*Math.max(0,e-u)/(e-a);},
+  brArcs=(n,s,step,zs,f)=>Array.from({length:n},(_,k)=>[(k-(n-1)/2)*step,s,zs,f]);
+const BRIDGES={
+  'Pons Fabricius':{glb:'rome_pons_fabricius',Y:6.5,off:-4.75,L:66,w:6,zw:-5,arch:brArcs(2,22,28,-4.4,5.6),P:x=>3.4*(1-(x/33)**2)},
+  'Pons Cestius':{glb:'rome_pons_cestius',Y:5.5,off:13.75,L:74,w:8,zw:-4,arch:[[0,20,-3.4,5.2]],P:x=>3.6*(1-(x/37)**2)},
+  'Pons Aemilius':{glb:'rome_pons_aemilius',Y:6,off:12.5,L:196,w:9,zw:-4.5,arch:brArcs(8,14,19,-3.8,4.6),P:brFlat(2.3,.5,73.5,98)},
+  'Pons Sublicius':{glb:'rome_pons_sublicius',Y:7.3,off:.25,L:184,w:7,zw:-5.8,wood:true,P:x=>.6*(1-(x/92)**2)},
+  'Pons Neronianus':{glb:'rome_pons_neronianus',Y:9.1,off:6.75,L:172,w:10,zw:-7.6,arch:brArcs(7,15,20.5,-7,7),P:brFlat(1.5,.3,69,86)},
+  'Pons Agrippae':{glb:'rome_pons_agrippae',Y:6.4,off:-7.75,L:192,w:9,zw:-4.9,arch:brArcs(8,14,19,-4.2,4.6),P:brFlat(1.9,.4,73.5,96)}};
+// the stand-in in frame F (origin: the deck's middle at deck-end level, local x along the deck): arches, fill, deck, parapets, piles for the wooden one
+function bridgeStand(g,F,S){const{L,w,zw,P}=S,hw=w/2,step=3;
+  if(S.wood){g.set(3,.4);for(let x=-L/2+8;x<L/2-7;x+=8)for(const z of[-hw+.5,0,hw-.5])box(g,F,x,zw-1,z,.22,P(x)-.75-zw+1,.22,31);}
+  let zone=0;if(S.arch){const A=S.arch,n=A.length,half=Math.max(...A.map(a=>Math.abs(a[0])+a[1]/2))+(n>1?(A[1][0]-A[0][0]-A[0][1])/2:2.5),bay=2*half/n,y0=zw-1.5;
+    let top=1e9;for(let x=-half;x<=half;x+=1)top=Math.min(top,P(x));
+    arcade(g,F,0,y0,0,2*half,top-.25-y0,n,w,2,{span:A[0][1]/2/bay,spring:A[0][2]-y0,pilasters:false,cornice:false});zone=half;
+    for(let x=-half;x<half;x+=step){const z=P(x+step/2);if(z>top-.25+.05){g.set(2,.4);box(g,F,x+step/2,top-.25,0,step/2,z-top+.25,hw,31);}}}
+  for(let x=-L/2;x<L/2-.01;x+=step){const xm=x+step/2,z=P(xm),inZone=Math.abs(xm)<zone;
+    if(!inZone){if(S.wood){g.set(3,.4);box(g,F,xm,z-.6,0,step/2,.6,hw,31);}else{g.set(2,.42);box(g,F,xm,-9,0,step/2,z+9,hw+(Math.abs(xm)>L/2-step?.6:.3),31);}}
+    else if(S.wood){g.set(3,.4);box(g,F,xm,z-.6,0,step/2,.6,hw,31);}
+    g.set(10,.3);box(g,F,xm,z,0,step/2,.06,hw-.5,16);
+    g.set(S.wood?3:2,.4);for(const sd of[1,-1])box(g,F,xm,z,sd*(hw-.22),step/2+.02,1.05,.22,31);}}
 
 function rustica(W,g,F,w,d,y0,y1,R){const floorY=y0+.15,yB=y0-.25,cw=w-12,cd=d-12,brick=R()<.45,fac={part:brick?9:0,seed:brick?.3:.04+R()*.02,sty:3,fl:16|2,nSt:1,gH:4.2,sH:3,lit:.5},yT=floorY+4.2;
   rectWalls(g,F,0,0,w,d,yB,yT,floorY,fac);rectWalls(g,F,0,0,cw,cd,floorY,yT,floorY,Object.assign({},fac,{fl:2}),true);roof(g,F,'ring',0,0,w,d,yT,20*DEG,.5,R(),{cw,cd});
@@ -385,8 +406,13 @@ async function buildRome(msg){
   /* ---- Campus Martius ---- */
   const gM=new GB(1<<16);
   temple(W,gM,{x:-696,y:gy(-696,-734),z:-734,rot:Math.PI,W:32,L:42,podH:2.5,colH:12.5,nf:8,rows:2,seed:.3});
-  {const F=frame(-740,gy(-740,-650),-650,0);rectWalls(gM,F,0,0,90,56,-2,23,0,{part:9,seed:.4,sty:25,fl:8,nSt:2,gH:9,sH:7,lit:.7});roof(gM,F,'hip',0,0,90,56,23,16*DEG,.8,.4);
-    gM.set(9,.4,0,1);lathe(gM,F,0,0,-40,[[13,-2],[13,19]],20);lathe(gM,F,0,19,-40,[[13.6,0],[11,5],[6,9],[0,10]],20,16);W.foot.add(-740,-660,47,44,0);}
+  // the Baths of Agrippa south of the Pantheon (it was one big hip-roofed box, read as part of the Pantheon, 2026-11-14): a tall central hall, two lower
+  // wings, each under its own roof, and the round sweating room (laconicum) on the north side, domed with a top opening as Vitruvius (5.10.5) describes one
+  {const F=frame(-740,gy(-740,-650),-650,0),fac=o=>Object.assign({part:9,seed:.4,sty:25,fl:8,nSt:2,gH:9,sH:7,lit:.7,floorY:0},o);
+    rectWalls(gM,F,0,4,40,48,-2,21,0,fac({gH:11,sH:10}));roof(gM,F,'gable',0,4,40,48,21,18*DEG,.8,.4,fac({gH:11,sH:10}));
+    for(const sd of[1,-1]){rectWalls(gM,F,sd*32.5,4,25,48,-2,13,0,fac({nSt:1,gH:13}));roof(gM,F,'gableZ',sd*32.5,4,25,48,13,20*DEG,.6,.4+sd*.05,fac({nSt:1,gH:13}));}
+    gM.set(9,.4,0,1);lathe(gM,F,0,0,-33,[[12,-2],[12,15]],20);lathe(gM,F,0,15,-33,[[12.6,0],[10.4,4.2],[6,7.4],[2,8.2]],20,16);W.foot.add(-740,-660,47,44,0);
+    poi('阿格里帕浴场','Thermae Agrippae',-740,-650,26,0,99,'战神广场上的公共浴场，北边是万神殿，西边是人工湖。【史】阿格里帕前25年建起一座“拉科尼亚式”发汗室（狄奥《罗马史》53.27），前12年他死时把浴场留给了罗马人民免费使用（狄奥《罗马史》54.29）。圆顶发汗室的样子按维特鲁威（《建筑十书》5.10.5）复原。',1400);}
   {const F=frame(-540,gy(-540,-760),-760,0);gM.set(22,.4);for(const s of[1,-1]){box(gM,F,s*47,-1,0,1,11,150,31);box(gM,F,0,-1,s*150,47,11,1,31);}
     portico(W,gM,F,-40,-145,-40,145,0,8,-6,5,[1,.97,.9]);portico(W,gM,F,40,145,40,-145,0,8,-6,5,[1,.97,.9]);W.foot.add(-540,-760,49,152,0);}
   {const F=frB(-1036,-356,90,gy(-1036,-356));theatre(W,gM,F,{R:78,h:30});const q=F.p(0,28,-72);temple(W,gM,{x:q[0],y:q[1],z:q[2],rot:F.rot,W:16,L:20,podH:1.5,colH:8,nf:6,rows:1,seed:.4,pave:false});
@@ -454,13 +480,16 @@ async function buildRome(msg){
   poi('禁卫军营','Castra Praetoria',1550,-1557,20,0,99,'禁卫军驻地。',2600);
   poi('梵蒂冈跑马场','Circus Gai et Neronis',-2429,-1134,30,0,99,'尼禄的私人赛车场，中轴立着方尖碑。57年看台加三层。',3000);
   await msg('架桥、引水、铺路……');
+  // every bridge (W.bridges, for the road joins): its middle, the river's direction there (downstream), deck length and width. The GLB's +X runs along
+  // the deck, +Y upstream: turned by the frame's rot + PI (the frame's local +z points upstream). Its footprint keeps the houses off the deck ends.
+  const brPlace=(name,x0,z0,ux,uz)=>{const S=BRIDGES[name],lx=-uz,lz=ux,x=x0+lx*S.off,z=z0+lz*S.off,r=Math.atan2(-ux,-uz)+Math.PI;
+    romeStand(W,S.glb,x,z,S.Y,r,(g,F)=>bridgeStand(g,F,S));W.foot.add(x,z,S.L/2,S.w/2+4,r);W.bridges.push({name,x,z,ux,uz,len:S.L,w:S.w});};
   /* ---- Tiber island, bridges ---- */
   {const ux=.94,uz=.342,lx=.342,lz=-.94,cx=-630,cz=156,y=gy(cx,cz);const q=[cx+ux*55,cz+uz*55];
     temple(W,gM,{x:q[0],y,z:q[1],rot:Math.atan2(-ux,-uz)+Math.PI/2,W:14,L:22,podH:2,colH:8,nf:6,rows:1,seed:.5});
     const F=frame(cx,y,cz,Math.atan2(-uz,ux));lathe(gM,F,-20,0,0,[[1.3,0],[1,14],[0,15.4]],4,25);gM.set(2,.4);
     gM.poly([F.p(126,-4,-22),F.p(150,-4,0),F.p(150,3,0),F.p(126,3,-22)],F.d(.7,0,-.7));gM.poly([F.p(150,-4,0),F.p(126,-4,22),F.p(126,3,22),F.p(150,3,0)],F.d(.7,0,.7));
-    bridgeAt(gM,cx-ux*25+lx*46,cz-uz*25+lz*46,ux,uz,52,2,9,11,2,false,gy);bridgeAt(gM,cx+ux*20-lx*46,cz+uz*20-lz*46,ux,uz,52,1,9,11,2,false,gy);
-    W.bridges=[{name:'Pons Fabricius',x:cx-ux*25+lx*46,z:cz-uz*25+lz*46,ux,uz,len:52,w:9},{name:'Pons Cestius',x:cx+ux*20-lx*46,z:cz+uz*20-lz*46,ux,uz,len:52,w:9}];}   // every bridge: its middle, the river's direction there, deck length and width
+    W.bridges=[];brPlace('Pons Fabricius',cx-ux*25+lx*46,cz-uz*25+lz*46,ux,uz);brPlace('Pons Cestius',cx+ux*20-lx*46,cz+uz*20-lz*46,ux,uz);}
   // The island was built up by AD 56 (the author, 2026-11-02: "那边好像也有一些建筑才是"). Island frame: x along the flow (downstream +x, the prow), z across;
   // ground x -106..118, z -17..17, the bridgeheads at (-25,-20) and (20,20), the obelisk at (-20,0), Aesculapius at (55,0). Upstream the two temples of 194 BC
   // and the shrine of Tiberinus at the tip, round Aesculapius the porticoes where the sick slept, houses between, and a deck on the travertine prow.
@@ -479,10 +508,16 @@ async function buildRome(msg){
     rectWalls(gM,S,0,0,w,d,-1.5,yT,0,fac);roof(gM,S,'gable',0,0,w,d,yT,.4,.45,sd,fac);const q=P(hx,hz);W.foot.add(q[0],q[2],w/2,d/2,F.rot);}
    gM.set(2,.42);gM.poly([F.p(126,3.02,22),F.p(150,3.02,0),F.p(126,3.02,-22)],[0,1,0]);{const S=F.sub(141,3,0,Math.PI/2);pedestalStatue(gM,S,0,0,0,4);}   // the prow's deck with a herm of the god
    W.foot.add(cx,cz,108,17,F.rot);}   // nothing else grows on the island (no wild trees through the houses)
-  const brT=(t,len,nA,w,wood,name)=>{const[x,z]=polyAt(TIBER,t);const i=Math.floor(t),a=TIBER[i],b=TIBER[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/l,uz=(b[1]-a[1])/l;bridgeAt(gM,x,z,ux,uz,len,nA,w,12,2,wood,gy);W.bridges.push({name,x,z,ux,uz,len,w});};
-  brT(16.15,150,5,12,false,'Pons Aemilius');brT(16.9,150,0,10,true,'Pons Sublicius');brT(12.0,150,5,11,false,'bridge 12');brT(7.1,150,5,12,false,'Pons Neronianus');brT(13.02,150,5,11,false,'Pons Agrippae');{const q=polyAt(TIBER,13.02);poi('阿格里帕桥','Pons Agrippae',q[0],q[1],16,0,99,'【史】阿格里帕修的石桥，连接战神广场和台伯河西岸。',1400);}
+  const brT=(t,name)=>{const[x,z]=polyAt(TIBER,t);const i=Math.floor(t),a=TIBER[i],b=TIBER[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);brPlace(name,x,z,(b[0]-a[0])/l,(b[1]-a[1])/l);};
+  brT(16.15,'Pons Aemilius');brT(16.9,'Pons Sublicius');brT(7.1,'Pons Neronianus');brT(13.02,'Pons Agrippae');   // the unnamed bridge at Tiber station 12 is gone (the author, 2026-11-14: no source for it)
+  {const bp=n=>W.bridges.find(b=>b.name===n),P=(n,cn,t,d)=>{const b=bp(n);W.pois.push({n:cn,l:n,x:b.x,z:b.z,y:BRIDGES[n].Y+6,s0:0,s1:99,info:t,d});};
+   P('Pons Fabricius','法布里奇乌斯桥','从战神广场通到台伯岛的石桥，两个大拱，中间桥墩上开一个泄洪小拱，桥面中间拱起。【史】前62年道路监理官卢基乌斯·法布里奇乌斯所建（狄奥《罗马史》37.45），拱上两面刻着他的题记，旁边记着前21年的修缮。这座桥今天还在。',900);
+   P('Pons Cestius','切斯提乌斯桥','从台伯岛通到特拉斯提弗列的石桥，一个大拱，两边各一个小拱。【史】建于前1世纪中叶；今天看到的是公元365–370年重建的样子。',900);
+   P('Pons Aemilius','埃米利乌斯桥','牛市广场下游的石桥，八个拱，每个桥墩都开着泄洪洞。【史】罗马第一座石桥：前179年监察官打下桥墩（李维《罗马史》40.51），前142年架上石拱。',1400);
+   P('Pons Sublicius','苏布利基乌斯木桥','全木结构的老桥，木桩桥架，上游一侧有挡木。【史】罗马最古老的桥，传为安库斯·马尔基乌斯所建（李维《罗马史》1.33）。按宗教规矩不用一根铁钉（老普林尼《博物志》36.100），由大祭司团负责修缮。贺拉提乌斯·科克莱斯曾在桥头独挡波尔森纳的大军（李维《罗马史》2.10）。',1400);
+   P('Pons Agrippae','阿格里帕桥','【史】阿格里帕修的石桥，连接战神广场和台伯河西岸。克劳狄时代河岸管理官的界石上写着它的名字（CIL VI 31545），19世纪在西斯托桥上游挖出了它的遗迹。',1400);
+   P('Pons Neronianus','尼禄桥','通往梵蒂冈跑马场和阿格里皮娜花园的桥，七个拱，砖砌桥面。【史】桥墩遗迹至今还在维托里奥·埃马努埃莱二世桥旁的河床里。修建年代不能确定，一般认为是卡利古拉或尼禄时期。',1800);}
   poi('台伯岛','Insula Tiberina',-630,156,24,0,99,'船形小岛，岛上是医神埃斯库拉庇乌斯神庙，岛头砌成船首。【史】前291年罗马从埃皮道鲁斯请来医神的圣蛇，蛇在这里下船上岛，就在岛上建庙（李维《罗马史》摘要11）；岛尾用石灰华砌成船头的样子，侧面刻着医神缠蛇的手杖。',1600);
-  {const q=polyAt(TIBER,7.1);poi('尼禄桥','Pons Neronianus',q[0],q[1],18,0,99,'通往梵蒂冈跑马场的桥。',1800);}
   poi('台伯河','Tiberis',-1650,-760,12,0,99,'',4500);
   /* ---- aqueduct (Aqua Claudia + Arcus Neroniani) ---- */
   if(!MAT.aqWater)MAT.aqWater=waterMat('aqueduct',[.035,.17,.21],.12);const aqStrip=(grp,F,sl,h)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(sl+.3,1.5).rotateX(-Math.PI/2),MAT.aqWater),q=F.p(0,h+3.64,0);m.position.set(q[0],q[1],q[2]);m.rotation.y=F.rot;grp.add(m);};const aqS=new THREE.Group(),aqL=new THREE.Group();
@@ -547,10 +582,10 @@ async function buildRome(msg){
     [9,[[700,200],[1100,250],[1640,52],[1900,52],[2500,20],[2800,0]],'Via Labicana'],   // Via Labicana: between the east college and the Galba site, under the Claudia arcade north of its terminal
     [7,[[260,-278],[500,-600],[900,-1000],[1200,-1300]],'Vicus Patricius'],   // Vicus Patricius, branching off the Argiletum in the Subura
     [7,[[100,-500],[500,-1000],[900,-1500]],'Alta Semita'],   // Alta Semita / Via Salaria
-    [8,[[-1032,134],[-1043,208],[-1300,300],[-1650,600],[-2400,800]],'Via Aurelia'],   // Via Aurelia: off the Pons Agrippae (deck to its Trastevere end), over the Janiculum
-    [7,[[-1235,-44],[-1285,12],[-1743,-923]],'west bank road'],   // off the bridge at Tiber station 12, along the west bank to the Pons Neronianus (it used to run in the river)
-    [7,[[-1674,-894],[-1743,-923],[-2000,-1000],[-2180,-1230],[-2750,-1240]],'Via Cornelia'],   // Via Cornelia: off the Pons Neronianus, along the north side of Nero's circus (it used to run down its middle)
-    [7,[[-1290,2480],[-1400,2200],[-1450,1500],[-1350,1000],[-1060,820],[-1043,208]],'Via Portuensis']];   // Via Portuensis: from the south-bank works' gate up the right bank, east of the Naumachia, to the Pons Agrippae
+    [8,[[-1031,126],[-1046,221],[-1300,300],[-1650,600],[-2400,800]],'Via Aurelia'],   // Via Aurelia: off the Pons Agrippae (deck to its Trastevere end), over the Janiculum
+    [7,[[-1046,221],[-1180,130],[-1285,12],[-1758,-930]],'west bank road'],   // off the Pons Agrippae's Trastevere end, along the west bank to the Pons Neronianus (it used to start at an unnamed bridge at Tiber station 12, removed 2026-11-14)
+    [7,[[-1679,-897],[-1758,-930],[-2000,-1000],[-2180,-1230],[-2750,-1240]],'Via Cornelia'],   // Via Cornelia: off the Pons Neronianus, along the north side of Nero's circus (it used to run down its middle)
+    [7,[[-1290,2480],[-1400,2200],[-1450,1500],[-1350,1000],[-1060,820],[-1046,221]],'Via Portuensis']];   // Via Portuensis: from the south-bank works' gate up the right bank, east of the Naumachia, to the Pons Agrippae
   // the routes are baked into road-network.js (tools/test/bake-roads.mjs); they are routed live with ?reroute, or when the waypoints or obstacles changed since the bake
   const roadKey=JSON.stringify([MAIN,LATE0]),baked=typeof ROME_ROADS_BAKED!=='undefined'&&!!ROME_ROADS_BAKED&&ROME_ROADS_BAKED.key===roadKey&&!/[?&]reroute/.test(location.search);
   if(!baked&&!/[?&]reroute/.test(location.search))console.warn('road-network.js is stale: routing the main roads live (run node tools/test/bake-roads.mjs)');
@@ -638,7 +673,7 @@ async function buildRome(msg){
      const pO=EU[iOut],gO=gy(pO[0],pO[1]);head(iOut,1,RW-1.5,Math.max(gO+2,RW+6),6,RW+1,2.2,1.8);   // outlet in the river bank
      {const S=frame(pO[0],0,pO[1],dir(iOut)),P=(x,y,z)=>S.p(x,y,z);gN.set(2,.45);box(gN,S,1.65,RW-1.2,0,.95,2.2,2.1,31);W.poolG.poly([P(.7,RW+1.02,-1.6),P(2.6,RW+1.02,-1.6),P(2.6,RW+1.02,1.6),P(.7,RW+1.02,1.6)],[0,1,0]);W.poolG.poly([P(2.62,RW+1,-1.6),P(2.62,RW+1,1.6),P(2.62,RW-.1,1.6),P(2.62,RW-.1,-1.6)],S.d(1,0,0));}}   // apron and the short drop into the Tiber
     for(let i=0;i<26;i++){const a=i/26*TAU,x=-960+Math.cos(a)*72,z=-525+Math.sin(a)*50;W.trees.push([x,gy(x,z),z,i%3?'pine':'cyp',1]);}fw(-960,-525,64,44);poi('阿格里帕人工湖','Stagnum Agrippae',-960,-525,10,0,99,'阿格里帕浴场西边的人工湖，一条运河通往台伯河。',1800);}
-   {const F=frame(-540,gy(-540,-560),-560,0);rectWalls(gN,F,0,0,110,40,-2,20,0,{part:24,seed:.3,sty:5,fl:8|32,nSt:2,gH:10,sH:9,lit:1});roof(gN,F,'hip',0,0,110,40,20,18*DEG,.8,.3);fw(-540,-560,56,21);poi('计票大厅','Diribitorium',-540,-560,26,0,99,'选举计票用的大厅，当时罗马最大的单跨木屋顶。',1400);}
+   {const F=frame(-540,gy(-540,-560),-560,0);rectWalls(gN,F,0,0,110,40,-2,20,0,{part:24,seed:.3,sty:5,fl:8|32,nSt:2,gH:10,sH:9,lit:1});roof(gN,F,'hip',0,0,110,40,20,18*DEG,.8,.3);fw(-540,-560,56,21);poi('计票大厅','Diribitorium',-540,-560,26,0,99,'选举计票用的大厅，当时罗马最大的单跨木屋顶。【史】阿格里帕开工，前7年奥古斯都建成；狄奥说它是一个屋顶下最大的建筑（《罗马史》55.8）。老普林尼记着，剩下一根百尺长的落叶松木梁一直摆在选举围场里展示（《博物志》16.201）。公元80年大火后再也架不起这样的屋顶。',1400);}
    {const F=frame(-430,gy(-430,-780),-780,0);for(const[ax,az,bx,bz]of[[-28,-70,28,-70],[28,-70,28,70],[28,70,-28,70],[-28,70,-28,-70]])portico(W,gN,F,ax,az,bx,bz,0,6,-5,3.2,[1,.95,.85]);
     T2(-430,-818,180,{W:12,L:18,podH:2,colH:7,nf:4,rows:1,seed:.6,sculpt:false});for(const s of[1,-1])lathe(gN,F,s*8,0,-10,[[1,0],[.8,9],[0,10]],4,25);fw(-430,-780,34,76);poi('伊西斯神庙','Iseum Campense',-430,-780,18,0,99,'战神广场上的埃及式神庙，院里立着方尖碑。',1400);}
    W.foot.addCircle(-610,-330,52);W.foot.addCircle(-880,-1090,56);W.foot.addCircle(890,910,50);

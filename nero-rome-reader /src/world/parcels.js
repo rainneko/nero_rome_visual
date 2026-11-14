@@ -285,10 +285,11 @@ function cityParcels(W,o){const t0=performance.now(),F=cityFabric(W);if(!W.v2At)
         face=f2;rec.L=L=L2;ob=lotOBB(L);rec.aligned=true;S.aligned++;}}
       if(!pcStreetClear(LN,L)){drop('street');continue;}   // H11: off the secondary streets
       const hit=pcHits(W,L,.8);if(hit){const L2=hit.tag==='road'&&lot.k==='road'?pcStepBack(W,L):null;if(!L2){drop('hit');rec.hit=hit.tag||(hit.blkLot?'lot':'foot');continue;}rec.L=L=L2;ob=lotOBB(L);rec.back=true;S.stepBack++;}
-      if(!face&&(lot.k==='road'||lot.k==='street')&&pcApronBlocked(W,L)){drop('apron');continue;}   // a front that faces no line (past a street's end) is paved out to the nearest (below); with a fountain or a monument in its first 2 m that paving cannot be laid, and the house would open onto it (H10): not built
+      if(!face&&(lot.k==='road'||lot.k==='street')&&(pcApronBlocked(W,L)||!pcNearLine(W,LN,lp(L[0],L[1],.5)))){drop('apron');continue;}   // ... or no line within PCL.farLine of its front's middle either (a road lot left 13 m back from the Via Portuensis, H10, 2026-11-14): nothing to pave out to   // a front that faces no line (past a street's end) is paved out to the nearest (below); with a fountain or a monument in its first 2 m that paving cannot be laid, and the house would open onto it (H10): not built
       {const I=pInset(L,.1)||L;if(built.concat(glbs).some(q=>residentialOverlap(I,pInset(q.L,.1)||q.L))){drop('overlap');continue;}}   // H11: a lot turned to its street or stepped back from a road (above) can reach into one this block has built
       const key=o.grp?o.grp(ob.cx,ob.cz):'';if(key===null||key===undefined){drop('grp');continue;}
-      const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
+      const p=lot.shop?shop(R):Z.lot(R);p.v2=true;if(courtPlan)p.minRoofY=courtPlan.y+3.9;if(lot.k==='road'||lot.k==='street')p.frontOk=Q=>{const f=pcFacing(LN,Q);return !f||f.dA<=PCL.align*DEG;};   // each house's own front, as city-audit H14 measures it: a house set back in its lot can come within reach of a side street (2026-11-14)
+      p.burn=Z.burn&&R()<.4?1:0;const l0=(W.lotLog||[]).length;
       let ok=false;let gq=lot.glb?pcGlb(W,L,o.glb.spec[lot.glb]):null;if(gq&&gq.fail){cnt(S.glbMiss,gq.fail);gq=null;}   // P4: the GLB insula on its lot (o.glb.put places it); else, or where it no longer fits, lotBuild's houses
       if(gq){const n=o.glb.put({n:lot.glb,x:gq.x,z:gq.z,r:gq.r,gmin:gq.gr.min,key});   // null: the street in front is too far uphill (monuments.js insulaGLB)
         if(n){rec.glb=n;out.glb.push({n,P:gq.P,lot:out.lots.length-1});glbs.push({L:gq.P});S.glb++;ok=true;}else{cnt(S.glbMiss,'uphill');gq=null;}}
