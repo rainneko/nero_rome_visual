@@ -758,6 +758,19 @@ Keep this file current: every promise made to the author goes here until it is d
   - `?hq` 下共 7 块：F4 (−590, 913)、(−547, 835) 两块原来的花园，F1 (−1427, −535) 路口神龛、(516, −645)、(661, −694)、(1032, −1096) 三个水池、(628, −485) 大树和祭坛。下一块最陡的是 F2 神龛 (−1369, −480)，比值 0.78，没算进去。
   - 和上一版比：只有这 7 块变了（F1 39 → 34、F4 35 → 33、cliff 7，少了 1 座神龛、3 个水池），占地框数、其余 GLB、`__floatCheck()` 59 项都没变。截图 `docs/screenshots/fountain-slope-20261105/cliff_-590_913.jpg`（左改前、右改后）和 `cliff_others.jpg`（(−547, 835)、(661, −694) 改后）。
 
+### 2026-11-14 尼禄东宫（过渡宫）v2：台地以上按平面重建（`briefs/rome/transitoria-v2.md`，分支 `claude/transitoria-v2`）
+作者 2026-11-13：精修东宫，要比提比略宫奢华；东立面那两层拱廊很怪。说明和清单在 `briefs/rome/transitoria.md` 的 "v2 (2026-11)"，截图 `docs/screenshots/transitoria-v2-20261114/`（`r3_page_*` 左 main 右 v2）。
+- [x] 平面数据 `tools/models/rome/transitoria_plan.json`（82 间房、26 个屋顶块），模型由 `tib_plan.py` 按数据生成；这个模块改成不绑提比略宫，提比略宫重建后文件逐字节相同。
+- [x] 外观：东立面两层柱廊（下层浅紫纹白大理石、上层白大理石 3.8 m、平顶石栏杆立像），不再是拱廊；东塔露台地面 30 m、檐口 34 m、铜顶，露台每面三格，玻璃仍由页面按剧情开关；三座角亭、门楼和门廊、南楼三层、浴室两条筒拱；庭园和下沉 4.5 m 的水庭（两层壁龛的喷泉墙、十二柱亭）；架空廊起头三跨。
+- [x] 分件文件 `assets/models/rome/parts/rome_transitoria_parts.glb`：八个部件（任务书的七个加 `tr_b1`），82 个 `room_<编号>`。64 788 个三角形；网页文件 61 064（上限 70 000）。
+- [x] 页面：模型到来前的替身按屋顶块重做（`palatine.js`）；塔顶玻璃对到新塔上（`domus-aurea.js`）。
+- [x] 检查：`npm run check`、`test:boot`、`bake-roads.mjs --check`、`city-audit.mjs --assert`、悬空、墙脚、台基检查通过；地面网格未变。
+- [x] z 0 以下只动了一行：水庭下面的填土顶面从 −3 改到 −4.5（`rome_transitoria.py`，高度 2.0 → 0.5）。台地分支（PR 24）也在改同一脚本的 z 0 以下，后合并的一方要变基。
+- [ ] 页面标签的文字等文案组，这次没动。
+- [ ] GPT 参考图到了以后调颜色和细部（上层柱廊背墙的红还偏重）。
+- [ ] 庭园里的树现在是模型里的修剪柏树，页面没在那里种树。
+- [ ] 下次重烘街区时删掉模型里两个“地面锚点”小三角形（水庭北廊下）。
+
 ### 2026-11-12 提比略宫 v2：平台以上按平面重建（`briefs/rome/tiberiana-v2.md`，分支 `claude/tiberiana-v2-22fa96`）
 作者 2026-11-11：屋顶太大（单片瓦面长到 130 m）、不要超过三层、一层做高、本质是放大的元老宅、楼层要能拆开（以后放 Unity）。
 说明和清单在 `briefs/rome/tiberiana.md` 的 "v2 (2026-11)"，截图 `docs/screenshots/tiberiana-v2-20261112/`（`page_*` 左 main 右 v2）。
@@ -778,9 +791,12 @@ Keep this file current: every promise made to the author goes here until it is d
 - [x] `monuments.js` 里旧石榴小院的两个占地已删（2026-11-14，补丁分支；删后重烘 `road-network.js`、`street-fabric.js` 与原文件逐字节相同）；`gP` 变空后页面不再把空值加进场景（原来控制台报 `THREE.Object3D.add`，`noble-quarter`、`neighborhood-regression` 因此不过）。
 - [ ] 模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）还留着，只为让地面网格不变；下次动模型并重烘时删。
 - [ ] 西北台阶脚到图斯库斯街的最后 6 m（落差约 1.7 m）在模型之外，归台地那边铺；铺的时候别在台阶脚前面种灌木和柏树（`terraceFeet` 沿山石脚线种）。
-- [ ] 暗阁还没有位置（等文案组给出原文段落），平面和模型里都没有。
+- [x] 暗阁（密室）定在塔楼底层 W02b（2026-11-14 平面修订）：无窗，东墙两扇带闩的厚门开向天井。
 - [ ] 分件文件里外墙只有外皮，没有内侧墙面和天花；进 Unity 做室内时要补。
-- [ ] 内殿 S01 的位置待文案组核对（平面里写了“待核对”）。
+- [x] 内殿不是 S01：书里的内殿就是寝殿 2T2，S01 改名花园厅（2026-11-14 平面修订）。
+- [x] 2026-11-14 平面修订的其余几条：二层加“我”的屋子 2W04（M13 升到两层）、大餐厅屋脊方口、石榴小院西北两边的柱廊、杂役院西北门、甜酒工坊换到 E16b；房间改名只动注释和文档，`room_<编号>` 不变。说明在 `briefs/rome/tiberiana.md` 的 “Plan revision (2026-11-14)”。
+- [ ] `src/ui/app.js` 里 GZ 词条“秘书处”“核销房”的位置先不动，等台地分支把北坡办公院定了再改。
+- [ ] 大餐厅屋脊的方口现在是画出来的（压边里一块深色面），屋面没有挖穿：`tib_plan.py` 的人字顶不支持开洞。进 Unity 做室内前，在拆件文件里真的开洞。
 
 
 ### 2026-11-13 宅 A/B 南面敞廊改成柱廊（作者经城市生成总监转来，分支 `claude/domus-loggia`）
