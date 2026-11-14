@@ -11,6 +11,18 @@ Keep this file current: every promise made to the author goes here until it is d
   测试页和审阅页（test.html、city-audit.html 等）不上线。
 * ⚠️ 章节访客计数：先部署 `server/visit-counter/`，再把地址填进 `build.config.json` 的 `"counter"`。
 
+## 2026-11-14 台伯河的桥、阿格里帕浴场
+* ✅ 六座桥换成 GLB（`briefs/rome/bridges.md`，`tools/models/rome/rome_pons_*.py`），代码里留着简化替身：法布里奇乌斯桥（两个大拱、泄洪小拱、拱背桥面）、
+  切斯提乌斯桥（一大两小）、埃米利乌斯桥（八拱，桥墩开泄洪洞）、苏布利基乌斯木桥（全木，不用铁）、阿格里帕桥（八拱、石板栏杆）、尼禄桥（七个圆拱，砖砌）。
+  桥面两头落在岸顶的高度（`BRIDGES` 表里的 Y），路在桥头接上；桥身占地加宽到两侧各 4 m，房子不再压到桥上。每座桥都有带【史】的标注。
+* ✅ 删掉没有史料依据的“第 12 号桥”（作者 2026-11-14 同意）。西岸路改从阿格里帕桥的特拉斯提弗列一端接出；奥雷利亚路、波尔图恩西斯路和科尔内利亚路的
+  桥头坐标跟着桥的新位置改。已重新烘焙：街区 2671 块，街道 2680 条，222.2 km。
+* ✅ 万神殿南边那个大方块是阿格里帕浴场，原来没有标注，单坡大屋顶看上去像万神殿的一部分。现在拆成中央高厅加两翼，各自盖屋顶，北边保留圆顶发汗室
+  （维特鲁威 5.10.5），补了【史】标注。万神殿本身是阿格里帕时代的长方形门廊神庙，没有圆顶，不用改。
+* ✅ 计票大厅的大屋顶符合史实：狄奥 55.8 说它是一个屋顶下最大的建筑；老普林尼 16.201 记着那根百尺长的落叶松梁。只给标注补了【史】。
+* ✅ 路重走后城市审计冒出的 H10、H14（4 处）已修：临路地块离最近的线超过 12 m 时不建；每栋房子按它自己的正面再核一次朝向（`lotBuild0` 的 `frontOk`）。全套检查通过。
+* ⬜ 埃米利乌斯桥东头那一排房子贴着桥身，没有压上去，但挨得很近；桥头和街道是斜着接的。
+
 ## 2026-10-25 架构审阅（先读这一节）
 审阅报告 `docs/AUDIT-2026-10-25.md`；道路、街区、地块的唯一规范 `briefs/rome/city-generation-spec.md`（取代 `street-rules.md`、`block-road-study.md`、
 `courtyard-and-depot-rules.md` 院落部分、`pocket-squares.md`、`streets_and_light.md` 第 1 节里互相矛盾的规则）。每次改城市生成都要跑
@@ -763,7 +775,8 @@ Keep this file current: every promise made to the author goes here until it is d
 - [x] 页面：陶鹰标签、石榴小院（`W.pomePos` 和四个标签，文字未动）移进模型；无花果树约 8.5 m；模型到来前的替身（内嵌的 `assets/models/tiberiana.glb` 和程序化替身）都按屋顶块重做，页面小了 1.2 MB。
 - [x] 分件文件 `assets/models/rome/parts/rome_tiberiana_parts.glb`：七个部件（`tib_base`、`tib_b1`、`tib_garden`、`tib_f1`、`tib_f2`、`tib_f3`、`tib_roof`），141 个 `room_<编号>` 楼板，隔墙、108 个门洞、7 跑楼梯、中庭十柱、宴会厅 26 根缠金箔的柱、地下暗廊和浴室。79 464 个三角形。
 - [x] 检查：网页文件 67 488 个三角形（上限 80 000）；`npm run check`、`test:boot`、`bake-roads.mjs --check`、`city-audit.mjs --assert` 通过；悬空和墙脚检查与 main 相同；广场视角帧时间中位数 +0.8%。
-- [ ] 下次重烘街区时删掉两处临时保留：`monuments.js` 里旧石榴小院的两个占地（那块地现在空着）；模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）。两者只为让现有烘焙不过期。
+- [x] `monuments.js` 里旧石榴小院的两个占地已删（2026-11-14，补丁分支；删后重烘 `road-network.js`、`street-fabric.js` 与原文件逐字节相同）；`gP` 变空后页面不再把空值加进场景（原来控制台报 `THREE.Object3D.add`，`noble-quarter`、`neighborhood-regression` 因此不过）。
+- [ ] 模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）还留着，只为让地面网格不变；下次动模型并重烘时删。
 - [ ] 西北台阶脚到图斯库斯街的最后 6 m（落差约 1.7 m）在模型之外，归台地那边铺；铺的时候别在台阶脚前面种灌木和柏树（`terraceFeet` 沿山石脚线种）。
 - [ ] 暗阁还没有位置（等文案组给出原文段落），平面和模型里都没有。
 - [ ] 分件文件里外墙只有外皮，没有内侧墙面和天花；进 Unity 做室内时要补。

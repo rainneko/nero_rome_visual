@@ -121,6 +121,7 @@ function houseRoadClear(W,P){if(!W.foot)return true;const o=lotOBB(P),rad=Math.h
 function lotFits(L,o,ground,n){const H=ground.min+.15+o.gH+(n-1)*o.sH,roofRise=L.length===4?Math.min(Math.hypot(L[2][0]-L[0][0],L[2][1]-L[0][1])*.5*Math.tan(o.pitch),6.5):3;
   return!(ground.max>H+roofRise)&&!(ground.max-ground.min>lotSlopeLimit(n||1,o.gH,o.sH,Math.abs(pArea(L))));}
 function lotBuild0(W,g,L,o,R,smk){
+  if(o.frontOk&&!o.frontOk(L))return false;   // v2 (parcels.js): a house whose own front would face another line askew (H14)
   if(typeof residentialSiteAllowed==='function'&&!residentialSiteAllowed(W,L))return false;
   const eave=L.length===4&&!o.flat?(pInset(L,-.55)||L):L;if(!(o.v2?pcRoadClear(W,eave):houseRoadClear(W,eave)))return false;   // v2 (parcels.js): a road's round footprints are tested as circles, not as their boxes
   const ground=houseGround(W,L);if(!ground||!lotFits(L,o,ground,o.nSt))return false;
