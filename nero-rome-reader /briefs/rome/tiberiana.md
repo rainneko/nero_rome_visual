@@ -269,7 +269,7 @@ in rank; and the floors must come apart, for Unity.
   three-bay loggia on F3, the solarium beside the bedroom with six bronze awning posts, the broken eagle on the west apex of the
   old house's study (M15), the fig tree's bed in the paved court. Kitchen with a ridge vent; no chimneys, no dormers, no glass.
 - Walls: travertine plinth, a red dado band 2.2 m up, small high windows on the ground floor (sill 3.8 m; none on stairs, stores,
-  guard rooms and the treasury), a red string course at each floor of a block, lattice windows above, a cornice. 371 windows, 8
+  guard rooms and the hidden closet), a red string course at each floor of a block, lattice windows above, a cornice. 371 windows, 8
   doors, 162 columns in 148 bays (ground floor Ionic 4.2 m on a stylobate in the courts and 4.05 m on the platform wall's coping at
   the south and east edges; the peristyle's upper order Corinthian 2.8 m, standing on the floor with the parapet between: the
   most that fits under the lean-to at 9.6 m with a 0.3 m beam; 【史】 Vitruvius 5.1.3 has the upper columns a quarter shorter
@@ -314,8 +314,8 @@ in rank; and the floors must come apart, for Unity.
     reaches under it, and the rock was cut back (8 points) only where no face ends lower in any cell than before
     (`NW_FLOOR`, `_solid`, `_carve`). The raw grid equals the old one in all 3 591 cells; both bakes are up to date.
 - 【史】 What the plan takes from the excavations, and that the unified platform is Neronian and later than AD 64, is in the
-  brief. The plan is this project's, not the excavated one. 暗阁 (the book's hidden closet) has no place yet: the passage has
-  not come back from the copy session.
+  brief. The plan is this project's, not the excavated one. 暗阁 (the book's hidden closet) is W02b since the plan revision of
+  2026-11-14 (below).
 
 **Files**
 - `tools/models/rome/tib_plan.py` builds from the JSON (no palace numbers in it); `tools/models/rome/rome_tiberiana.py` holds the
@@ -367,6 +367,25 @@ and `stairs_page_tib_sw` (round 3 on the left, now on the right), `stairs_model_
 `stairs_model_nw_nw`, `stairs_model_nw_foot`, `stairs_model_side_w`. Cameras `tib_nw`, `tib_foot`, `tib_side`, `tib_way` in
 `tiberiana_shots.mjs`.
 
+### Plan revision (2026-11-14)
+The author settled several points with the copy session; the plan has 142 rooms now (`tiberiana_plan.py`). In the model:
+- **暗阁（密室）** is W02b, the tower's ground floor under the bedroom: no window on any face, two solid bolted doors
+  (1.8 × 2.6, wood) in its east wall to the court W03 (【书】“尼禄反手关上那两扇实心的厚门”). N10 is the 文书库 now and has its
+  windows again.
+- **2W04, “我”的屋子**, a new room on F2 next to the bedroom: roof block M13 is two storeys (lean-to to the south, 11.0 at the
+  wall, eaves 9.7), a window to the court on its north wall; in the parts file a small arch with a purple curtain in the wall
+  to 2T2 (【书】“穿过一道挂着厚重紫绒帷幔的小拱门，就是他的卧榻。”).
+- **Banquet hall**: a square opening 3 × 3 m in the middle of the nave's ridge with a kerb (【书】“屋顶很高，顶上开着一个方口，
+  能看见夜空。”). It is drawn as a dark square inside its kerb; the roof under it is not cut.
+- **Pomegranate court W14**: a one-storey colonnade along its west and north sides, 3 m deep, columns 4.0 m, a tiled lean-to
+  into the court; the north walk stops 1 m short of the tree's bed.
+- **Service court W15**: a door in the north front (feature `doorNW`) with three steps outside.
+- **甜酒工坊** is E16b now (north end of the kitchen court): a wide door and the hearth's mouth under a small tiled canopy.
+  E03 is a plain 备酒间.
+- Renamed rooms (N08 书记房, N09 账簿房, N10 文书库, S01 花园厅, 2T2 寝殿（内殿）, W02b 暗阁): the `room_<id>` objects keep
+  their ids. `briefs/rome/tiberiana-v2.md` (the review's file) still lists the old names in its table of the book's rooms.
+- Nothing below z = 0 changed; no re-bake.
+
 ### v2 checklist (2026-11-12)
 - [x] No part over three storeys; three storeys only at M12 and M02; highest ridge 17.2 m
 - [x] F1 6.5 m, F2 4.5 m, F3 3.8 m; string courses at 6.5 and 11.0 at each floor of a block
@@ -388,4 +407,4 @@ and `stairs_page_tib_sw` (round 3 on the left, now on the right), `stairs_model_
 - [x] Foot outline and ground grid unchanged; road and fabric bakes up to date
 - [x] Web file 67 488 triangles; parts file with `tib_base`, `tib_b1`, `tib_garden`, `tib_f1`, `tib_f2`, `tib_f3`, `tib_roof`
 - [x] `room_<id>` slabs for all 141 rooms, partitions, doors, stairs; `apart` and `f1_rooms` renders
-- [ ] 暗阁: no place in the plan yet
+- [x] 暗阁: W02b on the tower's ground floor (plan revision 2026-11-14, below)
