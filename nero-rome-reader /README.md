@@ -65,6 +65,7 @@ src/scenes/antium/main.js      layers, labels, camera views, GLB loader
 src/ui/book.js                 full text: contents, chapters, reading place, reader counts
 src/ui/app.js                  states, resource bar, reader, place-name links, triggers, pages, music
 src/ui/empire.js               empire map overlay
+src/ui/fp.js                   first-person walk on the Palatine: ground and collision from depth captures, guards, freedmen, senators, grass, wind
 data/                          density map, empire map data, book.txt (the full text)
 assets/models/*.glb            Rome hero buildings (Jupiter temple, Domus Tiberiana, Curia), inlined in the page
 assets/models/antium/*.glb     Antium core buildings, bundled into dist/antium-assets.js
@@ -103,6 +104,7 @@ free tier, stores only salted hashes of IP addresses). Put its URL in `build.con
 npm run build:test     # dist/test.html loads three.js from node_modules
 npm run test:boot      # boots headless, prints the resource bar, fails on page errors
 npm run test:shot -- '[[0,"forum",0.3,"forum.png"],[1,"antBridge",0.3,"bridge.png"]]'
+npm run build && GPU=1 node tools/test/fp-walk.mjs   # the first-person walk: in by the button, a loop on foot, the three kinds of figures, out
 ```
 
 ## Deploy
