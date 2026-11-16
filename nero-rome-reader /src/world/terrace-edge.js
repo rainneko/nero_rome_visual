@@ -24,6 +24,13 @@ function terraceReserve(W,F,P,o={}){const Q=P.map(p=>{const q=F.p(p[0],0,p[1]);r
    the wall is min m high or more, one every sp m along a run of walls that turn less than turn degrees at each vertex (a curve is one wall: a run of
    8 m or less has none), evenly from end to end, or on edge i out from s both ways; none where avoid(x,z) (a stair along the wall); no corner pier at such a turn.
    o.noLump(x,z): no rock lumps at the foot of the rock face there (a paved garden at its foot).
+   o.piers: vertices with a 6 x 6 m pier (H1); every one as the corner-pier pilot of round 4 (the author, 2026-11-15: "统一改"): solid up to the coping,
+   its top paved flush with the terrace, the coping and the parapet carried round its outline outside the terrace (pierRing); the walls' coping and parapet
+   stop where that parapet meets them. Its two sides: a wall of this terrace; else o.pierX[v] ({d, n, draw}: the ray from the vertex along another terrace's
+   wall, its outward normal; draw false: that terrace draws the pier, this one only stops its wall there); else a shared edge (o.shared: the terrace beyond
+   it, the pier going along its line on the outer side of the wall) or rock. W.pierSq: the square, its top and its outlines per pier drawn (inPierSq).
+   o.band[v]: levels (local) of lower terraces whose walls meet such a pier: their coping's section goes on round the pier's free faces as a string course.
+   o.noCorner: vertices with no corner pier at all (the coping and parapet simply turn).
    o.skip: edges with no wall (shared with a higher terrace); o.footY[i]: the edge stands on a lower floor at that level (local), not on the ground;
    o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms). o.wing=false: no wing walls at the openings (a stair
    with its own cheek walls comes through). o.endV: outline vertices where a run that reaches the corner still ends on a pier (a wall beside an open stair head).
@@ -43,6 +50,33 @@ function terraceEdge(W,g,P,yTop,o={}){
       e.S.push({s,x,z,gF,h:yW-gF,open:(o.open&&o.open(x,z,i,s))||false,room:!!(rm&&s>rm[0]-.01&&s<rm[1]+.01)});}
     const S=e.S;for(const q of S){q.rk=o.rock&&q.h>9.8?yW-9.5:null;q.gW=q.rk??q.gF;if(q.rk!=null)q.h=yW-q.rk;}   // o.rock (H1, palatine-masterplan.md 2.1): over 9.8 m the masonry stands on the hill's rock, 9.5 m of wall at most
     for(let k=0;k<=ns;k++){let lo=k,hi=k;while(lo>0&&S[lo-1].h>9&&!S[lo-1].open)lo--;while(hi<ns&&S[hi+1].h>9&&!S[hi+1].open)hi++;S[k].sub=!o.rock&&S[k].h>9&&S[hi].s-S[lo].s>=12&&!S[k].room;S[k].bat=S[k].sub||S[k].room?0:.04;}}
+  // the piers (o.piers): PR[v], each one's frame (its axes along the sum of its walls' directions), foot and outline, before the walls (their coping and
+  // parapet stop at it); none where it would stand less than 1.5 m out of the ground
+  const PR={},SH=o.shared||[];
+  for(const v of o.piers||[]){const e0=E[(v+n-1)%n],e1=E[v],w0=!e0.skip&&e0.S.length>0,w1=!e1.skip&&e1.S.length>0,X=o.pierX&&o.pierX[v],V=Q[v];if(!w0&&!w1)continue;
+    const side=(e,k,w)=>{if(w)return{d:k?[e.ux,e.uz]:[-e.ux,-e.uz],n:[e.nx,e.nz],w:1};if(X)return{d:X.d,n:X.n,w:1};   // k 0: the edge ending at V, 1: the one from it
+      if(SH.includes(e.i)){const m=k?e0:e1,s=Math.sign(e.ux*m.nx+e.uz*m.nz)||(k?1:-1);return{d:[e.ux*s,e.uz*s],n:[-e.nx,-e.nz],w:0};}   // shared: along it on the wall's outer side
+      return{d:k?[e.ux,e.uz]:[-e.ux,-e.uz],n:[e.nx,e.nz],w:0};},s0=side(e0,0,w0),s1=side(e1,1,w1);   // rock
+    let ux=(s1.w?s1.d[0]:0)-(s0.w?s0.d[0]:0),uz=(s1.w?s1.d[1]:0)-(s0.w?s0.d[1]:0);const ul=Math.hypot(ux,uz)||1;ux/=ul;uz/=ul;const C=frame(V[0],0,V[1],Math.atan2(-uz,ux));
+    const fY=[w0&&o.footY&&o.footY[e0.i],w1&&o.footY&&o.footY[e1.i]].filter(y=>y!=null&&y!==false);let gF=1e9;
+    if(fY.length)gF=F.oy+Math.min(...fY);else for(const[a,b]of[[0,0],[-3,-3],[3,-3],[3,3],[-3,3]]){const q=C.p(a,0,b);gF=Math.min(gF,gy(q[0],q[2]));}
+    if(top-gF<1.5)continue;PR[v]={C,gF,w0,w1,s0,s1,ax:[ux,uz],R:pierRing(V,s0,s1,[ux,uz],3,o.pierFill&&o.pierFill[v]),draw:!(X&&X.draw===false)};}
+  // two piers at the two ends of one short wall whose outlines overlap (beltS:6 and :0, 6 m apart; the reviewer, 2026-11-15): one joint pier (pierJoint),
+  // drawn by the first (the wall's start): both bodies, the notch between their outlines filled, one paving inside the coping round the joint outline and
+  // the parapet round that outline only; the wall between them has no coping or parapet of its own (noTop), its neighbours stop at the joint's parapet
+  const noTop=new Set();
+  for(const b of o.piers||[]){const a=(b+1)%n,Pb=PR[b],Pa=PR[a];if(!Pb||!Pa||!Pb.draw||!Pa.draw||Pb.J||Pa.J||!o.piers.includes(a)||!Pb.w1||!Pa.w0)continue;const e=E[b],rb=Pb.R.ring,ra=Pa.R.ring;
+    if(Math.hypot(rb[rb.length-1][0]-Q[b][0],rb[rb.length-1][1]-Q[b][1])+Math.hypot(ra[0][0]-Q[a][0],ra[0][1]-Q[a][1])<=e.L+1e-6)continue;
+    const J=pierJoint(Q[b],Q[a],Pb,Pa,e);J.a=a;J.b=b;Pb.J=J;Pa.J=J;Pa.jm=b;Pb.R.t0=J.t0;Pa.R.t1=J.t1;noTop.add(e.i);(W.pierJoints=W.pierJoints||[]).push(tag+':'+b+'+'+a);}
+  // any other two piers whose outlines overlap (none on the hill now): each one's parapet stops where it crosses the other's and keeps the part outside
+  // the other's outline; the post at the crossing is the first one's (the walls' trims, t0 and t1, are not changed)
+  {const D=(o.piers||[]).filter(v=>PR[v]&&PR[v].draw&&!PR[v].J),P0={};for(const v of D){P0[v]=PR[v].R.par;PR[v].R.noPost=[];}
+    for(const a of D)for(const b of D){if(a===b)continue;const B=P0[b],Bo=[...PR[b].R.ring,Q[b]];let A=PR[a].R.par,hit=null;
+      for(let i=0;i+1<A.length&&!hit;i++)for(let j=0;j+1<B.length&&!hit;j++){const p=A[i],q=A[i+1],r=B[j],d1=[q[0]-p[0],q[1]-p[1]],d2=[B[j+1][0]-r[0],B[j+1][1]-r[1]],cr=d1[0]*d2[1]-d1[1]*d2[0];
+        if(Math.abs(cr)<1e-9)continue;const t=((r[0]-p[0])*d2[1]-(r[1]-p[1])*d2[0])/cr,u=((r[0]-p[0])*d1[1]-(r[1]-p[1])*d1[0])/cr;if(t>1e-6&&t<1-1e-6&&u>1e-6&&u<1-1e-6)hit={i,X:[p[0]+d1[0]*t,p[1]+d1[1]*t]};}
+      if(!hit)continue;const{i,X}=hit,hd=[...A.slice(0,i+1),X],tl=[X,...A.slice(i+1)],mid=L=>{let s=0;for(let k=1;k<L.length;k++)s+=Math.hypot(L[k][0]-L[k-1][0],L[k][1]-L[k-1][1]);s/=2;
+        for(let k=1;k<L.length;k++){const l=Math.hypot(L[k][0]-L[k-1][0],L[k][1]-L[k-1][1]);if(s<=l){const f=s/l;return[L[k-1][0]+(L[k][0]-L[k-1][0])*f,L[k-1][1]+(L[k][1]-L[k-1][1])*f];}s-=l;}return L[L.length-1];};
+      PR[a].R.par=inPolyXZ(...mid(hd),Bo)?tl:hd;if(a>b)PR[a].R.noPost.push(X);}}
   const bPos=new Map(),BT=o.butt?Math.cos((o.butt.turn||20)*DEG):2;   // o.butt: the buttresses' places along each edge (s), by runs of walls that turn less than BT
   if(o.butt){const soft=v=>{const e0=E[(v+n-1)%n],e1=E[v];return!e0.skip&&!e1.skip&&e0.ux*e1.ux+e0.uz*e1.uz>BT;},put=(i,s)=>{if(!bPos.has(i))bPos.set(i,[]);bPos.get(i).push(s);};
     for(let v=0;v<n;v++){if(soft(v))continue;const ch=[];let u=v;do{if(E[u].skip)break;ch.push(E[u]);u=(u+1)%n;}while(soft(u)&&u!==v);if(!ch.length)continue;
@@ -67,14 +101,14 @@ function terraceEdge(W,g,P,yTop,o={}){
           if(k%2===0&&!(o.noLump&&o.noLump(A.x,A.z))){const m=Wp((A.s+B.s)/2,1.2+.6*teH(A.x,A.z,23),0),C=frame(m[0],0,m[2],EF.rot+(teH(A.z,A.x,24)-.5)*.4),hh=Math.min(ra,rb)-Math.min(A.gF,B.gF);
             if(hh>1.2){rockLump(g,C,1.1+.8*teH(A.x,A.z,25),.9+.5*teH(A.x,A.z,26),Math.min(A.gF,B.gF)-.6,Math.min(hh*.7,1.2+2.2*teH(A.x,A.z,27)),pal,teH(A.x,A.z,28),[m[0],m[2]]);(W.palRocks=W.palRocks||[]).push([m[0],m[2],2]);}}}}
       // B2 coping and parapet
-      const tA=cA&&spur(e.i)?TRIM:0,tB=cB&&spur(e.i+1)?TRIM:0,xa=Math.max(sA-(cA&&!tA?.3:0),tA),xb=Math.min(sB+(cB&&!tB?.3:0),e.L-tB);trimSet(g,pal,.45);if(M3)box(g,EF,X((xa+xb)/2),yW,-.2,(xb-xa)/2,.45,.45,31);else box(g,EF,X((xa+xb)/2),yW,-.075,(xb-xa)/2,.45,.375,31);   // M3 (H0): 0.45 m thick, 0.25 m out, 0.9 m deep
-      const rail=(o.rail&&o.rail[e.i])||'pluteus';
-      for(let k=k0;k<=k1;){if(top-S[k].gF<.6){k++;continue;}let k2=k;while(k2<k1&&top-S[k2+1].gF>=.6)k2++;const ra=Math.max(S[k].s-(k===0&&!tA?.3:0),tA),rb=Math.min(S[k2].s+(k2===ns&&!tB?.3:0),e.L-tB);
-        if(rb-ra>1.5){if(rail==='transenna')transenna(g,EF,X,ra,rb,top+.1,pal,e.brk);
+      const tA=cA&&spur(e.i)?TRIM:cA&&PR[e.i]?Math.max(0,PR[e.i].R.t1):0,tB=cB&&spur(e.i+1)?TRIM:cB&&PR[(e.i+1)%n]?Math.max(0,PR[(e.i+1)%n].R.t0):0,xa=Math.max(sA-(cA&&!tA?.3:0),tA),xb=Math.min(sB+(cB&&!tB?.3:0),e.L-tB);if(!noTop.has(e.i)){trimSet(g,pal,.45);if(M3)box(g,EF,X((xa+xb)/2),yW,-.2,(xb-xa)/2,.45,.45,31);else box(g,EF,X((xa+xb)/2),yW,-.075,(xb-xa)/2,.45,.375,31);   // M3 (H0): 0.45 m thick, 0.25 m out, 0.9 m deep
+      const rail0=(o.rail&&o.rail[e.i])||'pluteus',rail=typeof rail0==='string'?rail0:'pluteus',cut=rail0&&rail0.none||null;   // {none:[s0,s1]}: no parapet there (a model's own balustrade stands on the edge)
+      for(let k=k0;k<=k1;){if(top-S[k].gF<.6){k++;continue;}let k2=k;while(k2<k1&&top-S[k2+1].gF>=.6)k2++;const ra0=Math.max(S[k].s-(k===0&&!tA?.3:0),tA),rb0=Math.min(S[k2].s+(k2===ns&&!tB?.3:0),e.L-tB);
+        for(const[ra,rb]of cut?[[ra0,Math.min(rb0,cut[0])],[Math.max(ra0,cut[1]),rb0]]:[[ra0,rb0]])if(rb-ra>(cut?.3:1.5)){if(rail==='transenna')transenna(g,EF,X,ra,rb,top+.1,pal,e.brk);
           else if(M3){g.set(60,seed,pal,0);box(g,EF,X((ra+rb)/2),top+.1,-.25,(rb-ra)/2,.9,.3,31);trimSet(g,pal,.5);box(g,EF,X((ra+rb)/2),top+1,-.25,(rb-ra)/2+.03,.1,.34,31);   // M3: a parapet 0.6 m thick and 1.0 m high, ashlar with a travertine cap,
             for(let n=Math.ceil((ra+1.4)/4.5);n*4.5<rb-1.4;n++){g.set(60,seed,pal,0);box(g,EF,X(n*4.5),top+.1,-.25,.45,1.18,.45,15);trimSet(g,pal,.5);box(g,EF,X(n*4.5),top+1.28,-.25,.5,.12,.5,31);}}   // and a pier 0.9 m square every 4.5 m, 0.3 m above it
           else{g.set(60,seed,pal,0);box(g,EF,X((ra+rb)/2),top+.1,-.12,(rb-ra)/2,.88,.2,31);trimSet(g,pal,.5);box(g,EF,X((ra+rb)/2),top+.98,-.12,(rb-ra)/2+.04,.1,.25,31);}}
-        k=k2+1;}
+        k=k2+1;}}   // noTop: the wall inside a joint pier
       // B3 buttresses (or blind arches where the wall is higher than 9 m)
       const Lr=sB-sA,BP=o.butt?(bPos.get(e.i)||[]).filter(s=>(cA?s>=0:s>sA+1.2)&&(cB?s<=e.L:s<sB-1.2)&&!(o.piers&&((o.piers.includes(e.i)&&s<4.2)||(o.piers.includes((e.i+1)%n)&&s>e.L-4.2)))):null,m=BP?BP.length:Math.max(1,Math.round(Lr/7));
       for(let j=0;j<m;j++){const s=BP?BP[j]:sA+Lr*(j+.5)/m,k=Math.min(ns-1,Math.floor(s/(e.L/ns))),t=(s-S[k].s)/(S[k+1].s-S[k].s),gF=lerp(S[k].gW,S[k+1].gW,t),h=yW-gF;
@@ -92,21 +126,71 @@ function terraceEdge(W,g,P,yTop,o={}){
   // corners: a pier where two walls meet at an outer corner, a half-round projection at the rock spurs
   for(let v=0;v<n;v++){const e0=E[(v+n-1)%n],e1=E[v];if(e0.skip||e1.skip)continue;const q0=e0.S[e0.S.length-1],q1=e1.S[0];if(q0.open||q1.open)continue;
     const cr=e0.ux*e1.uz-e0.uz*e1.ux;if(cr*(A2>0?1:-1)<=0)continue;const gF=Math.min(q0.gF,q1.gF);if(top-gF<.6)continue;let bx=e0.nx+e1.nx,bz=e0.nz+e1.nz;const bl=Math.hypot(bx,bz)||1;bx/=bl;bz/=bl;
-    const[vx,vz]=Q[v],sp=o.spur&&o.spur.includes(v);if(o.piers&&o.piers.includes(v))continue;if(o.butt&&e0.ux*e1.ux+e0.uz*e1.uz>BT)continue;   // o.butt: a curve's facets meet with no pier
+    const[vx,vz]=Q[v],sp=o.spur&&o.spur.includes(v);if(o.piers&&o.piers.includes(v))continue;if(o.noCorner&&o.noCorner.includes(v))continue;if(o.butt&&e0.ux*e1.ux+e0.uz*e1.uz>BT)continue;   // o.butt: a curve's facets meet with no pier
     if(sp){out.spurs.push(spurTower(W,g,vx,vz,bx,bz,gF,top,pal,Q));e0.brk.push(e0.L);e1.brk.push(0);continue;}
     const C=frame(vx+bx*.3,0,vz+bz*.3,Math.atan2(bx,bz));(W.wallPiers=W.wallPiers||[]).push([vx+bx*.3,vz+bz*.3,.85]);(W.wallButt=W.wallButt||[]).push([vx,vz,tag+':'+v,'corner',+(top-gF).toFixed(1)]);g.set(60,.5,pal,1);box(g,C,0,gF-1.2,0,.85,top+1.2-gF+1.2,.85,31&~32);trimSet(g,pal,.5);box(g,C,0,top+1.2,0,.95,.18,.95,31);e0.brk.push(e0.L);e1.brk.push(0);}
-  // H1 (palatine-masterplan.md 2.2): a square pier about 6 x 6 m, 0.6 m above the wall top, at each turn of the wall line and where a wall ends on rock or a model
-  for(const v of o.piers||[]){const e0=E[(v+n-1)%n],e1=E[v],w0=!e0.skip&&e0.S.length>0,w1=!e1.skip&&e1.S.length>0;if(!w0&&!w1)continue;const[vx,vz]=Q[v];
-    let ux=(w0?e0.ux:0)+(w1?e1.ux:0),uz=(w0?e0.uz:0)+(w1?e1.uz:0);const ul=Math.hypot(ux,uz)||1;ux/=ul;uz/=ul;const C=frame(vx,0,vz,Math.atan2(-uz,ux));
-    const fY=[w0&&o.footY&&o.footY[e0.i],w1&&o.footY&&o.footY[e1.i]].filter(y=>y!=null&&y!==false);let gF=1e9;
-    if(fY.length)gF=F.oy+Math.min(...fY);else for(const[a,b]of[[0,0],[-3,-3],[3,-3],[3,3],[-3,3]]){const q=C.p(a,0,b);gF=Math.min(gF,gy(q[0],q[2]));}
-    if(top-gF<1.5)continue;const rk=o.rock&&top-gF>9.8?top-9.5:null,f0=rk??gF-1.2,seed=.3+.4*teH(vx,vz,1);
+  // H1 (palatine-masterplan.md 2.2): a square pier about 6 x 6 m at each turn of the wall line and where a wall ends on rock or a grade or shared edge; as the
+  // corner-pier pilot of round 4, every one (the author, 2026-11-15): solid to the coping, its top the terrace's paving, the parapet round its outer outline
+  for(const v of o.piers||[]){const Pp=PR[v];if(!Pp||!Pp.draw)continue;const{C,gF,w0,w1,J}=Pp,R=J||Pp.R,e0=E[(v+n-1)%n],e1=E[v],[vx,vz]=Q[v],rk=o.rock&&top-gF>9.8?top-9.5:null,seed=.3+.4*teH(vx,vz,1);
     if(rk!=null){g.set(61,.4,pal,0);box(g,C,0,gF-1.2,0,3.5,rk-gF+1.2,3.5,31&~32);const nb=w1?e1:e0;rockLump(g,frame(vx+nb.nx*3,0,vz+nb.nz*3,C.rot+.5),1.6,1.2,gF-.8,Math.min(2.6,rk-gF),pal,.6,[vx,vz]);}
-    g.set(60,seed,pal,1);box(g,C,0,f0,0,3.06,Math.min(2.4,top-f0),3.06,31&~32);if(top+.15>f0+2.4){g.set(60,seed,pal,0);box(g,C,0,f0+2.4,0,3,top+.15-(f0+2.4),3,31&~32);}
-    trimSet(g,pal,.45);box(g,C,0,top+.15,0,3.2,.45,3.2,31);g.set(60,.5,pal,3);box(g,C,0,top+.6,0,2.9,.02,2.9,16);
-    for(const[a,b,hx,hz]of[[0,2.9,3.2,.3],[0,-2.9,3.2,.3],[2.9,0,.3,2.6],[-2.9,0,.3,2.6]]){g.set(60,seed,pal,0);box(g,C,a,top+.6,b,hx,.9,hz,31);trimSet(g,pal,.5);box(g,C,a,top+1.5,b,hx+.03,.1,hz+.04,31);}
-    (W.wallPiers=W.wallPiers||[]).push([vx,vz,3.2]);if(w0)e0.brk.push(e0.L);if(w1)e1.brk.push(0);}
+    const[rx,rz]=J?J.M:[vx,vz],seg=(P,Q)=>{const dx=Q[0]-P[0],dz=Q[1]-P[1],L=Math.hypot(dx,dz),zo=(-dz*(P[0]+Q[0]-2*rx)+dx*(P[1]+Q[1]-2*rz))>0?1:-1;return{F:frame((P[0]+Q[0])/2,0,(P[1]+Q[1])/2,Math.atan2(-dz,dx)),L,zo};};   // zo: the sign of the frame's z out of the pier (a joint pier: out of the middle of its wall)
+    const f1=rk??Math.min(gF-1.2,...Pp.R.ring.map(p=>gy(p[0],p[1])-1.2));   // its foot: on the rock base; else the walls' (footY) or the lowest ground under its outer outline, where the terrace below is cut back (v30n's corner, on footN)
+    g.set(60,seed,pal,1);box(g,C,0,f1,0,3.06,Math.min(2.4,yW-f1),3.06,31&~32);if(yW>f1+2.4){g.set(60,seed,pal,0);box(g,C,0,f1+2.4,0,3,yW-(f1+2.4),3,31&~32);}   // the body up to the coping's foot
+    if(R.fill&&Pp.jm==null)for(const T of R.fill){const fF=rk??Math.min(f1,...T.map(p=>gy(p[0],p[1])-1.2)),on=(p,q)=>R.ring.some((r,k)=>k+1<R.ring.length&&Math.hypot(r[0]-p[0],r[1]-p[1])<1e-6&&Math.hypot(R.ring[k+1][0]-q[0],R.ring[k+1][1]-q[1])<1e-6);   // fill: the body carried out to the outline
+      for(let k=0;k<T.length;k++){const p=T[k],q=T[(k+1)%T.length];if(!on(p,q))continue;const dx=q[0]-p[0],dz=q[1]-p[1],l=Math.hypot(dx,dz);let nx=dz/l,nz=-dx/l;if((p[0]+q[0]-2*rx)*nx+(p[1]+q[1]-2*rz)*nz<0){nx=-nx;nz=-nz;}   // its faces on the outline only
+        const y2=Math.min(fF+2.4,yW),P6=(r,d,y)=>[r[0]+nx*d,y,r[1]+nz*d];g.set(60,seed,pal,1);g.poly([P6(p,.06,fF),P6(q,.06,fF),P6(q,.06,y2),P6(p,.06,y2)],[nx,0,nz]);g.poly([P6(p,.06,y2),P6(q,.06,y2),P6(q,0,y2),P6(p,0,y2)],[0,1,0]);
+        if(yW>y2){g.set(60,seed,pal,0);g.poly([P6(p,0,y2),P6(q,0,y2),P6(q,0,yW),P6(p,0,yW)],[nx,0,nz]);}}}
+    if(Pp.jm!=null){(W.wallPiers=W.wallPiers||[]).push([vx,vz,3.2]);(W.pierSq=W.pierSq||[]).push({x:vx,z:vz,ux:Pp.ax[0],uz:Pp.ax[1],h:3.06,top,tag:tag+':'+v,ring:R.ring,par:R.par,pave:R.pave,band:[],joint:tag+':'+Pp.jm});   // a joint pier's second: its body only
+      if(w0)e0.brk.push(e0.L);if(w1)e1.brk.push(0);continue;}
+    const BD=J?[...new Set([...(o.band&&o.band[J.b])||[],...(o.band&&o.band[J.a])||[]])].sort((a,b)=>b-a):(o.band&&o.band[v])||[];    trimSet(g,pal,.45);for(let k=0;k+1<R.ring.length;k++){const{F:SF,L,zo}=seg(R.ring[k],R.ring[k+1]),ea=k?.25:R.ext[0],eb=k+2<R.ring.length?.25:R.ext[1];box(g,SF,(eb-ea)/2,yW,-.2*zo,L/2+(ea+eb)/2,.45,.45,31);}   // the coping round the outer edge, as the walls' (0.25 m out, 0.9 m deep), on into theirs
+    for(const yb of BD){const yB=F.oy+yb-.35;trimSet(g,pal,.45);   // o.band: a string course at a lower terrace's coping, the same section, round the faces that stand free below it
+      for(let k=0;k+1<R.ring.length;k++){const{F:SF,L,zo}=seg(R.ring[k],R.ring[k+1]),N=Math.max(1,Math.ceil(L/.25)),fr=[];
+        for(let j=0;j<=N;j++){const q=SF.p(-L/2+L*j/N,0,.6*zo);fr.push(gy(q[0],q[2])<yB-.5);}   // free: the ground 0.6 m out more than 0.5 m under it (on the lower terrace's floor it is not)
+        for(let j=0;j<=N;){if(!fr[j]){j++;continue;}let j1=j;while(j1<N&&fr[j1+1])j1++;const s0=-L/2+L*j/N-(j===0?.25:.3),s1=-L/2+L*j1/N+(j1===N?.25:.3);   // mitred at the ring's turns, on into the lower coping where its walls meet the pier
+          if(s1-s0>.6)box(g,SF,(s0+s1)/2,yB,-.2*zo,(s1-s0)/2,.45,.45,31);j=j1+1;}}}
+    g.set(60,.4,pal,3);const PV=R.pave,ix=THREE.ShapeUtils.triangulateShape(PV.map(p=>new THREE.Vector2(p[0],p[1])),[]);for(const[i,j,k]of ix)g.poly([i,j,k].map(m=>[PV[m][0],top+.09,PV[m][1]]),[0,1,0]);   // the top: the terrace's paving
+    for(let k=0;k+1<R.par.length;k++){const{F:SF,L}=seg(R.par[k],R.par[k+1]);g.set(60,seed,pal,0);box(g,SF,0,top+.1,0,L/2+.3,.9,.3,31);trimSet(g,pal,.5);box(g,SF,0,top+1,0,L/2+.33,.1,.34,31);}   // the parapet (M3), mitred
+    for(let k=0;k<R.par.length;k++){const M=R.par[k];if(R.noPost.some(p=>Math.hypot(p[0]-M[0],p[1]-M[1])<1e-6))continue;const{F:SF}=seg(R.par[Math.max(0,k-1)],R.par[Math.max(1,k)]),PF=frame(M[0],0,M[1],SF.rot);g.set(60,seed,pal,0);box(g,PF,0,top+.1,0,.45,1.18,.45,15);trimSet(g,pal,.5);box(g,PF,0,top+1.28,0,.5,.12,.5,31);}   // a parapet pier at each turn and end
+    (W.wallPiers=W.wallPiers||[]).push([vx,vz,3.2]);(W.pierSq=W.pierSq||[]).push({x:vx,z:vz,ux:Pp.ax[0],uz:Pp.ax[1],h:3.06,top,tag:tag+':'+v,ring:R.ring,par:R.par,pave:R.pave,band:BD,fill:R.fill||null,joint:J?tag+':'+J.a:null});
+    if(w0)e0.brk.push(e0.L);if(w1)e1.brk.push(0);}
+  for(const v of o.piers||[]){const Pp=PR[v];if(Pp&&!Pp.draw){if(Pp.w0)E[(v+n-1)%n].brk.push(E[(v+n-1)%n].L);if(Pp.w1)E[v].brk.push(0);}}   // another terrace's pier stands there
   return out;}
+// the outline of the 6 x 6 m pier at vertex V outside the terrace (half size h, axes ax and across it), between its sides s0 and s1 ({d: the side's ray from
+// V, n: its normal into the pier, w: a wall, whose coping and parapet meet the pier's; or not: rock, or the face of the terrace beyond a shared edge, where
+// the pier's parapet, coping and paving stop on its line}), swept from s0's ray towards its normal: from where it leaves s0 (A) by the square's corners to
+// where it meets s1 (B). par: the parapet's mitred line 0.25 m in from it and on along the walls' parapets (where those stop: t0 out along s0, t1 along s1);
+// pave: the top inside the coping (0.66 m in, and on the walls' side to where the terrace's paved band starts), closed at its corner inside V; ext: how far
+// the coping goes on past A and B (into a wall's)
+function pierRing(V,s0,s1,ax,h,mid){const ux=ax[0],uz=ax[1],wx=-uz,wz=ux,ex=d=>h/Math.max(Math.abs(d[0]*ux+d[1]*uz),Math.abs(d[0]*wx+d[1]*wz)),
+    ta=ex(s0.d),tb=ex(s1.d),A=[V[0]+s0.d[0]*ta,V[1]+s0.d[1]*ta],B=[V[0]+s1.d[0]*tb,V[1]+s1.d[1]*tb],sg=Math.sign(s0.d[0]*s0.n[1]-s0.d[1]*s0.n[0])||1,
+    ang=p=>{const dx=p[0]-V[0],dz=p[1]-V[1];let a=Math.atan2((s0.d[0]*dz-s0.d[1]*dx)*sg,s0.d[0]*dx+s0.d[1]*dz);return a<0?a+2*Math.PI:a;},aB=ang(B),
+    far=p=>Math.hypot(p[0]-A[0],p[1]-A[1])>.05&&Math.hypot(p[0]-B[0],p[1]-B[1])>.05,
+    cs=[[1,1],[1,-1],[-1,-1],[-1,1]].map(([a,b])=>[V[0]+(ux*a+wx*b)*h,V[1]+(uz*a+wz*b)*h]).filter(p=>far(p)&&ang(p)>.01&&ang(p)<aB-.01).sort((p,q)=>ang(p)-ang(q)),fm=!!(mid&&mid.length&&!cs.length),ring=fm?[A,...mid,B]:[A,...cs,B];   // mid (o.pierFill): a concave pier's outline carried out (fill: the body there)
+  const off=s=>s.w?[.25,.66]:[0,0],L=[{p:V,t:s0.d,n:s0.n,o:off(s0)}];
+  for(let k=0;k+1<ring.length;k++){const P=ring[k],Q=ring[k+1],l=Math.hypot(Q[0]-P[0],Q[1]-P[1]),t=[(Q[0]-P[0])/l,(Q[1]-P[1])/l];let nn=[t[1],-t[0]];
+    if((P[0]+Q[0]-2*V[0])*nn[0]+(P[1]+Q[1]-2*V[1])*nn[1]<0)nn=[-nn[0],-nn[1]];L.push({p:P,t,n:nn,o:[.25,.66]});}
+  L.push({p:V,t:s1.d,n:s1.n,o:off(s1)});
+  const cut=pierCut,mit=j=>L.slice(0,-1).map((a,k)=>cut(a,L[k+1],j)),par=mit(0),cl=cut(L[L.length-1],L[0],1),pave=cl?[...mit(1),cl]:mit(1);   // cl: none where the two sides are in line
+  return{ring,par,pave,fill:fm?[mid]:null,ext:[s0.w?.25:0,s1.w?.25:0],t0:(par[0][0]-V[0])*s0.d[0]+(par[0][1]-V[1])*s0.d[1],t1:(par[par.length-1][0]-V[0])*s1.d[0]+(par[par.length-1][1]-V[1])*s1.d[1]};}
+// where two of a pier's lines ({p, t: along, n: into the pier, o: [parapet, paving] offsets, away from n}) cross, offset by o[j]; null if parallel
+function pierCut(a,b,j){const da=a.o[j],db=b.o[j],pa=[a.p[0]-a.n[0]*da,a.p[1]-a.n[1]*da],pb=[b.p[0]-b.n[0]*db,b.p[1]-b.n[1]*db],cr=a.t[0]*b.t[1]-a.t[1]*b.t[0];
+  if(Math.abs(cr)<1e-6)return null;const s=((pb[0]-pa[0])*b.t[1]-(pb[1]-pa[1])*b.t[0])/cr;return[pa[0]+a.t[0]*s,pa[1]+a.t[1]*s];}
+// the joint outline of two piers whose outlines overlap at the two ends of wall e (Pb at its start Vb, Pa at its end Va): Pb's outline to its last corner,
+// on to Pa's first (the faces on the wall's line dropped), the notch between them filled (fill: the triangle between Pb's last face, Pa's first and where
+// their lines cross); par and pave as pierRing's round it from Pb's s0 to Pa's s1, the paving closed along the wall's line 0.66 m in (the walls' paved band)
+function pierJoint(Vb,Va,Pb,Pa,e){const M=[(Vb[0]+Va[0])/2,(Vb[1]+Va[1])/2],rb=Pb.R.ring,ra=Pa.R.ring,ring=[...rb.slice(0,-1),...ra.slice(1)],off=s=>s.w?[.25,.66]:[0,0],
+    L=[{p:Vb,t:Pb.s0.d,n:Pb.s0.n,o:off(Pb.s0)}];
+  for(let k=0;k+1<ring.length;k++){const P=ring[k],Q=ring[k+1],l=Math.hypot(Q[0]-P[0],Q[1]-P[1]),t=[(Q[0]-P[0])/l,(Q[1]-P[1])/l];let nn=[t[1],-t[0]];
+    if((P[0]+Q[0]-2*M[0])*nn[0]+(P[1]+Q[1]-2*M[1])*nn[1]<0)nn=[-nn[0],-nn[1]];L.push({p:P,t,n:nn,o:[.25,.66]});}
+  L.push({p:Va,t:Pa.s1.d,n:Pa.s1.n,o:off(Pa.s1)});
+  const sh={p:Vb,t:[e.ux,e.uz],n:[e.nx,e.nz],o:[.25,.66]},LP=[...L,sh],par=L.slice(0,-1).map((a,k)=>pierCut(a,L[k+1],0)),pave=[...LP.slice(0,-1).map((a,k)=>pierCut(a,LP[k+1],1)),pierCut(sh,L[0],1)];
+  const P0=rb[rb.length-2],P1=rb[rb.length-1],A0=ra[0],A1=ra[1],d1=[P1[0]-P0[0],P1[1]-P0[1]],d2=[A1[0]-A0[0],A1[1]-A0[1]],cr=d1[0]*d2[1]-d1[1]*d2[0];let fill=null;
+  if(Math.abs(cr)>1e-9){const t=((A0[0]-P0[0])*d2[1]-(A0[1]-P0[1])*d2[0])/cr;fill=[[P0,[P0[0]+d1[0]*t,P0[1]+d1[1]*t],A1]];}
+  return{ring,par,pave,M,fill,noPost:[],ext:[Pb.s0.w?.25:0,Pa.s1.w?.25:0],t0:(par[0][0]-Vb[0])*Pb.s0.d[0]+(par[0][1]-Vb[1])*Pb.s0.d[1],
+    t1:(par[par.length-1][0]-Va[0])*Pa.s1.d[0]+(par[par.length-1][1]-Va[1])*Pa.s1.d[1]};}
+// the pier (W.pierSq) whose square, or the body it has out past the square (fill), world point (x, z) is in, within pad m, or null
+function inPierSq(W,x,z,pad=0){for(const q of W.pierSq||[]){const dx=x-q.x,dz=z-q.z;if(Math.abs(dx*q.ux+dz*q.uz)<q.h+pad&&Math.abs(-dx*q.uz+dz*q.ux)<q.h+pad)return q;
+    if(q.fill)for(const T of q.fill)if(inPolyXZ(x,z,T)||(pad>0&&nearPoly(x,z,[...T,T[0]],pad)))return q;}return null;}   // fill: where its body goes out past the square
 // B3: a square buttress at s along edge e, from y0 (under the ground) to y1 under the coping: 1.2 m wide and 0.6 m deep at the foot, 0.84 x 0.32 at the top, the top weathered
 function buttress(g,e,s,y0,y1,bat,pal,seed){const{Wp}=e,face=y=>bat*(y1+.12-y),w0=.6,w1=.42,p0=.6,p1=.32,yc=y1-.55;g.set(60,seed,pal,1);
   const P=(sd,y,d)=>Wp(s+sd,d,y),fA=face(y0),fC=face(yc);
@@ -159,7 +243,8 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
   const Ltot=cum[cum.length-1],at=s=>{let i=1;while(i<path.length-1&&cum[i]<s)i++;const t=clamp((s-cum[i-1])/(cum[i]-cum[i-1]),0,1),dx=(path[i][0]-path[i-1][0])/(cum[i]-cum[i-1]),dz=(path[i][1]-path[i-1][1])/(cum[i]-cum[i-1]);return{x:lerp(path[i-1][0],path[i][0],t),z:lerp(path[i-1][1],path[i][1],t),dx,dz,seg:i};};
   const pts=[];
   const block=(s,len,yt,landing)=>{const p=at(s+len/2),S=frame(p.x,0,p.z,Math.atan2(-p.dz,p.dx));let yg=1e9;for(const a of[-len/2,len/2])for(const b of[-w/2,w/2]){const q=S.p(a,0,b);yg=Math.min(yg,gy(q[0],q[2]));}   // frame: local x = walking direction, local z = left
-    g.set(60,.5,pal,0);box(g,S,0,yg-.8,0,len/2+.01,yt-.12-yg+.8,w/2,31&~32);trimSet(g,pal,.45);box(g,S,0,yt-.12,0,len/2+.03,.12,w/2+.03,31);
+    let zc=0,hz=w/2;if(o.ex>0){const d=S.d(0,0,1),sz=d[0]*o.wall[0]+d[2]*o.wall[1]>0?1:-1;zc=sz*o.ex/2;hz=w/2+o.ex/2;}   // o.wall, o.ex: R11, the treads and their base reach o.ex further that way, to the wall the flight runs along
+    g.set(60,.5,pal,0);box(g,S,0,yg-.8,zc,len/2+.01,yt-.12-yg+.8,hz,31&~32);trimSet(g,pal,.45);box(g,S,0,yt-.12,zc,len/2+.03,.12,hz+.03,31);
     const zs=-side*(w/2+.18);g.set(60,.5,pal,0);box(g,S,0,yt,zs,len/2+.01,landing?1.0:.95,.18,31);trimSet(g,pal,.5);box(g,S,0,yt+(landing?1.0:.95),zs,len/2+.03,.08,.22,31);pts.push([p.x,p.z]);return S;};
   // B7: a landing every 12-15 steps, spread evenly: a dry run counts the steps, then the run is cut into equal flights of at most 15 (and at each turn)
   const march=(per,mk)=>{let s=o.s0||0,y=y0,nSt=0,inFl=0,lastSeg=1,nL=0;
@@ -181,7 +266,8 @@ for(let i=1;i<path.length;i++)cum.push(cum[i-1]+Math.hypot(path[i][0]-path[i-1][
 function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,shrubs:0,cyp:0,scree:0};let own=null;   // own: footprints of the record's own building (R.own), not in the way
   const busy=(x,z,r)=>(W.streetAt&&W.streetAt(x,z))||W.foot.hits(x,z,r,r,0,0,f=>f.tag==='open'||f.tag==='precinct'||(own&&own.has(f)));
   const rock=(x,z,rot,hl,hd,ht,pal,sd)=>{const C=frame(x,0,z,rot);let yg=1e9;for(const a of[-hl,hl])for(const b of[-hd,hd]){const q=C.p(a,0,b);yg=Math.min(yg,gy(q[0],q[2]));}rockLump(g,C,hl,hd,yg-.45,ht+.45,pal,sd,[x,z]);};
-  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),nat=!!R.natural,lg=!!R.ledge||nat;if(S.length<2)continue;own=R.own||null;   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+  for(const R of W.wallFeet||[]){const S=R.S,pal=R.pal,tr=Math.atan2(-R.uz,R.ux),nat=!!R.natural,lg=!!R.ledge||nat;if(S.length<2||R.bare)continue;own=R.own||null;   /* R.bare: a paved floor at its foot (the Palatine's h51): nothing grows there */   // R.ledge: the wall already stands on a band of ledge rock (palTerraces): only shrubs and cypresses, further out
+    // R.west: the Palatine's west rings (palTerraces, the review of 2026-11-13): shrubs only, no cypress (no tall tree within 6 m of a parapet) and no scree (no stones)
     // R.natural: the foot of a modelled cliff with its own talus, scree and boulders (the Tiberiana's rock): as a ledge, and no scree either
     const Wp=(s,d)=>{let k=0;while(k<S.length-2&&S[k+1].s<s)k++;const A=S[k],B=S[k+1],t=clamp((s-A.s)/((B.s-A.s)||1),0,1),nx=lerp(A.nx??R.nx,B.nx??R.nx,t),nz=lerp(A.nz??R.nz,B.nz??R.nz,t);   // along the samples (a curved wall foot has its own normals)
       return[lerp(A.x,B.x,t)+nx*d,lerp(A.z,B.z,t)+nz*d];};let nextRock=1+3*teH(R.ax,R.az,1),nextShrub=1.5,nextCyp=3+4*teH(R.ax,R.az,2);
@@ -191,13 +277,14 @@ function terraceFeet(W,o={}){const gy=W.gy,g=new GB(1<<15),st={rocks:0,moss:0,sh
       if(hm>=1.5&&!lg){const wd=.5+.5*teH(A.x,A.z,3),a0=Wp(A.s,.15),a1=Wp(A.s,.15+wd),b0=Wp(B.s,.15),b1=Wp(B.s,.15+wd);if(!busy((a0[0]+b1[0])/2,(a0[1]+b1[1])/2,.5)){g.set(62,.5,pal,0);
         g.poly([[a0[0],gy(a0[0],a0[1])+.05,a0[1]],[b0[0],gy(b0[0],b0[1])+.05,b0[1]],[b1[0],gy(b1[0],b1[1])+.05,b1[1]],[a1[0],gy(a1[0],a1[1])+.05,a1[1]]],[0,1,0]);st.moss++;}}
       for(let s=A.s;s<B.s;s+=.5){
-        if(s>=nextRock&&hm>=1.5&&!lg){const hh=teH(A.x+s,A.z,4),hl=.55+1.3*hh,hd=.45+.8*teH(A.x,A.z+s,5),ht=Math.min(.45+1.4*teH(A.x+s,A.z+s,6),Math.max(.5,hm*.45)),q=Wp(s,.35+hd);
+        // the west rings (the review of 2026-11-13): a rock only where the wall stands 4 m or more out of the ground, one every 9 m
+        if(s>=nextRock&&hm>=(R.west?4:1.5)&&!lg){const hh=teH(A.x+s,A.z,4),hl=.55+1.3*hh,hd=.45+.8*teH(A.x,A.z+s,5),ht=Math.min(.45+1.4*teH(A.x+s,A.z+s,6),Math.max(.5,hm*.45)),q=Wp(s,.35+hd);
           if(!busy(q[0],q[1],Math.max(hl,hd)*.6)){rock(q[0],q[1],tr+(hh-.5)*.5,hl,hd,ht,pal,hh);R.brk.push(s);st.rocks++;
             if(teH(q[0],q[1],8)<.45){const q2=Wp(s+hl*.9,.3+hd*.6);if(!busy(q2[0],q2[1],.5)){rock(q2[0],q2[1],tr+.4,hl*.55,hd*.6,ht*.6,pal,hh*.7);st.rocks++;}}}
-          nextRock=s+4+5*teH(A.x+s,A.z-s,9);}
-        if(s>=nextShrub&&hm>=1.2){const q=Wp(s,(lg?3.6:.9)+1.6*teH(A.x+s,A.z,10));if(teH(q[0],q[1],11)<.6&&!busy(q[0],q[1],.8)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'shrub',.7+.6*teH(q[0],q[1],12),null,3]);R.brk.push(s);st.shrubs++;}nextShrub=s+2.5+3*teH(A.x,A.z+s,13);}
-        if(s>=nextCyp&&hm>=3&&tall>=18){const q=Wp(s,(lg?5.6:2.6)+.9*teH(A.x+s,A.z,14));if(!busy(q[0],q[1],1.2)){W.trees.push([q[0],gy(q[0],q[1]),q[1],'cyp',.85+.3*teH(q[0],q[1],15),null,3]);R.brk.push(s);st.cyp++;}nextCyp=s+6+2*teH(A.x+s,A.z+s,16);}}
-      if(hm>=3&&!nat&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
+          nextRock=s+(R.west?9:4+5*teH(A.x+s,A.z-s,9));}
+        if(s>=nextShrub&&hm>=1.2){const q=Wp(s,(lg?3.6:.9)+1.6*teH(A.x+s,A.z,10));if(teH(q[0],q[1],11)<.6&&!busy(q[0],q[1],.8)&&!inPierSq(W,q[0],q[1])){W.trees.push([q[0],gy(q[0],q[1]),q[1],'shrub',.7+.6*teH(q[0],q[1],12),null,3]);R.brk.push(s);st.shrubs++;}nextShrub=s+2.5+3*teH(A.x,A.z+s,13);}
+        if(s>=nextCyp&&hm>=3&&tall>=18&&!R.west){const q=Wp(s,(lg?5.6:2.6)+.9*teH(A.x+s,A.z,14));if(!busy(q[0],q[1],1.2)&&!inPierSq(W,q[0],q[1])){W.trees.push([q[0],gy(q[0],q[1]),q[1],'cyp',.85+.3*teH(q[0],q[1],15),null,3]);R.brk.push(s);st.cyp++;}nextCyp=s+6+2*teH(A.x+s,A.z+s,16);}}
+      if(hm>=3&&!nat&&!R.west&&teH(A.x,A.z,17)<.55)for(let j=0;j<3;j++){const q=Wp(A.s+2*teH(A.x,A.z,30+j),(lg?6:3)+9*teH(A.z,A.x,40+j)),sl=Math.hypot(gy(q[0]+2,q[1])-gy(q[0]-2,q[1]),gy(q[0],q[1]+2)-gy(q[0],q[1]-2))/4;   // scree on the slope below
         if(sl<.35||busy(q[0],q[1],.4))continue;const r=.22+.35*teH(q[0],q[1],50+j);rock(q[0],q[1],teH(q[1],q[0],60+j)*TAU,r,r*.8,r*.7,pal,.3);st.scree++;}}}
   own=null;const m=g.mesh(MAT.city);if(m){layTag(m,'ground');m.name='terraceFeet';W.scene.add(m);}W.terraceFeetStats=st;return st;}
 // a lump of the hill's rock (part 61, palette pal) centred on frame C: hl x hd at its base y0, ht high, its corners jittered by a die keyed to key (x,z)

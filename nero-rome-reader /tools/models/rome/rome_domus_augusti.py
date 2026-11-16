@@ -9,6 +9,7 @@ import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rk import *
 import bpy
+import bl_kit as _bl                  # _ribs: tile ribs on the ramp roof
 
 reset()
 try:
@@ -103,16 +104,34 @@ X0, X1 = 32.0, 36.0
 RAMP = [(X0, -27.0, -6.0), (X1, -27.0, -6.0), (X1, 0.0, -1.0), (X0, 0.0, -1.0),
         (X0, -27.0, -5.0), (X1, -27.0, -5.0), (X1, 0.0, 0.0), (X0, 0.0, 0.0)]
 add_mesh('stone', RAMP, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
-# covered ramp: a stone Tuscan portico on both edges, with architrave, frieze and cornice, and a stepped roof
+# covered ramp: a stone Tuscan portico on both edges, with architrave, frieze and cornice, and a gable roof along the slope
 ys = [-25.5 + 3.0 * i for i in range(9)]
 for x in (32.3, 35.7):
     for y in ys:
         column(None, x, y, ramp_z(y), 2.6, 0.2, 'stone', 'tuscan', 0, 8)
     for (dz, bw, bh) in ((2.6, 0.5, 0.35), (2.95, 0.5, 0.3), (3.25, 0.7, 0.2)):
         beam(None, x, ys[0], ramp_z(ys[0]) + dz, x, ys[-1], ramp_z(ys[-1]) + dz, bw, bh, 'stone')
-for k in range(9):
-    ya, yb = -27.0 + 3.0 * k, -24.0 + 3.0 * k
-    lean_roof(None, 31.6, ya, 31.6, yb, ramp_z((ya + yb) / 2) + 3.8, 4.5, 0.5, tiles=False)
+# the roof (author's bug list 2026-11-13, 图二): one low tiled gable that follows the slope of the ramp and lies on both
+# cornices (top ramp_z + 3.45), its closed gables over the end columns. It was nine stepped slabs 0.35-0.6 m above the
+# cornices with a step between each, which read as loose red boards in the air.
+def ramp_roof(x0=31.6, x1=36.4, ya=-26.3, yb=-0.7, eave=3.40, rise=0.7):
+    xm = (x0 + x1) / 2
+    zz = lambda y, dz: ramp_z(y) + dz
+    V = lambda x, y, dz: Vector((x, y, zz(y, dz)))
+    for P in ([V(x0, ya, eave), V(x0, yb, eave), V(xm, yb, eave + rise), V(xm, ya, eave + rise)],
+              [V(x1, yb, eave), V(x1, ya, eave), V(xm, ya, eave + rise), V(xm, yb, eave + rise)]):
+        add_poly('tile', P)
+        add_poly('tile', list(reversed(P)))
+    for y in (ys[0], ys[-1]):                               # closed gables over the end columns
+        T = [V(x0 + 0.35, y, eave), V(x1 - 0.35, y, eave), V(xm, y, eave + rise - 0.05)]
+        add_poly('stone', T)
+        add_poly('stone', list(reversed(T)))
+    _bl._ribs('tile2', V(x0, ya, eave), V(x0, yb, eave), Vector((xm - x0, 0, 0)), rise, 0.62, lambda u: (xm - x0) * 0.98)
+    _bl._ribs('tile2', V(x1, yb, eave), V(x1, ya, eave), Vector((xm - x1, 0, 0)), rise, 0.62, lambda u: (x1 - xm) * 0.98)
+    beam(None, xm, ya, zz(ya, eave + rise), xm, yb, zz(yb, eave + rise), 0.3, 0.16, 'tile2')     # ridge
+
+
+ramp_roof()
 
 # ---- House of Livia, front part (level 0): entrance range, atrium with compluvium and impluvium, side rooms
 block(-22, 2, 26, 4, inner=('N',), doors=[('S', 0.0)])                  # entrance range

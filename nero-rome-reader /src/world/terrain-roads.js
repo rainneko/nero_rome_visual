@@ -58,6 +58,25 @@ function terrainMesh(W,zoneFn,far,patch){const g=W.grid,n=g.n,N=n+1,P=new Float3
     for(let i=0;i<p.count;i++){const x=p.getX(i)+W.farC[0],z=p.getZ(i)+W.farC[1];p.setX(i,x);p.setZ(i,z);const inside=x>g.x0+60&&x<g.x1-60&&z>g.z0+60&&z<g.z1-60;
       p.setY(i,inside?far(x,z)-40:far(x,z)-1);FZ.set([0,0,.8*sstep(5000,9000,Math.hypot(x-W.farC[0],z-W.farC[1]))*(1-sstep(30000,45000,Math.hypot(x,z))),0],i*4);}
     F.setAttribute('aZ',new THREE.BufferAttribute(FZ,4));F.computeVertexNormals();const fm=layTag(new THREE.Mesh(F,MAT.terrain),'ground');fm.receiveShadow=false;W.scene.add(fm);}}
+/* The ground mask (option 甲 of the buried treads, the reviewer, 2026-11-14): a raster over a rect (W.groundMask, res m a pixel, 0.5 on the Palatine)
+   where the terrain is not drawn (MAT.terrain discards where the bilinear sample is over 0.5). A stair cut into the hill writes its footprint (its treads
+   plus 0.15 m each side, inside its cheeks) with groundMaskQuad: coverage per pixel (4 x 4 samples), so the 0.5 line of the filtered texture follows the
+   quad's edge within a few cm; groundMaskUpload sends it to the shader once every generator is done (U.uGM, U.uGMX). groundMaskAt: the sample there,
+   for the checks that read the ground under a stair. The coverage is the union of the quads (a bit per sample, W.groundMask.b): with the larger of two
+   coverages a pixel split between two treads 0.35 m long read 0.5, not 1, and the filtered mask fell under 0.5 near a tread's side (six treads at
+   the foot of the Magna Mater's flight 5 showed a strip of ground over their edge). */
+function groundMaskInit(W,rect,res){const nx=Math.ceil((rect[2]-rect[0])/res),nz=Math.ceil((rect[3]-rect[1])/res);W.groundMask={x0:rect[0],z0:rect[1],res,nx,nz,d:new Uint8Array(nx*nz),b:new Uint16Array(nx*nz),n:0};}
+function groundMaskQuad(W,Q){const M=W.groundMask;if(!M)return;const r=M.res;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const q of Q){x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);z0=Math.min(z0,q[1]);z1=Math.max(z1,q[1]);}
+  let sg=0;for(let k=0;k<4;k++){const a=Q[k],b=Q[(k+1)%4];sg+=(b[0]-a[0])*(b[1]+a[1]);}sg=sg>0?1:-1;   // winding, so the edge test is inside for either
+  const inQ=(x,z)=>{for(let k=0;k<4;k++){const a=Q[k],b=Q[(k+1)%4];if(sg*((b[0]-a[0])*(z-a[1])-(b[1]-a[1])*(x-a[0]))>0)return false;}return true;};
+  const i0=Math.max(0,Math.floor((x0-M.x0)/r)),i1=Math.min(M.nx-1,Math.floor((x1-M.x0)/r)),j0=Math.max(0,Math.floor((z0-M.z0)/r)),j1=Math.min(M.nz-1,Math.floor((z1-M.z0)/r));
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){let m=0;for(let b=0;b<4;b++)for(let a=0;a<4;a++)if(inQ(M.x0+(i+(a+.5)/4)*r,M.z0+(j+(b+.5)/4)*r))m|=1<<(b*4+a);
+    if(m){const k=j*M.nx+i,u=M.b[k]|m;if(u!==M.b[k]){M.b[k]=u;let c=0;for(let t=u;t;t&=t-1)c++;M.d[k]=Math.round(c/16*255);}}}M.n++;}
+function groundMaskUpload(W){const M=W.groundMask;if(!M||!M.n||typeof U==='undefined')return;const t=new THREE.DataTexture(M.d,M.nx,M.nz,THREE.RedFormat,THREE.UnsignedByteType);
+  t.magFilter=t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;t.flipY=false;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.unpackAlignment=1;t.needsUpdate=true;
+  U.uGM.value=t;U.uGMX.value.set(M.x0,M.z0,M.nx*M.res,M.nz*M.res);}
+function groundMaskAt(W,x,z){const M=W.groundMask;if(!M||!M.n)return 0;const fx=(x-M.x0)/M.res-.5,fz=(z-M.z0)/M.res-.5,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,
+    g=(a,b)=>a<0||b<0||a>=M.nx||b>=M.nz?0:M.d[b*M.nx+a]/255;return(g(i,j)*(1-u)+g(i+1,j)*u)*(1-v)+(g(i,j+1)*(1-u)+g(i+1,j+1)*u)*v;}
 function riverMesh(W,pts,half,y,mat){const P=[],I=[];let k=0;
   for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let tx=b[0]-a[0],tz=b[1]-a[1];const l=Math.hypot(tx,tz);tx/=l;tz/=l;
     const hw=typeof half==='function'?half(i):half;P.push(pts[i][0]-tz*hw,y,pts[i][1]+tx*hw,pts[i][0]+tz*hw,y,pts[i][1]-tx*hw);

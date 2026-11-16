@@ -157,14 +157,16 @@ window.__wallFootCheck=(opt)=>{const W=W0,maxL=opt&&opt.maxL||20,minL=opt&&opt.m
    __palOpenEnds(): every run of wall (W.wallFeet, palette 1, samples 1 m or more out of the ground) in the zone, both ends: an end is closed when the wall
      dies into the ground there ('grade'), another wall goes on from it within 1.6 m ('wall'), a full-height pier stands there (W.wallPiers: end piers at
      openings, corner piers) ('pier'), it meets a hero model's rock base or a rock band ('rock'), or a villa model's own wall ('model'). Returns {ends, open, by, list}.
-   __palBaseCheck(): every building on the east and south slopes (and, for H2, the north villas): its main floor, the level it stands on (the floor of the
+     The west rings (H2, records with west) are checked wherever they are.
+   __palBaseCheck(): (R10 exceptions: the palace terrace rings and the south slope's three ranges are listed under recorded, not fail) every building on the east and south slopes (and, for H2, the north villas): its main floor, the level it stands on (the floor of the
      terrace that holds its middle; elsewhere the lowest ground round its whole footprint, so a rock tower counts as its own base), the base between them,
      its eaves height above that floor and whether the base is over half the eaves. Hero models on the summit stand on the summit terrace (its wall is the hill's).
    __palBareSlope(): 1.5 m cells in the zone steeper than 30 degrees that are not a terrace floor, a wall (within 1.6 m of its line), a stair, a building,
      rock (a hero model's rock base, a rock band) or the terrain's own rock shading (sl>.64): their area in m2, and the worst places. H2: the zones and the
-     west slope's rock band (PAL_PLAN.west.rock: no foot wall there, the rock outcrops of palWestSlope count).
-   __palReach(): the terraces (W.palPlats; before H1 the old ring floors, grouped by level into connected pieces) and the stairs between them (W.palStairs, the
-     hill stairs): which can be reached from the street, and the stairs that cross a terrace diagonally (a stretch more than 4 m over its floor
+     west slope (PAL_PLAN.west.rock). Since the review of 2026-11-13 there is no rock on the west slope: a west ring's floor (its footprint) and planting
+     count as cover there (W.palPlants: a plant of palWestSlope within its crown's radius).
+   __palReach(): the terraces (W.palPlats; before H1 the old ring floors, grouped by level into connected pieces; since H2 also the west rings kept,
+     PAL_PLAN.west.rings) and the stairs between them (W.palStairs, the hill stairs): which can be reached from the street, and the stairs that cross a terrace diagonally (a stretch more than 4 m over its floor
      whose direction is more than 20 degrees off both the normal and the line of every wall within 30 m). */
 function palPolyD(lx,lz,P){let d=1e9;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];d=Math.min(d,segD(lx,lz,a[0],a[1],b[0],b[1]));}return d;}
 const palInZone=(x,z,m=0)=>{const[lx,lz]=palL(x,z);return PAL_PLAN.zones.some(Z=>inPolyXZ(lx,lz,Z)||(m>0&&palPolyD(lx,lz,Z)<m));};
@@ -175,7 +177,7 @@ window.__palOpenEnds=(opt={})=>{const W=W0,R=W.wallFeet||[],PI=W.wallPiers||[],e
   const rock=(x,z)=>{const[lx,lz]=palL(x,z);return palRockD(lx,lz)<2.5||(W.palRocks||[]).some(b=>Math.hypot(b[0]-x,b[1]-z)<b[2]+2.5);};
   for(let ri=0;ri<R.length;ri++){const r=R[ri],S=r.S;if(r.pal!==1||r.natural)continue;let k=0;
     while(k<S.length){if(S[k].open||S[k].h<1){k++;continue;}let k1=k;while(k1+1<S.length&&!S[k1+1].open&&S[k1+1].h>=1)k1++;
-      for(const[e,nb]of[[k,k-1],[k1,k1+1]]){const q=S[e];if(!palInZone(q.x,q.z,opt.m??3))continue;const N=S[nb];let why=null;
+      for(const[e,nb]of[[k,k-1],[k1,k1+1]]){const q=S[e];if(!r.west&&!palInZone(q.x,q.z,opt.m??3))continue;const N=S[nb];let why=null;
         if(N&&!N.open&&N.h<1)why='grade';
         if(!why&&pts.some(p=>(p[2]!==ri||Math.abs(p[3]-e)>3)&&Math.hypot(p[0]-q.x,p[1]-q.z)<1.6))why='wall';
         if(!why&&PI.some(p=>Math.hypot(p[0]-q.x,p[1]-q.z)<(p[2]||1)+1.6))why='pier';
@@ -184,52 +186,180 @@ window.__palOpenEnds=(opt={})=>{const W=W0,R=W.wallFeet||[],PI=W.wallPiers||[],e
         by[why||'open']=(by[why||'open']||0)+1;const[lx,lz]=palL(q.x,q.z);ends.push({tag:r.tag,lx:+lx.toFixed(1),lz:+lz.toFixed(1),h:+q.h.toFixed(1),why});}
       k=k1+1;}}
   const open=ends.filter(e=>!e.why),r={ends:ends.length,open:open.length,by,list:open.slice(0,60)};console.log('pal open ends',JSON.stringify({ends:r.ends,open:r.open,by}));return r;};
-window.__palBaseCheck=()=>{const W=W0,out=[],gy=W.gy,HERO=/tiberiana|transitoria|apollo|domus_augusti|magna_mater|victoria/;
-  const EAV={rome_domus_a:8.82,rome_domus_b:8.82,rome_domus_a_belt:8.82,rome_domus_b_belt:8.82};   // rome_domus_a.py NB; office blocks: rome_pal_blocks.py NB 8.8 over the high floor, the low floor dr below it
-  const TIER={rome_domus_a:5,rome_domus_b:5,rome_domus_a_belt:4,rome_domus_b_belt:4};
-  const rect=(lx,lz,hw,hd,tn)=>{const t=tn*DEG,c=Math.cos(t),s=Math.sin(t);return(u,v)=>[lx+c*u+s*v,lz-s*u+c*v];};
-  const inB=(lx,lz,self)=>PAL_ASSETS.some(A=>A!==self&&(()=>{const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz;return Math.abs(c*dx-s*dz)<A.hw&&Math.abs(s*dx+c*dz)<A.hd;})())||palBL.some(B=>B!==self&&(()=>{const dx=lx-B.lx,dz=lz-B.lz;return Math.abs(B.c*dx-B.s*dz)<B.hw&&Math.abs(B.s*dx+B.c*dz)<B.hd;})());
-  const stand=(self,lx,lz,hw,hd,tn)=>{const P=rect(lx,lz,hw,hd,tn),L=[],a=hw+1.5,b=hd+1.5,ring=[];for(let u=-a;u<=a;u+=2)ring.push([u,-b],[u,b]);for(let v=-b;v<=b;v+=2)ring.push([-a,v],[a,v]);
-    for(const[u,v]of ring){const[p,q]=P(u,v);if(inB(p,q,self))continue;const[x,z]=palW(p,q);L.push(gy(x,z));}return L.length?Math.min(...L):null;};
-  const one=(n,A,lx,lz,hw,hd,tn,floor,eav,tier)=>{const[x,z]=palW(lx,lz),inz=palInZone(x,z,8),pl=palPlatAt(x,z);let st,on;
-    if(HERO.test(n)){st=floor;on='summit terrace';}else if(pl){st=pl.y;on=pl.id;}else{st=stand(A,lx,lz,hw,hd,tn);on='ground';}
-    const base=+(floor-st).toFixed(1);out.push({n,lx:+lx.toFixed(0),lz:+lz.toFixed(0),zone:inz?'H1':'other',tier,eaves:eav,floor:+floor.toFixed(1),on,stand:st==null?null:+st.toFixed(1),base,max:eav?+(eav/2).toFixed(1):null,over:eav?base>eav/2+.05:null});};
-  for(const A of PAL_ASSETS){const isD=/domus_[ab]/.test(A.n);if(!isD&&!HERO.test(A.n))continue;one(A.n,A,A.lx,A.lz,A.hw,A.hd,A.turn,A.y,EAV[A.n]||null,TIER[A.n]||null);}
-  for(const B of palBL){const[x,z]=palW(B.lx,B.lz);if(!palInZone(x,z,16))continue;one(B.n,B,B.lx,B.lz,B.hw,B.hd,B.tn,B.y-B.dr,+(B.dr+8.8).toFixed(1),B.t==='b'?4:6);}
-  const r={list:out,over:out.filter(o=>o.over).map(o=>o.n+'@'+o.lx+','+o.lz+' base '+o.base+'/'+o.max)};console.log('pal base',JSON.stringify(r.over));return r;};
+window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
+  // the buildings in their model axes (x = u, y = -v; front -Y = the garden / low side), the outline sampled, and the floor along it (model z, 0 = the
+  // reference floor y0): from the model scripts (rome_domus_a.py cut variant, rome_pal_blocks.py, rome_transitoria.py)
+  const DOM={o:[-15,15,-14.5,23],f:(x,y)=>y>=-2.2?0:-3.4,st:4.5,own:[['garden face (y -2.2)',3.4],['W1 (y -14.5)',2.6]]};   // R10 乙 (round 4, laughing-franklin): T1 3.4 under the floor, W1 2.6 m down to the 36
+  const BLK={a:{o:[-18,18,-15,15],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): along the block\'s inner lane',5]},b:{o:[-30,30,-8,8],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): behind the low range',5]},
+    c:{o:[-15,15,-15,15],f:(x,y)=>y>=-10?0:-10,st:4.2,own:[['garden drop (y -10, z 0 to -10): open to the lower terrace',10]]},cf:{o:[-15,15,-10,15],f:()=>0,st:4.2},bf:{o:[-30,30,-8,8],f:()=>0,st:4.4},d:{o:[-17,17,-13,13],f:(x,y)=>y>=-3?0:-5,st:4.4,split:['split wall (y -3, z 0 to -5): 12 m of it open beside the archive',5]}};
+  const L=[];
+  for(const A of PAL_ASSETS){
+    if(/^rome_domus_[ab]_belt$/.test(A.n))L.push({n:A.n,kind:'domus',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,...DOM});
+    else if(A.n==='rome_transitoria')L.push({n:A.n,kind:'palace',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,o:[-68,68,-58,58],f:()=>-5,st:4.5,own:[['terrace A walls (z 0 to -5)',5]],note:'own two-level terrace (A 5 m, B 9 m): the outline is terrace B'});
+    else if(A.n==='rome_tiberiana')L.push({n:A.n,kind:'palace',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,skip:'accepted: the cliff and terrace garden do not change (tiberiana-v2)'});
+    else if(A.n==='rome_domus_augusti')L.push({n:A.n,kind:'palace',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,o:[-36,36,-35,41],f:(x,y)=>y>=0?0:y>=-29?-5:-9,st:4.5,own:[['south wall 1 (y -29, z -5 to -9)',4],['south wall 2 (y -35, z -9 to -14) on a rock foot to -20',5]],note:'outline: x 36, y -35..41 (south wall 2 line); flanks drop 1 m by design'});
+    else L.push({n:A.n,kind:'temple',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,model:true});}
+  for(const B of palBL){const k=BLK[B.t],sc=B.t==='c'||B.t==='cf'||B.t==='bf'?1:B.dr/5;   // the low split variants (R10, round 4): the same plan, the split 3.3 m (B.dr) instead of 5
+    L.push({n:B.n,kind:'block',type:B.t,lx:B.lx,lz:B.lz,t:B.tn,y0:B.y,o:k.o,f:sc===1?k.f:(x,y)=>k.f(x,y)*sc,st:k.st,own:k.own,split:k.split&&[k.split[0].replace('-5','-'+B.dr),+(k.split[1]*sc).toFixed(2)]});}
+  // Jupiter Victor (palatine.js, the plateau strips): temple() W 11 x L 19 at (113.5, 10), floor = the highest ground under 16 x 24 m + 0.3
+  {const[x,z]=palW(113.5,10);let m=-1e9;for(let u=-8;u<=8;u+=1)for(let v=-12;v<=12;v+=1){const[a,b]=palW(113.5+u,10+v);m=Math.max(m,gy(a,b));}L.push({n:'Jupiter Victor',kind:'temple',lx:113.5,lz:10,t:0,y0:PAL_PLAN.h51.on?PAL_PLAN.h51.jv.y+.06:m+.3,o:[-5.5,5.5,-9.5,9.5],f:()=>0,st:null});}
+  const rect=L.filter(b=>b.o).map(b=>({b,c:Math.cos(b.t*DEG),s:Math.sin(b.t*DEG)}));
+  const inOther=(lx,lz,self)=>rect.some(({b,c,s})=>{if(b===self)return false;const dx=lx-b.lx,dz=lz-b.lz,u=c*dx-s*dz,y=-(s*dx+c*dz);return u>b.o[0]&&u<b.o[1]&&y>b.o[2]&&y<b.o[3];});
+  const SP=[];for(const s of W.palStairs||[])for(let i=1;i<s.pts.length;i++)SP.push([s.pts[i-1],s.pts[i],s.w/2+.6]);for(const h of W.hillStairs||[])if(h.R)for(let i=1;i<h.R.length;i++)SP.push([h.R[i-1],h.R[i],(h.w||3)/2+.6]);
+  const onStair=(x,z)=>SP.some(([a,b,r])=>segD(x,z,a[0],a[1],b[0],b[1])<r);
+  const lev=(xi,zi,x,z)=>{let pl=palPlatAt(xi,zi)||palPlatAt(x,z);if(pl)return[pl.y,pl.id];const[lx,lz]=palL(x,z);
+    for(const p of W.palPads||[])if(lx>p.x0&&lx<p.x1&&lz>p.z0&&lz<p.z1)return[p.y,p.id];if(palInBasin(lx,lz,0))return[PAL_DECK,'deck'];return[gy(x,z),'ground'];};   // a paved strip at a building's floor (W.palPads, palBEnd: along block b's ends). The system level at a face: the terrace the building stands on there (0.3 m inside the face), else the terrace just outside, else the paved deck of the saddle basins, else the ground
+  for(const b of L){const row={n:b.n,kind:b.kind,type:b.type,at:[b.lx,b.lz],turn:b.t,y0:+b.y0.toFixed(2),storey:b.st,limit:b.st?+(b.st*LIM).toFixed(2):null};
+    if(b.skip){row.skip=b.skip;rows.push(row);continue;}
+    if(b.model){row.note='the temple stands on the model\'s own terrace floor on all four sides (one level by construction); its terrace walls are exempt';row.pass=true;rows.push(row);continue;}
+    const c=Math.cos(b.t*DEG),s=Math.sin(b.t*DEG),toL=(x,y)=>[b.lx+c*x-s*y,b.lz-s*x-c*y];   // model (x, y) -> hill (lx, lz): v = -y
+    const[x0,x1,y0,y1]=b.o,F={back:[[x0,y1],[x1,y1],[0,1]],front:[[x1,y0],[x0,y0],[0,-1]],left:[[x0,y0],[x0,y1],[-1,0]],right:[[x1,y1],[x1,y0],[1,0]]};
+    row.faces={};
+    for(const k in F){const[[ax,ay],[bx,by],[nx,ny]]=F[k],len=Math.hypot(bx-ax,by-ay),n=Math.max(2,Math.round(len));let emax=-1e9,emin=1e9,skipJ=0,skipS=0,cnt=0,on=new Set(),fl=[1e9,-1e9],ol=[1e9,-1e9],worst=null;
+      for(let i=0;i<=n;i++){const t=.5/len+(1-1/len)*i/n,px=ax+(bx-ax)*t,py=ay+(by-ay)*t;
+        const fy=b.y0+b.f(px-nx*.3,py-ny*.3),[olx,olz]=toL(px+nx*.75,py+ny*.75),[ilx,ilz]=toL(px-nx*.3,py-ny*.3),[iwx,iwz]=palW(ilx,ilz);
+        if(inOther(olx,olz,b)){skipJ++;continue;}const[wx,wz]=palW(olx,olz);if(onStair(wx,wz)){skipS++;continue;}
+        const[oy,oid]=lev(iwx,iwz,wx,wz),e=fy-oy;cnt++;on.add(oid);fl=[Math.min(fl[0],fy),Math.max(fl[1],fy)];ol=[Math.min(ol[0],oy),Math.max(ol[1],oy)];
+        if(e>emax){emax=e;worst=[+olx.toFixed(1),+olz.toFixed(1)];}emin=Math.min(emin,e);}
+      const f=cnt?{floor:fl.map(v=>+v.toFixed(1)),out:ol.map(v=>+v.toFixed(1)),exp:+emax.toFixed(1),expMin:+emin.toFixed(1),at:worst,on:[...on],n:cnt,joined:skipJ,stair:skipS}:{joined:skipJ,stair:skipS,n:0};
+      f.flush=cnt>0&&emax<=FL&&emin>=-FL;row.faces[k]=f;}
+    if(b.own)row.own=b.own.map(([w,h])=>({wall:w,h}));if(b.split)row.split={wall:b.split[0],h:b.split[1],over:b.split[1]>row.limit+.05};
+    const fs=Object.entries(row.faces);
+    if(b.kind==='temple'){const lo=Math.min(...fs.filter(([,f])=>f.n).map(([,f])=>f.out[0])),hi=Math.max(...fs.filter(([,f])=>f.n).map(([,f])=>f.out[1]));row.spread=+(hi-lo).toFixed(1);row.pass=row.spread<=FL;}
+    else{row.over=fs.filter(([,f])=>f.n&&f.exp>row.limit+.05).map(([k,f])=>k+' '+f.exp);if(row.own)for(const w of row.own)if(w.h>row.limit+.05)row.over.push(w.wall+' '+w.h);
+      row.flush=fs.filter(([,f])=>f.flush).map(([k])=>k);row.pass=!row.over.length&&row.flush.length>0;}
+    if(b.note)row.note=b.note;rows.push(row);}
+  // the recorded exceptions (the reviewer's R10 decisions of 2026-11-14, palatine-masterplan.md R10): measured and listed (recorded), not failed
+  const EXC=[[b=>b.n==='rome_transitoria','palace terrace ring: terraces A and B count as system terraces, under R2 (9 m); B north 9.6-9.8 m recorded, not changed'],
+    [b=>b.n==='rome_domus_augusti','palace terrace ring: the two south walls count as system terraces, under R2 (9 m)'],
+    [b=>b.kind==='block'&&b.type==='b'&&Math.round(b.at[0])===5&&[148,171,194].includes(Math.round(b.at[1])),'south slope range: accepted as built, recorded only']];
+  for(const r of rows){const e=EXC.find(([f])=>f(r));if(e){r.exception=e[1];if(r.pass===false){r.recorded=true;r.pass=null;}}}
+  const tag=r=>r.n+'@'+r.at.map(v=>Math.round(v))+(r.over&&r.over.length?' over: '+r.over.join(', '):'')+(r.flush&&!r.flush.length?' no flush face':'')+(r.spread!=null?' spread '+r.spread:'');
+  const fail=rows.filter(r=>r.pass===false).map(tag),recorded=rows.filter(r=>r.recorded).map(r=>tag(r)+' ['+r.exception+']');
+  const r={list:rows,fail,recorded,checked:rows.filter(r=>r.pass!=null).length};console.log('pal base R10',JSON.stringify({checked:r.checked,fail:fail.length,recorded:recorded.length}));return r;};
 window.__palBareSlope=(opt={})=>{const W=W0,gy=W.gy,cs=opt.cs||1.5,lim=Math.tan((opt.deg||30)*DEG),rows=[];let n=0,cells=0;
   const R=(W.wallFeet||[]).filter(r=>r.pal===1),SP=[];for(const r of R)for(const q of r.S)if(q.h>=.5)SP.push([q.x,q.z]);
   for(const h of W.hillStairs||[])for(let i=1;i<h.R.length;i++)SP.push(...[0,.25,.5,.75].map(t=>[lerp(h.R[i-1][0],h.R[i][0],t),lerp(h.R[i-1][1],h.R[i][1],t),h.w/2+1]));
   for(const s of W.palStairs||[])for(const p of s.pts||[])SP.push([p[0],p[1],s.w/2+1]);
   const G=new Map(),gk=(x,z)=>Math.floor(x/8)+','+Math.floor(z/8);for(const p of SP){const k=gk(p[0],p[1]);(G.get(k)||G.set(k,[]).get(k)).push(p);}
   const near=(x,z)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const L=G.get((Math.floor(x/8)+i)+','+(Math.floor(z/8)+j));if(L)for(const p of L)if(Math.hypot(p[0]-x,p[1]-z)<(p[2]||1.6))return true;}return false;};
-  const bld=(x,z)=>W.foot.hits(x,z,.1,.1,0,0,f=>f.tag==='open'||f.tag==='precinct'||f.tag==='road'||f.palTer!=null);
+  const bld=(x,z)=>W.foot.hits(x,z,.1,.1,0,0,f=>f.tag==='open'||f.tag==='precinct'||f.tag==='road'||f.palTer!=null),ring=(x,z)=>W.foot.hits(x,z,.1,.1,0,0,f=>f.palTer==null);
+  const PG=new Map();for(const p of W.palPlants||[]){const k=Math.floor(p[0]/4)+','+Math.floor(p[1]/4);(PG.get(k)||PG.set(k,[]).get(k)).push(p);}
+  const plant=(x,z)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const L=PG.get((Math.floor(x/4)+i)+','+(Math.floor(z/4)+j));if(L)for(const p of L)if(Math.hypot(p[0]-x,p[1]-z)<p[2])return true;}return false;};
   for(const Z of[...PAL_PLAN.zones,...(PAL_PLAN.west?[PAL_PLAN.west.rock]:[])]){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of Z){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
     for(let lz=z0+cs/2;lz<z1;lz+=cs)for(let lx=x0+cs/2;lx<x1;lx+=cs){if(!inPolyXZ(lx,lz,Z))continue;const[x,z]=palW(lx,lz);cells++;
       const sl=Math.hypot(gy(x+.75,z)-gy(x-.75,z),gy(x,z+.75)-gy(x,z-.75))/1.5;if(sl<=lim)continue;
       if(palPlatAt(x,z))continue;if(palRockD(lx,lz)<.5)continue;if(1-1/Math.sqrt(1+sl*sl)>.64)continue;   // a terrace floor; a rock base; the terrain shader draws rock there (builders.js: smoothstep(.5,.78,sl))
-      if((W.palRocks||[]).some(b=>Math.hypot(b[0]-x,b[1]-z)<b[2]))continue;if(near(x,z)||bld(x,z))continue;
+      if((W.palRocks||[]).some(b=>Math.hypot(b[0]-x,b[1]-z)<b[2]))continue;if(near(x,z)||bld(x,z)||ring(x,z)||plant(x,z))continue;
       n++;if(rows.length<400)rows.push([+lx.toFixed(0),+lz.toFixed(0),+(Math.atan(sl)/DEG).toFixed(0)]);}}
   const area=+(n*cs*cs).toFixed(0),r={area,cells:n,of:cells,worst:rows.sort((a,b)=>b[2]-a[2]).slice(0,30)};console.log('pal bare slope',JSON.stringify({area,cells:n}));return r;};
+// R11 (the review of 2026-11-14): both ends of every stair on the hill are level with the floor they join. The stair's end piece (its landing, or its
+// first tread where it has none) may be up to 3 cm lower than the floor, so the paving covers its edge; never higher, never a step. Measured on what is
+// drawn, not read from the builders: downward rays on every visible mesh but the instanced ones (trees, shrubs), along a line from the end of the
+// stair's route (a point on the floor it joins) towards the first point of the route a riser lower (a head) or higher (a foot); where a parapet or a
+// drop is in the way, the line swings up to 60 degrees either side. Along it: the first riser (0.1 m or more the stair's way); the piece just before it is
+// the end piece, and the break before that is its joint with the floor (d: the end piece's height over the floor that touches it; none: flush, d 0).
+// A first or last riser over 0.25 m is a fault of its own. The built meshes keep their arrays only with ?keepgeo in the address (materials.js).
+// The joints part way along a hill stair count as ends too (joints: where a flight leaves a ring's or terrace's floor, or comes down on one; the id
+// carries the route point, "(t31)"); a route with no riser is a walk (walks), not checked. The terrain is not read where the ground mask hides it
+// (option 甲 of the buried treads, W.groundMask): it is not drawn there.
+window.__palStairEnds=(opt={})=>{const W=W0,RAD=5,DS=.1,CK=2,rows=[],ck=(x,z)=>Math.floor(x/CK)+','+Math.floor(z/CK);
+  // a route with no riser (mmWalk, the walk along beltMM: an H1 stair record with a level route) is a walk, not a stair: listed apart (walks), not checked
+  const S=[],walks=[];for(const s of W.palStairs||[]){const Yv=(s.Y||[]).filter(v=>!isNaN(v));if(Yv.length&&Math.max(...Yv)-Math.min(...Yv)<.15){walks.push(s.id);continue;}S.push({id:s.id,R:s.pts,Y:s.Y,hd:s.hd});}
+  const onRing=(x,z)=>W.foot.hits(x,z,3,3,0,0,f=>f.palTer==null);   // as __palReach: the hill stairs (templeLinks) in the zones or over a west ring
+  const J=[];   // R11 (the second pass): a hill stair's flight that leaves a floor or comes down on one part way along its route (stairFlight's fA, fB) has an end there too
+  for(const h of W.hillStairs||[]){if(h.pal||h.glb||!h.R||h.R.length<2||!h.R.some(p=>palInZone(p[0],p[1],10)||onRing(p[0],p[1])))continue;const id=h.temple?'temple:'+h.temple:'hill@'+h.R[0].map(Math.round);
+    S.push({id,R:h.R,Y:hillStairHeights(W,h.R,h.top)});
+    const R=h.R,Hg=stairGround(W),ix=stairLandings(W,R);let yT=h.top;for(let l=0;l<ix.length-1;l++){const f=stairFlight(W,Hg,R,ix,l,yT);if(f.skip==='short')continue;if(f.skip){yT=Math.min(yT,f.yB);continue;}
+      const{A,B,Ls}=f,ux=(B[0]-A[0])/Ls,uz=(B[1]-A[1])/Ls,at=s=>[A[0]+ux*s,A[1]+uz*s];
+      if(f.fA!=null&&l>0){const s=Math.min(f.sE,f.sLo)-.8,p=at(s);J.push({id:id+' (t'+ix[l]+')',head:true,p,y:f.fA,R:[p,B],Y:[f.fA,f.yE],D:f.o0-s+2});}   // D: the head landing can be longer than 8 m (a slant crossing)
+      if(f.fB!=null&&l<ix.length-2){const p=at(Ls-f.e1+.8);J.push({id:id+' (t'+ix[l+1]+')',head:false,p,y:f.fB,R:[p,A],Y:[f.fB,yT]});}
+      yT=f.yE;}}
+  const E=[];for(const s of S)for(const head of[true,false]){const R=head?(s.hd?s.R.slice(s.hd):s.R):s.R.slice().reverse(),Y=head?(s.hd?s.Y.slice(s.hd):s.Y):s.Y.slice().reverse(),y=isNaN(Y[0])?Y.find(v=>!isNaN(v)):Y[0];E.push({id:s.id,head,p:R[0],y,R,Y});}
+  E.push(...J);
+  // the walking surfaces: every triangle facing up or down (not a wall face) of the visible meshes within RAD of the ends, in 2 m cells
+  const need=new Set();let bx0=1e9,bx1=-1e9,bz0=1e9,bz1=-1e9;
+  for(const e of E){const[x,z]=e.p,RD=Math.max(RAD,(e.D||8)+.5);   // as far as the line is read (8 m, or a long head landing's D): the cells past RAD were empty, a fault of their own
+    for(let gx=Math.floor((x-RD-.5)/CK);gx<=Math.floor((x+RD+.5)/CK);gx++)for(let gz=Math.floor((z-RD-.5)/CK);gz<=Math.floor((z+RD+.5)/CK);gz++)need.add(gx+','+gz);
+    bx0=Math.min(bx0,x-RD-1);bx1=Math.max(bx1,x+RD+1);bz0=Math.min(bz0,z-RD-1);bz1=Math.max(bz1,z+RD+1);}
+  const B=new Map(),bb=new THREE.Box3();let tris=0,gone=0;W.scene.updateMatrixWorld(true);
+  W.scene.traverseVisible(o=>{if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh)return;const m=Array.isArray(o.material)?o.material[0]:o.material;if(m&&m.transparent&&m.opacity<.9)return;
+    const G=o.geometry,pos=G&&G.attributes.position;if(!pos)return;if(!G.boundingBox)G.computeBoundingBox();bb.copy(G.boundingBox).applyMatrix4(o.matrixWorld);if(bb.max.x<bx0||bb.min.x>bx1||bb.max.z<bz0||bb.min.z>bz1)return;
+    const ter=m===MAT.terrain&&!!(W.groundMask&&W.groundMask.n);   // the ground mask's holes are read as the shader draws them
+    if(!pos.array||(G.index&&!G.index.array)){gone++;return;}
+    const e=o.matrixWorld.elements,A=pos.array,st=pos.itemSize||3,ix=G.index?G.index.array:null,n=ix?ix.length:pos.count,V=new Float32Array(9);
+    const raw=!pos.normalized&&!pos.isInterleavedBufferAttribute;   // a quantized GLB (KHR_mesh_quantization: normalized integers) or an interleaved one is read through getX
+    for(let i=0;i+2<n;i+=3){for(let k=0;k<3;k++){const vi=ix?ix[i+k]:i+k,j=vi*st,x=raw?A[j]:pos.getX(vi),y=raw?A[j+1]:pos.getY(vi),z=raw?A[j+2]:pos.getZ(vi);V[k*3]=e[0]*x+e[4]*y+e[8]*z+e[12];V[k*3+1]=e[1]*x+e[5]*y+e[9]*z+e[13];V[k*3+2]=e[2]*x+e[6]*y+e[10]*z+e[14];}
+      const x0=Math.min(V[0],V[3],V[6]),x1=Math.max(V[0],V[3],V[6]),z0=Math.min(V[2],V[5],V[8]),z1=Math.max(V[2],V[5],V[8]);if(x1<bx0||x0>bx1||z1<bz0||z0>bz1)continue;
+      const ax=V[3]-V[0],ay=V[4]-V[1],az=V[5]-V[2],cx=V[6]-V[0],cy=V[7]-V[1],cz=V[8]-V[2],ny=az*cx-ax*cz,nl=Math.hypot(ay*cz-az*cy,ny,ax*cy-ay*cx);if(nl<1e-9||Math.abs(ny)<.3*nl)continue;
+      let T=null;for(let gx=Math.floor(x0/CK);gx<=Math.floor(x1/CK);gx++)for(let gz=Math.floor(z0/CK);gz<=Math.floor(z1/CK);gz++){const k=gx+','+gz;if(!need.has(k))continue;if(!T){T=V.slice();T.up=ny>0;T.ter=ter;}(B.get(k)||B.set(k,[]).get(k)).push(T);tris++;}}});
+  const H=(x,z,cap)=>{const L=B.get(ck(x,z));let best=-1e9,bestD=-1e9;   // an up-facing surface first; a down-facing one (an underside: a rail, a lintel) only where none is
+if(L)for(const V of L){const d=(V[5]-V[8])*(V[0]-V[6])+(V[6]-V[3])*(V[2]-V[8]);if(Math.abs(d)<1e-12)continue;
+      const a=((V[5]-V[8])*(x-V[6])+(V[6]-V[3])*(z-V[8]))/d,b=((V[8]-V[2])*(x-V[6])+(V[0]-V[6])*(z-V[8]))/d,c=1-a-b;if(a<-1e-6||b<-1e-6||c<-1e-6)continue;if(V.ter&&groundMaskAt(W,x,z)>.5)continue;const y=a*V[1]+b*V[4]+c*V[7];if(y<=cap){if(V.up){if(y>best)best=y;}else if(y>bestD)bestD=y;}}return best>-1e9?best:bestD;};
+  // the breaks along a profile (points P, heights h): [index, jump, at (m)], each bisected to 5 mm (a step keeps its height, a kink in a slope does not);
+  // a slit under 0.2 m wide that the surface comes back from to within 1 cm is dropped
+  const breaks=(P,h,cap)=>{let out=[];for(let i=1;i<P.length;i++){if(h[i]<-1e8||h[i-1]<-1e8){out.push([i,NaN,P[i][2]]);continue;}
+      const pred=i>1&&h[i-2]>-1e8&&!(out.length&&out[out.length-1][0]===i-1)?2*h[i-1]-h[i-2]:h[i-1];if(Math.abs(h[i]-pred)<.008)continue;
+      let a=P[i-1],b=P[i],ha=h[i-1],hb=h[i];for(let k=0;k<5;k++){const m=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2],hm=H(m[0],m[1],cap);if(Math.abs(hm-ha)>Math.abs(hb-hm)){b=m;hb=hm;}else{a=m;ha=hm;}}
+      if(Math.abs(hb-ha)>=.006)out.push([i,hb-ha,a[2]]);}
+    for(let k=0;k<out.length-1;k++){const[i,j,s]=out[k],q=out.findIndex((b,m)=>m>k&&b[2]-s<.2&&!isNaN(b[1])&&Math.abs(b[1]+j)<.01);if(!isNaN(j)&&q>0){out.splice(k,q-k+1);k--;}}
+    // a slot: a drop of over 0.6 m (or nothing) that the surface comes back from within 0.6 m, to within 0.3 m of the level before it: one break, its
+    // jump the difference of the two levels and its 4th field the slot's width (a fault of its own)
+    for(let k=0;k<out.length;k++){const[i,j,s]=out[k];if(!(isNaN(j)||Math.abs(j)>.6)||i<1||h[i-1]<-1e8)continue;const lv=h[i-1];let m=-1;
+      for(let t=i;t<h.length-1&&P[t][2]-s<.6;t++)if(h[t]>-1e8&&Math.abs(h[t]-lv)<.3&&Math.abs(h[t+1]-h[t])<.05){m=t;break;}if(m<0)continue;
+      let e=k;while(e+1<out.length&&out[e+1][0]<=m)e++;out.splice(k,e-k+1,[m,h[m]-lv,s,+(P[m][2]-s).toFixed(2),i]);}
+    return out;};
+  const floorOf=(x,z,y)=>{const p=palPlatAt(x,z);if(p&&Math.abs(p.y-y)<.6)return p.id;if(W.foot.hits(x,z,.1,.1,0,0,f=>f.palTer==null))return'ring';if(W.streetAt&&W.streetAt(x,z)&&Math.abs(W.gy(x,z)-y)<.6)return'street';if(Math.abs(W.gy(x,z)-y)<.3)return'ground';return'other';};
+  for(const e of E){const[x,z]=e.p,sg=e.head?-1:1,R=e.R,Y=e.Y,row={id:e.id,end:e.head?'head':'foot'},[lx,lz]=palL(x,z);row.at=[+lx.toFixed(1),+lz.toFixed(1)];
+    // Q: the first point of the route a riser the stair's way from the end, 0.5 m off it at least; the surfaces read are those up to 0.6 m over the
+    // higher of the two (not a parapet's or a cheek's top)
+    let Q=null,yQ=e.y;for(let i=1;i<R.length;i++){if(isNaN(Y[i]))continue;if(sg*(Y[i]-e.y)>=.15&&Math.hypot(R[i][0]-x,R[i][1]-z)>=.5){Q=R[i];yQ=Y[i];break;}}
+    const cap=Math.max(e.y,yQ)+.6,y0=H(x,z,cap);
+    if(!Q){row.kind='the route has no riser';row.d=null;row.floor=+y0.toFixed(2);row.on=floorOf(x,z,y0);row.pass=false;rows.push(row);continue;}
+    const th=Math.atan2(Q[1]-z,Q[0]-x),D=Math.min(Math.max(8,e.D||0),Math.hypot(Q[0]-x,Q[1]-z)+.8);let got=null;
+    for(const rot of[0,5,-5,10,-10,15,-15,20,-20,25,-25,30,-30,35,-35,40,-40,45,-45,50,-50,55,-55,60,-60]){const t0=th+rot*DEG,ux=Math.cos(t0),uz=Math.sin(t0),P=[],h=[];
+      for(let t=0;t<=D+1e-6;t+=DS){P.push([x+ux*t,z+uz*t,t]);h.push(H(x+ux*t,z+uz*t,cap));}if(h[0]<-1e8)continue;
+      const Bk=breaks(P,h,cap);if(opt.dbg===e.id+'|'+(e.head?'head':'foot'))(row.dbg||(row.dbg=[])).push([rot,+h[0].toFixed(2),Bk.map(b=>[+b[2].toFixed(2),+(+b[1]).toFixed(3)])]);let ri=-1,bad=false;for(let k=0;k<Bk.length;k++){const j=Bk[k][1];if(isNaN(j)||sg*j<-.3||Math.abs(j)>.6){bad=true;break;}if(sg*j>=.1){ri=k;break;}}
+      if(bad||ri<0)continue;const rj=sg*Bk[ri][1],pre=Bk.slice(0,ri),bj=pre.length?pre[pre.length-1]:null,gap=pre.find(b=>b[3]!=null);
+      // a riser over 0.25 m right at the end, with no end piece of its own: the floor's paving (or a missing step) makes the first or last riser too tall
+      let d,kind;if(!bj){if(rj<=.25){d=0;kind='flush';}else{d=null;kind=(e.head?'first':'last')+' riser '+rj.toFixed(2);}}
+      else{d=bj[1];kind=d>.0005?'higher':d>=-.0305?'lower':'step down';if(rj>.25&&kind!=='lower')kind+=' (then a riser of '+rj.toFixed(2)+')';}
+      if(gap)kind='slot '+gap[3]+' m, '+kind;
+      const fi=bj?Math.max(0,(bj[3]!=null?bj[4]:bj[0])-1):0;got={rot,d,kind,gap:gap?gap[3]:0,len:+((Bk[ri][2])-(bj?bj[2]:0)).toFixed(2),fy:h[fi],q:P[fi],floors:pre.length};break;}
+    if(!got){if(row.dbg)row.Q=[...palL(Q[0],Q[1]).map(v=>+v.toFixed(1))];row.kind='no clear line onto the stair';row.d=null;row.floor=+y0.toFixed(2);row.on=floorOf(x,z,y0);row.pass=false;rows.push(row);continue;}
+    row.kind=got.kind;row.d=got.d==null?null:+got.d.toFixed(3);row.floor=+got.fy.toFixed(2);row.on=floorOf(got.q[0],got.q[1],got.fy);row.piece=got.len;if(got.rot)row.rot=got.rot;
+    if(got.gap)row.slot=got.gap;row.pass=row.d!=null&&row.d<=.0005&&row.d>=-.0305&&!got.gap;rows.push(row);}
+  const fail=rows.filter(r=>!r.pass);const r={ends:rows.length,stairs:S.length,joints:J.length,fail:fail.length,tris,walks,list:opt.all?rows:fail};if(gone)r.warn=gone+' meshes near the stairs have let their arrays go: load the page with ?keepgeo';
+  console.log('pal stair ends',JSON.stringify({stairs:S.length,ends:rows.length,fail:fail.length}));return r;};
 window.__palReach=()=>{const W=W0,units=[],gy=W.gy;
-  if(W.palPlats)for(const P of W.palPlats)units.push({id:P.id,y:P.y,pts:P.pts,poly:true});
-  else{const T=W.foot.list.filter(f=>f.palTer!=null&&palInZone(f.cx,f.cz,3));const par=T.map((f,i)=>i),fd=i=>par[i]===i?i:(par[i]=fd(par[i]));
+  const planted=[];if(W.palPlats)for(const P of W.palPlats){if(P.walk===false){planted.push(P.id);continue;}units.push({id:P.id,y:P.y,pts:P.pts,poly:true});}   // walk:false: a planted strip, not a floor (v30n, R10 乙)
+  if(typeof PAL_SC!=='undefined'){const L=PAL_SC.land,m=.6;units.push({id:'scForecourt',y:PAL_SC.y,pts:[[L[0][0]-m,L[0][1]-m],[L[1][0]+m,L[1][1]-m],[L[2][0]+m,L[2][1]+m],[L[3][0]-m,L[3][1]+m]],poly:true});}   // the Scalae Caci forecourt (图七 east: the walk from the Magna Mater comes onto it)
+  // the old ring floors (since H1 the only ones left are the west rings, PAL_PLAN.west.rings)
+  {const T=W.foot.list.filter(f=>f.palTer!=null&&(W.palPlats||palInZone(f.cx,f.cz,3)));const par=T.map((f,i)=>i),fd=i=>par[i]===i?i:(par[i]=fd(par[i]));
     for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++)if(T[i].palTer===T[j].palTer&&Math.hypot(T[i].cx-T[j].cx,T[i].cz-T[j].cz)<T[i].r+T[j].r+1)par[fd(i)]=fd(j);
     const G=new Map();T.forEach((f,i)=>{const k=fd(i);(G.get(k)||G.set(k,[]).get(k)).push(f);});for(const[k,L]of G)units.push({id:'ring'+L[0].palTer+'#'+k,y:L[0].palTer,feet:L});}
   const inU=(u,x,z)=>{if(u.poly){const[lx,lz]=palL(x,z);return inPolyXZ(lx,lz,u.pts);}return u.feet.some(f=>{const dx=x-f.cx,dz=z-f.cz;return Math.abs(f.c*dx-f.s*dz)<f.hw&&Math.abs(f.s*dx+f.c*dz)<f.hd;});};
   const S=[];for(const s of W.palStairs||[])S.push({id:s.id,R:s.pts,Y:s.Y,links:s.links||null});
-  for(const h of W.hillStairs||[]){if(h.pal||!h.R||!h.R.some(p=>palInZone(p[0],p[1],10)))continue;S.push({id:h.temple?'temple:'+h.temple:'hill@'+h.R[0].map(Math.round),R:h.R,Y:hillStairHeights(W,h.R,h.top)});}
+  const onRing=(x,z)=>W.foot.hits(x,z,3,3,0,0,f=>f.palTer==null);
+  for(const h of W.hillStairs||[]){if(h.pal||!h.R||!h.R.some(p=>palInZone(p[0],p[1],10)||onRing(p[0],p[1])))continue;S.push({id:h.temple?'temple:'+h.temple:'hill@'+h.R[0].map(Math.round),R:h.R,Y:hillStairHeights(W,h.R,h.top)});}
   const adj=new Map(),link=(a,b)=>{(adj.get(a)||adj.set(a,new Set()).get(a)).add(b);(adj.get(b)||adj.set(b,new Set()).get(b)).add(a);},diag=[];
-  // diagonal: a stretch of more than 4 m over a terrace's floor (higher than it by 1.6 m) whose direction (first to last point of the stretch) is more than 20 degrees
-  // off both the normal and the line of every wall within 30 m: a stair runs along a wall or square to it, never across a terrace on a slant
-  for(const s of S){const on=new Set(s.links||[]);let over=0,ov=null,i1=-1;
+  // diagonal: more than 4 m of a stair over a terrace's floor (higher than it by 1.6 m) running more than 20 degrees off both the normal and the line of every
+  // wall within 30 m: a stair runs along a wall or square to it, never across a terrace on a slant. Each segment is judged by its own direction, so a flight
+  // that turns a corner (neC: along beltE's wall, then along footE's) is two straight runs, not one slanting chord.
+  const slant=(A,B)=>{const ux=B[0]-A[0],uz=B[1]-A[1],l=Math.hypot(ux,uz);if(l<.05)return 0;const mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2;let best=90;
+    for(const r of W.wallFeet||[]){if(!r.S.some(q=>Math.hypot(q.x-mx,q.z-mz)<30+l/2))continue;const a=Math.acos(Math.min(1,Math.abs((ux*r.nx+uz*r.nz)/l)))/DEG;best=Math.min(best,a,90-a);}return best;};
+  for(const s of S){const on=new Set(s.links||[]);let over=0,ov=null,worst=0;
     for(let i=0;i<s.R.length;i++){const[x,z]=s.R[i],y=s.Y?s.Y[i]:gy(x,z);if(W.streetAt&&W.streetAt(x,z)&&Math.abs(gy(x,z)-y)<1.6)on.add('street');
-      for(const u of units)if(inU(u,x,z)){if(Math.abs(y-u.y)<1.6)on.add(u.id);else if(y>u.y+1.6&&i>0){const d=Math.hypot(x-s.R[i-1][0],z-s.R[i-1][1]);over+=d;ov=ov||{u:u.id,i:i-1};i1=i;}}}
-    if(over>4&&ov){const A=s.R[ov.i],B=s.R[i1],ux=B[0]-A[0],uz=B[1]-A[1],l=Math.hypot(ux,uz)||1,mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2;let best=90;
-      for(const r of W.wallFeet||[]){if(!r.S.some(q=>Math.hypot(q.x-mx,q.z-mz)<30+l/2))continue;const a=Math.acos(Math.min(1,Math.abs((ux*r.nx+uz*r.nz)/l)))/DEG;best=Math.min(best,a,90-a);}
-      if(best>20)diag.push({stair:s.id,over:+over.toFixed(1),unit:ov.u,angle:+best.toFixed(0)});}
+      for(const u of units)if(inU(u,x,z)){if(Math.abs(y-u.y)<1.6)on.add(u.id);else if(y>u.y+1.6&&i>0){const b=slant(s.R[i-1],s.R[i]);if(b>20){over+=Math.hypot(x-s.R[i-1][0],z-s.R[i-1][1]);ov=ov||u.id;worst=Math.max(worst,b);}}}}
+    for(const[i,j]of[[0,1],[s.R.length-1,s.R.length-2]]){if(j<0||j>=s.R.length||i===j)continue;const[x,z]=s.R[i],[px,pz]=s.R[j],l=Math.hypot(x-px,z-pz)||1,qx=x+(x-px)/l*.5,qz=z+(z-pz)/l*.5,y=s.Y?s.Y[i]:gy(x,z);   // round 4: and where one steps off
+      for(const u of units)if(inU(u,qx,qz)&&Math.abs(y-u.y)<1.6)on.add(u.id);if(W.streetAt&&W.streetAt(qx,qz)&&Math.abs(gy(qx,qz)-y)<1.6)on.add('street');}   // either end, 0.5 m on (a head floor that starts at the end of the stair's apron, tlE/tlW)
+    if(over>4)diag.push({stair:s.id,over:+over.toFixed(1),unit:ov,angle:+worst.toFixed(0)});
     const L=[...on];for(let a=0;a<L.length;a++)for(let b=a+1;b<L.length;b++)link(L[a],L[b]);s.on=L;}
+  // terraces at the same level that share an open edge ('s') are one floor (gApS, the filled hollow, and the south belt: 图一)
+  if(W.palPlats)for(const P of W.palPlats)for(const e of P.E){if(e.k!=='s')continue;const mx=(e.a[0]+e.b[0])/2,mz=(e.a[1]+e.b[1])/2,l=Math.hypot(e.b[0]-e.a[0],e.b[1]-e.a[1])||1,nx=(e.b[1]-e.a[1])/l,nz=-(e.b[0]-e.a[0])/l;
+    for(const Q of W.palPlats)if(Q!==P&&Math.abs(Q.y-P.y)<.3&&[1,-1].some(sg=>inPolyXZ(mx+sg*nx*.6,mz+sg*nz*.6,Q.pts)))link(P.id,Q.id);}
+  if(W.palPlats)for(const P of W.palPlats)if(P.plaza)link(P.id,'street');   // round 4: a head floor open on a plaza that meets the streets (tlE, tlW: the plaza in front of block b)
   const seen=new Set(['street']),Q=['street'];while(Q.length){const a=Q.shift();for(const b of adj.get(a)||[])if(!seen.has(b)){seen.add(b);Q.push(b);}}
   const un=units.filter(u=>!seen.has(u.id)).map(u=>u.id);
-  const r={units:units.length,reached:units.length-un.length,unreached:un,diagonal:diag,stairs:S.map(s=>({id:s.id,on:s.on}))};console.log('pal reach',JSON.stringify({units:r.units,reached:r.reached,diagonal:diag.length}));return r;};
+  const r={units:units.length,reached:units.length-un.length,unreached:un,planted,diagonal:diag,stairs:S.map(s=>({id:s.id,on:s.on}))};console.log('pal reach',JSON.stringify({units:r.units,reached:r.reached,diagonal:diag.length}));return r;};
 window.__temple=on=>{U.uDbg.value.z=on?0:1;W0.scene.traverse(m=>{if(m.isMesh&&m.material&&m.material.userData.oc){const W={marble:1,travertine:1,plaster:1,plaster2:1,plaster3:1,stone:1,tuff:1}[m.material.name];if(W){if(!m.material.userData.nc)m.material.userData.nc=m.material.color.clone();m.material.color.copy(on?m.material.userData.nc:m.material.userData.oc);}}});};
