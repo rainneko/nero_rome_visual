@@ -114,11 +114,11 @@ body.readfull #rscroll{width:100%;max-width:780px;margin:0 auto;padding-left:34p
   const ctrl=$('#ctrl'),dock=$('#dock');if(ctrl&&dock){const rows=[...ctrl.querySelectorAll('.row')],views=$('#views'),glbIn=$('#glb'),glbL=ctrl.querySelector('label[for="glb"]');
     const pick=id=>rows.find(r=>r.querySelector(id));const tod=pick('#tod'),sea=pick('#seasons'),gla=pick('#glassop');
     const grp=(ids)=>{const d=document.createElement('div');d.className='toggles';ids.forEach(x=>{const e=typeof x==='string'?$(x):x;if(e)d.appendChild(e);});return d;};
-    const disp=grp(['#tLabels','#tTilt']),filt=grp(['#tPaint','#tCrystL','#tCryst','#renderQuality']),snd=grp(['#tMusic','#musUp','#musFile','#tBell']),imp=grp([glbL,glbIn]);
+    const walk=grp(['#tWalk']),disp=grp(['#tLabels','#tTilt']),filt=grp(['#tPaint','#tCrystL','#tCryst','#renderQuality']),snd=grp(['#tMusic','#musUp','#musFile','#tBell']),imp=grp([glbL,glbIn]);
     let saved={};try{saved=JSON.parse(localStorage.getItem('nero-ui')||'{}');}catch(e){}const save=()=>{try{const o={mini:dock.classList.contains('mini'),map:$('#mapbox').classList.contains('shut')};$$('#ctrl .sec').forEach(s=>o[s.dataset.id]=s.classList.contains('shut'));localStorage.setItem('nero-ui',JSON.stringify(o));}catch(e){}};
     const sec=(id,title,nodes,shut)=>{const s=document.createElement('div');s.className='sec';s.dataset.id=id;if(saved[id]??shut)s.classList.add('shut');s.innerHTML=`<h4>${title}<em>▾</em></h4><div class="sbody"></div>`;const b=s.querySelector('.sbody');nodes.forEach(n=>n&&b.appendChild(n));s.querySelector('h4').onclick=()=>{s.classList.toggle('shut');save();};return s;};
     ctrl.innerHTML='';const head=document.createElement('div');head.className='dhead';head.innerHTML='<span>控 制</span><button id="dockMin" title="把所有面板收成一条">全部收起</button>';ctrl.appendChild(head);
-    [sec('views','视角',[views],false),sec('time','时间与季节',[tod,sea],false),sec('filt','画面滤镜',[filt],false),sec('disp','显示',[disp,gla],true),sec('snd','声音',[snd],true),sec('imp','导入模型',[imp],true)].forEach(s=>ctrl.appendChild(s));
+    [sec('views','视角',[views,walk],false),sec('time','时间与季节',[tod,sea],false),sec('filt','画面滤镜',[filt],false),sec('disp','显示',[disp,gla],true),sec('snd','声音',[snd],true),sec('imp','导入模型',[imp],true)].forEach(s=>ctrl.appendChild(s));
     const mb=$('#mapbox'),mh=document.createElement('div');mh.className='dhead';mh.innerHTML='<span>小地图 · WASD 移动</span><button title="收起或展开小地图">▾</button>';mb.insertBefore(mh,mb.firstChild);mh.querySelector('button').onclick=()=>{mb.classList.toggle('shut');save();};if(saved.map)mb.classList.add('shut');
     const mini=document.createElement('div');mini.id='dockmini';mini.innerHTML='<button id="dockOpen" title="展开控制面板">☰ 控制</button><button id="dockLab" title="显示或隐藏地名">🏷</button>';dock.appendChild(mini);
     $('#dockMin').onclick=()=>{dock.classList.add('mini');save();};$('#dockOpen').onclick=()=>{dock.classList.remove('mini');save();};$('#dockLab').onclick=()=>$('#tLabels').click();if(saved.mini)dock.classList.add('mini');}
@@ -131,9 +131,9 @@ body.readfull #rscroll{width:100%;max-width:780px;margin:0 auto;padding-left:34p
     fs.onchange=()=>{pref.font=fs.value;apply();};sm.onclick=()=>{pref.size=Math.max(13,pref.size-1);apply();};lg.onclick=()=>{pref.size=Math.min(24,pref.size+1);apply();};
     fu.onclick=()=>{const on=document.body.classList.toggle('readfull');fu.textContent=on?'退出全屏':'全屏阅读';if(on)$('#reader').classList.remove('closed');};}
   // keyboard: WASD / arrows move, Q E turn, R F zoom
-  const keys=new Set();addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','r','f','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keys.add(k);if(k.startsWith('arrow'))e.preventDefault();}});
+  const keys=new Set();addEventListener('keydown',e=>{if(FP.on)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','r','f','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keys.add(k);if(k.startsWith('arrow'))e.preventDefault();}});
   addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>keys.clear());let lastT=0;
-  W0.anim.push(t=>{const dt=Math.min(.05,t-lastT||.016);lastT=t;if(!keys.size)return;if(typeof camT!=='undefined')camT=null;LINK.lock=performance.now()+6000;const sp=Math.max(40,view.dist)*.9*dt,fx=-Math.sin(view.yaw),fz=-Math.cos(view.yaw),rx=-fz,rz=fx;
+  W0.anim.push(t=>{const dt=Math.min(.05,t-lastT||.016);lastT=t;if(FP.on){keys.clear();return;}if(!keys.size)return;if(typeof camT!=='undefined')camT=null;LINK.lock=performance.now()+6000;const sp=Math.max(40,view.dist)*.9*dt,fx=-Math.sin(view.yaw),fz=-Math.cos(view.yaw),rx=-fz,rz=fx;
     let mx=0,mz=0;if(keys.has('w')||keys.has('arrowup')){mx+=fx;mz+=fz;}if(keys.has('s')||keys.has('arrowdown')){mx-=fx;mz-=fz;}if(keys.has('d')||keys.has('arrowright')){mx+=rx;mz+=rz;}if(keys.has('a')||keys.has('arrowleft')){mx-=rx;mz-=rz;}
     view.tgt.x+=mx*sp;view.tgt.z+=mz*sp;if(keys.has('q'))view.yaw+=1.1*dt;if(keys.has('e'))view.yaw-=1.1*dt;if(keys.has('r'))view.dist=Math.max(25,view.dist*(1-.9*dt));if(keys.has('f'))view.dist=Math.min(6000,view.dist*(1+.9*dt));
     if(W0.gy&&PAGE==='rome'){const gy0=W0.gy(view.tgt.x,view.tgt.z);if(isFinite(gy0))view.tgt.y=gy0;}camApply();});}
@@ -186,7 +186,7 @@ let W0=null,curS=-1,todT=null,camT=null,lastEnv=0,suppress=false,LABS=[],MAPT=nu
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function setEnv(){applyEnv();SUNDIR.copy(sun.position).normalize();const wv=typeof SEAS==='undefined'?0:Math.max(0,1-Math.abs(SEAS.v-3)*1.4);if(wv>0&&U.uSunCol)U.uSunCol.value.lerp(new THREE.Color(.82,.88,1),wv*.28);}
 function vFrom(v){const p=new THREE.Vector3(...v.pos),t=new THREE.Vector3(...v.tgt),d=p.clone().sub(t),L=d.length();return{tgt:t,dist:L,yaw:Math.atan2(d.x,d.z),pitch:Math.asin(d.y/L)};}
-function camApply(){const c=Math.cos(view.pitch);camera.position.set(view.tgt.x+Math.sin(view.yaw)*c*view.dist,view.tgt.y+Math.sin(view.pitch)*view.dist,view.tgt.z+Math.cos(view.yaw)*c*view.dist);
+function camApply(){if(FP.on){fpCam();return;}const c=Math.cos(view.pitch);camera.position.set(view.tgt.x+Math.sin(view.yaw)*c*view.dist,view.tgt.y+Math.sin(view.pitch)*view.dist,view.tgt.z+Math.cos(view.yaw)*c*view.dist);
   if(W0){const x=camera.position.x,z=camera.position.z,pg=typeof PAGE==='undefined'?'rome':PAGE,m=pg==='antium'&&W0.hA?Math.max(0,W0.hA(x-W0.AO[0],z-W0.AO[1]))+5:pg==='ostia'&&W0.hO?Math.max(0,W0.hO(x-W0.OO[0],z-W0.OO[1]))+5:W0.gy(x,z)+(TEST&&typeof window.__camMin==='number'?window.__camMin:14);if(camera.position.y<m)camera.position.y=m;}camera.lookAt(view.tgt);
   const nn=clamp(view.dist*.012,1,30);if(Math.abs(camera.near-nn)>nn*.2){camera.near=nn;camera.updateProjectionMatrix();}}   // near plane follows the view distance (depth precision far away, no clipping up close)
 function flyTo(b,dur=2.8){if(!dur){view.tgt.copy(b.tgt);view.dist=b.dist;view.yaw=b.yaw;view.pitch=b.pitch;camT=null;return;}
@@ -225,7 +225,7 @@ function drawMap(){if(!MAPT)return;const x=$('#minimap').getContext('2d');x.draw
   const[u,v]=toMap(camera.position.x,camera.position.z),[tu,tv]=toMap(view.tgt.x,view.tgt.z),a=Math.atan2(tv-v,tu-u),f=.42;
   x.fillStyle='rgba(233,207,143,.32)';x.strokeStyle='#e9cf8f';x.lineWidth=2;x.beginPath();x.moveTo(u,v);x.lineTo(u+Math.cos(a-f)*95,v+Math.sin(a-f)*95);x.lineTo(u+Math.cos(a+f)*95,v+Math.sin(a+f)*95);x.closePath();x.fill();x.stroke();
   x.fillStyle='#fff3da';x.beginPath();x.arc(u,v,5,0,TAU);x.fill();}
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);P.setSize(w,h);const rd=$('#reader'),off=(!rd.classList.contains('closed')&&w>860)?rd.offsetWidth+28:0;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);P.setSize(w,h);const rd=$('#reader'),off=(!FP.on&&!rd.classList.contains('closed')&&w>860)?rd.offsetWidth+28:0;
   camera.aspect=(w+off)/h;if(off)camera.setViewOffset(w+off,h,off,0,w,h);else camera.clearViewOffset();camera.updateProjectionMatrix();SMOKEPX.value=h*renderer.getPixelRatio()/(2*Math.tan(camera.fov*DEG/2));}
 /* rain & birds */
 const rain=(()=>{const n=4000,A=new Float32Array(n*3);for(let i=0;i<n;i++){A[i*3]=(Math.random()-.5)*240;A[i*3+1]=Math.random()*160;A[i*3+2]=(Math.random()-.5)*240;}
@@ -270,7 +270,7 @@ function initUI(){$('#ledgers').innerHTML=HUDK.map((k,j)=>`<div class="led"><b>$
     else{view.yaw-=dx*.005;view.pitch=clamp(view.pitch+dy*.004,.06,1.45);}});
   const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;if(!ptrs.size)canvas.classList.remove('drag');};canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
   canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{e.preventDefault();camT=null;view.dist=clamp(view.dist*Math.exp(e.deltaY*.0011),60,9000);},{passive:false});
-  addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight')goState(curS+1);if(e.key==='ArrowLeft')goState(curS-1);});addEventListener('resize',resize);}
+  addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||FP.on)return;if(e.key==='ArrowRight')goState(curS+1);if(e.key==='ArrowLeft')goState(curS-1);});addEventListener('resize',resize);}
 const clock=new THREE.Clock();let flashT=-9,nextFlash=3;
 // Shadows on demand: the shadow map is drawn again only when something it shows has changed: the camera (the shadow box, the LOD and the culling follow it),
 // the sun, the season, the story state, the layers, a model that has just arrived, or a mover near the shadow box (shNear, called by the train, the boat,
@@ -287,8 +287,8 @@ function shNear(x,y,z,size,key,m){const D0=sun.shadow.camera.right,tex=2*D0/sun.
   SHM.set(key,m);W0.sdirty=1;}
 function shadowTick(now){const sm=renderer.shadowMap,en=sm.enabled?1:0;let i=0,ch=!!W0.sdirty||REVIEW||now-shT>500;if(SHK[511]!==en){SHK[511]=en;ch=true;}if(!en)return;
   const put=v=>{if(SHK[i]!==v){SHK[i]=v;ch=true;}i++;},cp=camera.position,cq=camera.quaternion;
-  put(cp.x);put(cp.y);put(cp.z);put(cq.x);put(cq.y);put(cq.z);put(cq.w);put(camera.fov);put(camera.aspect);put(SUNDIR.x);put(SUNDIR.y);put(SUNDIR.z);
-  put(Math.round(U.uSeason.value*200));put(curS);put(renderer.info.memory.geometries);put(sun.shadow.mapSize.x);put(sun.shadow.camera.right);put(view.tgt.x);put(view.tgt.z);
+  if(FP.on){const s=FP.sh;put(s.x);put(s.y);put(s.z);put(0);put(0);put(0);put(1);}else{put(cp.x);put(cp.y);put(cp.z);put(cq.x);put(cq.y);put(cq.z);put(cq.w);}put(camera.fov);put(camera.aspect);put(SUNDIR.x);put(SUNDIR.y);put(SUNDIR.z);
+  put(Math.round(U.uSeason.value*200));put(curS);put(renderer.info.memory.geometries);put(sun.shadow.mapSize.x);put(sun.shadow.camera.right);put(FP.on?0:view.tgt.x);put(FP.on?0:view.tgt.z);
   for(const k in W0.layers){const G=W0.layers[k];if(i>500)break;put(G.visible?1:0);put(G.visible&&G.userData.r0?G.position.y:0);}
   SHF.setFromProjectionMatrix(SHX.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));   // for shNear, next frame
   if(ch){shT=now;W0.sdirty=0;sm.needsUpdate=true;}}
@@ -298,7 +298,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.
   for(const f of W0.anim)f(t,dt);const night=U.uNight.value;for(const m of LAMPMATS){const b=m.userData.base,k=.12+night*m.userData.k;m.color.setRGB(b[0]*k,b[1]*k,b[2]*k);}
   W0.lights.arc.intensity=W0.layers.arc.visible?night*3e5:0;
   if(ENV.weather==='storm'){if(t>nextFlash){flashT=t;nextFlash=t+2.5+Math.random()*5;}const f=t-flashT;P.comp.uniforms.flash.value=f<.5?Math.max(0,1-f*3)*2.2+(f>.12&&f<.2?1.4:0):0;}else P.comp.uniforms.flash.value=0;
-  const D=clamp(view.dist*1.1,250,2600),sc=sun.shadow.camera;sun.position.copy(view.tgt).addScaledVector(SUNDIR,5000);sun.target.position.copy(view.tgt);sun.target.updateMatrixWorld();
+  const D=FP.on?120:clamp(view.dist*1.1,250,2600),sc=sun.shadow.camera,sC=FP.on?FP.sh:view.tgt;sun.position.copy(sC).addScaledVector(SUNDIR,5000);sun.target.position.copy(sC);sun.target.updateMatrixWorld();
   if(sc.right!==D){sc.left=-D;sc.right=D;sc.top=D;sc.bottom=-D;sc.near=500;sc.far=12000;sc.updateProjectionMatrix();}
   rain.visible=ENV.weather==='rain'||ENV.weather==='storm';rain.position.copy(camera.position);skyMesh.position.copy(camera.position);birds.material.uniforms.uC.value.copy(view.tgt);
   seasonTick();lodUpdate(camera);shadowTick(now);P.render(W0.scene,camera);if(REVIEW)reviewTick();if(nFrame%2===0)updLabels();if(nFrame%6===0)drawMap();nFrame++;window.__frames=nFrame;}
@@ -312,6 +312,6 @@ function loadJOM(){try{if(!THREE.GLTFLoader||typeof JOM_GLB==='undefined'||!W0.j
     W0.scene.add(o);W0.jomGLB=o;if(W0.jomProc)W0.jomProc.visible=false;window.__jom=1;},e=>{console.warn('JOM glb',e);window.__jom=-1;});}catch(e){console.warn(e);window.__jom=-2;}}
 async function boot(){const msg=async s=>{$('#loadmsg').textContent=s;await nextFrame();};
   try{resize();setEnv();W0=await buildRome(msg);await buildRomeLayers(W0,msg);loadJOM();if(typeof DT_GLB!=='undefined')loadAsset(DT_GLB,W0.dtPos,W0.dtRot,W0.dtProc,'dt');if(typeof CU_GLB!=='undefined'&&W0.cuPos)loadAsset(CU_GLB,W0.cuPos,W0.cuRot,W0.cuProc,'cu');W0.scene.add(skyMesh,sun,sun.target,hemi,rain,birds);updateEnv(W0.scene);
-    initUI();setState(0,{instant:true});initSeasons();initLinks();initEmpire();initUI2();bookInit();resize();renderer.shadowMap.autoUpdate=false;try{renderer.compile(W0.scene,camera);}catch(e){console.warn('compile',e);}$('#loading').classList.add('gone');if(TEST){renderer.shadowMap.enabled=false;settings.paint=false;settings.cryst=false;settings.crystL=false;}if(REVIEW)reviewInit();window.__ready=true;loop();if(typeof antLoadModels==='function')setTimeout(antLoadModels,TEST?0:6000);if(typeof romeLoadModels==='function'&&ROME.GLB.length)setTimeout(romeLoadModels,TEST?0:2500);}
+    initUI();setState(0,{instant:true});initSeasons();initLinks();initEmpire();initUI2();fpInit();bookInit();resize();renderer.shadowMap.autoUpdate=false;try{renderer.compile(W0.scene,camera);}catch(e){console.warn('compile',e);}$('#loading').classList.add('gone');if(TEST){renderer.shadowMap.enabled=false;settings.paint=false;settings.cryst=false;settings.crystL=false;}if(REVIEW)reviewInit();window.__ready=true;loop();if(typeof antLoadModels==='function')setTimeout(antLoadModels,TEST?0:6000);if(typeof romeLoadModels==='function'&&ROME.GLB.length)setTimeout(romeLoadModels,TEST?0:2500);}
   catch(err){console.error(err);$('#loadmsg').textContent='构建失败：'+err.message;window.__err=String(err&&err.stack||err);}}
 boot();
