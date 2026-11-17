@@ -3,6 +3,7 @@
     "src/core/renderer.js",
     "src/core/materials.js",
     "src/world/builders.js",
+    "src/world/water.js",
     "src/world/terrain-roads.js",
     "src/world/lots.js",
     "src/world/roman-details.js",
