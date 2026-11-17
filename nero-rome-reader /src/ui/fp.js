@@ -14,7 +14,7 @@
    People (FPN): three figures made here from boxes and cylinders, one InstancedMesh each, limbs swung in the vertex shader. They walk the same grid.
    Plants (FPG): one more picture from above, in plain ambient light, tells where the ground is green; tufts and a few flowers stand there and bend
    to the gusts (windGust, builders.js), which also move the tree crowns while the walk is on. Leaves drift past (FPL). */
-const FPC={N:512,SPAN:96,K:.5,UP:2,DOWN:14,STEP:.5,DROP:.75,R:.3,EYE:1.62,WALK:2.1,RUN:5.4,FOV:62,NEAR:.15,MOVE:9,DY:.25,SNAP:3,
+const FPC={N:512,SPAN:96,K:.5,UP:2,DOWN:14,STEP:.5,DROP:.75,DOWN1:1,DOOR:1.5,R:.3,EYE:1.62,WALK:2.1,RUN:5.4,FOV:62,NEAR:.15,MOVE:9,DY:.25,SNAP:3,
   HILL:[0,280,230,320,200],HOME:[120,290],GRASS_R:34,GRASS_MAX:40000};
 const FP={on:false,paused:false,x:0,z:0,g:0,y:0,yaw:0,pitch:0,vx:0,vz:0,vy:0,jy:0,bob:0,trail:[],keys:new Set(),save:null,G:null,drag:null,hintT:0,sh:new THREE.Vector3(),moved:0,
   onHill(x,z){const H=FPC.HILL;return polyDist(x,z,[[H[0],H[1]],[H[2],H[3]]])[0]<H[4];}};
@@ -71,10 +71,10 @@ wp=modelMatrix*wp;vY=wp.y;wp.x+=uSh.x*(wp.y-uSh.z);wp.z+=uSh.y*(wp.y-uSh.z);gl_P
   cell(x,z){const i=Math.floor((x-this.x0)/this.cs),j=Math.floor((z-this.z0)/this.cs);return i<0||j<0||i>=FPC.N||j>=FPC.N?-1:j*FPC.N+i;},
   at(x,z){const c=this.cell(x,z);return c<0?-1e9:this.top[c];},
   // the ground under a body of radius r whose feet are at f, or NaN: every cell under it is known, none is more than a step up, and it is no drop
-  stand(x,z,f,r){const lim=f+FPC.STEP;let g=this.at(x,z);if(g<-1e8||g>lim)return NaN;
+  stand(x,z,f,r,drop){const lim=f+FPC.STEP;let g=this.at(x,z);if(g<-1e8||g>lim)return NaN;
     for(let k=0;k<8;k++){const a=k*.7854,t=this.at(x+Math.cos(a)*r,z+Math.sin(a)*r);if(t<-1e8||t>lim)return NaN;}
     for(let k=0;k<4;k++){const a=k*1.5708+.3927,t=this.at(x+Math.cos(a)*r*.5,z+Math.sin(a)*r*.5);if(t<-1e8||t>lim)return NaN;if(t>g)g=t;}
-    return g<f-FPC.DROP?NaN:g;},
+    return g<f-(drop||FPC.DROP)?NaN:g;},
   // the places one can walk to from (x, z), on a 0.75 m lattice, nearest first, up to cap: [x, z, ground, the place it was reached from]
   walk(x,z,y,cap){const s=.75,seen=new Set([0]),q=[[x,z,y,-1,0,0]];for(let n=0;n<q.length&&q.length<cap;n++){const c=q[n];for(const d of[[1,0],[-1,0],[0,1],[0,-1]]){const a=c[4]+d[0],b=c[5]+d[1],key=a*4096+b;if(seen.has(key))continue;
         let h=c[2];for(let k=1;k<=3&&h===h;k++)h=this.stand(c[0]+d[0]*s*k/3,c[1]+d[1]*s*k/3,h,FPC.R);   // every quarter metre of the way: a wall is one cell thick
@@ -282,8 +282,8 @@ function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
     else if(FPM.ready){const g=FPM.stand(FP.x,FP.z,FP.g,FPC.R*.5);if(g===g)FP.g=g;}   // standing still: the grid under the feet may have been drawn again
     // figures are in the way too
     for(const a of FPN.list){const ex=FP.x-a.x,ez=FP.z-a.z,d=Math.hypot(ex,ez);if(d<.62&&d>1e-3&&Math.abs(a.y-FP.g)<1.2){const px=a.x+ex/d*.62,pz=a.z+ez/d*.62,g=FPM.stand(px,pz,FP.g,FPC.R);if(g===g){FP.x=px;FP.z=pz;FP.g=g;}}}
-    // a jump (Space): 0.65 m up; in the air a ledge up to 0.45 m higher than a step can be reached, and the eye does not snap when the ground under it changes
-    if(FP.jy>0){const d=FP.g-g0;FP.y+=d;FP.jy-=d;}
+    // a jump (Space): 0.65 m up; in the air a ledge up to 0.45 m higher than a step can be reached
+    {const d=FP.g-g0;if(FP.jy>0||d<-.3){FP.y+=d;FP.jy-=d;}}   // off a ledge (up to a metre down, on foot or in a jump): a fall, not a snap
     if(K.has(' ')&&FP.jy<=0&&!FP.vy&&FPM.ready)FP.vy=4.3;
     if(FP.vy||FP.jy>0){FP.jy+=FP.vy*dt;FP.vy-=14*dt;if(FP.jy<=0){FP.jy=0;FP.vy=0;}}
     FP.y+=(FP.g-FP.y)*(1-Math.exp(-(FP.g>FP.y?13:18)*dt));
@@ -296,7 +296,12 @@ function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
   if(FPL.pts)FPL.pts.material.uniforms.uEye.value.copy(camera.position);
   fpCam();}
 // a move to (x, z): standable, and not a scramble (more than 50 degrees over the last metre of the way)
-function fpTry(x,z){if(FP.jy>.05){const g=FPM.stand(x,z,FP.g+Math.min(FP.jy,.45),FPC.R);if(g===g)return g;}const g=FPM.stand(x,z,FP.g,FPC.R);if(!(g===g))return NaN;const T=FP.trail;if(T.length){const p=T[0],d=Math.hypot(x-p[0],z-p[1]);if(d>.3&&g-p[2]>1.19*d+.3)return NaN;}return g;}
+// right click: through one door or thin wall. Straight ahead, the first thing in the way within 1.6 m, no thicker than 1.5 m, with ground to stand on behind it within a metre of this level
+function fpDoor(){if(!FP.on||FP.paused||!FPM.ready||FP.jy>0)return false;const fx=-Math.sin(FP.yaw),fz=-Math.cos(FP.yaw);let hit=-1;
+  for(let d=.2;d<=1.6+FPC.DOOR+.8;d+=.1){const x=FP.x+fx*d,z=FP.z+fz*d,t=FPM.at(x,z);if(hit<0){if(t>FP.g+FPC.STEP){if(d>1.6)break;hit=d;}continue;}
+    if(d-hit>FPC.DOOR+.8)break;if(t<-1e8||Math.abs(t-FP.g)>1)continue;const g=FPM.stand(x,z,t,FPC.R);if(g===g&&d-hit>=.3){FP.x=x;FP.z=z;FP.g=FP.y=g;FP.vx=FP.vz=0;FP.trail.length=0;return true;}}
+  fpNote(hit<0?'面前没有门或墙。':'这里穿不过去（太厚，或者后面没有落脚的地方）。');setTimeout(()=>{if(FP.on)fpNote('');},1600);return false;}
+function fpTry(x,z){if(FP.jy>.05){const g=FPM.stand(x,z,FP.g+Math.min(FP.jy,.45),FPC.R,FPC.DOWN1+.45);if(g===g)return g;}const g=FPM.stand(x,z,FP.g,FPC.R,FPC.DOWN1);if(!(g===g))return NaN;const T=FP.trail;if(T.length){const p=T[0],d=Math.hypot(x-p[0],z-p[1]);if(d>.3&&g-p[2]>1.19*d+.3)return NaN;}return g;}
 function fpCam(){const b=Math.abs(Math.sin(FP.bob))*.032*Math.min(1,Math.hypot(FP.vx,FP.vz)/FPC.WALK);camera.position.set(FP.x,FP.y+FP.jy+FPC.EYE-(FP.jy>0?0:b),FP.z);camera.rotation.set(FP.pitch,FP.yaw,0,'YXZ');
   if(camera.near!==FPC.NEAR){camera.near=FPC.NEAR;camera.updateProjectionMatrix();}view.tgt.set(FP.x,FP.y,FP.z);view.dist=60;
   const s=6;FP.sh.set(Math.round(FP.x/s)*s,Math.round(FP.y/2)*2,Math.round(FP.z/s)*s);}   // the shadow box moves in 6 m steps, so the map is drawn again on a step, not on every pace
@@ -310,8 +315,8 @@ function fpInit(){if(FP.inited)return;FP.inited=true;const b=$('#tWalk');if(b){i
   // without a pointer lock (it was refused, or a test): drag to look
   canvas.addEventListener('pointerdown',e=>{if(!FP.on)return;if(FP.paused){fpPause(false);return;}if(document.pointerLockElement!==canvas){FP.drag=[e.clientX,e.clientY];fpLock();}});
   canvas.addEventListener('pointermove',e=>{if(!FP.on||!FP.drag||document.pointerLockElement===canvas)return;FP.yaw-=(e.clientX-FP.drag[0])*.004;FP.pitch=clamp(FP.pitch-(e.clientY-FP.drag[1])*.004,-1.25,1.25);FP.drag=[e.clientX,e.clientY];});
-  addEventListener('pointerup',()=>{FP.drag=null;});
+  addEventListener('pointerup',()=>{FP.drag=null;});addEventListener('mousedown',e=>{if(FP.on&&!FP.paused&&e.button===2){fpDoor();e.preventDefault();}},true);
   const ov=$('#fpPause');if(ov){ov.querySelector('[data-a="go"]').onclick=()=>fpPause(false);ov.querySelector('[data-a="out"]').onclick=fpExit;}const x=$('#fpOut');if(x)x.onclick=fpExit;
   W0.anim.push(fpTick);
   window.__fp={enter:fpEnter,exit:fpExit,state:()=>({on:FP.on,posts:FPN.list.filter(a=>a.post).length,x:FP.x,y:FP.y,z:FP.z,jy:FP.jy,yaw:FP.yaw,pitch:FP.pitch,ready:FPM.ready,people:FPN.list.map(a=>a.k).join(''),tufts:FPG.n,flowers:FPG.nf,hill:FP.onHill(FP.x,FP.z)}),
-    look:(yaw,pitch)=>{FP.yaw=yaw;FP.pitch=pitch||0;},key:(k,on)=>{on?FP.keys.add(k):FP.keys.delete(k);},FP,FPM,FPN,FPG};}
+    look:(yaw,pitch)=>{FP.yaw=yaw;FP.pitch=pitch||0;},door:fpDoor,key:(k,on)=>{on?FP.keys.add(k):FP.keys.delete(k);},FP,FPM,FPN,FPG};}
