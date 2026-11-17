@@ -25,7 +25,10 @@ vec3 farmCol(int t,float fh,vec2 p,float s,vec3 gr,vec3 stw,float fine){
  vec3 c=s4(mix(vec3(.2,.26,.08),vec3(.36,.3,.16),.4*n1),stw*.92,soil*(.85+.2*fur),mix(soil,gr,.45),s);   // fallow: weeds in spring, dry in summer, ploughed in autumn
  return mix(c,vec3(.6,.05,.03),step(.95,vn2(p*1.2+fh*5.))*bl*fine*.7);}
 `;
-MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];uniform sampler2D uFarm;uniform vec4 uFarmX;uniform float uAurea;uniform vec4 uFP;'+GL_FARM,env:.4,fSurf:`
+MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA,uGM;uniform vec4 uGMX;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];uniform sampler2D uFarm;uniform vec4 uFarmX;uniform float uAurea;uniform vec4 uFP;'+GL_FARM,env:.4,fSurf:`;
+ // the ground mask (groundMaskInit, terrain-roads.js): not drawn over the stairs that write their footprint into it (option 甲 of the buried treads); one
+ // material for the near grid, the hill patches and the far plane, and the terrain casts no shadow, so this is the only place it needs doing
+ if(uGMX.z>0.){vec2 qm=(vWP.xz-uGMX.xy)/uGMX.zw;if(qm.x>0.&&qm.y>0.&&qm.x<1.&&qm.y<1.&&texture2D(uGM,qm).r>.5)discard;}
  vec3 N=normalize(vWN);float sl=1.-clamp(N.y,0.,1.);vec2 p=vWP.xz;
  vec3 grass=mix(vec3(.07,.11,.035),vec3(.16,.19,.06),fbm2(p*.008));vec3 dry=vec3(.34,.29,.17);vec3 wcG=vec3(0.);float wmG=0.;
 
@@ -341,7 +344,7 @@ const TREECOL={cyp:[.035,.06,.028],pine:[.05,.085,.03],broad:[.07,.1,.035],olive
 const TKIND={broadD:{g:'broad',t:1,m:1},plane:{g:'broad',t:2,m:1,sx:1.3,sy:1.3},poplar:{g:'cyp',t:3,m:1,sx:1.9,sy:1.1},fig:{g:'broad',t:6,m:1,sx:.7,sy:.7},pomegr:{g:'broad',t:4,m:1,sx:.5,sy:.5},almond:{g:'broad',t:5,m:1,sx:.6,sy:.6},flower:{g:'flower',t:0,m:2}};
 // a tree's or a figure's own dice, keyed to its place (x, z to 0.25 m): one added or dropped elsewhere changes neither which ones the cap keeps nor their size and colour
 function placeDie(t,s){return hash2(Math.round(t[0]*4)+s*7919,Math.round(t[2]*4)-s*104729);}
-function flushTrees(W,list,parent,layerAt){if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter(t=>placeDie(t,1)<k);}   // the cap thins the list that is drawn, by each tree's place (it used to thin W.trees, a copy nobody drew; then by the list index, so 4 trees more on the Palatine redrew 2,200 across the city)
+function flushTrees(W,list,parent,layerAt){(W.treeThinLog=W.treeThinLog||[]).push([list.length,Math.round(60000*Q.trees)]);if(list.length>60000*Q.trees){const k=60000*Q.trees/list.length;list=list.filter(t=>placeDie(t,1)<k||(t.thin=1,false));}   // the cap thins the list that is drawn, by each tree's place (it used to thin W.trees, a copy nobody drew; then by the list index, so 4 trees more on the Palatine redrew 2,200 across the city)
   W.treeCount=(W.treeCount||0)+W.trees.length;const by={cyp:[],pine:[],broad:[],olive:[],shrub:[],palm:[]};for(const k in TKIND)by[k]=[];list.forEach(t=>by[t[3]]&&by[t[3]].push(t));const out=[];
   // layerAt(x,z): a story-state group key for the trees there (preLayerGroup), or null; each tree's size and colour come from its place (placeDie)
   for(const k in by){const all=by[k];if(!all.length)continue;const parts={};all.forEach((t,i)=>{const lk=(layerAt&&layerAt(t[0],t[2]))||'';(parts[lk]||(parts[lk]=[])).push(i);});

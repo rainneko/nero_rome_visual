@@ -10,7 +10,9 @@
 //   R.json: the fence as [[x, z], ...] (world); default the one below. Then npm run build:test && npm run bake:roads here.
 // The fence below (2026-11-12) holds, 12 m clear: every precinct, district-raster cell, ground point and road junction H1 changed against H0, both
 // Clivi Palatini (H0's and H1's), the whole of district 116 (the east slope) and the hill's own non-district land (the precincts, rings, cliffs and
-// fragments round the summit, to the road corridors). Grow it only from the H0 build: what it freezes must be H0's.
+// fragments round the summit, to the road corridors). H2 (2026-11-12) grew it on the north by a band 12 m clear of what H2 changed there: the north
+// terraces' and houses' precincts, the ground down to the north foot wall and the street in front of it (1.16 ha, no v2 lot in it at H1). On the west H2
+// keeps the old rings' land outside the fence instead (PAL_PLAN.west.ringLand). Grow it only from the H0 build: what it freezes must be H0's.
 import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {createRequire} from 'node:module';import {execFileSync} from 'node:child_process';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),h0=path.resolve(process.argv[2]||'');
 if(!process.argv[2]||!fs.existsSync(path.join(h0,'dist/test.html'))){console.error('usage: node tools/test/pal-fence.mjs <H0 checkout, built> [R.json]');process.exit(1);}

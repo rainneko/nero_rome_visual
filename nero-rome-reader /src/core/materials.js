@@ -29,11 +29,13 @@ class GB{
     G.setAttribute('aC',new THREE.BufferAttribute(this.c.slice(0,nv*4),4));G.setIndex(new THREE.BufferAttribute(this.ix.slice(0,this.ni),1));
     G.computeBoundingSphere();G.computeBoundingBox();return G;}
   // a mesh of its own: once its buffers are on the GPU the JS copies are let go (gbFree; the bounds and counts stay). Nothing reads a built mesh back;
-  // geometry() (templates such as COLGEO, read again by addGeo and instancing) keeps its arrays.
-  mesh(mat,shadow=true){if(!this.nv)return null;const G=this.geometry();for(const k in G.attributes)G.attributes[k].onUpload(gbFree);G.index.onUpload(gbFree);
+  // geometry() (templates such as COLGEO, read again by addGeo and instancing) keeps its arrays. With ?keepgeo in the address they are kept, for the
+  // checks that measure what is drawn (__palStairEnds)
+  mesh(mat,shadow=true){if(!this.nv)return null;const G=this.geometry();if(!GB_KEEP){for(const k in G.attributes)G.attributes[k].onUpload(gbFree);G.index.onUpload(gbFree);}
     const m=new THREE.Mesh(G,mat);m.castShadow=shadow;m.receiveShadow=true;return m;}
 }
 function gbFree(){this.array=null;}
+const GB_KEEP=typeof location!=='undefined'&&/[?&]keepgeo\b/.test(location.search);
 function nrm(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
   let x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx;const l=Math.hypot(x,y,z)||1;return[x/l,y/l,z/l];}
 function autoUV(p,n){if(Math.abs(n[1])>.97)return[p[0],p[2]];let tx=-n[2],tz=n[0];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;
@@ -182,7 +184,12 @@ vec3 palStone(vec3 wp,vec3 N,vec2 uv,vec4 A,float fl){vec3 c;float j=0.;bool ver
   c=PS_G5*(1.+(hb<.28?sign(hs-.5)*.07:(hs-.5)*.05))*(.94+.1*fbm2(pl*.35));}
  else{float gr=mix(vn2(pl*9.)*.6+vn2(pl*23.)*.4,.5,smoothstep(.02,.08,fwidth(pl.x)));   // gravel: fine grit (its mean far off), worn patches
   c=PS_G5*vec3(.95,.94,.92)*(.86+.24*gr)*(.92+.12*fbm2(pl*.25));}
- return c*(1.-.25*j);}
+ c*=1.-.25*j;
+ // a walk's last metres onto a dirt street (palSCFoot; the reviewer, 2026-11-14: no hard colour seam where the ramp meets the street): a negative A.w on a
+ // face (-1 at the end; its paving and kerbs) fades the stone, joints and all, into the street's own dirt colour (builders.js, the terrain's wD branch, same world-space noise)
+ if(A.w<-.001){vec3 cD=mix(vec3(.38,.27,.155),vec3(.29,.2,.115),fbm2(wp.xz*.9));cD*=.85+.3*vn2(wp.xz*5.);cD=mix(cD,vec3(.55,.47,.33),step(.93,vn2(wp.xz*9.))*.5);
+  cD=mix(cD,cD*.55,smoothstep(.62,.8,fbm2(wp.xz*.12+4.)));c=mix(c,cD,clamp(-A.w,0.,1.));}
+ return c;}
 vec3 marbleC(vec3 p,float s){float n=fbm3(p*.3+s*3.);float vv=abs(sin((p.x*.7+p.y*1.1+p.z*.5)*.8+n*7.));vec3 c=vec3(.56,.515,.44)*(.94+.1*n);
  c*=1.-.1*pow(1.-vv,12.);c*=mix(1.,.84,smoothstep(.62,.86,fbm3(p*.07+s)));return c;}
 void roofS(inout PS S,vec3 N,float gilt,float aa){vec2 uv=vA.xy;float seed=floor(vB.x*4096.+.5)/4096.;float pt=.47;float col=floor(uv.x/pt);float xr=(fract(uv.x/pt)-.5)*pt;

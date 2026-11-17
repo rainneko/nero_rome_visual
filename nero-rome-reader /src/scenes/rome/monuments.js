@@ -194,6 +194,7 @@ async function buildRome(msg){
   const TPATCH=/[?&]nopatch/.test(location.search)?null:[{rect:PAL_PATCH,sub:4,hfn:romeH,post:palPlatPost},{rect:[CLP.cx-64,CLP.cz-64,CLP.cx+64,CLP.cz+64],sub:4,hfn:romeH},{rect:CAP_PATCH,sub:4,hfn:romeH},{rect:OPP_PATCH,sub:6,hfn:romeH,post:(x,z,h)=>oppCourtPost(x,z,h,PADH[OPP_PAD])}];
   terrainMesh(W,(x,z)=>{const u=romeUrban(x,z),g=romeHorti(x,z),[rd]=polyDist(x,z,TIBER),ag=aveVine(x,z);return[u*(1-g)*.9*(1-ag),g*.95,Math.max((1-u)*(1-g)*.8,ag*.9),1-sstep(RTW+2,RTW+30,rd)];},romeFar,TPATCH);   // CAP_PATCH: the Tarpeian side of the Capitol in 3 m cells (the terrace walls and the steep fill under them)
   W.routeGround=fixedGround(W,R_EXT,GRID_N,romeH,TPATCH);   // the desktop-tier ground at every tier, for the hill roads in the road join key (Clivus Palatinus, Clivus Capitolinus)
+  groundMaskInit(W,PAL_PATCH,.5);   // option 甲 of the buried treads: the Palatine's ground mask, 0.5 m a pixel (the stairs cut into the hill write into it; terrain-roads.js)
   riverMesh(W,densify(TIBER,25),RTW+4,RW,MAT.tiber);
   buildFarmland(W);   // the crop map: fields, vineyards, olive groves and their seasons (farmland.js)
   const fpw=(F,x,z,hw,hd,r=0)=>{const q=F.p(x,0,z);return W.foot.add(q[0],q[2],hw,hd,F.rot+r);};
@@ -574,7 +575,7 @@ async function buildRome(msg){
     LATE=LATE0.map(([cx,cz,hw,hd,rot])=>hd==null?{cx,cz,hw,hd:hw,circ:true}:{cx,cz,hw,hd,c:Math.cos(rot),s:Math.sin(rot)});
   const RO={free:30,cs:6,lim:.14,max:.3,keep:.2,pull:.2,turn:30,avoid:LATE,wet:(x,z,r)=>polyDist(x,z,TIBER)[0]<RTW+r+4};
   const MAIN=[[9,[[-20,-60],[60,-20],[140,10],[240,40],[380,92],[428,112],[520,180],[700,200]],'Via Sacra'],   // Via Sacra over the Velia, north of the Colossus base
-    [7,[[40,45],[-22,59],[-60,120],[-185,200],[-235,330],[-262,470]],'Vicus Tuscus'],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill). (-22,59): 12 m off the Domus Tiberiana rock's north-west corner; the router does not see the rock, and once the rock's north foot came down to the valley floor (2026-11-08) the road cut 4 m into the corner
+    [7,[[40,45],[-22,59],[-60,120],[-147,152],[-185,200],[-235,330],[-262,470]],'Vicus Tuscus'],   // Vicus Tuscus: round the Palatine's west foot through the Velabrum to the circus (it used to cut over the hill). (-147,152): where the Palatine's old ring terraces on the west slope bent the route; H2 took them down (palatine-masterplan.md 10), and the point keeps the road, and the city along it, where it was (the hill's phases move no street). (-22,59): 12 m off the Domus Tiberiana rock's north-west corner; the router does not see the rock, and once the rock's north foot came down to the valley floor (2026-11-08) the road cut 4 m into the corner
     [10,[[330,520],[555,890],[900,1500],[1500,2600],[2000,3500]],'Via Appia'],   // Via Appia
     [10,[[-400,605],[-612,1250],[-600,1700],[-500,2400],[-440,2950],[-520,3600]],'Via Ostiensis'],   // Via Ostiensis from the Porta Trigemina (it used to start in the river)
     [12,[[-215,-372],[-480,-1100],[-720,-2300],[-900,-2800]],'Via Lata'],   // Via Lata / Flaminia, from the Capitol's north foot by the tomb of Bibulus
@@ -779,7 +780,7 @@ async function buildRome(msg){
     W.scene.add(g3.mesh(MAT.city));W.foot.add(-735,-1240,97,63,.08);poi('战神广场练兵草坪','Campus Martius',-735,-1240,10,0,99,'北部保留的开阔草坪和沙地跑道，市民在这里锻炼、骑马、投枪；第10卷军校的骑射也在这一带。',1800);}
   {const grandStair=(x0,z0,x1,z1,w,top,half)=>hillStair(W,hillRoute(W,[x0,z0],[x1,z1],{lim:.3,half:half||16,step:2}),w,top);   // a stair that follows the hill: flights of at most ~30 % between landings, turning at each landing (hillRoute), never one straight run (temple-links.js)
    {const F=frame(-275,W.capY,10,0),t=F.p(CAP_SCIP.x+CAP_SCIP.nx*2.3,0,CAP_SCIP.z+CAP_SCIP.nz*2.3),R=hillRoute(W,[t[0],t[2]],[-140,150],{lim:.3,half:12,step:2});W.capCG=R;hillStair(W,R,3.2,W.capY);}   // the Centum Gradus, from the Scipio arch down to the Velabrum
-   palScalae(W);palTibFeet(W);grandStair(78,432,42,498,7,gy(95,382),16);grandStair(-530,962,-445,900,5,gy(-560,975),16);
+   palScalae(W);palTibFeet(W);{const R=hillRoute(W,[78,432],[42,498],{lim:.3,half:16,step:2});for(let i=0;i<R.length;i+=2)W.foot.addCircle(R[i][0],R[i][1],7/2+1.5,'road');}   /* 图一 (the review of 2026-11-13): the old stair down from the Apollo is gone (the planned stair, palApolloS, comes down to the belt); its ground stays reserved, so the houses round the hill's foot do not move */grandStair(-530,962,-445,900,5,gy(-560,975),16);
    {const m=W.capCG[Math.floor(W.capCG.length/2)];poi('百级台阶','Centum Gradus',m[0],m[1],10,0,99,'从卡比托利欧山圣域走下去的大理石台阶，上端穿过西庇阿拱门进圣域。【史】塔西佗《历史》3.71：从塔尔佩亚岩上去走一百级台阶。',800);}{const m=W.palSC[Math.round(W.palSC.length*.55)];poi('卡库斯台阶','Scalae Caci',m[0],m[1],10,0,99,'从赛车场谷地上帕拉蒂尼山西南角的古道，上端接胜利女神神庙下的前院。【史】索利努斯 1.18：卡库斯台阶顶上是浮士德卢斯（养大罗慕路斯的牧人）的草屋。',800);}}
   // Capitoline terrace edges (podium brief B, phase 2, 2026-11-04): the retaining walls round Jupiter's terrace (PLY) and the paired-temple terrace (LOW), built
   // here, once the Clivus Capitolinus and the Centum Gradus exist, so that each opening is where the way comes in. PLY: piers and stone grilles where it looks
@@ -928,8 +929,11 @@ async function buildRome(msg){
    roadKerbs(W,W.roadList,{layerAt:goneRoad});roadStairs(W,W.roadList,{layerAt:goneRoad});streetStairs(W,{layerAt:aureaGone});streetKit(W,{roads:W.roadList,urban:romeUrban,maxY:60,layerAt:aureaGone});populateStreetLife(W);backLanes(W);avenueFlowers(W,{urban:romeUrban,skip:aureaGone});
    palPlatStairs(W);   // H1: the stairs of the closed Palatine terraces, before the temple links (they join the hill stairs; palatine-h1.js)
    templeLinks(W);   // every temple reaches a street from its front or sides; a hill stair where it does not (temple-links.js)
+   palMMLinks(W);   // 图七: the Magna Mater's lower terrace on to the viewing terrace (palatine-h1.js), after its temple link
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
    palPlatWalls(W);   // H1: floors, walls, piers and cut walls of the closed terraces, the hemicycle garden (palatine-h1.js)
+   palWestSlope(W);   // H2: rock and grove on the west and south-west slopes, no walls (palatine-h1.js)
+   groundMaskUpload(W);   // the stairs that wrote their footprints into the ground mask are all in (option 甲, terrain-roads.js)
    placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
    // (slope > .8, top 20 % of the steepness), turned so the flat faces follow the contour, squashed (sy .3-.42; no rome_rock_b, whose 9.5 m pillar stood on the slope like an egg), leaning only a third of the slope (the uphill side buried, the downhill side a face: a ledge,
@@ -948,12 +952,13 @@ async function buildRome(msg){
       for(const q of pend)W.foot.add(...q);if(pend.length&&rkSeg.length<16)rkSeg.push([pend[0][0],pend[0][1],pend[pend.length-1][0]+.5,pend[pend.length-1][1]]);}   // (a cluster may overlap itself, not the buildings)
     rkSeg.forEach((q,i)=>U.uRk.value[i].set(...q));
     W.nRocks=nR;W.rockInfo={rej,cand:cand.length,top:top.length,seeds:seeds.length};}
-   W.palScrub=palRockScrub(W);palGlbFeet(W);W.edgeFeet=terraceFeet(W);}   // scrub round the foot of the Palatine rock bases (palatine.js); then rocks, moss, shrubs and cypresses at the foot of the terrace walls and of the Tiberiana's base (terrace-edge.js)
+   W.palScrub=palRockScrub(W);palGlbFeet(W);W.edgeFeet=terraceFeet(W);palWestClear(W);}   // scrub round the foot of the Palatine rock bases (palatine.js); then rocks, moss, shrubs and cypresses at the foot of the terrace walls and of the Tiberiana's base (terrace-edge.js); no tall tree by the west rings' parapets (palatine-h1.js)
   /* ---- trees ---- */
   const treeN0=W.trees.length;
   {const R=RNG(91),cap=Math.round(21000*Q.trees);for(let z=-2800;z<3500&&W.trees.length<cap;z+=19)for(let x=-3100;x<2700;x+=19){const X=x+(R()-.5)*19,Z=z+(R()-.5)*19,[rd]=polyDist(X,Z,TIBER);if(rd<RTW+8)continue;
       const gd=romeHorti(X,Z),u=romeUrban(X,Z),h=gy(X,Z),sx=gy(X+6,Z)-gy(X-6,Z),sz=gy(X,Z+6)-gy(X,Z-6),sl=Math.hypot(sx,sz)/12;if(VAL(X,Z))continue;const dc=dCity(X,Z);let p=Math.max(gd*.65,vImg(X,Z)*.26*(1-dc))+(sl>.2?(dc>.36?.2:.6):0)*(1-gd)+(1-u)*.05;if(R()>p)continue;
       if(W.foot.hits(X,Z,2.5,2.5,0,0))continue;const r=R(),rur=u<.3&&gd<.3;W.trees.push([X,h,Z,rur?(r<.5?'olive':r<.68?'pine':r<.8?'cyp':'broadD'):(r<.2?'pine':r<.4?'cyp':r<.65?'broad':r<.78?'plane':r<.9?'fig':'pomegr'),rur?.5+R()*.3:.8+R()*.45]);}}
+  W.treeCap=[treeN0,W.trees.length,Math.round(21000*Q.trees)];   // the planting so far and the cap of the automatic planting above (a record)
   const treeVar=(k,x,z)=>k==='broad'&&hash2(x*.21,z*.13)<.3?(hash2(z*.7,x*.3)<.5?'fig':'plane'):k;
   {const add=[];for(const t of W.trees){if(add.length>16000)break;const v=vImg(t[0],t[2]);if(v<.35||dCity(t[0],t[2])>.42)continue;const n=1+Math.floor(v*3.2);for(let k=0;k<n;k++){const h=j=>hash2(t[0]*1.37+k*7.13+j*3.1,t[2]*1.91+k*2.71+j*5.3),a=h(0)*TAU,r=4+h(1)*7,x=t[0]+Math.cos(a)*r,z=t[2]+Math.sin(a)*r;if(W.foot.hits(x,z,1.5,1.5,0,0)||polyDist(x,z,TIBER)[0]<RTW+6)continue;add.push([x,gy(x,z),z,treeVar(t[3]==='cyp'?'broad':t[3],x,z),(t[4]||1)*(.8+h(2)*.4)]);}}for(const a of add)W.trees.push(a);}   // keyed to the tree's place (it was Math.random: a new wood on every load, and the 60 000 cap then kept different trees everywhere)
   {let added=0;const lim=18000*Q.trees;for(let x=-3100;x<2700&&added<lim;x+=46)for(let z=-2700;z<3500&&added<lim;z+=46){const jx=x+(hash2(x*.13,z*.17)-.5)*40,jz=z+(hash2(z*.11,x*.19)-.5)*40;if(dCity(jx,jz)>.16)continue;const mm=fbm(jx*.0011+4.2,jz*.0011+1.7,3);if(mm<.56)continue;if(polyDist(jx,jz,TIBER)[0]<RTW+20)continue;const n=4+Math.floor((mm-.56)*40);for(let k=0;k<n&&added<lim;k++){const a=hash2(jx+k*3.1,jz-k*1.7)*TAU,r=hash2(jx-k*2.3,jz+k*4.1)*24,tx=jx+Math.cos(a)*r,tz=jz+Math.sin(a)*r;if(W.foot.hits(tx,tz,1.5,1.5,0,0))continue;const h=hash2(tx*.7,tz*.3);W.trees.push([tx,gy(tx,tz),tz,h<.3?'olive':h<.5?'broad':h<.63?'pine':h<.73?'cyp':h<.83?'fig':h<.9?'pomegr':'plane',.8+h*.5]);added++;}}}
@@ -969,6 +974,8 @@ async function buildRome(msg){
    for(let i=treeN0;i<W.trees.length;i++){const t=W.trees[i],[rd]=polyDist(t[0],t[2],TIBER);if(rd>RTW+8&&rd<RTW+55&&hash2(t[0]*.17,t[2]*.23)<.6)t[3]='poplar';}
    for(let i=0;i<T.length-1&&nb<2200;i++){const[ax,az]=T[i],[bx,bz]=T[i+1],dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;for(const sd of[-1,1,-2,2]){if(hash2(i*3.1+sd,7.7)>.85)continue;const off=RTW+9+hash2(i,sd*5)*16,x=ax-dz/l*off*Math.sign(sd),z=az+dx/l*off*Math.sign(sd);if(W.foot.hits(x,z,2,2,0,0))continue;const h2=hash2(x*.3,z*.2);W.trees.push([x,gy(x,z),z,h2<.7?'poplar':h2<.85?'plane':'broadD',.9+h2*.5]);nb++;}}}
   W.trees=W.trees.slice(0,treeN0).concat(W.trees.slice(treeN0).filter(t=>!W.streetAt(t[0],t[2])));   // the automatic planting keeps off the streets
+  {const n0=W.trees.length;W.pierTreeCutList=W.trees.filter(t=>!t.pierTop&&inPierSq(W,t[0],t[2])&&(t.pierCut=1)).map(t=>[t[0],t[1],t[2],t[3],t[6]]);W.trees=W.trees.filter(t=>t.pierTop||!inPierSq(W,t[0],t[2]));W.pierTreeCut=n0-W.trees.length;}   // nothing grows in a corner pier's 6 x 6 m square (the Palatine, round 4: its own planting skips it; this catches the rest) but the pilot's tree on its top
+  palH51Trees(W);   // H5.1 (palatine.js): 32's tree lists, over every tree planted by now
   W.oliveGroveTrees=plantOliveGroves(W,{r:2700,lim:14000*Q.trees});
   flushTrees(W,W.trees,null,aureaGone);W.trees=[];flushPeople(W,W.people);W.people=[];
   W.views={forum:{n:'罗马广场',pos:[-250,118,-205],tgt:[40,26,40]},senate:{n:'元老院',pos:[150,64,40],tgt:[-45,22,-84]},palatine:{n:'帕拉蒂尼',pos:[520,210,560],tgt:[120,70,290]},
