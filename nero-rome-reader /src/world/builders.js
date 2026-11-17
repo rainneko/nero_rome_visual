@@ -25,7 +25,7 @@ vec3 farmCol(int t,float fh,vec2 p,float s,vec3 gr,vec3 stw,float fine){
  vec3 c=s4(mix(vec3(.2,.26,.08),vec3(.36,.3,.16),.4*n1),stw*.92,soil*(.85+.2*fur),mix(soil,gr,.45),s);   // fallow: weeds in spring, dry in summer, ploughed in autumn
  return mix(c,vec3(.6,.05,.03),step(.95,vn2(p*1.2+fh*5.))*bl*fine*.7);}
 `;
-MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA,uGM;uniform vec4 uGMX;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];uniform sampler2D uFarm;uniform vec4 uFarmX;uniform float uAurea;'+GL_FARM,env:.4,fSurf:`
+MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody:'vZ=aZ;',fHead:'varying vec4 vZ;uniform vec4 uDbg;uniform sampler2D uSt,uStA,uGM;uniform vec4 uGMX;uniform vec4 uStX;uniform vec2 uStN;uniform vec4 uRk[16];uniform vec4 uWat[56];uniform float uWatR[56];uniform sampler2D uFarm;uniform vec4 uFarmX;uniform float uAurea;uniform vec4 uFP;'+GL_FARM,env:.4,fSurf:`;
  // the ground mask (groundMaskInit, terrain-roads.js): not drawn over the stairs that write their footprint into it (option 甲 of the buried treads); one
  // material for the near grid, the hill patches and the far plane, and the terrain casts no shadow, so this is the only place it needs doing
  if(uGMX.z>0.){vec2 qm=(vWP.xz-uGMX.xy)/uGMX.zw;if(qm.x>0.&&qm.y>0.&&qm.x<1.&&qm.y<1.&&texture2D(uGM,qm).r>.5)discard;}
@@ -144,6 +144,13 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
    mI=1.-smoothstep(-1.,1.,dI);mE=1.-smoothstep(.3,1.1,abs(dI+1.4));}   // from 68 the inner court (vol 18): a cooler, closer-mown lawn and a pale gravel edge 1.4 m in, no wall
   mA*=1.-smoothstep(.55,.8,sl);vec3 lawn=uAurea>1.5?mix(gr,vec3(.16,.22,.09),.45):mix(gr,vec3(.33,.27,.17),.45+.3*fbm2(p*.03));c=mix(c,lawn*(.92+.16*fbm2(p*.07)),mA);stR=mix(stR,.9,mA);
   if(uAurea>1.5){c=mix(c,c*vec3(.84,.96,.9),mI*mA*.7);c=mix(c,vec3(.56,.53,.46),mE*mA*.5);}}
+ if(uFP.x>.5){   // the first-person walk: what the ground is made of, within 30 m of the eye. Earth and turf get clods, fine grit and scattered pebbles; stone gets grain and wear
+  float kN=1.-smoothstep(9.,30.,distance(vWP,cameraPosition));
+  if(kN>0.){float soft=smoothstep(.75,.93,stR),n1=vn2(p*4.3),n2=vn2(p*15.+31.),n3=vn2(p*53.+7.),gn=c.g-max(c.r,c.b);
+   c*=mix(1.,.7+.6*(n1*.45+n2*.33+n3*.22),kN*mix(.45,1.,soft));
+   float peb=smoothstep(.8,.87,vn2(p*21.+13.))*soft*(1.-smoothstep(.0,.03,gn));c=mix(c,vec3(.4,.37,.32)*(.65+.7*n3),peb*kN*.6);
+   float bl=smoothstep(.55,.8,vn2(vec2(p.x*38.,p.y*9.)+3.))*soft*smoothstep(.0,.03,gn);c=mix(c,c*vec3(.7,.86,.6),bl*kN*.6);   // turf: darker streaks between the tufts
+   stR=mix(stR,clamp(stR+(n3-.5)*.25,.3,1.),kN);}}
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
 MAT.road=MAT.city;
@@ -159,14 +166,25 @@ function waterMat(key,col,amp,foamTex){return procMat({key,params:{transparent:f
  float fo=(1.-smoothstep(0.,6.,dep))*smoothstep(.35,.7,vn2(p*.35+vec2(t*.4,-t*.3))+.4*(1.-smoothstep(0.,2.5,dep)));
  S.alb=mix(S.alb,vec3(.85,.88,.9),fo);S.rough=mix(S.rough,.6,fo);`:''}`});}
 MAT.tiber=waterMat('tiber',[.07,.075,.045],.55);MAT.pool=waterMat('pool',[.03,.17,.19],.18);
-MAT.foliage=procMat({key:'fol',vHead:'attribute vec3 aF;varying vec3 vF;',fHead:'varying vec3 vF;',env:.5,
+// Wind, for the first-person walk (src/ui/fp.js). uWind = (direction x, direction z, strength, -): strength is 0 outside the walk, and everything below is then as it was.
+// windGust: bands of gust that travel downwind, broken up by noise; 0..1. uFP = (walk on, tuft range in metres, -, -).
+U.uWind={value:new THREE.Vector4(.83,.56,0,0)};U.uFP={value:new THREE.Vector4(0,25,0,0)};
+const GL_WIND=`uniform vec4 uWind;
+float windGust(vec2 p){float s=.5+.5*sin(dot(p,uWind.xy)*.07-uTime*.8);return s*s*(.35+.65*vn2(p*.045-uWind.xy*uTime*.35));}
+`;
+const GL_SWAY=`
+#ifdef USE_INSTANCING
+ if(uWind.z>0.){float gu=windGust(instanceMatrix[3].xz)*uWind.z,bn=aF.x*aF.y*aF.y;transformed.xz+=uWind.xy*gu*.3*bn+vec2(sin(uTime*5.3+transformed.y*2.1+ph*9.),cos(uTime*4.6+transformed.x*2.7+ph*7.))*.035*aF.x*(.3+gu);}
+#endif
+`;
+MAT.foliage=procMat({key:'fol',vHead:'attribute vec3 aF;varying vec3 vF;'+GL_WIND,fHead:'varying vec3 vF;',env:.5,
  vBody:`vF=aF;
 #ifdef USE_INSTANCING
  float ph=instanceMatrix[3].x*.07+instanceMatrix[3].z*.05;
 #else
  float ph=0.;
 #endif
- float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`,
+ float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`+GL_SWAY,
  fSurf:`vec3 N=normalize(vWN);
  if(vF.x<.5){S.alb=vec3(.42,.36,.3)*(.8+.4*vn2(vWP.xy*2.));S.rough=.9;}
  else{float n=fbm3(vWP*.7);float n2=vn3(vWP*2.6);
@@ -193,7 +211,7 @@ vec3 decCol(float ty,float h,float s,out float lv,out vec2 ex){
  if(ty>3.5&&ty<4.5){ex=vec2(smoothstep(.45,.8,s)*(1.-smoothstep(1.1,1.6,s)),1.);if(s>1.5){ex=vec2(smoothstep(1.5,1.9,s)*(1.-smoothstep(2.7,3.1,s)),2.);}}
  if(ty>4.5&&ty<5.5){ex=vec2(smoothstep(-.45,-.15,spr)*(1.-smoothstep(.15,.55,spr)),3.);}
  return c;}`;
-MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;'+DEC_GL,fHead:'varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;',env:.5,
+MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;'+DEC_GL+GL_WIND,fHead:'varying vec3 vF;varying vec3 vSC;varying vec2 vEx;varying float vLv;',env:.5,
  vBody:`vF=aF;float lv0;vec2 ex0;vSC=decCol(aI.x,aI.y,uSeason,lv0,ex0);vEx=ex0;vLv=lv0;
 #ifdef USE_INSTANCING
  float ph=instanceMatrix[3].x*.07+instanceMatrix[3].z*.05;
@@ -201,7 +219,7 @@ MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;attribute vec4 aI;vary
  float ph=0.;
 #endif
  if(aF.x>.5){float k=mix(.7,1.,smoothstep(.2,1.,lv0));transformed.xz*=k;transformed.y=mix(transformed.y,transformed.y*.88+.35,1.-k);}
- float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`,
+ float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`+GL_SWAY,
  fSurf:`vec3 N=normalize(vWN);
  if(vF.x<.5){S.alb=vec3(.42,.36,.3)*(.8+.4*vn2(vWP.xy*2.));S.rough=.9;}
  else{float n=fbm3(vWP*.7);float n2=vn3(vWP*2.6);
@@ -232,14 +250,14 @@ vec3 flCol(float ow,float s,float h){
  if(s<1.5){ if(ow<.5)return h<.5?vec3(.8,.58,.08):vec3(.85,.84,.78);return h<.55?vec3(.8,.25,.4):h<.8?vec3(.9,.9,.85):vec3(.7,.06,.03);}
  if(s<2.7){ return h<.5?vec3(.65,.05,.08):h<.8?vec3(.85,.4,.5):vec3(.45,.2,.6);}
  return h<.6?vec3(.7,.04,.07):vec3(.85,.45,.5);}`;
-MAT.bloom=procMat({key:'bloom',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec4 vBc;'+FLW_GL,fHead:'varying vec3 vF;varying vec4 vBc;',env:.5,
+MAT.bloom=procMat({key:'bloom',vHead:'attribute vec3 aF;attribute vec4 aI;varying vec3 vF;varying vec4 vBc;'+FLW_GL+GL_WIND,fHead:'varying vec3 vF;varying vec4 vBc;',env:.5,
  vBody:`vF=aF;vBc=vec4(flCol(aI.z,uSeason,aI.w),flDens(aI.z,uSeason)*(.6+.4*aI.y));
 #ifdef USE_INSTANCING
  float ph=instanceMatrix[3].x*.07+instanceMatrix[3].z*.05;
 #else
  float ph=0.;
 #endif
- float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`,
+ float sw=sin(uTime*1.3+ph)*.18*aF.x*aF.y*aF.y;transformed.x+=sw;transformed.z+=sw*.6;`+GL_SWAY,
  fSurf:`vec3 N=normalize(vWN);float n=fbm3(vWP*.7);
  S.alb=vec3(.07,.12,.032)*(.6+.55*n)*mix(.5,1.05,vF.z);S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
  {float nn=vn3(vWP*3.4);float cov=vBc.w;float thr=.74-cov*.32;float mk=cov>.02?smoothstep(thr,thr+.07,nn):0.;S.alb=mix(S.alb,vBc.rgb*(.85+.3*n),mk);}

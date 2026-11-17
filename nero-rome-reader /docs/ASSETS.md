@@ -32,6 +32,8 @@ the model cannot load.
 `tools/models/*.py` are the Python (trimesh) scripts that wrote the Rome GLB files.
 
 ## Domus Tiberiana: built from a plan (2026-11-12)
+(The Domus Transitoria is built the same way since 2026-11-14: `rome_transitoria.py`, `transitoria_plan.json`, parts file
+`rome_transitoria_parts.glb`; see `briefs/rome/transitoria.md`, "v2 (2026-11)".)
 `tools/models/rome/rome_tiberiana.py` (Blender, `tib_plan.py`) builds the palace above the platform from
 `tools/models/rome/tiberiana_plan.json`: the rooms of each floor and the roof blocks, written and checked by
 `python3 tools/plan/tiberiana_plan.py` (which also writes the drawings, `briefs/rome/plans/tiberiana-plan.html`). To change the
@@ -91,3 +93,10 @@ Origin at the octagon's centre, floor y = 0, front (the octagon's porch) on +Z. 
 `domus-aurea.js`), floor at the pad's height. `oppGround` (called by `romeH`, with a 3 m terrain patch `OPP_PATCH`) holds the ground just under the
 floor and cuts it under the two garden terraces (−3.06 and −6.19 m) and a lower lawn south of them. The houses on the footprint (`AUREA_OPPIAN`) are
 shown in states 0–6 only. The procedural block and dome stay until the file comes, or for good without it.
+
+## The Tiber bridges (2026-11-14)
+`tools/models/rome/rome_pons_{fabricius,cestius,aemilius,agrippae,neronianus,sublicius}.py` (brief `briefs/rome/bridges.md`) write one GLB each.
+Each runs along X (x = ±L/2), with upstream at +Y and z = 0 = the deck level at both ends. In the page, the `BRIDGES` table in `monuments.js`
+gives each one its deck-end level Y (where the banks reach it), its shift from the river station, its length and width, and the profile used by the
+stand-in `bridgeStand`. `brPlace` puts the GLB at y = Y, turned by the frame's rot + PI, registers its footprint and adds it to `W.bridges` for the
+road joins. If a bank or the river changes, measure the landings again and change Y, off and L together with the model.

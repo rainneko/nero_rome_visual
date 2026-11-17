@@ -3,7 +3,8 @@
 Four blocks, one script. Each block calls reset(), builds, then finish(). Origin = plot centre, front = -Y = the low side.
 High part at z 0, low part at z -5 (block C also drops to z -10 on its garden side).
 Run all four:  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P "tools/models/rome/rome_pal_blocks.py"
-Run one:       ... -P "tools/models/rome/rome_pal_blocks.py" -- a      (a | b | c | d)
+Run one:       ... -P "tools/models/rome/rome_pal_blocks.py" -- a      (a | b | c | d | cf: c's level-court variant |
+               al, bl, dl: a, b, d with a 3.3 m split instead of 5 m -> rome_pal_block_<x>_low.glb)
 """
 import os, sys, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,6 +13,7 @@ import bpy
 
 NB = 8.8          # eave of the two-storey high ranges (ground 4.62 + floor 4.2)
 GROUND = -10.0    # everything rests on this level (preview ground)
+BACK_CAM = (('back', Vector((0, 1, 0)), 14),)   # a fifth preview from the high side
 
 
 def samples(n=16):
@@ -62,34 +64,36 @@ def well_head(F, x, y, z0, r=0.9, mat='travertine'):
     beam(F, x - r, y, z0 + 2.6, x + r, y, z0 + 2.6, 0.14, 0.14, 'wood')
 
 
-def block_a():
+def block_a(low=False):
     """Secretariat court, 36 x 30 m. High part y 0..15 (z 0): a two-storey range round a portico court 10 x 8.
     Low part y -15..-3 (z -5): a three-storey front range, arcade of 7 bays on the street, top floor level with the court.
     Lane y -3..0 at z -5 along the foot of the high part's retaining wall. External stair up the west gap to a landing
     at z 0 and an arched gate in the high south wall."""
-    reset(); preview_ground(GROUND); samples(16)
+    s = 1.7 if low else 0.0        # low=True: the low part stands 1.7 m higher, so the split is 3.3 m instead of 5 m
+    G = GROUND + s                 # (R10: 0.75 of a 4.4 m storey); the high part, at z 0, is unchanged
+    reset(); preview_ground(G); samples(16)
     F = Frame()
     PL, PL2, RED = 'plaster2', 'plaster3', 'red'
 
     # ---- foundations and retaining wall (buttressed, between the levels) ----
-    box(F, 0, 7.5, GROUND, 36, 15, -GROUND, 'tuff')                             # core under the high part (top at z 0)
-    box(F, 3, -9, GROUND, 30, 12, -GROUND - 4.8, 'tuff')                        # core under the low range
-    retaining_wall(F, [(-12, 0), (18, 0)], 0.0, GROUND, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
+    box(F, 0, 7.5, G, 36, 15, -G, 'tuff')                             # core under the high part (top at z 0)
+    box(F, 3, -9, G, 30, 12, -GROUND - 4.8, 'tuff')                        # core under the low range
+    retaining_wall(F, [(-12, 0), (18, 0)], 0.0, G, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
                    coping=True)
-    retaining_wall(F, [(-18, 0), (-12, 0)], 0.0, GROUND, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
+    retaining_wall(F, [(-18, 0), (-12, 0)], 0.0, G, t=2.2, buttress='square', every=9.0, parapet=None, courses=2.5,
                    coping=True)
-    foot_rocks(F, [(-9, 0), (15, 0)], (GROUND, GROUND + 1.0), seed=3, blocks=8)   # wall feet sit on rock
-    box(F, 3, -1.5, -10, 30, 3, 5, 'tuff')                                      # lane fill
-    box(F, 3, -1.5, -5.2, 30, 3, 0.2, 'paving')                                 # lane paving at z -5
+    foot_rocks(F, [(-9, 0), (15, 0)], (G, G + 1.0), seed=3, blocks=8)   # wall feet sit on rock
+    box(F, 3, -1.5, G, 30, 3, 5, 'tuff')                                      # lane fill
+    box(F, 3, -1.5, -5.2 + s, 30, 3, 0.2, 'paving')                                 # lane paving at z -5
 
     # ---- low range: front y = -15, back y = -3, x -12..18, z -5..3.4 ----
-    box(F, 3, -8.8, -5, 30, 11.6, 8.4, PL2)                                    # core, front at y -14.6 (arcade stays open)
-    arcade(F, -12, -15, 18, -15, -5, 2.6, 0.8, 7, PL2, open_w=3.2, open_h=2.6, back='dark', impost_mat='travertine')
-    facade(F, -12, -15, 18, -15, -2.4, 5.8, PL2,
+    box(F, 3, -8.8, -5 + s, 30, 11.6, 8.4, PL2)                                    # core, front at y -14.6 (arcade stays open)
+    arcade(F, -12, -15, 18, -15, -5 + s, 2.6, 0.8, 7, PL2, open_w=3.2, open_h=2.6, back='dark', impost_mat='travertine')
+    facade(F, -12, -15, 18, -15, -2.4 + s, 5.8, PL2,
            wins(30, 7, [1.6, 3.6], w=1.1, hh=1.6, skip=()), t=0.4)
-    band(F, -12, -15, 18, -15, -2.4, 0.3, 0.4, RED)
-    balcony(F, -10, -15, 16, -15, 0.0, depth=1.1, mat='wood', roof=True)       # top-floor balcony, floor at z 0
-    hip_roof(F, 3, -9.0, 3.4, 30.6, 12.0, 20, 0.7)                             # low range roof
+    band(F, -12, -15, 18, -15, -2.4 + s, 0.3, 0.4, RED)
+    balcony(F, -10, -15, 16, -15, 0.0 + s, depth=1.1, mat='wood', roof=True)       # top-floor balcony, floor at z 0
+    hip_roof(F, 3, -9.0, 3.4 + s, 30.6, 12.0, 20, 0.7)                             # low range roof
 
     # ---- high part: ring round the court x -5..5, y 4..12; z 0..NB ----
     # south strip (outer line y = 0, outside to -y, faces the lane)
@@ -118,41 +122,45 @@ def block_a():
     hip_roof(F, -11.5, 8, NB, 13, 8, 22, 0.6)
     hip_roof(F, 11.5, 8, NB, 13, 8, 22, 0.6)
     # ---- external stair from the low street (z -5, y -17) up the west gap to the landing at z 0 ----
-    box(F, -15, -10.0, GROUND, 6.0, 14.0, 4.5, 'tuff')                          # fill under the stair
-    stair_flight(F, -15, -17, -15, -3.0, -5.0, 0.0, width=3.0, mat='stone', cheek_mat='tuff', cheeks=True)
-    box(F, -15, -1.5, GROUND, 6.0, 3.0, -GROUND, 'paving')                      # landing at z 0 (solid below)
+    box(F, -15, -10.0, G, 6.0, 14.0, 4.5, 'tuff')                          # fill under the stair
+    if low:                                                                     # 18 risers of 0.183 m, the same going
+        box(F, -15, -14.5, -5.5 + s, 6.0, 5.0, 0.5, 'paving')                   # forecourt at the stair's foot
+    stair_flight(F, -15, -12 if low else -17, -15, -3.0, -5.0 + s, 0.0, width=3.0, mat='stone', cheek_mat='tuff', cheeks=True)
+    box(F, -15, -1.5, G, 6.0, 3.0, -G, 'paving')                      # landing at z 0 (solid below)
 
-    human(F, 0, -22, -5)
-    finish('rome_pal_block_a', front='-Y')
+    human(F, 0, -22, -5 + s)
+    finish('rome_pal_block_a_low' if low else 'rome_pal_block_a', front='-Y', extra_cams=BACK_CAM)
 
 
-def block_b():
+def block_b(low=False):
     """Long portico with shops and offices, 60 x 16 m. Low range y -8..0 (z -5): a two-storey range with a 15-bay
     arcaded portico on the street (y -8), shops behind with wooden shutters, an upper gallery of small columns.
     High side y 0..8 (z 0): five small offices, each with its own lean roof, stepping up along the range.
     Blank end walls so blocks can join end to end."""
-    reset(); preview_ground(GROUND); samples(16)
+    s = 1.7 if low else 0.0        # low=True: the low part stands 1.7 m higher, so the split is 3.3 m instead of 5 m
+    G = GROUND + s                 # (R10: 0.75 of a 4.4 m storey); the high part, at z 0, is unchanged
+    reset(); preview_ground(G); samples(16)
     F = Frame()
     PL2, RED = 'plaster2', 'red'
     # foundations and the retaining wall between the levels
-    box(F, 0, -4, GROUND, 60, 8, -GROUND - 5, 'tuff')                         # low range foundation, top z -5
-    retaining_wall(F, [(-30, 0), (30, 0)], 0.0, GROUND, t=2.2, buttress='square', every=10.0, parapet=None, courses=2.5,
+    box(F, 0, -4, G, 60, 8, -GROUND - 5, 'tuff')                         # low range foundation, top z -5
+    retaining_wall(F, [(-30, 0), (30, 0)], 0.0, G, t=2.2, buttress='square', every=10.0, parapet=None, courses=2.5,
                    coping=True)
-    foot_rocks(F, [(-27, 0), (27, 0)], (GROUND, GROUND + 1.0), seed=4, blocks=10)  # wall feet sit on rock
+    foot_rocks(F, [(-27, 0), (27, 0)], (G, G + 1.0), seed=4, blocks=10)  # wall feet sit on rock
     # low range core (front at y -7.5 so the portico arcade stays open) and the shop shutters
-    box(F, 0, -3.75, -5, 60, 7.5, 8.6, PL2)
-    arcade(F, -30, -8, 30, -8, -5, 4.6, 1.0, 15, PL2, open_w=2.6, open_h=3.8, back='dark', impost_mat='travertine')
+    box(F, 0, -3.75, -5 + s, 60, 7.5, 8.6, PL2)
+    arcade(F, -30, -8, 30, -8, -5 + s, 4.6, 1.0, 15, PL2, open_w=2.6, open_h=3.8, back='dark', impost_mat='travertine')
     for k in range(15):
         u = -30 + (k + 0.5) * 4.0
-        box(F, u - 1.0, -7.4, -4.8, 0.16, 0.12, 2.6, 'wood')                 # shutter pair, shop side
-        box(F, u + 1.0, -7.4, -4.8, 0.16, 0.12, 2.6, 'wood')
-    band(F, -30, -8, 30, -8, -0.5, 0.3, 0.4, RED)                             # floor line over the arcade
+        box(F, u - 1.0, -7.4, -4.8 + s, 0.16, 0.12, 2.6, 'wood')                 # shutter pair, shop side
+        box(F, u + 1.0, -7.4, -4.8 + s, 0.16, 0.12, 2.6, 'wood')
+    band(F, -30, -8, 30, -8, -0.5 + s, 0.3, 0.4, RED)                             # floor line over the arcade
     # upper gallery: floor at z -0.4 and small tuscan columns on the outer edge, lean roof above
-    box(F, 0, -8.2, -0.6, 60, 1.2, 0.2, 'paving')
-    colonnade(F, -29.5, -8.6, 29.5, -8.6, -0.4, 16, 3.0, 0.18, 'marble', 'tuscan', ent=True, ent_h=0.4)
-    lean_roof(F, -30, -8.6, 30, -8.6, 3.4, 1.6, 0.5)
+    box(F, 0, -8.2, -0.6 + s, 60, 1.2, 0.2, 'paving')
+    colonnade(F, -29.5, -8.6, 29.5, -8.6, -0.4 + s, 16, 3.0, 0.18, 'marble', 'tuscan', ent=True, ent_h=0.4)
+    lean_roof(F, -30, -8.6, 30, -8.6, 3.4 + s, 1.6, 0.5)
     # low range roof over the whole range (hip ends)
-    gable_roof(F, 0, -4, 3.6, 60, 8.0, 22, 'x', 0.6)
+    gable_roof(F, 0, -4, 3.6 + s, 60, 8.0, 22, 'x', 0.6)
     # high side: five offices (y 0..8), each with a north facade, a lean roof of its own and a step up
     for k in range(5):
         x0 = -30 + 12 * k; x1 = x0 + 12
@@ -164,8 +172,8 @@ def block_b():
             box(F, x0, 4.0, 0.0, 0.7, 8.0, zh + 0.5, 'plaster2')
             box(F, x0, 4.0, zh + 0.5, 0.9, 8.2, 0.14, 'red')
     # blank end walls: the core already closes both ends
-    human(F, 0, -14, -5)
-    finish('rome_pal_block_b', front='-Y')
+    human(F, 0, -14, -5 + s)
+    finish('rome_pal_block_b_low' if low else 'rome_pal_block_b', front='-Y', extra_cams=BACK_CAM)
 
 
 def pond_on_lawn(F, cx, cy, z0, w, d, rim=0.4):
@@ -177,15 +185,20 @@ def pond_on_lawn(F, cx, cy, z0, w, d, rim=0.4):
     box(F, cx, cy, z0 - 0.1, w, d, 0.3, 'water')
 
 
-def block_c():
+def block_c(flat=False):
     """Guest house and garden, 30 x 30 m. An L of two- and three-storey rooms on the high level (z 0) round a garden
     (lawn, pergola, fish pond, two statues). A three-storey corner tower 7 x 7 with an open loggia on top (NE).
     The garden side (west and south) drops to z -10: a buttressed retaining wall with a balustrade, and a covered
-    stair climbing down inside the wall to the lower terrace."""
-    reset(); preview_ground(GROUND); samples(16)
+    stair climbing down inside the wall to the lower terrace.
+    flat=True is rome_pal_block_c_flat, the level court (R10: a block's own wall may show at most 0.75 of a storey):
+    the same rooms and garden on a plot of 30 x 25 m (y -10..15, the same origin), the garden ending at y -10 and
+    x -15 behind a stone balustrade. No drop walls, no lower terrace, no stair: the hill's own terrace wall stands
+    at the garden's edge. Its foundation goes 1.2 m under the floor and is not meant to show."""
+    base = -1.2 if flat else GROUND
+    reset(); preview_ground(base); samples(16)
     F = Frame()
     # platform and foundation (top z 0)
-    box(F, 0, 2.5, GROUND, 30, 25, -GROUND, 'tuff')
+    box(F, 0, 2.5, base, 30, 25, -base, 'stone' if flat else 'tuff')
     # the L: north range (two storeys) and east range (three storeys), hip roofs
     rect_building(F, 0, 10.5, 30, 9, floors=2, floor_h=4.2, wall_mat='plaster3', base_mat='stone', roof='hip',
                   foundation=0, quoins=True)
@@ -202,6 +215,15 @@ def block_c():
     statue(F, 3, 3, 0.0, 2.6, 'marble', pedestal=1.0, ped_mat='porphyry')
     flower_bed(F, -8, -6, 0.0, 3.0, 4.0)
     flower_bed(F, 1.0, -6.5, 0.0, 3.0, 4.0)
+    if flat:
+        hedge(F, -14.3, 5.5, -14.3, -9.3, 0, 0.6, 0.5)                          # box hedge inside the balustrade
+        hedge(F, -14.3, -9.3, 4.6, -9.3, 0, 0.6, 0.5)
+        box(F, -14.8, -2.0, -0.02, 0.5, 16.0, 0.14, 'travertine')               # kerb under the balustrade
+        box(F, -5.0, -9.8, -0.02, 20.0, 0.5, 0.14, 'travertine')
+        balustrade(F, -14.8, 6.0, -14.8, -9.8, 0.12, h=1.0, mat='travertine', post_every=3.2)
+        balustrade(F, -14.8, -9.8, 5.0, -9.8, 0.12, h=1.0, mat='travertine', post_every=3.3)
+        human(F, -1.0, -7.5, 0.0)
+        return finish('rome_pal_block_c_flat', front='-Y')
     hedge(F, -15, 6, -15, -10, 0, 0.6, 0.5)
     # drop to the lower terrace: buttressed retaining walls on the west and south (gap for the covered stair)
     retaining_wall(F, [(-15, 6), (-15, -10)], 0.0, GROUND, t=2.2, buttress='square', coping=True, every=10.0, parapet='balustrade',
@@ -224,24 +246,26 @@ def block_c():
     finish('rome_pal_block_c', front='-Y')
 
 
-def block_d():
+def block_d(low=False):
     """Guard court and archive, 34 x 26 m. A plain, heavy court 14 x 10 (z 0) with stone piers, a well, arms racks and
     benches. Low side (y -13..-3, z -5): a two-storey archive of brick, a vaulted arcade on the street and small high
     slit windows above. A stair ramp with a wall alongside climbs from the low street (z -5) to the landing at z 0."""
-    reset(); preview_ground(GROUND); samples(16)
+    s = 1.7 if low else 0.0        # low=True: the low part stands 1.7 m higher, so the split is 3.3 m instead of 5 m
+    G = GROUND + s                 # (R10: 0.75 of a 4.4 m storey); the high part, at z 0, is unchanged
+    reset(); preview_ground(G); samples(16)
     F = Frame()
     # high part foundation (y -3..13, top z 0) and the low archive foundation (y -13..-3, top z -5)
-    box(F, 0, 5, GROUND, 34, 16, -GROUND, 'tuff')
-    box(F, -4, -8, GROUND, 22, 10, -GROUND - 5, 'tuff')
-    retaining_wall(F, [(-17, -3), (17, -3)], 0.0, GROUND, t=2.2, buttress='square', every=8.0, parapet=None, courses=2.5,
+    box(F, 0, 5, G, 34, 16, -G, 'tuff')
+    box(F, -4, -8, G, 22, 10, -GROUND - 5, 'tuff')
+    retaining_wall(F, [(-17, -3), (17, -3)], 0.0, G, t=2.2, buttress='square', every=8.0, parapet=None, courses=2.5,
                    coping=True)
     # archive: core y -12..-3, arcade on the street (y -13), slit windows above, hip roof
-    box(F, -4, -7.5, -5, 22, 9.0, 8.0, 'brick')
-    arcade(F, -15, -13, 7, -13, -5, 3.6, 1.0, 6, 'brick', open_w=2.4, open_h=3.0, back='dark', impost_mat='stone')
-    facade(F, -15, -13, 7, -13, -1.4, 4.4, 'brick', [(u, 1.0, 0.35, 1.3, 'rect') for u in range(1, 22, 2)], t=1.0)
-    hip_roof(F, -4, -7.5, 3.0, 22, 9.0, 22, 0.6)
-    box(F, -4, -14.0, GROUND, 22, 2.4, -GROUND - 5, 'tuff')                     # rock fill under the street foot
-    foot_rocks(F, [(-12, -13), (4, -13)], (-5.5, -4.5), seed=8, blocks=3)     # archive street foot on rock
+    box(F, -4, -7.5, -5 + s, 22, 9.0, 8.0, 'brick')
+    arcade(F, -15, -13, 7, -13, -5 + s, 3.6, 1.0, 6, 'brick', open_w=2.4, open_h=3.0, back='dark', impost_mat='stone')
+    facade(F, -15, -13, 7, -13, -1.4 + s, 4.4, 'brick', [(u, 1.0, 0.35, 1.3, 'rect') for u in range(1, 22, 2)], t=1.0)
+    hip_roof(F, -4, -7.5, 3.0 + s, 22, 9.0, 22, 0.6)
+    box(F, -4, -14.0, G, 22, 2.4, -GROUND - 5, 'tuff')                     # rock fill under the street foot
+    foot_rocks(F, [(-12, -13), (4, -13)], (-5.5 + s, -4.5 + s), seed=8, blocks=3)     # archive street foot on rock
     # court (z 0): paving, stone piers round it, well, arms racks, benches
     box(F, 0, 2, 0.0, 14, 10, 0.15, 'paving')
     for (x, y) in [(-7, -3), (-3.5, -3), (0, -3), (3.5, -3), (7, -3), (-7, 7), (-3.5, 7), (0, 7), (3.5, 7), (7, 7)]:
@@ -260,20 +284,23 @@ def block_d():
     rect_building(F, 12.0, 3.0, 10.0, 8.0, floors=2, floor_h=4.2, wall_mat='plaster3', base_mat='stone', roof='hip',
                   foundation=0, skip_sides=('W',))
     # stair ramp (x 9..12) from the street (y -14, z -5) up to the landing (y -3..-1, z 0); wall alongside (x 13..15)
-    box(F, 10.5, -9.5, GROUND, 3.0, 11.0, 4.5, 'tuff')                            # fill under the ramp
-    stair_flight(F, 10.5, -14.0, 10.5, -3.0, -5.0, 0.0, width=3.0, mat='stone', cheek_mat='tuff', cheeks=True)
-    box(F, 14.0, -8.5, GROUND, 2.0, 11.0, -GROUND, 'brick')                       # wall alongside the ramp
-    box(F, 10.5, -2.0, GROUND, 4.0, 2.0, -GROUND, 'stone')                        # landing at z 0 (solid below)
-    human(F, -12, -17, -5)
-    finish('rome_pal_block_d', front='-Y')
+    box(F, 10.5, -9.5, G, 3.0, 11.0, 4.5, 'tuff')                            # fill under the ramp
+    if low:                                                                       # 18 risers of 0.183 m, the same going
+        box(F, 10.5, -12.0, -5.5 + s, 3.0, 4.0, 0.5, 'paving')                    # the street runs up to the stair's foot
+    stair_flight(F, 10.5, -10.0 if low else -14.0, 10.5, -3.0, -5.0 + s, 0.0, width=3.0, mat='stone', cheek_mat='tuff', cheeks=True)
+    box(F, 14.0, -8.5, G, 2.0, 11.0, -G, 'brick')                       # wall alongside the ramp
+    box(F, 10.5, -2.0, G, 4.0, 2.0, -G, 'stone')                        # landing at z 0 (solid below)
+    human(F, -12, -17, -5 + s)
+    finish('rome_pal_block_d_low' if low else 'rome_pal_block_d', front='-Y', extra_cams=BACK_CAM)
 
 
 def main():
     argv = sys.argv
     which = argv[argv.index('--') + 1] if '--' in argv else 'all'
-    builders = {'a': block_a, 'b': block_b, 'c': block_c, 'd': block_d}
+    builders = {'a': block_a, 'b': block_b, 'c': block_c, 'd': block_d, 'cf': lambda: block_c(flat=True),
+                'al': lambda: block_a(low=True), 'bl': lambda: block_b(low=True), 'dl': lambda: block_d(low=True)}
     for k, fn in builders.items():
-        if which in ('all', k):
+        if which == k or (which == 'all' and len(k) == 1):
             fn()
 
 

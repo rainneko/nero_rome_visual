@@ -83,7 +83,8 @@ EXTRA = [  # parts that stand over a roof block of the plan (review of round 1: 
     dict(id='M10g', over='M10', x0=-4, y0=-50, x1=4, y1=-44, storeys=1, eaves=5.6, roof='gable', ridge='NS'),    # the gate porch through the portico's lean-to
 ]
 OPTS = {
-    'M01': {'hip_ends': 'E'},                       # 北立面一排，东端收成四坡
+    'M01': {'hip_ends': 'E',                        # 北立面一排，东端收成四坡
+            'doors': [('S', 46.6, 2.4, 3.0, 0.0, 'rect'), ('S', 50.3, 1.4, 1.5, 0.9, 'arch')]},     # E16b 甜酒工坊 (plan revision 2026-11-14): a wide door and the hearth's mouth to the kitchen court
     'M16': {'hip_ends': 'S'},                       # 南端收成四坡
     'M02': {'over': 'M01m', 'pediment': 'N',        # the frontispiece: three arched openings on F3, a pediment on its north gable
             'windows': {(3, 'N'): (1.8, 2.6, 11.6, 'arch', 3.6)}},
@@ -91,16 +92,17 @@ OPTS = {
     'M09g': {'pediment': 'S'}, 'M10g': {'pediment': 'S'},
     'M11': {'open': [(1, 'E', -42.5, -33.5)], 'recess': 4.0},        # the Hermaeum opens to the fish-pond garden with four columns
     'M12': {'open': [(3, 'W', -43.5, -34.5)],                        # the tower: a three-bay loggia in front of the study on F3
-            'doors': [('N', -59.0, 1.4, 2.4, 6.5, 'rect')]},         # ... and the door from 2T1 onto the solarium
+            'doors': [('N', -59.0, 1.4, 2.4, 6.5, 'rect'),            # ... the door from 2T1 onto the solarium
+                      ('E', -42.6, 1.8, 2.6, 0.0, 'rect'), ('E', -39.7, 1.8, 2.6, 0.0, 'rect')]},     # ... and W02b 暗阁's two solid bolted doors to the court W03 (【书】“那两扇实心的厚门”)
     'M14': {'deck': 'paving'},                      # the solarium is a terrace people use: stone slabs
     'M17': {'doors': [('E', 9.7, 1.8, 3.4, 0.0, 'rect'), ('E', 17.0, 1.8, 3.4, 0.0, 'rect'), ('E', 24.3, 1.8, 3.4, 0.0, 'rect')]},   # west side hall: three doors to the pomegranate court
     'M22': {'cross_walls': [-16.0, 22.0]}, 'M23': {'cross_walls': [-16.0, 22.0]},      # parapet gables at the corners of the peristyle
     'M25': {'pediment': 'NS', 'gold': True,         # the banquet hall: clerestory, a gilt band under the cornice, a pediment on each gable
             'windows': {(2, 'W'): (1.2, 2.8, 9.0, 'arch'), (2, 'E'): (1.2, 2.8, 9.0, 'arch'), 2: None}},
 }
-DOORS = {'doorN': (2.6, 4.6, 'arch'), 'doorW': (1.8, 3.0, 'rect'), 'doorE': (2.2, 3.4, 'arch'),
+DOORS = {'doorN': (2.6, 4.6, 'arch'), 'doorW': (1.8, 3.0, 'rect'), 'doorE': (2.2, 3.4, 'arch'), 'doorNW': (1.6, 2.6, 'rect'),
          'doorC': (2.2, 3.4, 'arch')}     # the cryptoporticus door at y 35.3: inside the page's gallery (PAL_CRYPTO: axis y 34.7, 5.8 m wide) and inside its room E10
-TP.load(opts=OPTS, extra=EXTRA, doors=DOORS, no_window=('N10',))      # N10 金库: thick walls, one door, no window
+TP.load(opts=OPTS, extra=EXTRA, doors=DOORS, no_window=('W02b',))     # W02b 暗阁（密室）: thick stone walls, no window (N10 is the 文书库 now and has its windows again)
 TP.massing(order='column' if ROUND > 1 else 'pier', detail=ROUND > 1, court_mats={'P05': 'gravel'})
 TP.part('tib_roof')
 _e = TP.FEAT['eagle']                               # the broken eagle on the west apex of M15's gable
@@ -210,10 +212,48 @@ if ROUND > 1:
     for _y in (8.5, 17.0, 22.5):          # the brief's y 16.5 and 24 run into the buttresses at y 15 and 25: moved 0.5 and 1.5 m
         _wall_window(_y, -3.6, 1.2, 1.8)
     _wall_window(31.0, -1.8, 0.6, 0.6, arch=False)
+if ROUND > 1:
+    # ---- plan revision of 2026-11-14
+    # the pomegranate court W14: a one-storey colonnade along its west and north sides, 3 m deep, columns 4.0 m, a tiled lean-to
+    # falling into the court (【书】“看见我抱着账册从回廊经过”); the north walk stops short of the pomegranate tree's bed
+    TP.part('tib_garden'); _c = TP.ROOM['W14']; _pm = TP.FEAT['pome']; _xw, _yn, _xe = _c['x0'] + 3.0, _c['y1'] - 3.0, _pm['x0'] - 1.0
+    for _y in [_c['y0'] + 0.5 + i * (_yn - _c['y0'] - 0.5) / 6 for i in range(7)]:
+        TP.column(_xw, _y, 0.2, 4.0, 'ionic', 'marble', rot=90.0)
+    for _x in [_xw + (i + 1) * (_xe - _xw) / 2 for i in range(2)]:
+        TP.column(_x, _yn, 0.2, 4.0, 'ionic', 'marble')
+    box(F, _xw, (_c['y0'] + _yn) / 2 + 0.2, 4.2, 0.5, _yn - _c['y0'] + 0.4, 0.35, 'marble'); box(F, (_xw + _xe) / 2, _yn, 4.2, _xe - _xw + 0.5, 0.5, 0.35, 'marble')
+    add_poly('tile', [F.p(_c['x0'], _c['y0'], 5.2), F.p(_xw + 0.45, _c['y0'], 4.5), F.p(_xw + 0.45, _yn - 0.45, 4.5), F.p(_c['x0'], _c['y1'], 5.2)])
+    add_poly('tile', [F.p(_c['x0'], _c['y1'], 5.2), F.p(_xw + 0.45, _yn - 0.45, 4.5), F.p(_xe + 0.3, _yn - 0.45, 4.5), F.p(_xe + 0.3, _c['y1'], 5.2)])
+    for _y in [_c['y0'] + 0.5 + i for i in range(int(_yn - _c['y0']))]:
+        beam(F, _c['x0'], _y, 5.25, _xw + 0.45, _y, 4.55, 0.2, 0.1, 'tile')
+    for _x in [_xw + 1.0 + i for i in range(int(_xe - _xw))]:
+        beam(F, _x, _c['y1'], 5.25, _x, _yn - 0.45, 4.55, 0.2, 0.1, 'tile')
+    box(F, _c['x0'] + 1.5, (_c['y0'] + _yn) / 2, 0.1, 3.0, _yn - _c['y0'], 0.1, 'travertine'); box(F, (_xw + _xe) / 2, _c['y1'] - 1.5, 0.1, _xe - _xw, 3.0, 0.1, 'travertine')
+    # the service court's north-west door (feature doorNW) in the north front: three steps outside it onto the platform
+    TP.part('tib_f1'); _d = TP.FEAT['doorNW']
+    for i, (w, dd) in enumerate(((2.8, 0.9), (2.4, 0.6), (2.0, 0.3))):
+        box(F, _d['x'], _d['y'] + dd / 2, 0.05 + 0.1 * i, w, dd, 0.1, 'travertine')
+    # the sweet-wine workshop's hearth (E16b): a small tiled canopy over its mouth on the kitchen court's side
+    _hy = TP.BLOCK['M01']['y0']
+    add_poly('tile', [F.p(49.3, _hy, 3.3), F.p(49.3, _hy - 1.1, 2.8), F.p(51.3, _hy - 1.1, 2.8), F.p(51.3, _hy, 3.3)])
+    for _x in (49.4, 51.2):
+        beam(F, _x, _hy, 2.55, _x, _hy - 1.0, 2.7, 0.1, 0.12, 'wood')
+    # the banquet hall's nave (M25): a square opening 3 x 3 m in the middle of its ridge with a kerb 0.3 m high
+    # (【书】“屋顶很高，顶上开着一个方口，能看见夜空。”). Drawn as a dark square inside its kerb: the roof under it is not cut.
+    TP.part('tib_roof'); _h = TP.BLOCK['M25']; _hx, _hym, _hz = (_h['x0'] + _h['x1']) / 2, (_h['y0'] + _h['y1']) / 2, _h['ridge_z']
+    for (cx, cy, sx, sy) in ((_hx, _hym - 1.65, 3.6, 0.3), (_hx, _hym + 1.65, 3.6, 0.3), (_hx - 1.65, _hym, 0.3, 3.0), (_hx + 1.65, _hym, 0.3, 3.0)):
+        box(F, cx, cy, _hz - 0.75, sx, sy, 1.05, 'travertine')
+    add_poly('dark', [F.p(_hx - 1.5, _hym - 1.5, _hz + 0.24), F.p(_hx + 1.5, _hym - 1.5, _hz + 0.24), F.p(_hx + 1.5, _hym + 1.5, _hz + 0.24), F.p(_hx - 1.5, _hym + 1.5, _hz + 0.24)])
+
 ROOMS_N = {}
 if ROUND > 2:
     # ---- the rooms, for the parts file only (step 8 of the brief): a slab per room (room_<id>), partitions, doors, stairs
     ROOMS_N = TP.floors_and_rooms()
+    # 2W04 (“我”的屋子) and the bedroom 2T2: a small arch hung with a purple curtain in the wall between them (parts file only)
+    TP.part('tib_f2r'); _za = TP.PLAN['levels']['F2']
+    for _sd in (-1, 1):
+        _xa = TP.ROOM['2W04']['x0'] + _sd * 0.24
+        add_poly('porphyry', [F.p(_xa, -45.6, _za + 0.06), F.p(_xa, -44.4, _za + 0.06), F.p(_xa, -44.4, _za + 1.9), F.p(_xa, -44.7, _za + 2.25), F.p(_xa, -45.3, _za + 2.25), F.p(_xa, -45.6, _za + 1.9)][::_sd])
     TP.part('tib_f1r')
     # the state atrium is Corinthian (Vitruvius 6.3.1): ten columns round the impluvium, four on each long side counting the
     # corners and one more in the middle of each short side; they carry the roof's inner edge. The real basins are here too.

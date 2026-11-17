@@ -94,6 +94,20 @@ button:focus-visible,select:focus-visible,input:focus-visible,label:focus-within
 .tg{background:rgba(255,255,255,.06);color:var(--gtext);border:1px solid rgba(201,162,78,.3);border-radius:3px;padding:4px 8px;font-size:12px;cursor:pointer}
 .tg.on{background:rgba(201,162,78,.25);border-color:var(--gilt)}
 
+/* first-person walk (src/ui/fp.js) */
+#fp{display:none}body.fp #fp{display:block}
+body.fp #hud,body.fp #reader,body.fp #rtab,body.fp #dock,body.fp #timeline,body.fp #card,body.fp #labels{display:none!important}
+body.fp #gl{cursor:crosshair}
+#fpTop{position:fixed;z-index:30;left:14px;top:calc(12px + env(safe-area-inset-top,0px));padding:6px 8px 6px 12px;display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--gtext)}
+#fpDot{position:fixed;z-index:29;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:rgba(255,243,218,.8);box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none}
+#fpHint,#fpWho,#fpNote{position:fixed;z-index:30;left:50%;transform:translateX(-50%);color:var(--gtext);pointer-events:none}
+#fpNote{top:42%;padding:9px 16px;font-size:13px}
+#fpHint{bottom:calc(22px + env(safe-area-inset-bottom,0px));padding:7px 14px;font-size:12.5px;white-space:nowrap;transition:opacity .8s}#fpHint.gone{opacity:0}
+#fpWho{bottom:calc(70px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(580px,88vw);padding:9px 14px;font-size:13px;line-height:1.7;opacity:0;transition:opacity .35s}#fpWho.on{opacity:1}
+#fpWho b{color:#fff3da;font-size:14.5px}#fpWho i{font-family:var(--roman);font-size:11.5px;color:var(--gilt2);letter-spacing:.06em}
+#fpPause{display:none;position:fixed;inset:0;z-index:40;background:rgba(10,8,6,.45);align-items:center;justify-content:center}body.fp-paused #fpPause{display:flex}
+#fpPause .panel{max-width:380px;padding:16px 22px 18px;text-align:center;font-size:13px;line-height:1.8;color:var(--gtext)}#fpPause h3{margin:0 0 6px;font-size:16px;color:#fff3da}#fpPause p{margin:0 0 12px}
+
 /* timeline */
 #timeline{position:fixed;z-index:13;left:16px;right:calc(min(38vw,520px) + 40px);top:calc(84px + env(safe-area-inset-top,0px));height:30px;display:flex;align-items:flex-start;gap:2px;pointer-events:none}
 #timeline button{pointer-events:auto;flex:1;min-width:0;background:none;border:0;border-top:2px solid rgba(241,230,207,.35);color:rgba(241,230,207,.7);
@@ -173,6 +187,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,label:focus-within
     <div class="row"><label for="glassop">玻璃不透明</label><input id="glassop" type="range" min="5" max="95" value="38"><output id="glassv">38%</output></div>
     <div class="toggles">
       <button class="tg on" id="tLabels">地名</button><button class="tg" id="tPaint" title="Kuwahara 油画平涂">画意滤镜</button><button class="tg" id="tCrystL" title="晶格油画的约半强度：更细更柔的色块，和原图混合">轻晶格</button><button class="tg" id="tCryst" title="晶格化厚涂油画：多边形色块 + 交叉短笔触">晶格油画</button><button class="tg" id="tTilt">移轴</button>
+      <button class="tg" id="tWalk" title="下到地面，在帕拉蒂尼山上走一走（键盘和鼠标）">第一人称 · 走上帕拉蒂尼山</button>
       <button class="tg" id="tMusic">八音盒《卡农》</button><button class="tg" id="tBell">风铃</button>
       <label class="tg" for="glb">导入 .glb</label><input id="glb" type="file" accept=".glb,.gltf" hidden>
     </div>
@@ -180,6 +195,14 @@ button:focus-visible,select:focus-visible,input:focus-visible,label:focus-within
 </div>
 <div id="timeline"></div>
 <div class="panel" id="card" hidden></div>
+<div class="panel" id="fpNote" hidden></div>
+<div id="fp">
+  <div class="panel" id="fpTop"><span id="fpWhere">第一人称</span><button class="tg" id="fpOut" title="回到鸟瞰">退出</button></div>
+  <div id="fpDot"></div>
+  <div class="panel" id="fpWho"></div>
+  <div class="panel gone" id="fpHint">W A S D 行走 · Shift 快走 · 空格 跳 · 鼠标转视角（点一下画面锁住鼠标）· Esc 暂停</div>
+  <div id="fpPause"><div class="panel"><h3>暂停</h3><p>W A S D 行走，Shift 快走，鼠标转视角，Q / E 或左右键也能转身。<br>看向近处的人，会有一行说明。</p><button class="tg on" data-a="go">继续走</button> <button class="tg" data-a="out">回到鸟瞰</button></div></div>
+</div>
 <div id="loading"><div><div class="yr">ROMA · A.D. LIV</div><div id="loadmsg">正在铺设七丘……</div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>

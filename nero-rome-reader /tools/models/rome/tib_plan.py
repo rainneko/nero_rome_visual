@@ -19,7 +19,7 @@ Model axes as in the plan: x east, y north, z up; z = 0 is the platform top.
 
 Options (opts[block id]): hip_ends 'E'; over 'M01m'; open [(storey, side, a, b)] an open bay between plan coordinates a..b along
 that side; gaps [(side, a, b)] in a flat roof's parapet; deck 'paving'; cross_walls [coordinates along the ridge];
-pediment 'NS'; gold True; windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
+pediment 'NS'; gold True; wall_top z; roof 'own'; vault_mat; parapet False; col_mat, col_mat2 (upper order); on_floor, arch2, rail (upper order on the floor, its beam, the parapet's material); order1 (ground-floor order); low (a lean-to's low edge); windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
 
 How blocks meet: surf(b, x, y) is the height of a block's roof at a plan point. A wall face is drawn from the lowest roof
 height of whatever stands on the other side (0 for a court or the outside) up to the block's own wall top. Roofs are single
@@ -54,12 +54,15 @@ WIN2 = (1.1, 1.9, 1.0, 'rect')    # upper floors, with a lattice
 NOWIN1 = ('stair', 'service', 'guard')   # ground-floor rooms without windows
 DADO = (2.05, 0.3)    # the red dado band: bottom and height (its middle is 2.2 m up)
 FLASH = 0.25          # flashing course on a wall above the tiles of a lower roof
+BACK_MAT = 'plaster'  # the back walls of the open porticoes (web file)
 SIGNINUM = 'plaster3'  # flat roofs: opus signinum, a mortar of crushed terracotta (the kit's reddish buff)
 SIDES = 'SENW'
 OPP = {'S': 'N', 'N': 'S', 'E': 'W', 'W': 'E'}
 OUT = {'S': (0.0, -1.0), 'E': (1.0, 0.0), 'N': (0.0, 1.0), 'W': (-1.0, 0.0)}
 
 PLAN = {}; BL = []; ROOMS = []; COURTS = []; FEAT = {}; OPT = {}; BLOCK = {}; ROOM = {}; DOORS = {}; NO_WINDOW = set()
+PRE = 'tib'           # prefix of the part names (load(prefix=...))
+LEAN_FALL = 0.24      # a lean-to roof whose note gives no low edge falls this much per metre (as the plan's drawings show it)
 FLN = []; FLZ = []; PITCH = 0.4
 OPENINGS = []         # open bays found by block_walls: dict(b, s, k, u0, u1, z0, z1, floor, room)
 OPEN_ROOMS = set()    # (floor name, room id) of the portico rooms that have an open side
@@ -101,10 +104,14 @@ def tris(G):
 
 
 # ------------------------------------------------------------------ the plan
-def load(path=None, opts=None, extra=(), doors=None, no_window=()):
+def load(path=None, opts=None, extra=(), doors=None, no_window=(), prefix='tib', rules=None):
     """Read the plan. extra: blocks standing over a plan block (id, over, x0, y0, x1, y1, storeys, eaves, roof, ridge);
-    doors: {door feature id: (w, h, kind[, at])}; no_window: ids of rooms without windows."""
-    global PLAN, BL, ROOMS, COURTS, FEAT, OPT, BLOCK, ROOM, FLN, FLZ, PITCH, DOORS, NO_WINDOW
+    doors: {door feature id: (w, h, kind[, at])}; no_window: ids of rooms without windows; prefix: of the part names;
+    rules: {name: value} for the rules above that a palace's brief sets otherwise (COL1, WIN1, ...)."""
+    global PLAN, BL, ROOMS, COURTS, FEAT, OPT, BLOCK, ROOM, FLN, FLZ, PITCH, DOORS, NO_WINDOW, PRE, PART_NAMES, WEB_SKIP
+    PRE = prefix; globals().update(rules or {})
+    PART_NAMES = tuple(n.replace('tib_', PRE + '_', 1) for n in ('tib_base', 'tib_b1', 'tib_garden', 'tib_f1', 'tib_f2', 'tib_f3', 'tib_roof'))
+    WEB_SKIP = tuple(PRE + n for n in ('_b1', '_f1r', '_f2r', '_f3r'))
     PLAN = json.load(open(path or os.path.join(HERE, 'tiberiana_plan.json'), encoding='utf-8'))
     BL = PLAN['roof_blocks'] + [dict(b) for b in extra]; ROOMS = PLAN['rooms']; OPT = opts or {}
     DOORS = doors or {}; NO_WINDOW = set(no_window)
@@ -124,10 +131,10 @@ def load(path=None, opts=None, extra=(), doors=None, no_window=()):
     FLZ = [PLAN['levels'][k] for k in FLN]
     for b in BL:
         if b['roof'] == 'lean':        # the low edge is in the note ("檐口 4.8")
-            m = re.search(r'檐口\s*([0-9.]+)', b['note'])
-            if not m:
-                raise ValueError('lean roof %s: no low edge in its note' % b['id'])
-            b['low'] = float(m.group(1))
+            m = re.search(r'檐口\s*([0-9.]+)', b['note']); D = (b['y1'] - b['y0']) if b['ridge'] in 'NS' else (b['x1'] - b['x0'])
+            b['low'] = OPT.get(b['id'], {}).get('low', float(m.group(1)) if m else round(b['eaves'] - D * LEAN_FALL, 2))
+        if b['roof'] == 'vault' and not b['ridge']:     # a barrel vault runs along the longer side
+            b['ridge'] = 'EW' if b['x1'] - b['x0'] > b['y1'] - b['y0'] else 'NS'
         if b['roof'] == 'compluviate':  # the opening is in the note ("天井 [x0,y0,x1,y1]")
             m = re.search(r'\[([^\]]+)\]', b['note'])
             if not m:
@@ -209,7 +216,7 @@ def wtop(b, s):
     """Top of the wall on side s (a lean-to's wall is lower on its low side; its ends get a sloping piece from the roof)."""
     if b['roof'] == 'lean' and s != OPP[b['ridge']]:
         return b['low']
-    return b['eaves']
+    return OPT.get(b['id'], {}).get('wall_top', b['eaves'])      # wall_top: the walls stop below the eaves (an open belvedere under the roof)
 
 
 _CACHE = {}
@@ -317,8 +324,9 @@ def _bar(W, u0, u1, z, h, proj, mat):
 
 # ------------------------------------------------------------------ walls
 def storeys(b):
-    """(storey number, floor z, top z) of a block; its top storey runs up to the wall top."""
-    n = b['storeys']
+    """(storey number, floor z, top z) of a block; its top storey runs up to the wall top. A block with more storeys
+    than the plan has floor levels (a tower) is one tall top storey above the last level."""
+    n = min(b['storeys'], len(FLZ))
     return [(k, FLZ[k - 1], FLZ[k] if k < n else 1e9) for k in range(1, n + 1)]
 
 
@@ -419,7 +427,7 @@ def _flashing(b, s, W, L, iv, top):
         u = _u(b, s, v)
         if iv['u0'] + 1e-6 < u < iv['u1'] - 1e-6:
             us.add(u)
-    us = sorted(us); k = max(1, sum(1 for z in FLZ if z <= iv['cover'] + 1e-6)); part('tib_f%d' % min(k, b['storeys']))
+    us = sorted(us); k = max(1, sum(1 for z in FLZ if z <= iv['cover'] + 1e-6)); part(PRE + '_f%d' % min(k, b['storeys']))
     for u0, u1 in zip(us, us[1:]):
         z0, z1 = _nb_surf(b, s, u0 + 1e-3), _nb_surf(b, s, u1 - 1e-3)
         if max(z0, z1) + FLASH <= top - 0.1:
@@ -456,7 +464,7 @@ def block_walls(b, detail=True):
                 _flashing(b, s, W, L, iv, top)
         holes = []; wins = []
         for u0, u1, a, c, k in _merge(walls, 3):
-            part('tib_f%d' % k); ops = _piece_openings(b, s, k, u0, u1, a, c, doors) if detail else []
+            part(PRE + '_f%d' % k); ops = _piece_openings(b, s, k, u0, u1, a, c, doors) if detail else []
             STATS['wall_m2'] = STATS.get('wall_m2', 0.0) + (u1 - u0) * (c - a)
             if not ops:
                 add_poly('plaster', [W.p(u0, 0, a), W.p(u1, 0, a), W.p(u1, 0, c), W.p(u0, 0, c)])
@@ -480,7 +488,7 @@ def block_walls(b, detail=True):
             OPENINGS.append(dict(b=b, s=s, k=k, u0=u0, u1=u1, z0=a, z1=zo, floor=za, room=rid, kind=across_kind(b, s, (u0 + u1) / 2)))
         if not walls:
             continue
-        part('tib_f1'); ground = _union([w[:2] for w in walls if w[2] < 0.01])
+        part(PRE + '_f1'); ground = _union([w[:2] for w in walls if w[2] < 0.01])
         for u0, u1 in _minus(ground, [(h0, h1) for h0, h1, z, h in holes if z < 0.5]):
             _bar(W, u0, u1, 0.0, PLINTH, 0.10, 'travertine')
         if detail:
@@ -489,14 +497,14 @@ def block_walls(b, detail=True):
                 _bar(W, u0, u1, DADO[0], DADO[1], 0.06, 'red')
         us = sorted({w[0] for w in walls} | {w[1] for w in walls})
         for i, zf in enumerate(FLZ[1:b['storeys']]):     # a string course marks a floor of this block (a hall through two storeys has none)
-            part('tib_f%d' % (i + 2)); hit = []
+            part(PRE + '_f%d' % (i + 2)); hit = []
             for u0, u1 in zip(us, us[1:]):
                 um = (u0 + u1) / 2; here = [w for w in walls if w[0] < um < w[1]]
                 if any(w[2] <= zf - 0.3 and w[3] >= zf - 1e-6 for w in here) and any(w[2] <= zf + 1e-6 and w[3] >= zf + 0.9 for w in here):
                     hit.append([u0, u1])
             for u0, u1 in _minus(_union(hit), [(h0 - 0.1, h1 + 0.1) for h0, h1, z, h in holes + wins if z - 0.15 < zf < z + h + 0.15]):
                 _bar(W, u0, u1, zf - 0.15, 0.3, 0.08, 'red')
-        part('tib_f%d' % b['storeys']); tops = _union([w[:2] for w in walls if w[3] >= top - 0.01])
+        part(PRE + '_f%d' % b['storeys']); tops = _union([w[:2] for w in walls if w[3] >= top - 0.01])
         for u0, u1 in tops:
             _bar(W, u0, u1, top - 0.52, 0.42, 0.22, 'travertine')        # 0.1 under the wall top: it stays below the eaves' soffit
             if detail and o.get('gold'):
@@ -756,12 +764,12 @@ def _compluviate(b):
     for (cx, cy, sx, sy) in (((hx0 + hx1) / 2, hy0 - t / 2, hx1 - hx0 + 2 * t, t), ((hx0 + hx1) / 2, hy1 + t / 2, hx1 - hx0 + 2 * t, t),
                              (hx0 - t / 2, (hy0 + hy1) / 2, t, hy1 - hy0), (hx1 + t / 2, (hy0 + hy1) / 2, t, hy1 - hy0)):
         box(None, cx, cy, zl - 0.15, sx, sy, UPSTAND + 0.15, 'tile')
-    part('tib_f1w'); i = 0.3; zt = e - 0.05 - i * DROP / min(run.values())      # just under the tiles at the inset
+    part(PRE + '_f1w'); i = 0.3; zt = e - 0.05 - i * DROP / min(run.values())      # just under the tiles at the inset
     q = [(x0 + i, y0 + i), (x1 - i, y0 + i), (x1 - i, y1 - i), (x0 + i, y1 - i)]
     for k in range(4):
         (ax, ay), (bx, by) = q[k], q[(k + 1) % 4]
         add_poly('plaster', [Vector((bx, by, 0.05)), Vector((ax, ay, 0.05)), Vector((ax, ay, zt)), Vector((bx, by, zt))])
-    part('tib_roof')
+    part(PRE + '_roof')
 
 
 def _parapet_runs(b):
@@ -795,34 +803,36 @@ def _flat(b):
     opts 'deck'); the parapet's coping is signinum too, so that no flat roof reads as a white slab from above."""
     e = b['eaves']
     add_poly(OPT.get(b['id'], {}).get('deck', SIGNINUM), [Vector((b['x0'], b['y0'], e)), Vector((b['x1'], b['y0'], e)), Vector((b['x1'], b['y1'], e)), Vector((b['x0'], b['y1'], e))])
-    for s, W, u0, u1 in _parapet_runs(b):
+    for s, W, u0, u1 in ([] if OPT.get(b['id'], {}).get('parapet') is False else _parapet_runs(b)):      # parapet False: the palace script puts its own balustrade there
         box(W, (u0 + u1) / 2, PARAPET_T / 2, e, u1 - u0, PARAPET_T, PARAPET_H, 'plaster')
         _box5(W, (u0 + u1) / 2, PARAPET_T / 2 - 0.03, e + PARAPET_H, u1 - u0 + 0.06, PARAPET_T + 0.12, 0.1, SIGNINUM)
 
 
 def _vault(b, seg=10):
     """A plastered barrel vault along b['ridge'], with a low parapet wall at both ends."""
-    e = b['eaves']; ew = b['ridge'] == 'EW'; span = (b['y1'] - b['y0']) if ew else (b['x1'] - b['x0'])
+    vm = OPT.get(b['id'], {}).get('vault_mat', 'plaster'); e = b['eaves']; ew = b['ridge'] == 'EW'; span = (b['y1'] - b['y0']) if ew else (b['x1'] - b['x0'])
     ends = 'WE' if ew else 'SN'; W0, L0 = _W(b, ends[0]); length = (b['x1'] - b['x0']) if ew else (b['y1'] - b['y0'])
     prof = [(span * i / seg, e + _arc(span, span * i / seg - span / 2)) for i in range(seg + 1)]      # (u across the span, z)
     for i in range(seg):                           # the extrados, from end 0 to end 1 (W0: local x across, +y inward)
         (ua, za), (ub, zb) = prof[i], prof[i + 1]
-        add_poly('plaster', [W0.p(ua, 0, za), W0.p(ub, 0, zb), W0.p(ub, length, zb), W0.p(ua, length, za)], smooth=True)
+        add_poly(vm, [W0.p(ua, 0, za), W0.p(ub, 0, zb), W0.p(ub, length, zb), W0.p(ua, length, za)], smooth=True)
     for s in ends:
         W, L = _W(b, s); top = [(u, z + VAULT_PARAPET) for u, z in prof]
         if _covered(b, s, top):
             continue
         t = PARAPET_T; front = [W.p(0, 0, e), W.p(L, 0, e)] + [W.p(u, 0, z) for u, z in reversed(top)]
         back = [W.p(0, t, e), W.p(L, t, e)] + [W.p(u, t, z) for u, z in reversed(top)]
-        add_poly('plaster', front); add_poly('plaster', back[::-1])
+        add_poly(vm, front); add_poly(vm, back[::-1])
         for i in range(seg):
             (ua, za), (ub, zb) = top[i], top[i + 1]
-            add_poly('plaster', [W.p(ua, 0, za), W.p(ub, 0, zb), W.p(ub, t, zb), W.p(ua, t, za)])
+            add_poly(vm, [W.p(ua, 0, za), W.p(ub, 0, zb), W.p(ub, t, zb), W.p(ua, t, za)])
 
 
 def roof(b):
     """The roof of a block by b['roof']."""
-    part('tib_roof')
+    part(PRE + '_roof')
+    if OPT.get(b['id'], {}).get('roof') == 'own':                # the palace script builds this roof itself
+        return
     {'gable': _ridge_roof, 'hip': _ridge_roof, 'pyramid': _ridge_roof, 'lean': _lean, 'compluviate': _compluviate,
      'flat': _flat, 'vault': _vault}[b['roof']](b)
 
@@ -839,12 +849,16 @@ def ridge_z(b):
 
 
 # ------------------------------------------------------------------ courts, porticoes
-def courts(mats=None):
-    """The open courts as flat floors (what stands in them is the palace script's). mats: by room type or room id."""
-    mats = dict({'garden': 'grass', 'court': 'paving'}, **(mats or {}))
-    part('tib_garden')
+def courts(mats=None, holes=None):
+    """The open courts as flat floors (what stands in them is the palace script's). mats: by room type or room id;
+    holes: {court id: (x0, y0, x1, y1)} an opening in its floor (a sunken court)."""
+    mats = dict({'garden': 'grass', 'court': 'paving'}, **(mats or {})); holes = holes or {}
+    part(PRE + '_garden')
     for c in COURTS:
-        add_poly(mats.get(c['id'], mats[c['type']]), [Vector((c['x0'], c['y0'], 0.1)), Vector((c['x1'], c['y0'], 0.1)), Vector((c['x1'], c['y1'], 0.1)), Vector((c['x0'], c['y1'], 0.1))])
+        h = holes.get(c['id']); m = mats.get(c['id'], mats[c['type']])
+        R = [(c['x0'], c['y0'], c['x1'], c['y1'])] if not h else [(c['x0'], c['y0'], c['x1'], h[1]), (c['x0'], h[3], c['x1'], c['y1']), (c['x0'], h[1], h[0], h[3]), (h[2], h[1], c['x1'], h[3])]
+        for x0, y0, x1, y1 in R:
+            add_poly(m, [Vector((x0, y0, 0.1)), Vector((x1, y0, 0.1)), Vector((x1, y1, 0.1)), Vector((x0, y1, 0.1))])
 
 
 def _box5(F, cx, cy, z0, sx, sy, sz, mat, rot=0.0):
@@ -891,19 +905,20 @@ def porticoes(order='column', bay=BAY, sb=0.35, edge_z=0.35, court_z=0.2):
     order='pier' (round 1): plain piers instead of columns."""
     seen = set()
     for o in OPENINGS:
-        b = o['b']; W, L = _W(b, o['s']); k = o['k']; z0, z1, zf = o['z0'], o['z1'], o['floor']; part('tib_f%d' % k)
+        b = o['b']; W, L = _W(b, o['s']); k = o['k']; z0, z1, zf = o['z0'], o['z1'], o['floor']; part(PRE + '_f%d' % k)
         ua, ub = _run_ends(o, sb); n = max(1, int(round((ub - ua) / bay))); um = (ua + ub) / 2; rot = math.degrees(W.r); arch = ARCH
         if k == 1:
-            zc = edge_z if o['kind'] == 'ext' else court_z; ordr = 'ionic'
+            zc = edge_z if o['kind'] == 'ext' else court_z; ordr = OPT.get(b['id'], {}).get('order1', 'ionic')
             if o['kind'] != 'ext':
                 box(W, um, sb, 0.05, ub - ua + 0.9, 0.9, zc - 0.05, 'travertine')         # stylobate
         else:
-            box(W, (o['u0'] + o['u1']) / 2, 0.16, zf, o['u1'] - o['u0'], 0.3, PARAPET_H, 'plaster')
+            oo = OPT.get(b['id'], {})
+            box(W, (o['u0'] + o['u1']) / 2, 0.16, zf, o['u1'] - o['u0'], 0.3, PARAPET_H, oo.get('rail', 'plaster'))
             _box5(W, (o['u0'] + o['u1']) / 2, 0.16, zf + PARAPET_H, o['u1'] - o['u0'], 0.42, 0.08, 'marble')
             _bar(W, o['u0'], o['u1'], zf - 0.15, 0.3, 0.08, 'red')
-            zc = zf + PARAPET_H + 0.08 if (z1 - ARCH) - (zf + PARAPET_H) >= 2.6 else zf
+            zc = zf + PARAPET_H + 0.08 if (z1 - ARCH) - (zf + PARAPET_H) >= 2.6 and not oo.get('on_floor') else zf
             if zc == zf:
-                arch = ARCH_UP                       # columns on the floor under a low roof: a lighter beam, a taller column
+                arch = oo.get('arch2', ARCH_UP)      # columns on the floor (under a low roof, or opts on_floor): a lighter beam (opts arch2), a taller column
             ordr = OPT.get(b['id'], {}).get('order', 'corinthian' if b['roof'] == 'lean' else 'ionic')
         zc = max(zc, z0)
         for i in range(n + 1):
@@ -914,7 +929,7 @@ def porticoes(order='column', bay=BAY, sb=0.35, edge_z=0.35, court_z=0.2):
             if order == 'pier':
                 box(None, p.x, p.y, p.z, 0.5, 0.5, z1 - arch - zc, 'marble', rot)
             else:
-                column(p.x, p.y, p.z, z1 - arch - zc, ordr, 'marble', rot=rot)
+                cm = OPT.get(b['id'], {}).get('col_mat', 'marble'); column(p.x, p.y, p.z, z1 - arch - zc, ordr, cm if k == 1 else OPT.get(b['id'], {}).get('col_mat2', cm), rot=rot)
         box(W, um, sb, z1 - arch, ub - ua + 0.7, 0.7, arch, 'marble')
         STATS['col_h%d%s' % (k, 'L' if b['roof'] == 'lean' else '')] = round(z1 - arch - zc, 2)
         STATS['bays'] = STATS.get('bays', 0) + n
@@ -928,7 +943,7 @@ def recesses(depth=2.5):
         if r is not None and r['type'] == 'portico':
             continue
         b = o['b']; W, L = _W(b, o['s']); u0, u1, zf, z1 = o['u0'], o['u1'], o['floor'], o['z1']; d = OPT.get(b['id'], {}).get('recess', depth)
-        part('tib_f%d' % o['k']); zb = zf + 0.03
+        part(PRE + '_f%d' % o['k']); zb = zf + 0.03
         add_poly('paving', [W.p(u0, 0, zb), W.p(u1, 0, zb), W.p(u1, d, zb), W.p(u0, d, zb)])
         add_poly('plaster', [W.p(u0, d, zf), W.p(u1, d, zf), W.p(u1, d, z1), W.p(u0, d, z1)])
         add_poly('plaster', [W.p(u0, d, zf), W.p(u0, 0, zf), W.p(u0, 0, z1), W.p(u0, d, z1)][::-1])
@@ -950,7 +965,7 @@ def shells():
     """Back and end walls of the open portico rooms and the floors of the upper ones (parts tib_f1w, tib_f2w: the web
     file has no rooms, so without these one would look through a colonnade into the empty block)."""
     for fl, rid in sorted(OPEN_ROOMS):
-        r = ROOM[rid]; k = FLN.index(fl) + 1; z0 = FLZ[k - 1]; part('tib_f%dw' % k)
+        r = ROOM[rid]; k = FLN.index(fl) + 1; z0 = FLZ[k - 1]; part(PRE + '_f%dw' % k)
         open_sides = {o['s'] for o in OPENINGS if o['k'] == k and room_at(fl, *_mid_in(o)) is r}
         for s in SIDES:
             if s in open_sides:
@@ -975,7 +990,15 @@ def shells():
             for u0, u1 in _union(runs):
                 pa = (ax + ux * u0, ay + uy * u0); pb = (ax + ux * u1, ay + uy * u1); i = 0.02
                 za = _ceil(k, pa[0] + ux * i - ox * i, pa[1] + uy * i - oy * i); zb = _ceil(k, pb[0] - ux * i - ox * i, pb[1] - uy * i - oy * i)
-                add_poly('plaster', [Vector((pb[0], pb[1], z0)), Vector((pa[0], pa[1], z0)), Vector((pa[0], pa[1], za)), Vector((pb[0], pb[1], zb))])
+                if BACK_MAT != 'painted':
+                    add_poly(BACK_MAT, [Vector((pb[0], pb[1], z0)), Vector((pa[0], pa[1], z0)), Vector((pa[0], pa[1], za)), Vector((pb[0], pb[1], zb))])
+                else:                                # a painted wall: a red dado for the lower third, warm white above, an ochre panel in every bay
+                    zl = min(za, zb); zd = z0 + (zl - z0) / 3; Lr = u1 - u0; nb = max(1, int(round(Lr / BAY))); V3 = lambda u, z, off=0.0: Vector((pa[0] + ux * (u - u0) - ox * off, pa[1] + uy * (u - u0) - oy * off, z))
+                    add_poly('wallred', [V3(u1, z0), V3(u0, z0), V3(u0, zd), V3(u1, zd)]); add_poly('plaster', [V3(u1, zd), V3(u0, zd), Vector((pa[0], pa[1], za)), Vector((pb[0], pb[1], zb))])
+                    for i in range(nb):
+                        ca, cb = u0 + Lr * i / nb + 0.45, u0 + Lr * (i + 1) / nb - 0.45
+                        if cb - ca > 0.6 and zl - 0.5 - (zd + 0.35) > 0.6:
+                            add_poly('ochre', [V3(cb, zd + 0.35, 0.02), V3(ca, zd + 0.35, 0.02), V3(ca, zl - 0.5, 0.02), V3(cb, zl - 0.5, 0.02)])
         if k > 1:
             add_poly('paving', [Vector((r['x0'], r['y0'], z0 + 0.02)), Vector((r['x1'], r['y0'], z0 + 0.02)), Vector((r['x1'], r['y1'], z0 + 0.02)), Vector((r['x0'], r['y1'], z0 + 0.02))])
 
@@ -985,13 +1008,13 @@ def _mid_in(o):
     return (ax + (bx - ax) / L * um - OUT[o['s']][0] * 0.01, ay + (by - ay) / L * um - OUT[o['s']][1] * 0.01)
 
 
-def massing(order='column', detail=True, court_mats=None):
+def massing(order='column', detail=True, court_mats=None, court_holes=None):
     """Walls, roofs, courts and porticoes of the whole plan."""
     for b in BL:
         block_walls(b, detail)
     for b in BL:
         roof(b)
-    courts(court_mats); porticoes(order); shells(); recesses()
+    courts(court_mats, court_holes); porticoes(order); shells(); recesses()
 
 
 # ------------------------------------------------------------------ reports and renders
@@ -1178,9 +1201,9 @@ def floors_and_rooms():
     their outer walls already; two porticoes that meet have no wall between them. Parts tib_f1r, tib_f2r, tib_f3r."""
     open_ids = set(PLAN['open_courts']); n = dict(rooms=0, walls=0, doors=0, stairs=0)
     for k, fl in enumerate(FLN, 1):
-        L = [r for r in ROOMS if r['floor'] == fl]; z0 = FLZ[k - 1]; part('tib_f%dr' % k)
+        L = [r for r in ROOMS if r['floor'] == fl]; z0 = FLZ[k - 1]; part(PRE + '_f%dr' % k)
         for r in L:
-            SLABS.append(('tib_f%d' % k, r['id'], _floor_mat(r), r['x0'], r['y0'], r['x1'], r['y1'], z0 + (0.06 if r['id'] not in open_ids else 0.08), 0.06 if k == 1 else 0.3))
+            SLABS.append((PRE + '_f%d' % k, r['id'], _floor_mat(r), r['x0'], r['y0'], r['x1'], r['y1'], z0 + (0.06 if r['id'] not in open_ids else 0.08), 0.06 if k == 1 else 0.3))
             n['rooms'] += 1
         doors = _room_doors(fl, L, open_ids)
         for i, a in enumerate(L):
@@ -1225,14 +1248,14 @@ def floors_and_rooms():
     return n
 
 
-def basement(crown=-0.6, ring_h=2.4, seg=8):
+def basement(crown=-0.6, ring_h=2.4, seg=8, skip=()):
     """The basement rooms (floor B1) as their own part tib_b1: a slab, walls and a barrel vault along each room; where
     two rooms meet, a corridor opens into its neighbour over the whole shared width, other rooms get a door.
     Bath rooms (type bath, service) lie 1.5 m lower than the corridors."""
-    part('tib_b1'); L = [r for r in ROOMS if r['floor'] not in FLN]; n = 0
+    part(PRE + '_b1'); L = [r for r in ROOMS if r['floor'] not in FLN and r['id'] not in skip]; n = 0      # skip: rooms open to the sky (a sunken court)
     for r in L:
         zf = PLAN['levels'][r['floor']] - (1.5 if r['type'] in ('bath', 'service') else 0.0); r['_zf'] = zf
-        SLABS.append(('tib_b1', r['id'], _floor_mat(r), r['x0'], r['y0'], r['x1'], r['y1'], zf, 0.25)); n += 1
+        SLABS.append((PRE + '_b1', r['id'], _floor_mat(r), r['x0'], r['y0'], r['x1'], r['y1'], zf, 0.25)); n += 1
     for r in L:
         zf = r['_zf']; w, d = r['x1'] - r['x0'], r['y1'] - r['y0']; ew = w >= d; span = d if ew else w; rise = span * 0.25; zs = crown - rise
         gaps = {s: [] for s in SIDES}              # openings to the neighbours, per side: (lo, hi, height)
@@ -1281,7 +1304,7 @@ def _arc_r(span, rise, t):
 
 
 # ------------------------------------------------------------------ the parts file (for taking the palace apart, and for Unity)
-PART_NAMES = ('tib_base', 'tib_b1', 'tib_garden', 'tib_f1', 'tib_f2', 'tib_f3', 'tib_roof')
+PART_NAMES = ('tib_base', 'tib_b1', 'tib_garden', 'tib_f1', 'tib_f2', 'tib_f3', 'tib_roof')      # reset by load() for another prefix
 WEB_SKIP = ('tib_b1', 'tib_f1r', 'tib_f2r', 'tib_f3r')      # what the web file leaves out: the basement and the rooms
 
 

@@ -11,6 +11,18 @@ Keep this file current: every promise made to the author goes here until it is d
   测试页和审阅页（test.html、city-audit.html 等）不上线。
 * ⚠️ 章节访客计数：先部署 `server/visit-counter/`，再把地址填进 `build.config.json` 的 `"counter"`。
 
+## 2026-11-14 台伯河的桥、阿格里帕浴场
+* ✅ 六座桥换成 GLB（`briefs/rome/bridges.md`，`tools/models/rome/rome_pons_*.py`），代码里留着简化替身：法布里奇乌斯桥（两个大拱、泄洪小拱、拱背桥面）、
+  切斯提乌斯桥（一大两小）、埃米利乌斯桥（八拱，桥墩开泄洪洞）、苏布利基乌斯木桥（全木，不用铁）、阿格里帕桥（八拱、石板栏杆）、尼禄桥（七个圆拱，砖砌）。
+  桥面两头落在岸顶的高度（`BRIDGES` 表里的 Y），路在桥头接上；桥身占地加宽到两侧各 4 m，房子不再压到桥上。每座桥都有带【史】的标注。
+* ✅ 删掉没有史料依据的“第 12 号桥”（作者 2026-11-14 同意）。西岸路改从阿格里帕桥的特拉斯提弗列一端接出；奥雷利亚路、波尔图恩西斯路和科尔内利亚路的
+  桥头坐标跟着桥的新位置改。已重新烘焙：街区 2671 块，街道 2680 条，222.2 km。
+* ✅ 万神殿南边那个大方块是阿格里帕浴场，原来没有标注，单坡大屋顶看上去像万神殿的一部分。现在拆成中央高厅加两翼，各自盖屋顶，北边保留圆顶发汗室
+  （维特鲁威 5.10.5），补了【史】标注。万神殿本身是阿格里帕时代的长方形门廊神庙，没有圆顶，不用改。
+* ✅ 计票大厅的大屋顶符合史实：狄奥 55.8 说它是一个屋顶下最大的建筑；老普林尼 16.201 记着那根百尺长的落叶松梁。只给标注补了【史】。
+* ✅ 路重走后城市审计冒出的 H10、H14（4 处）已修：临路地块离最近的线超过 12 m 时不建；每栋房子按它自己的正面再核一次朝向（`lotBuild0` 的 `frontOk`）。全套检查通过。
+* ⬜ 埃米利乌斯桥东头那一排房子贴着桥身，没有压上去，但挨得很近；桥头和街道是斜着接的。
+
 ## 2026-10-25 架构审阅（先读这一节）
 审阅报告 `docs/AUDIT-2026-10-25.md`；道路、街区、地块的唯一规范 `briefs/rome/city-generation-spec.md`（取代 `street-rules.md`、`block-road-study.md`、
 `courtyard-and-depot-rules.md` 院落部分、`pocket-squares.md`、`streets_and_light.md` 第 1 节里互相矛盾的规则）。每次改城市生成都要跑
@@ -1074,6 +1086,19 @@ Keep this file current: every promise made to the author goes here until it is d
   - `?hq` 下共 7 块：F4 (−590, 913)、(−547, 835) 两块原来的花园，F1 (−1427, −535) 路口神龛、(516, −645)、(661, −694)、(1032, −1096) 三个水池、(628, −485) 大树和祭坛。下一块最陡的是 F2 神龛 (−1369, −480)，比值 0.78，没算进去。
   - 和上一版比：只有这 7 块变了（F1 39 → 34、F4 35 → 33、cliff 7，少了 1 座神龛、3 个水池），占地框数、其余 GLB、`__floatCheck()` 59 项都没变。截图 `docs/screenshots/fountain-slope-20261105/cliff_-590_913.jpg`（左改前、右改后）和 `cliff_others.jpg`（(−547, 835)、(661, −694) 改后）。
 
+### 2026-11-14 尼禄东宫（过渡宫）v2：台地以上按平面重建（`briefs/rome/transitoria-v2.md`，分支 `claude/transitoria-v2`）
+作者 2026-11-13：精修东宫，要比提比略宫奢华；东立面那两层拱廊很怪。说明和清单在 `briefs/rome/transitoria.md` 的 "v2 (2026-11)"，截图 `docs/screenshots/transitoria-v2-20261114/`（`r3_page_*` 左 main 右 v2）。
+- [x] 平面数据 `tools/models/rome/transitoria_plan.json`（82 间房、26 个屋顶块），模型由 `tib_plan.py` 按数据生成；这个模块改成不绑提比略宫，提比略宫重建后文件逐字节相同。
+- [x] 外观：东立面两层柱廊（下层浅紫纹白大理石、上层白大理石 3.8 m、平顶石栏杆立像），不再是拱廊；东塔露台地面 30 m、檐口 34 m、铜顶，露台每面三格，玻璃仍由页面按剧情开关；三座角亭、门楼和门廊、南楼三层、浴室两条筒拱；庭园和下沉 4.5 m 的水庭（两层壁龛的喷泉墙、十二柱亭）；架空廊起头三跨。
+- [x] 分件文件 `assets/models/rome/parts/rome_transitoria_parts.glb`：八个部件（任务书的七个加 `tr_b1`），82 个 `room_<编号>`。64 788 个三角形；网页文件 61 064（上限 70 000）。
+- [x] 页面：模型到来前的替身按屋顶块重做（`palatine.js`）；塔顶玻璃对到新塔上（`domus-aurea.js`）。
+- [x] 检查：`npm run check`、`test:boot`、`bake-roads.mjs --check`、`city-audit.mjs --assert`、悬空、墙脚、台基检查通过；地面网格未变。
+- [x] z 0 以下只动了一行：水庭下面的填土顶面从 −3 改到 −4.5（`rome_transitoria.py`，高度 2.0 → 0.5）。台地分支（PR 24）也在改同一脚本的 z 0 以下，后合并的一方要变基。
+- [ ] 页面标签的文字等文案组，这次没动。
+- [ ] GPT 参考图到了以后调颜色和细部（上层柱廊背墙的红还偏重）。
+- [ ] 庭园里的树现在是模型里的修剪柏树，页面没在那里种树。
+- [ ] 下次重烘街区时删掉模型里两个“地面锚点”小三角形（水庭北廊下）。
+
 ### 2026-11-12 提比略宫 v2：平台以上按平面重建（`briefs/rome/tiberiana-v2.md`，分支 `claude/tiberiana-v2-22fa96`）
 作者 2026-11-11：屋顶太大（单片瓦面长到 130 m）、不要超过三层、一层做高、本质是放大的元老宅、楼层要能拆开（以后放 Unity）。
 说明和清单在 `briefs/rome/tiberiana.md` 的 "v2 (2026-11)"，截图 `docs/screenshots/tiberiana-v2-20261112/`（`page_*` 左 main 右 v2）。
@@ -1091,13 +1116,15 @@ Keep this file current: every promise made to the author goes here until it is d
 - [x] 页面：陶鹰标签、石榴小院（`W.pomePos` 和四个标签，文字未动）移进模型；无花果树约 8.5 m；模型到来前的替身（内嵌的 `assets/models/tiberiana.glb` 和程序化替身）都按屋顶块重做，页面小了 1.2 MB。
 - [x] 分件文件 `assets/models/rome/parts/rome_tiberiana_parts.glb`：七个部件（`tib_base`、`tib_b1`、`tib_garden`、`tib_f1`、`tib_f2`、`tib_f3`、`tib_roof`），141 个 `room_<编号>` 楼板，隔墙、108 个门洞、7 跑楼梯、中庭十柱、宴会厅 26 根缠金箔的柱、地下暗廊和浴室。79 464 个三角形。
 - [x] 检查：网页文件 67 488 个三角形（上限 80 000）；`npm run check`、`test:boot`、`bake-roads.mjs --check`、`city-audit.mjs --assert` 通过；悬空和墙脚检查与 main 相同；广场视角帧时间中位数 +0.8%。
-- [ ] 下次重烘街区时删掉两处临时保留：`monuments.js` 里旧石榴小院的两个占地（那块地现在空着）；模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）。两者只为让现有烘焙不过期。
-  - 石榴小院的两个占地：H2 合 main 时删了（11-13，`claude/palatine-h2`）；它们按 H0 的样子冻在帕拉蒂尼围栏里，烘焙一字未变。地面锚点还在。
-- [x] 西北台阶脚到图斯库斯街的最后 6 m（落差约 1.7 m）在模型之外，归台地那边铺；铺的时候别在台阶脚前面种灌木和柏树（`terraceFeet` 沿山石脚线种）。
-  - H2 的 R8（`palR8Walk`）：从阶梯脚 9.65 m 往北 5 级低台阶落到街面 8.08 m，阶梯脚前面没种树（`docs/screenshots/palatine-h2-20261112/r8.jpg`）。
-- [ ] 暗阁还没有位置（等文案组给出原文段落），平面和模型里都没有。
+- [x] `monuments.js` 里旧石榴小院的两个占地已删（2026-11-14，补丁分支；删后重烘 `road-network.js`、`street-fabric.js` 与原文件逐字节相同）；`gP` 变空后页面不再把空值加进场景（原来控制台报 `THREE.Object3D.add`，`noble-quarter`、`neighborhood-regression` 因此不过）。
+- [ ] 模型里 27 个“地面锚点”小三角形（`rome_tiberiana.py`）还留着，只为让地面网格不变；下次动模型并重烘时删。
+- [ ] 西北台阶脚到图斯库斯街的最后 6 m（落差约 1.7 m）在模型之外，归台地那边铺；铺的时候别在台阶脚前面种灌木和柏树（`terraceFeet` 沿山石脚线种）。
+- [x] 暗阁（密室）定在塔楼底层 W02b（2026-11-14 平面修订）：无窗，东墙两扇带闩的厚门开向天井。
 - [ ] 分件文件里外墙只有外皮，没有内侧墙面和天花；进 Unity 做室内时要补。
-- [ ] 内殿 S01 的位置待文案组核对（平面里写了“待核对”）。
+- [x] 内殿不是 S01：书里的内殿就是寝殿 2T2，S01 改名花园厅（2026-11-14 平面修订）。
+- [x] 2026-11-14 平面修订的其余几条：二层加“我”的屋子 2W04（M13 升到两层）、大餐厅屋脊方口、石榴小院西北两边的柱廊、杂役院西北门、甜酒工坊换到 E16b；房间改名只动注释和文档，`room_<编号>` 不变。说明在 `briefs/rome/tiberiana.md` 的 “Plan revision (2026-11-14)”。
+- [ ] `src/ui/app.js` 里 GZ 词条“秘书处”“核销房”的位置先不动，等台地分支把北坡办公院定了再改。
+- [ ] 大餐厅屋脊的方口现在是画出来的（压边里一块深色面），屋面没有挖穿：`tib_plan.py` 的人字顶不支持开洞。进 Unity 做室内前，在拆件文件里真的开洞。
 
 
 - [x] 审查 35：阿波罗扶垛身（apF 填方之间的缝，lz 24.66–27.07）登记成 `W.palPads`（id apButt，顶取最低帽顶 56.15）。扶垛是实体，贴着 d_low 背墙，属于取样更正，限值不变。
@@ -1105,3 +1132,15 @@ Keep this file current: every promise made to the author goes here until it is d
 - [x] 审查 35：d@75 背墙东段（lx 85.41 到东端，对东袋）加勒脚，高 0.15、宽 0.40、顶 51.97，与东端墙勒脚在墙角连成一圈，西头顶住 apF9，登记 palPads。
 - [x] 审查 35：apF9 东沿那条斜尖片是 h51 多边形 lx 85.41 一条多余的墙边（压顶挑出 0.25），改成 'm'。
 - [x] 审查 35：中院背墙（h51 唯一一条 'w' 边，lx 51–58）墙顶取平 54.3（palCutWall 对 h51 取各采样最高值；原东头采样落在扶垛缝，降到 53.5）。壁龛台面前沿伸出 3 cm 盖住接缝（那条绿线是缝里透出的地形），壁龛下地形压到台面下 0.3。
+
+### 2026-11-13 宅 A/B 南面敞廊改成柱廊（作者经城市生成总监转来，分支 `claude/domus-loggia`）
+作者：南面两层七孔拱券敞廊（石灰华墩子）远看是一面米色实墙。改成柱廊：下层多立克，上层爱奥尼亚加矮栏杆，每层一道完整檐部，单坡瓦顶不变；
+柱后是暗红/赭色墙裙和门洞，远看要读得出是敞开的；拱券只留在基座里。截图 `docs/screenshots/domus-loggia-20261113/`（左改前，右改后，同一季节）。
+- [x] `tools/models/rome/rome_domus_a.py` 的 `loggia()`：9 开间，每间 3.2 m，中间一间对着中轴，两端是墙垛；下层 8 根多立克柱，上层 8 根爱奥尼亚柱，柱间栏杆；
+  两道檐部；上层楼板下面是木顶棚。`house()` 两座宅、两种截断件都用它。
+- [x] 后墙 `_painted_face()`：深色墙裙、赭色细带、暗红墙面、檐下一道赭色饰带，每层 5 个门洞（石灰华门框和过梁）。
+- [x] `tools/models/rome/rk.py` 加 `wallred`、`dado`、`doorway` 三种材质。页面把 `dark` 当成廊内墙面提亮（`assets.js` 第 72 行），`red` 在页面上又很艳：
+  用 `red`、`dark` 的时候，门洞成了浅色板子，墙成了大红布。
+- [x] 重新导出 `rome_domus_a`、`rome_domus_a_belt`、`rome_domus_b`、`rome_domus_b_belt`：每座多约 3 600 个三角形（+22–25 %），`rome-assets.js` 9.62 → 9.76 MB。
+  `rome_domus_b.glb` 原来是 11-04 导出的旧件，这次照现在的脚本导出，H1 R7 的方扶壁也带上了。
+- [x] 检查：`npm run check`、`bake-roads.mjs --check`、`city-audit.mjs --assert`、`test:boot` 通过；模型不改占地，不用重新烘焙。
