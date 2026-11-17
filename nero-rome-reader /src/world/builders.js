@@ -151,18 +151,7 @@ MAT.terrain=procMat({key:'terr',vHead:'attribute vec4 aZ;varying vec4 vZ;',vBody
  S.alb=c;S.rough=stR;`});
 MAT.terrain.polygonOffset=true;MAT.terrain.polygonOffsetFactor=1;MAT.terrain.polygonOffsetUnits=2;
 MAT.road=MAT.city;
-function waterMat(key,col,amp,foamTex){return procMat({key,params:{transparent:false},env:1.1,uniforms:foamTex?{uHT:{value:foamTex.tex},uHX:{value:foamTex.ext}}:{},
- fHead:foamTex?'uniform sampler2D uHT;uniform vec4 uHX;':'',fSurf:`
- vec2 p=vWP.xz;float t=uTime;float e=1.2;
- float h0=fbm2(p*.025+vec2(t*.02,t*.013))+.5*vn2(p*.11-t*.06);
- float hx=fbm2((p+vec2(e,0.))*.025+vec2(t*.02,t*.013))+.5*vn2((p+vec2(e,0.))*.11-t*.06);
- float hz=fbm2((p+vec2(0.,e))*.025+vec2(t*.02,t*.013))+.5*vn2((p+vec2(0.,e))*.11-t*.06);
- float A=${amp.toFixed(2)};S.nw=normalize(vec3(-(hx-h0)/e*A,1.,-(hz-h0)/e*A));S.useN=1.;
- S.alb=vec3(${col.join(',')});S.rough=.07;
- ${foamTex?`vec2 tc=(p-uHX.xy)/uHX.zw;float gh=texture2D(uHT,tc).r*120.-40.;float dep=vWP.y-gh;
- float fo=(1.-smoothstep(0.,6.,dep))*smoothstep(.35,.7,vn2(p*.35+vec2(t*.4,-t*.3))+.4*(1.-smoothstep(0.,2.5,dep)));
- S.alb=mix(S.alb,vec3(.85,.88,.9),fo);S.rough=mix(S.rough,.6,fo);`:''}`});}
-MAT.tiber=waterMat('tiber',[.07,.075,.045],.55);MAT.pool=waterMat('pool',[.03,.17,.19],.18);
+// water: src/world/water.js (waterMat, MAT.tiber, MAT.pool, the planar reflection of the nearest surface)
 // Wind, for the first-person walk (src/ui/fp.js). uWind = (direction x, direction z, strength, -): strength is 0 outside the walk, and everything below is then as it was.
 // windGust: bands of gust that travel downwind, broken up by noise; 0..1. uFP = (walk on, tuft range in metres, -, -).
 U.uWind={value:new THREE.Vector4(.83,.56,0,0)};U.uFP={value:new THREE.Vector4(0,25,0,0)};
