@@ -147,7 +147,8 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
     remap:{tbE:[['sumE',14,81.5,66,1.4]]},
     blocks:{was:[['d',34,8,0,61.4],['d',75,8,0,61.4]],now:[['d',34,9.5,180,55.06,1],['d',75,9.5,180,55.06,1]]},
     jv:{y:55},   // the temple's podium on the rim's floor (palStrips: was the highest ground under it + 0.3, 54.43)
-    end:{x0:139.8,x1:140.91,z0:-5.1,z1:.5,top:55,niche:{z:-3.2,w:2,d:1,sill:.6,h:1.6}},   // 【改6】
+    end:{x0:139.8,x1:140.91,z0:-4.95,z1:.5,top:55,niche:{z:-3.2,w:2,d:1,sill:.6,h:1.6}},   // 【改6】; z0 -4.95 (not the lane line -5.1; review 33 asked -5.0): the Transitoria's east-end plinth block (lx 138.8-140.9, its north face at -5.006, top 52.04)
+    // is 6 mm from -5.0 (a flickering face); at -4.95 the wall's face is 4.4 cm behind it. The block reaches lz -3.69 inside the wall, so it stays in it
     bed:{x0:141.5,x1:147.9,z0:-30.5,z1:-29.09,h:.5,on:'sumTB'},   // 【改4】【改6】
     basin:{x:10,z0:-5.1,z1:22.5,top:51.76,floor:51.4},   // the saddle's east wall there becomes two steps down to its deck
     // the 51.76 way north (the reviewer, 11-15): on the clear walk between the Transitoria's pilasters (138.57 at their foot) and c@156's west face
@@ -215,12 +216,16 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
   // tuff block it goes on from the block's top 55.47 to 10.384, where d@34's own west wall starts). The 2 m pocket between W17 and d@34's wing wall
   // (lx 19.0, its north end -2.360, its top 55.12) is filled solid to the wing's top. South of 10.384 d@34's west wall is on lx 17.00 (its pilasters 0.2,
   // plinth 0.09 and band 0.07 proud of it). h51 no longer reaches lx 10-17: apF1 (under the promenade) and the overlap with the H2 support block go.
+  // W17s (review 34, 11-16): W17 on south of the tuff block, 10.384 -> 24.797 (the Apollo buttress's body), closing the space under the promenade's slab
+  // on d@34's west; lx 16.5-16.9, against d@34's plinth line (16.91; its pilasters, 16.80, stand 0.1 into it, all under the slab), so no gap is left
+  // (checker: 0 or >= 2.4); 4.5 m from the H2 support block (lx 0-12); same foot, top and stone as W17
   // Both blocks 0.016 further north (lz 11.640, the reviewer 11-16): the back wall's brick face (z -13.01) was 0.016 over the buttress caps' north face
   // (24.650, not 24.656); now flush with it, the pilasters 0.010 clear. The lane's narrowest 3.16 -> 3.146.
   h51.alt.b2=Object.assign({},h51.alt.b,{basin:null,blocks:[['d',34,11.640,180,55.12,1],['d',75,11.640,180,55.12,1]],
     plats:[{id:'h51',y:51.76,...rows([[17,-5.1,'s'],[139.8,-5.1,'s'],[139.8,.5,'s'],[100,.5,'s'],[100,30,'s'],[86.3,30,'s'],[86.49,31.25,'m'],[83.55,31.25,'m'],
-      [83.55,28.25,'m'],[85.41,28.25,'m'],[85.41,25.59,'w'],[85.41,24.656,'m'],[58,24.656,'w'],[51,24.656,'m'],[17,24.656,'m']])}],
-    pads:[{id:'W17',y:56.45,box:[16.6,17,-5.506,7.240],fill:1},{id:'袋填',y:55.12,box:[17,19,-2.360,7.240],fill:1},...h51.alt.b.pads.filter(p=>p.id!=='apF1')],
+      // 85.41 25.59->24.656 is 'm' (review 35, 11-16): apF9's own east face stands there; a wall on it had a sloped top whose coping stood 0.25 into the east pocket
+      [83.55,28.25,'m'],[85.41,28.25,'m'],[85.41,25.59,'m'],[85.41,24.656,'m'],[58,24.656,'w'],[51,24.656,'m'],[17,24.656,'m']])}],
+    pads:[{id:'W17',y:56.45,box:[16.6,17,-5.506,7.240],fill:1},{id:'W17s',y:56.45,box:[16.5,16.9,10.384,24.797],fill:1},{id:'袋填',y:55.12,box:[17,19,-2.360,7.240],fill:1},...h51.alt.b.pads.filter(p=>p.id!=='apF1')],
     routes:[{lv:51.76,pts:[[18,-3.7],[96,-3.7],[100,-2.3],[137.3,-2.3],[137.3,-6],[139.7,-8.4],[139.7,-42]]},...h51.alt.b.routes.slice(1)],
     // the five trees under the promenade's slab (3.1-3.7 m below it, their crowns through it): two broadleaf, a shrub, two flower beds.
     // The author approved taking them away on 11-16 (R9, after 32's 04 close-up; only these five, not the beds at the east wall's foot or under the

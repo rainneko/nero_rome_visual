@@ -28,7 +28,9 @@ const palModelRect=(lx,lz,tn,x0,x1,y0,y1,m=0)=>{const t=((Math.round(tn/90)%4)+4
 const palPlBuild=()=>{const R=[],add=(lx,lz,hu,hv,tn,m)=>{const q=((tn%180)+180)%180===0;R.push(q?[lx-hu-m,lx+hu+m,lz-hv-m,lz+hv+m]:[lx-hv-m,lx+hv+m,lz-hu-m,lz+hu+m]);};
   for(const A of PAL_ASSETS)if(/_belt$/.test(A.n))R.push(palModelRect(A.lx,A.lz,A.turn,-15,15,-14.5,23,-.2));
   for(const B of palBL){if(B.t==='cf'){R.push(palModelRect(B.lx,B.lz,B.tn,-15,15,-10,15,-.2));continue;}
-    if(B.h51){R.push(palModelRect(B.lx,B.lz,B.tn,-18.4,18.4,-14,13,-.2));continue;}   // H5.1: the d_low as it stands (its wing walls' ends at model y -14, its back wall at 13; the porch's steps stand on the paving)
+    if(B.h51){R.push(palModelRect(B.lx,B.lz,B.tn,-15.2,15.2,-14,13,-.2));continue;}   // H5.1: the d_low as it stands (its wing walls' ends at model y -14, its back wall at 13; the porch's steps stand on the paving).
+    // Across, its walls' outer faces (x +-15): the roof's eaves reach 18.4, but nothing stands under them, and a hole to 18.4 showed the ground there (51.47) in
+    // two 3.4 m strips at each house's ends (review 33, L4: the court's niche)
     add(B.lx,B.lz,B.hw,B.hd,B.tn,-.2);}
   return R;};
 
@@ -40,6 +42,7 @@ const palPlBuild=()=>{const R=[],add=(lx,lz,hu,hv,tn,m)=>{const q=((tn%180)+180)
 // through its floor near the wall above; inside a terrace the smoothed ground is held back under the floor (palPlatShape there)
 function palPlatPost(x,z,h){const[lx,lz]=palL(x,z),B=PAL_PL_BB;h=palSCHold(lx,lz,h);if(lx<B[0]||lx>B[1]||lz<B[2]||lz>B[3])return h;
   h=palClivGHold(lx,lz,h);   // the Clivus stair's dug landing and lower flight (palClivG)
+  {const s=palH51SHold(lx,lz);if(s!=null)h=Math.min(h,s);}   // H5.1, review 33: behind h51's walls up to sumE
   const ht=Math.min(palToeHold(lx,lz),palBfHold(lx,lz));if(palPlIn(lx,lz)||palInSlot(lx,lz)||palLaneAt(lx,lz,0)||palH51Dip(lx,lz))return Math.min(h,palPlatShape(lx,lz,h),ht);return Math.min(h,ht);}
 // H5.1: within a dip (PAL_PLAN.dips.h51) outside h51's edges: the smoothing lifted it back (52.5 behind the court's end), so it is held there as inside
 const PAL_H51_DIPE=PAL_PLAN.h51.on?(()=>{const P=palPlById('h51'),D=PAL_PLAN.dips.h51||{};return P?P.E.filter(e=>D[e.i]).map(e=>({e,r:D[e.i]+2.5})):[];})():[];
@@ -51,6 +54,14 @@ const palH51BStrip=(lx,lz)=>!PAL_PLAN.h51.on||lx<17||lx>139.8||lz>-5.1||lz<-9?nu
 // the end wall and 3.5 m on under c@156's west edge, between the lane's own lines only (lz -5.1..0.5): hidden in the wall and the block; c@156's corners
 // and the middle of its west face, where palBlocks reads the ground for its foundation, are outside it (ROME.supports: the end wall carries it there)
 const palH51EndHold=(lx,lz)=>{const E=PAL_PLAN.h51.end;return!!E&&PAL_PLAN.h51.on&&lx>E.x0-.01&&lx<E.x0+3.5&&lz>E.z0-2&&lz<E.z1;};   // 2 m on north of the lane's line: the mesh's cells are the world's, not the hill's
+// review 33 (L5, scan): along h51's shared edges with a terrace over a metre higher (sumE: the lane's south wall lx 100-139.8, the pocket's east and south
+// walls) the ground under the higher terrace (52-52.8, under its fill and paving at 55) pulled the 3 m mesh up through h51's last metre of paving (up to
+// 0.49 over it at lx 119.5). Held at h51's under-floor level for 3.2 m (a mesh diagonal) out from those edges: under the higher fill, behind its wall
+const PAL_H51_SE=PAL_PLAN.h51.on?(()=>{const P=palPlById('h51');if(!P)return[];return P.E.filter(e=>{if(e.k!=='s')return false;const mx=(e.a[0]+e.b[0])/2,mz=(e.a[1]+e.b[1])/2,L=Math.hypot(e.b[0]-e.a[0],e.b[1]-e.a[1]),nx=-(e.b[1]-e.a[1])/L,nz=(e.b[0]-e.a[0])/L;
+  for(const s of[1,-1]){const qx=mx+nx*s*.5,qz=mz+nz*s*.5;if(inPolyXZ(qx,qz,P.pts))continue;const Q=palPlIn(qx,qz);if(Q&&Q!==P&&Q.y>P.y+1)return true;}return false;}).map(e=>({e,P}));})():[];
+// review 35 (11-16): and under the court's niche (its sill 0.6 over the paving, 1 m deep into the cut): the ground there showed a green line at the sill's back
+const palH51SHold=(lx,lz)=>{if(PAL_PLAN.h51.on)for(const c of PAL_PLAN.h51.niches||[])if(c.dir===1&&Math.abs(lx-c.x)<c.w/2+.3&&lz>c.z-.1&&lz<c.z+c.d+.6)return c.on+.06+c.sill-.3;
+  for(const{e,P}of PAL_H51_SE)if(segD(lx,lz,e.a[0],e.a[1],e.b[0],e.b[1])<3.2&&!inPolyXZ(lx,lz,P.pts))return P.y-.3;return null;};
 // 图三: courtyard block b stands half a metre and more back from the lane's south edge (29.5; its foundation, palBlocks, at 30), and the smoothed patch rose
 // 0.1-0.5 m through the floor along its foot: a band of bare ground, then slivers fed by the 3 m cells further back. The lane's paving runs on to the block
 // (palTibLane, x between the two end stairs' cheeks, to 31.05) and the ground is held just under the floor from the lane's edge to lz 42, under the block
@@ -601,6 +612,9 @@ function palCutWall(W,g,P,e){const n=Math.max(2,Math.round(e.L/2)),S=[],y=P.y;le
   // H5.1: behind a fill (R12 15.5) the cut is the fill's top: its cap is the fill's paving (palH51Works lays the rest 1 cm lower)
   for(let k=0;k<=n;k++){const s=e.L*k/n,f=palH51FillY(e.a[0]+e.ux*s+e.nx*.8,e.a[1]+e.uz*s+e.nz*.8),q=palW(e.a[0]+e.ux*s+e.nx*4,e.a[1]+e.uz*s+e.nz*4);
     S.push({s,gO:f!=null?f-.12:W.gy(q[0],q[1])});}
+  // review 35 (11-16): h51's cut walls (the court's back, lx 51-58) keep one level top, the highest the edge samples (54.3, the fills' line): at lx 58 the
+  // sample fell in a buttress gap (terrain 53.5) and the coping sloped down 0.8 into d@75's corner
+  if(P.id==='h51'){const m=Math.max(...S.map(q=>q.gO));for(const q of S)q.gO=m;S[0].s-=.1;S[n].s+=.1;}   // and 0.1 on into the d_lows' end walls at both ends: a slit at lx 58 showed the ground in the buttress gap behind
   const NI=P.id==='h51'?(PAL_PLAN.h51.niches||[]).map(c=>({c,s:(c.x-e.a[0])*e.ux+(c.z-e.a[1])*e.uz,d:(c.x-e.a[0])*e.nx+(c.z-e.a[1])*e.nz})).filter(q=>Math.abs(q.d)<.05&&q.s>q.c.w/2&&q.s<e.L-q.c.w/2):[];
   for(let k=0;k<n;k++){const A=S[k],B=S[k+1];if(A.gO<y+.5&&B.gO<y+.5)continue;const ya=Math.max(A.gO,y+.5)+.12,yb=Math.max(B.gO,y+.5)+.12,Q=(s,d,yy)=>PFR.p(e.a[0]+e.ux*s+e.nx*d,yy,e.a[1]+e.uz*s+e.nz*d),inw=PFR.d(-e.nx,0,-e.nz);
     g.set(60,.3+.4*teH(e.a[0],e.a[1],1),1,0);
@@ -608,7 +622,7 @@ function palCutWall(W,g,P,e){const n=Math.max(2,Math.round(e.L/2)),S=[],y=P.y;le
      if(!cut.length)g.poly([Q(A.s,0,y-.6),Q(B.s,0,y-.6),Q(B.s,0,yb),Q(A.s,0,ya)],inw);
      else{const[c0,c1,y0,y1]=cut[0],s0=Math.max(A.s,c0),s1=Math.min(B.s,c1);   // a niche (alt b: the court's end): the face round its opening
        if(s0>A.s)g.poly([Q(A.s,0,y-.6),Q(s0,0,y-.6),Q(s0,0,yt(s0)),Q(A.s,0,ya)],inw);if(s1<B.s)g.poly([Q(s1,0,y-.6),Q(B.s,0,y-.6),Q(B.s,0,yb),Q(s1,0,yt(s1))],inw);
-       g.poly([Q(s0,0,y-.6),Q(s1,0,y-.6),Q(s1,0,y0),Q(s0,0,y0)],inw);g.poly([Q(s0,0,y1),Q(s1,0,y1),Q(s1,0,yt(s1)),Q(s0,0,yt(s0))],inw);}}
+       g.poly([Q(s0,0,y-.6),Q(s1,0,y-.6),Q(s1,0,y0+.01),Q(s0,0,y0+.01)],inw);   /* review 35: up to the sill's top (+.005), no slit under its lip */g.poly([Q(s0,0,y1),Q(s1,0,y1),Q(s1,0,yt(s1)),Q(s0,0,yt(s0))],inw);}}
     if(Math.min(ya,yb)-y>2.6){g.set(60,.5,1,1);g.poly([Q(A.s,-.07,y-.6),Q(B.s,-.07,y-.6),Q(B.s,-.07,y+2.4),Q(A.s,-.07,y+2.4)],inw);}
     trimSet(g,1,.5);g.poly([Q(A.s,-.25,ya+.08),Q(B.s,-.25,yb+.08),Q(B.s,.7,yb+.08),Q(A.s,.7,ya+.08)],[0,1,0]);g.poly([Q(A.s,-.25,ya-.37),Q(B.s,-.25,yb-.37),Q(B.s,-.25,yb+.08),Q(A.s,-.25,ya+.08)],inw);
     g.set(60,.4,1,4);g.poly([Q(A.s,.7,ya),Q(B.s,.7,yb),Q(B.s,3.8,yb),Q(A.s,3.8,ya)],[0,1,0]);g.set(60,.5,1,0);g.poly([Q(A.s,3.8,ya),Q(B.s,3.8,yb),Q(B.s,3.8,Math.min(B.gO,yb)-1.2),Q(A.s,3.8,Math.min(A.gO,ya)-1.2)],PFR.d(e.nx,0,e.nz));
@@ -950,6 +964,8 @@ function palH51Works(W,g){const H=PAL_PLAN.h51;if(!H.on)return null;const st={fi
     flat=(x0,x1,z0,z1,y)=>g.poly([[x0,z1],[x1,z1],[x1,z0],[x0,z0]].map(q=>PFR.p(q[0],y,q[1])),[0,1,0]);
   for(const p of H.pads||[]){if(!p.fill)continue;const[x0,x1,z0,z1]=p.box,yb=Math.min(gMin(x0,x1,z0,z1),yH)-.8;stone();
     if(p.id==='W17'){blk(x0,x1,z0,z1,yb,p.y);blk(x0,x1,z1,10.384,55.3,p.y);st.fills++;continue;}   // its top under the promenade's slab
+    if(p.id==='W17s'){blk(x0,x1,z0,z1,yb,p.y);(W.palPads=W.palPads||[]).push({id:p.id,x0,x1,z0,z1,y:p.y});st.fills++;continue;}   // review 34: on south past the tuff block, under the slab (no coping, no paved top); d@34's west face stands against it, as its back against apF (__palBaseCheck)
+    if(/^apF/.test(p.id))(W.palPads=W.palPads||[]).push({id:p.id,x0,x1,z0,z1,y:p.y});   // review 34: the fill d_low's back wall stands against (__palBaseCheck)
     const yt=p.y-.01,back=/^apF/.test(p.id);blk(x0,x1,z0,z1,yb,yt,back?31&~16&~4:31&~16);g.set(60,.4,1,3);flat(x0,x1,z0,z1,yt);
     if(!back){trimSet(g,1,.5);blk(x0,x1,z0-.12,z0+.38,yt-.37,yt+.08);}   // over the lane: a coping as the cut walls'
     st.fills++;}
@@ -957,13 +973,29 @@ function palH51Works(W,g){const H=PAL_PLAN.h51;if(!H.on)return null;const st={fi
     // the recess between (x0,z0) and (x1,z1): open is the side it opens to ('-x' or '-z'); its back, two sides, the sill (with a travertine slab) and the head
     if(open==='-z'){q([x1,y0,z1],[x0,y0,z1],[x0,y1,z1],[x1,y1,z1],[0,0,-1]);q([x0,y0,z1],[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[1,0,0]);q([x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[-1,0,0]);}
     else{q([x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[-1,0,0]);q([x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[0,0,1]);q([x1,y0,z1],[x0,y0,z1],[x0,y1,z1],[x1,y1,z1],[0,0,-1]);}
-    q([x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],[0,-1,0]);trimSet(g,1,.5);flat(x0,x1,z0,z1,y0+.005);st.niches++;};
+    q([x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],[0,-1,0]);trimSet(g,1,.5);flat(x0,x1,open==='-z'?z0-.03:z0,z1,y0+.005);st.niches++;};   // review 35: the sill 3 cm out over the face's cut, or the seam showed the ground behind
   if(H.end){const E=H.end,N=E.niche,yb=yH-.66;stone();{const q=PFR.p(E.x0+1.75,0,(E.z0+E.z1)/2);(ROME.supports=ROME.supports||[]).push({x:q[0],z:q[2],c:Math.cos(PALF.rot),s:Math.sin(PALF.rot),hw:1.75,hd:(E.z1-E.z0)/2});}   // palH51EndHold
     if(N){const z0=N.z-N.w/2,z1=N.z+N.w/2,ys=yH+N.sill,yh=ys+N.h;blk(E.x0,E.x1,E.z0,z0,yb,E.top);blk(E.x0,E.x1,z1,E.z1,yb,E.top);blk(E.x0,E.x1,z0,z1,yb,ys);
       blk(E.x0,E.x1,z0,z1,yh,E.top);blk(E.x0+N.d,E.x1,z0,z1,ys,yh,31&~8);niche(E.x0,E.x0+N.d,z0,z1,ys,yh,'-x');}
     else blk(E.x0,E.x1,E.z0,E.z1,yb,E.top);
     trimSet(g,1,.5);blk(E.x0-.25,E.x1,E.z0,E.z1,E.top-.37,E.top+.08);}
   for(const c of H.niches||[]){const ys=c.on+.06+c.sill;if(c.dir===1)niche(c.x-c.w/2,c.x+c.w/2,c.z,c.z+c.d,ys,ys+c.h,'-z');}
+  // review 35 (11-16): the Apollo buttresses between the apF fills are solid masonry against d_low's back wall (body 0.05-0.07 off it, caps 56.15-56.5).
+  // Registered in W.palPads at the lowest cap top (56.15) so __palBaseCheck reads what really stands behind the wall: a sampling correction, the limit is unchanged
+  {const F=(H.pads||[]).filter(p=>/^apF/.test(p.id)).sort((a,b)=>a.box[0]-b.box[0]);for(let i=1;i<F.length;i++){const a=F[i-1].box,b=F[i].box;if(b[0]-a[1]>4)continue;
+    (W.palPads=W.palPads||[]).push({id:'apButt',x0:a[1],x1:b[0],z0:a[2],z1:a[3],y:56.15});}}
+  // review 34 (11-16): the end walls' upper halves (model y -3..13: the split to the back corner) rise 3.36 from h51's floor; a travertine plinth along each,
+  // 0.15 high (top 51.97), 0.40 out from the face (cut where a fill stands closer: W17s at d@34's west, 0.22), from the split to the corner. Registered in
+  // W.palPads: the wall stands on it (__palBaseCheck, 3.15 under the limit 3.3). No door in those halves; along the lane it is a 0.15 kerb at the wall's foot
+  st.plinth=0;for(const B of palBL){if(!B.h51)continue;for(const sx of[1,-1]){let[x0,x1,z0,z1]=palModelRect(B.lx,B.lz,B.tn,sx>0?17:-17.4,sx>0?17.4:-17,-3,13);
+    const yt=yH+.15,put=(a,b,c,d)=>{if(b-a<.01||d-c<.01)return;trimSet(g,1,.5);blk(a,b,c,d,yH-.05,yt);(W.palPads=W.palPads||[]).push({id:'h51plinth',x0:a,x1:b,z0:c,z1:d,y:yt});};
+    let cx0=x0,cx1=x1,cz0=z1,cz1=z0;   // the cut applies only along the fill's own z span; north and south of it the plinth keeps its 0.40
+    for(const p of H.pads||[]){if(!p.fill||p.box[2]>=z1||p.box[3]<=z0)continue;if(p.box[1]>x0&&p.box[1]<x1)cx0=p.box[1];if(p.box[0]<x1&&p.box[0]>x0)cx1=p.box[0];cz0=Math.min(cz0,Math.max(z0,p.box[2]));cz1=Math.max(cz1,Math.min(z1,p.box[3]));}
+    if(cz0>=cz1)put(x0,x1,z0,z1);else{put(x0,x1,z0,cz0);put(cx0,cx1,cz0,cz1);put(x0,x1,cz1,z1);}st.plinth++;}}
+    // review 35 (11-16): d@75's back wall east of apF9 (lx 85.41) faces the east pocket's floor (51.82), 3.36 bare. The same plinth runs along it from apF9 to
+    // the east end wall's plinth (one ring round the corner); registered in W.palPads
+    {const B=palBL.find(b=>b.h51&&Math.abs(b.lx-75)<1),f9=(H.pads||[]).find(p=>p.id==='apF9');if(B&&f9){const E=W.palPads.filter(p=>p.id==='h51plinth'&&p.x0>f9.box[1]&&p.z1>20).sort((a,b)=>b.x1-a.x1)[0];
+      if(E){const yt=yH+.15,x0=f9.box[1],x1=E.x1,z0=E.z1,z1=f9.box[2]+.4;trimSet(g,1,.5);blk(x0,x1,z0,z1,yH-.05,yt);W.palPads.push({id:'h51plinth',x0,x1,z0,z1,y:yt});st.plinthBack=[x0,x1,z0,z1];}}}
   if(H.bed){const B=H.bed,y=palPlById(B.on).y+.06,yt=y+B.h;trimSet(g,1,.5);blk(B.x0,B.x1,B.z0,B.z1,y-.3,yt);g.set(23,.4);flat(B.x0+.15,B.x1-.15,B.z0+.15,B.z1-.15,yt+.01);
     for(let x=B.x0+.8;x<B.x1-.4;x+=1.6){const q=PFR.p(x,0,(B.z0+B.z1)/2),k=teH(q[0],q[2],121),t=[q[0],yt,q[2],k<.5?'shrub':impGarden(k),.6+.3*teH(q[0],q[2],122),null,1];W.trees.push(t);palBedLog(W,'h51bed',t);st.bed++;}}
   return st;}

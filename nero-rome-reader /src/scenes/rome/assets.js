@@ -207,7 +207,10 @@ window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
   const inOther=(lx,lz,self)=>rect.some(({b,c,s})=>{if(b===self)return false;const dx=lx-b.lx,dz=lz-b.lz,u=c*dx-s*dz,y=-(s*dx+c*dz);return u>b.o[0]&&u<b.o[1]&&y>b.o[2]&&y<b.o[3];});
   const SP=[];for(const s of W.palStairs||[])for(let i=1;i<s.pts.length;i++)SP.push([s.pts[i-1],s.pts[i],s.w/2+.6]);for(const h of W.hillStairs||[])if(h.R)for(let i=1;i<h.R.length;i++)SP.push([h.R[i-1],h.R[i],(h.w||3)/2+.6]);
   const onStair=(x,z)=>SP.some(([a,b,r])=>segD(x,z,a[0],a[1],b[0],b[1])<r);
-  const lev=(xi,zi,x,z)=>{let pl=palPlatAt(xi,zi)||palPlatAt(x,z);if(pl)return[pl.y,pl.id];const[lx,lz]=palL(x,z);
+  // review 34 (11-16): a paved strip registered in W.palPads that the face stands on (0.2 m out: a plinth hugging it, or a solid fill against it, h51's
+  // apF) is the level there before the terrace inside: the terrace read 0.3 m inside the face is the floor's level, not what the wall rises from. It corrects
+  // the sampling, the limit stays (the reviewer: apF's top 54.3 is the ground at d_low's back; the end walls' plinths 51.97)
+  const lev=(xi,zi,x,z,nx,nz)=>{if(nx!=null){const[a,c]=palL(nx,nz);for(const p of W.palPads||[])if(a>p.x0&&a<p.x1&&c>p.z0&&c<p.z1)return[p.y,p.id];}let pl=palPlatAt(xi,zi)||palPlatAt(x,z);if(pl)return[pl.y,pl.id];const[lx,lz]=palL(x,z);
     for(const p of W.palPads||[])if(lx>p.x0&&lx<p.x1&&lz>p.z0&&lz<p.z1)return[p.y,p.id];if(palInBasin(lx,lz,0))return[PAL_DECK,'deck'];return[gy(x,z),'ground'];};   // a paved strip at a building's floor (W.palPads, palBEnd: along block b's ends). The system level at a face: the terrace the building stands on there (0.3 m inside the face), else the terrace just outside, else the paved deck of the saddle basins, else the ground
   for(const b of L){const row={n:b.n,kind:b.kind,type:b.type,at:[b.lx,b.lz],turn:b.t,y0:+b.y0.toFixed(2),storey:b.st,limit:b.st?+(b.st*LIM).toFixed(2):null};
     if(b.skip){row.skip=b.skip;rows.push(row);continue;}
@@ -217,9 +220,9 @@ window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
     row.faces={};
     for(const k in F){const[[ax,ay],[bx,by],[nx,ny]]=F[k],len=Math.hypot(bx-ax,by-ay),n=Math.max(2,Math.round(len));let emax=-1e9,emin=1e9,skipJ=0,skipS=0,cnt=0,on=new Set(),fl=[1e9,-1e9],ol=[1e9,-1e9],worst=null;
       for(let i=0;i<=n;i++){const t=.5/len+(1-1/len)*i/n,px=ax+(bx-ax)*t,py=ay+(by-ay)*t;
-        const fy=b.y0+b.f(px-nx*.3,py-ny*.3),[olx,olz]=toL(px+nx*.75,py+ny*.75),[ilx,ilz]=toL(px-nx*.3,py-ny*.3),[iwx,iwz]=palW(ilx,ilz);
+        const fy=b.y0+b.f(px-nx*.3,py-ny*.3),[olx,olz]=toL(px+nx*.75,py+ny*.75),[ilx,ilz]=toL(px-nx*.3,py-ny*.3),[iwx,iwz]=palW(ilx,ilz),[nwx,nwz]=palW(...toL(px+nx*.2,py+ny*.2));
         if(inOther(olx,olz,b)){skipJ++;continue;}const[wx,wz]=palW(olx,olz);if(onStair(wx,wz)){skipS++;continue;}
-        const[oy,oid]=lev(iwx,iwz,wx,wz),e=fy-oy;cnt++;on.add(oid);fl=[Math.min(fl[0],fy),Math.max(fl[1],fy)];ol=[Math.min(ol[0],oy),Math.max(ol[1],oy)];
+        const[oy,oid]=lev(iwx,iwz,wx,wz,nwx,nwz),e=fy-oy;cnt++;on.add(oid);fl=[Math.min(fl[0],fy),Math.max(fl[1],fy)];ol=[Math.min(ol[0],oy),Math.max(ol[1],oy)];
         if(e>emax){emax=e;worst=[+olx.toFixed(1),+olz.toFixed(1)];}emin=Math.min(emin,e);}
       const f=cnt?{floor:fl.map(v=>+v.toFixed(1)),out:ol.map(v=>+v.toFixed(1)),exp:+emax.toFixed(1),expMin:+emin.toFixed(1),at:worst,on:[...on],n:cnt,joined:skipJ,stair:skipS}:{joined:skipJ,stair:skipS,n:0};
       f.flush=cnt>0&&emax<=FL&&emin>=-FL;row.faces[k]=f;}
