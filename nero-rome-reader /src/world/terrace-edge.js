@@ -31,6 +31,7 @@ function terraceReserve(W,F,P,o={}){const Q=P.map(p=>{const q=F.p(p[0],0,p[1]);r
    it, the pier going along its line on the outer side of the wall) or rock. W.pierSq: the square, its top and its outlines per pier drawn (inPierSq).
    o.band[v]: levels (local) of lower terraces whose walls meet such a pier: their coping's section goes on round the pier's free faces as a string course.
    o.noCorner: vertices with no corner pier at all (the coping and parapet simply turn).
+   o.pierOpen[v]: a world line along one face of pier v where its parapet and parapet piers are left out (the coping stays, flush with the paving).
    o.skip: edges with no wall (shared with a higher terrace); o.footY[i]: the edge stands on a lower floor at that level (local), not on the ground;
    o.open(x,z,i,s): 'road' | 'stair' | 'arch' | false for a point on the edge; o.rooms[i]=[s0,s1]: an arcade of rooms in the wall there (B8, arcadeRooms). o.wing=false: no wing walls at the openings (a stair
    with its own cheek walls comes through). o.endV: outline vertices where a run that reaches the corner still ends on a pier (a wall beside an open stair head).
@@ -149,8 +150,9 @@ function terraceEdge(W,g,P,yTop,o={}){
         for(let j=0;j<=N;){if(!fr[j]){j++;continue;}let j1=j;while(j1<N&&fr[j1+1])j1++;const s0=-L/2+L*j/N-(j===0?.25:.3),s1=-L/2+L*j1/N+(j1===N?.25:.3);   // mitred at the ring's turns, on into the lower coping where its walls meet the pier
           if(s1-s0>.6)box(g,SF,(s0+s1)/2,yB,-.2*zo,(s1-s0)/2,.45,.45,31);j=j1+1;}}}
     g.set(60,.4,pal,3);const PV=R.pave,ix=THREE.ShapeUtils.triangulateShape(PV.map(p=>new THREE.Vector2(p[0],p[1])),[]);for(const[i,j,k]of ix)g.poly([i,j,k].map(m=>[PV[m][0],top+.09,PV[m][1]]),[0,1,0]);   // the top: the terrace's paving
-    for(let k=0;k+1<R.par.length;k++){const{F:SF,L}=seg(R.par[k],R.par[k+1]);g.set(60,seed,pal,0);box(g,SF,0,top+.1,0,L/2+.3,.9,.3,31);trimSet(g,pal,.5);box(g,SF,0,top+1,0,L/2+.33,.1,.34,31);}   // the parapet (M3), mitred
-    for(let k=0;k<R.par.length;k++){const M=R.par[k];if(R.noPost.some(p=>Math.hypot(p[0]-M[0],p[1]-M[1])<1e-6))continue;const{F:SF}=seg(R.par[Math.max(0,k-1)],R.par[Math.max(1,k)]),PF=frame(M[0],0,M[1],SF.rot);g.set(60,seed,pal,0);box(g,PF,0,top+.1,0,.45,1.18,.45,15);trimSet(g,pal,.5);box(g,PF,0,top+1.28,0,.5,.12,.5,31);}   // a parapet pier at each turn and end
+    const OL=o.pierOpen&&o.pierOpen[v],onO=k=>!!OL&&k>=0&&k+1<R.par.length&&[R.par[k],R.par[k+1]].every(p=>{const dx=OL[1][0]-OL[0][0],dz=OL[1][1]-OL[0][1];return Math.abs((p[0]-OL[0][0])*dz-(p[1]-OL[0][1])*dx)/Math.hypot(dx,dz)<.7;});   // o.pierOpen[v]: a world line [[x,z],[x,z]] on which this pier's parapet is left out (a terrace beyond it at the same level walks on over the pier: apE)
+    for(let k=0;k+1<R.par.length;k++){if(onO(k))continue;const{F:SF,L}=seg(R.par[k],R.par[k+1]);g.set(60,seed,pal,0);box(g,SF,0,top+.1,0,L/2+.3,.9,.3,31);trimSet(g,pal,.5);box(g,SF,0,top+1,0,L/2+.33,.1,.34,31);}   // the parapet (M3), mitred
+    for(let k=0;k<R.par.length;k++){const M=R.par[k];if(OL&&(k===0||onO(k-1))&&(k+1===R.par.length||onO(k)))continue;if(R.noPost.some(p=>Math.hypot(p[0]-M[0],p[1]-M[1])<1e-6))continue;const{F:SF}=seg(R.par[Math.max(0,k-1)],R.par[Math.max(1,k)]),PF=frame(M[0],0,M[1],SF.rot);g.set(60,seed,pal,0);box(g,PF,0,top+.1,0,.45,1.18,.45,15);trimSet(g,pal,.5);box(g,PF,0,top+1.28,0,.5,.12,.5,31);}   // a parapet pier at each turn and end
     (W.wallPiers=W.wallPiers||[]).push([vx,vz,3.2]);(W.pierSq=W.pierSq||[]).push({x:vx,z:vz,ux:Pp.ax[0],uz:Pp.ax[1],h:3.06,top,tag:tag+':'+v,ring:R.ring,par:R.par,pave:R.pave,band:BD,fill:R.fill||null,joint:J?tag+':'+J.a:null});
     if(w0)e0.brk.push(e0.L);if(w1)e1.brk.push(0);}
   for(const v of o.piers||[]){const Pp=PR[v];if(Pp&&!Pp.draw){if(Pp.w0)E[(v+n-1)%n].brk.push(E[(v+n-1)%n].L);if(Pp.w1)E[v].brk.push(0);}}   // another terrace's pier stands there

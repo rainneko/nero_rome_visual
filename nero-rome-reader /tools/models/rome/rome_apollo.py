@@ -313,6 +313,203 @@ def propylon(F):
     gable_roof(S, 0, 0, base + COL_H + ENT_H, 14.0, 9.0, pitch=15.0, axis='y', overhang=0.5,
                gable_mat='marble', pediment=True, tymp_mat='plaster')
 
+
+# ---- the east gate's forecourt (docs/screenshots/apollo-eastgate-20261119/plan, sheets 01-04; the author 2026-11-19 "开工").
+# The scene builds the forecourt itself (PAL_PLAN part apE: paving at scene 55.06 = model z -1.54, the model placed at 56.6); the model carries
+# what stands against or on its east face: the wall without the three buttresses in front of the gate, the stair, the statues, the facade.
+# Model y = 74 - lz (hill grid), x = lx - 37. The forecourt runs from y 13.449 (its north wall, lz 60.551) to y -17.3 (its south wall, lz 91.3).
+EG_PAVE = -1.54                             # forecourt paving (scene 55.06)
+EG_N, EG_S = 13.449, -17.3                  # forecourt's north and south ends along the east face (y)
+EG_GONE = (0.0, 10.444, -10.444)            # buttresses left out: on the gate axis and where the two niches stand
+EG_RH, EG_TR = 0.184, 0.38                  # stair: 10 risers of 0.184 (5 + landing 3.0 + 5), treads 0.38
+EG_X0, EG_LAND = 46.5, (48.02, 51.02)       # first riser = the propylon base's front edge (lx 83.50); landing between risers
+EG_FOOT = 52.54                             # last riser (lx 89.54)
+EG_HW, EG_CW = 5.25, 0.9                    # half the clear width (10.5), cheek width
+EG_DADO = (45.75, 46.45, 1.25)              # dado: wall face (portico back wall, x 45.75) to its face (lx 83.45), top z 1.25 (57.85)
+EG_SKIN = 46.3                              # plaster face above the dado (lx 83.30)
+EG_NICHES = (10.6, -10.6)                   # niche centres (lz 63.4, 84.6): sill z 1.25, 0.55 deep
+EG_NR, EG_NC, EG_NFIG = 0.9, 4.6, 2.0      # niche: half width (1.8 wide), crown z 4.6 (scene 61.2), its bronze figure's height
+EG_PG, EG_PW = 7.0, 0.9                     # pilasters: the one beside the propylon from y +-7.0 (its base's side), width
+EG_PED = ((53.2, 9.2), (53.2, -9.2))        # the statues' pedestals (lx 90.2, lz 64.8 / 83.2), 1.2 square, 1.6 high
+EG_LION = (-13.4, -0.5)                     # lion spout (lz 87.4) at z -0.5 (56.1), over the scene's basin (top 55.61)
+
+
+def east_wall(F):
+    """The east retaining wall exactly as retaining_wall(F, [(H, -H), (H, H)], 0.0, z_bot=-12, buttress='square', every=10,
+    b_size=2.2, parapet=None) built it, except: no buttress at y 0 and +-10.44 (the gate's stair and the two niches stand
+    there; the others stay), and its coping cut across the propylon (y +-7: the 4 cm ridge across the gate's floor goes)."""
+    t, bt, zb, zt, bs = 2.2, 0.06, -12.0, 0.0, 2.2
+    Hh = zt - zb; bb = bt * Hh; L = 2 * H
+    S = F.sub(H, -H, 0.0, 90.0)                        # local x along +y, local y inward (-x), as _seg_frame
+    v = [S.p(0, 0, zb), S.p(L, 0, zb), S.p(L, t, zb), S.p(0, t, zb),
+         S.p(0, bb, zt), S.p(L, bb, zt), S.p(L, t, zt), S.p(0, t, zt)]
+    add_mesh('tuff', v, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
+    k = 1
+    while zb + k * 4.0 < zt - 0.8:                     # string courses
+        zz = zb + k * 4.0
+        box(S, L / 2, bt * (zz - zb) - 0.08, zz, L, 0.3, 0.28, 'travertine'); k += 1
+    for a, b in ((-0.1, H - 7.0), (H + 7.0, L + 0.1)):  # coping, open across the propylon
+        box(S, (a + b) / 2, bb + t / 2 - 0.2, zt - 0.05, b - a, t + 0.4 - bb, 0.4, 'travertine')
+    nb = int(L / 10.0)
+    for j in range(nb):
+        u = (j + 0.5) * L / nb
+        if any(abs(u - H - g) < 0.1 for g in EG_GONE):
+            continue
+        box(S, u, -bs / 2 + 0.3, zb, bs * 1.1, bs + 0.6, Hh - 0.4, 'tuff')
+        box(S, u, -bs / 2 + 0.3, zt - 0.45, bs * 1.1 + 0.3, bs + 0.9, 0.35, 'travertine')
+    for y in (-H, H):                                  # corner piers
+        box(F, H, y, zb, t + 0.6, t + 0.6, Hh + 0.35, 'tuff')
+
+
+def court_floor(F):
+    """terrace_floor(F, SQ, 0.0, 'paving') with its east strip (x 45.75..47, over the wall top) and the skirt under it left out
+    along the forecourt (y -17.3..13.449), where the dado stands on the wall's face; under the propylon its base covers the floor."""
+    def rect(x0, y0, x1, y1):
+        add_poly('paving', [F.p(x0, y0, 0.0), F.p(x1, y0, 0.0), F.p(x1, y1, 0.0), F.p(x0, y1, 0.0)])
+    rect(-H, -H, EG_DADO[0], H)
+    rect(EG_DADO[0], -H, H, EG_S)
+    rect(EG_DADO[0], EG_N, H, H)
+    sk = 0.8
+    def skirt(a, b):
+        (x0, y0), (x1, y1) = a, b
+        add_poly('paving', [F.p(x0, y0, -sk), F.p(x1, y1, -sk), F.p(x1, y1, 0.0), F.p(x0, y0, 0.0)])
+    skirt((-H, -H), (H, -H)); skirt((H, H), (-H, H)); skirt((-H, H), (-H, -H))
+    skirt((H, -H), (H, EG_S)); skirt((H, EG_N), (H, H))
+    skirt((H, EG_S), (EG_DADO[1], EG_S)); skirt((EG_DADO[1], EG_N), (H, EG_N))   # the strip's ends over the dado
+
+
+def yz_prism(F, pts, x0, x1, mat):
+    """Extrude a polygon given in the y-z plane (list of (y, z)) from x0 to x1; either winding."""
+    if sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1] for i in range(len(pts))) < 0:
+        pts = list(reversed(pts))
+    A = [F.p(x0, y, z) for y, z in pts]; B = [F.p(x1, y, z) for y, z in pts]
+    add_poly(mat, list(reversed(A))); add_poly(mat, B)
+    for i in range(len(pts)):
+        j = (i + 1) % len(pts)
+        add_poly(mat, [A[i], A[j], B[j], B[i]])
+
+
+def east_stair(F):
+    """The gate's stair down to the forecourt (sheet 02): from the propylon base (z 0.30, its front edge the first riser) five risers
+    of 0.184 to a 3.0 m landing (z -0.62, 55.98) with a laurel wreath inlaid, five more to the forecourt's paving (z -1.54); treads
+    0.38, 10.5 m between cheek walls 0.9 m wide, their tops 0.95 over the nosing line (at the head level with the dado's top, at the
+    foot 0.95 over the paving); every tread solid to z -2.04 under the paving. On the court side the 0.30 step onto the propylon base
+    becomes two of 0.15."""
+    zb = EG_PAVE - 0.5
+    z = 0.30
+    for f0 in (EG_X0, EG_LAND[1]):
+        for k in range(1, 5):
+            z -= EG_RH
+            x0 = f0 + (k - 1) * EG_TR
+            box(F, x0 + EG_TR / 2, 0.0, zb, EG_TR + 0.01, 2 * EG_HW, z - zb, 'travertine')
+        z -= EG_RH
+        if f0 == EG_X0:                               # the landing, after the fifth riser
+            box(F, sum(EG_LAND) / 2, 0.0, zb, EG_LAND[1] - EG_LAND[0] + 0.01, 2 * EG_HW, z - zb, 'travertine')
+    # cheeks: tuff with a travertine cap along their top line
+    top = [(46.3, 1.25), (EG_X0, 1.25), (EG_LAND[0], 0.33), (EG_LAND[1], 0.33), (EG_FOOT, EG_PAVE + 0.95)]
+    for sd in (-1, 1):
+        y0, y1 = sorted((sd * EG_HW, sd * (EG_HW + EG_CW)))
+        xz_prism(F, top + [(EG_FOOT, zb), (46.3, zb)], y0, y1, 'tuff')
+        for (xa, za), (xb, zb2) in zip(top[1:], top[2:]):
+            beam(F, xa, sd * (EG_HW + EG_CW / 2), za + 0.04, xb, sd * (EG_HW + EG_CW / 2), zb2 + 0.04, EG_CW + 0.08, 0.1, 'travertine')
+        box(F, (46.3 + EG_X0) / 2, sd * (EG_HW + EG_CW / 2), 1.25 - 0.01, EG_X0 - 46.3 + 0.1, EG_CW + 0.08, 0.1, 'travertine')
+    # the laurel wreath inlaid in the landing: a ring of leaves r 0.8..1.1 about its centre, two red ribbon ends toward the forecourt
+    cx, zl, n = sum(EG_LAND) / 2, -0.62 + 0.006, 24
+    for i in range(n):
+        a0, a1 = 2 * math.pi * i / n, 2 * math.pi * (i + 1) / n
+        if math.cos((a0 + a1) / 2) > 0.98:            # the gap where the ties are
+            continue
+        add_poly('hedge', [F.p(cx + 0.8 * math.cos(a0), 0.8 * math.sin(a0), zl), F.p(cx + 1.1 * math.cos(a0), 1.1 * math.sin(a0), zl),
+                           F.p(cx + 1.1 * math.cos(a1), 1.1 * math.sin(a1), zl), F.p(cx + 0.8 * math.cos(a1), 0.8 * math.sin(a1), zl)])
+    for sy in (-1, 1):
+        add_poly('red', [F.p(cx + 0.95, sy * 0.05, zl), F.p(cx + 1.45, sy * 0.25, zl), F.p(cx + 1.45, sy * 0.45, zl), F.p(cx + 0.95, sy * 0.2, zl)])
+    # court side: the propylon base (0.30 over the court floor) reached by two steps of 0.15
+    box(F, 37.3, 0.0, 0.0, 0.4, 14.0, 0.15, 'marble')
+
+
+def east_statues(F):
+    """Two bronze statues (2.2 m) on free marble pedestals 1.2 x 1.2 x 1.6 beside the stair's foot (2.45 m clear of the cheeks)."""
+    for x, y in EG_PED:
+        box(F, x, y, EG_PAVE, 1.2, 1.2, 0.2, 'marble')
+        box(F, x, y, EG_PAVE + 0.2, 1.0, 1.0, 1.2, 'marble')
+        box(F, x, y, EG_PAVE + 1.4, 1.2, 1.2, 0.2, 'marble')
+        statue(F, x, y, EG_PAVE + 1.6, 2.2, 'bronze', pedestal=0.0, rot=-90.0)
+
+
+def east_facade(F):
+    """The face of the east portico's back wall over the forecourt (sheet 04; the review of 2026-11-19, round 2), each side of the
+    propylon: a square travertine pilaster at both ends of the stretch (one beside the propylon, y +-7.0..7.9, one at the forecourt's
+    end), 0.9 wide, 0.25 proud of the dado, from the paving to the cornice with a base and a cap; between them a dark Pompeian red dado
+    from the paving to z 1.25 (travertine plinth and cap), a plaster skin above it to the wall's top (z 9.2), panels on the portico's
+    3.62 m rhythm (a plaster field in a travertine frame 0.18 wide, 0.10 proud, a thin red fillet inside it) from the dado to 1.0 m under
+    the cornice, a round-headed niche each side of the gate (1.8 wide, crown z 4.6, travertine jambs, archivolt and sill, its back
+    red, a 2.0 m bronze figure on a low plinth), and the travertine cornice z 9.2..9.78 dying into the pilasters; a round lion mask
+    spout on the dado over the scene's basin (lz 87.4). Beside the propylon the strip between the stair's cheek and the pilaster is
+    a travertine plinth level with the propylon's base (z 0.3), so nothing of the dado shows from the court."""
+    xw, xd, zd = EG_DADO
+    pw, pf = EG_PW, xd + 0.25                                   # pilaster width, face
+    for yc in (EG_PG + pw / 2, -(EG_PG + pw / 2), EG_N - pw / 2, EG_S + pw / 2):
+        box(F, (xw + pf + 0.1) / 2, yc, EG_PAVE, pf + 0.1 - xw, pw + 0.2, 0.35, 'travertine')               # base
+        box(F, (xw + pf) / 2, yc, EG_PAVE + 0.35, pf - xw, pw, WALL_H - 0.2 - EG_PAVE - 0.35, 'travertine')  # shaft
+        box(F, (xw + pf + 0.06) / 2, yc, WALL_H - 0.2, pf + 0.06 - xw, pw + 0.1, 0.2, 'travertine')         # cap: necking
+        box(F, (xw + pf + 0.2) / 2, yc, WALL_H, pf + 0.2 - xw, pw + 0.24, 0.66, 'travertine')               # and abacus, over the cornice
+    for sd in (1, -1):                                           # beside the propylon: cheek to pilaster, up to the propylon's base
+        y0, y1 = sorted((sd * (EG_HW + EG_CW), sd * EG_PG))
+        box(F, (xw + xd) / 2, (y0 + y1) / 2, EG_PAVE - 0.2, xd - xw, y1 - y0, 0.3 - EG_PAVE + 0.2, 'travertine')
+    r, zs, zc = EG_NR, EG_NC - EG_NR, EG_NC                      # niche: half width, springing, crown
+    for (ya, yb), (sa, sb) in ((( EG_PG + pw, EG_N - pw), (7.0, EG_N)), ((EG_S + pw, -(EG_PG + pw)), (EG_S, -7.0))):
+        box(F, (xw + xd) / 2, (ya + yb) / 2, EG_PAVE - 0.2, xd - xw, yb - ya, zd - EG_PAVE + 0.2, 'wallred')       # dado
+        box(F, (xw + xd + 0.06) / 2, (ya + yb) / 2, EG_PAVE - 0.02, xd - xw + 0.06, yb - ya, 0.22, 'travertine')   # plinth
+        box(F, (xw + xd + 0.1) / 2, (ya + yb) / 2, zd - 0.14, xd - xw + 0.1, yb - ya, 0.16, 'travertine')          # cap
+        ny = [c for c in EG_NICHES if ya < c < yb][0]
+        def skin(y0, y1, z0, z1):
+            if y1 - y0 > 0.01 and z1 - z0 > 0.01:
+                box(F, (xw + EG_SKIN) / 2, (y0 + y1) / 2, z0, EG_SKIN - xw, y1 - y0, z1 - z0, 'plaster')
+        skin(sa, ny - r, zd, WALL_H); skin(ny + r, sb, zd, WALL_H); skin(ny - r, ny + r, zc, WALL_H)
+        n = 10
+        arc = [(ny + r * math.cos(math.pi * q / n), zs + r * math.sin(math.pi * q / n)) for q in range(n + 1)]
+        yz_prism(F, [(ny + r, zc)] + arc[:n // 2 + 1], xw, EG_SKIN, 'plaster')            # the spandrels over the arch
+        yz_prism(F, arc[n // 2:] + [(ny - r, zc)], xw, EG_SKIN, 'plaster')
+        box(F, xw + 0.015, ny, zd, 0.03, 2 * r, zc - zd, 'wallred')                         # the niche's back
+        xs0, xs1 = EG_SKIN, EG_SKIN + 0.08                                                 # surround: jambs, archivolt, sill
+        for sj in (-1, 1):
+            box(F, (xs0 + xs1) / 2, ny + sj * (r + 0.1), zd, xs1 - xs0, 0.2, zs - zd, 'travertine')
+        ro = r + 0.2
+        for q in range(n):
+            a0, a1 = math.pi * q / n, math.pi * (q + 1) / n
+            yz_prism(F, [(ny + r * math.cos(a0), zs + r * math.sin(a0)), (ny + ro * math.cos(a0), zs + ro * math.sin(a0)),
+                         (ny + ro * math.cos(a1), zs + ro * math.sin(a1)), (ny + r * math.cos(a1), zs + r * math.sin(a1))], xs0, xs1, 'travertine')
+        box(F, (xw + xd + 0.15) / 2, ny, zd - 0.02, xd + 0.15 - xw, 2 * r + 0.5, 0.14, 'travertine')         # sill, 0.2 proud of the dado
+        box(F, (xw + EG_SKIN) / 2, ny, zd + 0.12, 0.5, 0.6, 0.22, 'marble')                                # the figure's plinth
+        statue(F, (xw + EG_SKIN) / 2 + 0.02, ny, zd + 0.34, EG_NFIG, 'bronze', pedestal=0.0, rot=-90.0)
+        # panels between the portico's column lines and the pilasters
+        edges = [ya] + [c for c in COL_X if ya + 0.5 < c < yb - 0.5] + [yb]
+        for pa, pb in zip(edges, edges[1:]):
+            if pb - pa < 1.5:
+                continue
+            q0, q1, z0, z1 = pa + 0.3, pb - 0.3, zd + 0.3, WALL_H - 1.0
+            if q0 < ny < q1:
+                z0 = zc + 0.2 + 0.4                                                        # over the niche's archivolt
+            fw, xf = 0.18, EG_SKIN + 0.05
+            for (fa, fb, fz0, fz1) in ((q0, q1, z0, z0 + fw), (q0, q1, z1 - fw, z1), (q0, q0 + fw, z0 + fw, z1 - fw), (q1 - fw, q1, z0 + fw, z1 - fw)):
+                box(F, xf, (fa + fb) / 2, fz0, 0.10, fb - fa, fz1 - fz0, 'travertine')
+            i0, i1, k0, k1, fl = q0 + fw + 0.08, q1 - fw - 0.08, z0 + fw + 0.08, z1 - fw - 0.08, 0.05
+            for (fa, fb, fz0, fz1) in ((i0, i1, k0, k0 + fl), (i0, i1, k1 - fl, k1), (i0, i0 + fl, k0 + fl, k1 - fl), (i1 - fl, i1, k0 + fl, k1 - fl)):
+                box(F, EG_SKIN + 0.01, (fa + fb) / 2, fz0, 0.02, fb - fa, fz1 - fz0, 'red')
+        box(F, xw + 0.4, (ya + yb) / 2, WALL_H, 0.8, yb - ya, 0.25, 'travertine')    # cornice: fascia, then the crown
+        box(F, xw + 0.5, (ya + yb) / 2, WALL_H + 0.25, 1.0, yb - ya, 0.33, 'travertine')
+    # lion-head spout on the dado: a round marble mask (a disc 0.7 across, muzzle, two ears), a bronze pipe, the water falling into
+    # the scene's basin (top z -0.99)
+    ly, lz = EG_LION
+    vdisc(F, xd + 0.06, ly, lz, 0.35, 0.12, 'marble', 14)
+    vdisc(F, xd + 0.14, ly, lz + 0.02, 0.22, 0.08, 'marble', 10)                  # the face, raised on the mane
+    box(F, xd + 0.24, ly, lz - 0.16, 0.14, 0.2, 0.18, 'marble')                     # muzzle
+    for sy in (-1, 1):
+        sphere(F, xd + 0.12, ly + sy * 0.22, lz + 0.27, 0.08, 'marble', 6, 4)       # ears
+    beam(F, xd + 0.3, ly, lz - 0.08, xd + 0.5, ly, lz - 0.1, 0.06, 0.06, 'bronze')
+    box(F, xd + 0.5, ly, -0.99, 0.05, 0.05, lz - 0.1 - (-0.99), 'water')
+
+
 def lower_statues(F):
     """A row of marble statues on pedestals every 6 m, inboard of the lower balustrade, standing on its coping."""
     for x in range(-42, 43, 6):
@@ -332,10 +529,10 @@ BUT = dict(buttress='square', every=10.0, b_size=2.2, parapet=None)
 
 # upper terrace (floor z 0): south wall 0 -> -6 standing on the lower terrace; east, north, west walls 0 -> -12
 upper_south_wall(F)                         # = retaining_wall(F, [(-H, -H), (H, -H)], 0.0, z_bot=ZM, **BUT), coping cut at the landings
-retaining_wall(F, [(H, -H), (H, H)], 0.0, z_bot=-12.0, **BUT)
+east_wall(F)                                # = retaining_wall(F, [(H, -H), (H, H)], 0.0, z_bot=-12.0, **BUT), three buttresses out, coping cut at the gate
 retaining_wall(F, [(H, H), (-H, H)], 0.0, z_bot=-3.0, **BUT)
 retaining_wall(F, [(-H, H), (-H, -H)], 0.0, z_bot=-12.0, **BUT)
-terrace_floor(F, SQ, 0.0, 'paving')
+court_floor(F)                              # = terrace_floor(F, SQ, 0.0, 'paving') without its east strip and skirt along the forecourt
 
 # lower terrace (floor z -6): a strip of paving, a 6 m south wall rising out of rock, short returns at the corners
 terrace_floor(F, [(-H, LOW), (H, LOW), (H, -H), (-H, -H)], ZM, 'paving')
@@ -412,6 +609,9 @@ for sx in (-1, 1):
                    tymp_mat='plaster', steps=3, rot=0.0, roof_mat='tile')
 
 propylon(F)
+east_stair(F)
+east_statues(F)
+east_facade(F)
 preview_ground(-20.0)
 import bpy
 try:
