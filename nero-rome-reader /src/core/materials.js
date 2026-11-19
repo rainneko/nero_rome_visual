@@ -412,6 +412,7 @@ else if(P>49.5&&P<50.5){vec2 p=uv;float pw=vA.z,ph=vA.w,t=ph-p.y;   // 【史】
  vec3 c=vec3(.7,.67,.6)*(.9+.12*vn2(p*5.+seed*9.));float r0=t<.24?0.:floor((t-.24)/.15)+1.,ry=t<.24?(t-.05)/.15:fract((t-.24)/.15)/.7,cw=r0<.5?.075:.055,cx=p.x-.06,fx=fract(cx/cw),hh=h12(vec2(floor(cx/cw),r0)+seed*31.);
  float g=max(step(abs(fx-.3),.1),step(.55,fract(hh*7.))*step(abs(ry-(fract(hh*3.)<.5?.1:.9)),.12)*step(fx,.75));
  float m=step(.14,hh)*step(0.,cx)*step(cx,pw-.12)*step(0.,ry)*step(ry,1.)*step(r0,2.5)*g;c=mix(c,vec3(.5,.08,.05),m*(1.-smoothstep(.01,.03,aa)));c=mix(c,c*vec3(1.,.86,.83),smoothstep(.01,.03,aa)*.5);S.alb=c;S.rough=.85;}
+else if(P>51.5&&P<52.5){S.alb=vec3(.3,.085,.065)*(.88+.2*vn2(uv*6.));S.rough=.5;}   // 52 dark red stone paving (the Apollo's east forecourt: the ribbon, palApolloEWorks)
 else if(P>50.5&&P<51.5){float w=max(vA.z,.5),h=max(vA.w,1.),hw=w*.5;vec2 q=vec2(uv.x-hw,uv.y);   // 【史】a shop let in a house front (taberna): the room behind the door by parallax, or its night boards
  vec3 T=normalize(vec3(-N.z,0.,N.x)+1e-4),V=normalize(vWP-cameraPosition);float vt=dot(V,T),vu=V.y,vnn=min(dot(V,N),-.06),tb=3.2/(-vnn);vec2 qb=q+vec2(vt,vu)*tb;
  float dq=1.-smoothstep(.015,.045,aa),tr=h12(vec2(seed*41.3,7.1)),tc=h12(vec2(seed*13.1,2.3));bool shut=tc<.14+.55*uNight;vec3 wd=vec3(.3,.18,.09),c;

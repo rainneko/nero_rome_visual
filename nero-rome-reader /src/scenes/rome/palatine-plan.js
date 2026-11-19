@@ -243,6 +243,29 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
   h51.on=true;h51.use='b2';for(const k of['plats','sumE','pads','flights','piers','niches','basin','routes','trees','treesOut','note'])if(k in h51.alt.b2)h51[k]=h51.alt.b2[k];
   h51.blocks={was:h51.blocks.was,now:h51.alt.b2.blocks};   // (was: where they stood; now: palatine.js PAL_BL)
   if(h51.on){const i=plats.findIndex(P=>P.id==='sumE');Object.assign(plats[i],h51.sumE);plats.push(...h51.plats);}
+  // ---- the Apollo's east gate (docs/screenshots/apollo-eastgate-20261119/plan, sheets 01-04, R12 13; the author 2026-11-19 "开工", relayed by
+  // the reviewer) ----
+  // A forecourt at the summit rim's level (55, paved 55.06) in front of the sanctuary's east gate, from the Apollo's face (lx 83.38) to lx 93.761,
+  // lz 59.85/60.55-91.3. The gate's stair (10 risers of 0.184, 5 + a 3 m landing + 5) and the statues, the facade and the lion spout are the model's
+  // (rome_apollo.py east_stair, east_statues, east_facade); palApolloE registers the stair. It joins the rim (sumE, untouched) across the south face of
+  // sumE's corner pier (sumE:4, at 90.5/57), whose parapet is opened on that face only (open); the ribbon of coloured stone runs from the stair's foot
+  // over the pier onto the rim. In front of it, down to the belt's lawn (42), two planted tiers that are not walked (walk:false, as v30n): 50 (box
+  // beds) and 46 (cypresses); walls 5 m (forecourt), 4 m (tiers), 8 m at tier 50's north end, 5.9-8.4 m for the forecourt's short north wall into
+  // the trench. The belt gives up the tiers' ground (belt: in place of its vertex 90.5/57); zones[0] takes in the forecourt (zone: between
+  // 99.3/117.3 and 86.3/30). The 6 m piers at the new corners are left out as the drawings have them (drop; small corner piers stay).
+  // Off: apE.on=false (the plan, the scene code and the checks then are as before; the model's east face stays as built).
+  const apE={on:true,
+    plats:[{id:'apE',y:55,paved:true,join:['sumE'],...rows([[83.38,60.551,'w'],[87.655,60.261,'s'],[93.761,59.845,'w',50],[93.761,91.3,'w',50],[83.38,91.3,'m']])},
+      {id:'apE50',y:50,walk:false,tl:false,plant:'own',...rows([[93.553,56.792,'s'],[98.2,56.476,'w',42],[98.2,62,'w',46],[98.2,96.05,'w',46],[86.2,96.05,'m'],[86.2,93.69,'m'],
+        [83.68,93.69,'m'],[83.68,91.3,'s'],[93.761,91.3,'s'],[93.761,59.845,'s']])},
+      {id:'apE46',y:46,walk:false,tl:false,plant:'own',...rows([[98.2,62,'w',42],[102.7,62,'w',42],[102.7,100.6,'w'],[84,100.6,'m'],[84,96.05,'m'],[86.2,96.05,'s'],[98.2,96.05,'s']])}],
+    belt:[[96.86,100.6],[102.7,100.6],[102.7,62],[98.2,62],[98.2,56.476]],zone:[[84,100.6],[83.38,91.3],[83.38,60.551]],
+    piers:{drop:[['apE',1],['apE',2],['apE',3],['apE50',3],['apE46',0],['apE46',1],['apE46',2]],open:{'sumE:4':[[87.655,60.261],[93.761,59.845]]}},
+    stair:{id:'apolloE',w:10.5,top:56.9,head:83.5,land:[85.02,88.02],foot:89.54,ax:74,rh:.184,tr:.38},   // the model's (lx; landing between its risers)
+    ribbon:{pts:[[89.54,74],[92,74],[92,53]],w:1.2,border:.15},basin:{box:[83.45,84.45,86.4,88.4],top:55.61},
+    beds50:{pitch:4,len:3,w:1.2},cyp46:{pitch:3.1,in:1.5}};
+  if(apE.on){plats.push(...apE.plats);const B=plats.find(P=>P.id==='beltE'),k=B.pts.findIndex(p=>p[0]===90.5&&p[1]===57);
+    B.pts.splice(k,1,...apE.belt);B.edge.splice(k,1,...apE.belt.map(()=>'s'));B.foot.splice(k,1,...apE.belt.map(()=>null));}
   for(const P of plats){if(!P.foot)P.foot=P.edge.map(()=>null);if(P.edge.length!==P.pts.length||P.foot.length!==P.pts.length)throw new Error('PAL_PLAN '+P.id+': '+P.pts.length+' points, '+P.edge.length+' edges');}
   // dips: the ground dipped to the floor this far (m) outside a walled edge, where 1 m is too narrow for the 3 m terrain mesh (it climbed through the paving):
   // the lane south of the Tiberiana against block b, whose walls go down to 51.4 (图三)
@@ -369,9 +392,10 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
       // H2: the north slope, from the deck's edge and the Transitoria's rock to the north foot wall
       [[-55.9,-106],[1.9,-106],[2.3,-111.3],[3.9,-119.7],[6.7,-124],[146.5,-125.4],[151,-120],[233.3,-120],[220,-146],[205,-163],[186,-178],[160,-185],[130,-186],
        [100,-184],[62,-181],[26,-180.5],[-8,-167],[-35,-150],[-57.5,-138],[-56,-133.7]]],
-    rayCut:[-42,208],h51};   // palTerraces: no rays (old rings) between these angles (deg from C=[20,-15]). H1 cut -26..106 (the east and south slopes); H2 cuts the
+    rayCut:[-42,208],h51,apE};   // palTerraces: no rays (old rings) between these angles (deg from C=[20,-15]). H1 cut -26..106 (the east and south slopes); H2 cuts the
                          // rest: the north-east rings below the north foot wall go (outside the foot walls the slope is natural, R5), and on the west slope
                          // only the three rings in west.rings stay (the review of 2026-11-13).
+  if(apE.on){const Z=PLAN.zones[0],k=Z.findIndex(p=>p[0]===99.3&&p[1]===117.3);Z.splice(k+1,0,...apE.zone);}   // the forecourt into the H1 ground (apE)
   if(h51.on){PLAN.stairs.push(...h51.stairs);for(const S of PLAN.stairs)if(h51.remap[S.id])S.legs=h51.remap[S.id];}   // H5.1 built: its stairs, and the legs on sumE's renumbered edges
   return PLAN;
 })();

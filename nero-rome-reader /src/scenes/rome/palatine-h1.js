@@ -257,7 +257,7 @@ function palPlatStairs(W){const g=new GB(1<<16),SP=W.palStairs=[],gy=W.gy,toW=p=
   palWestStairs(W,g,st,reg);   // H2: between the west rings
   palR8Walk(W,g,st);
   palGateN(W,g,st,reg);   // 图四: the east palace's north gate
-  palApolloS(W,g,st,reg);palClivG(W,g,st,reg);palMMEast(W,g,st,reg);palTibLane(W,g,st,reg);palSCFoot(W,g,st,reg);palVillaW1(W,g,st,reg);   // 图一 (and its way on down to the Clivus), 图七 east, 图三; R10 乙
+  palApolloS(W,g,st,reg);if(PAL_PLAN.apE.on)palApolloE(W,g,st,reg);palClivG(W,g,st,reg);palMMEast(W,g,st,reg);palTibLane(W,g,st,reg);palSCFoot(W,g,st,reg);palVillaW1(W,g,st,reg);   // 图一 (and its way on down to the Clivus), 图七 east, 图三; R10 乙
   W.palStairStats=st;const m=layTag(g.mesh(MAT.city),'stairs');if(m){m.name='palPlatStairs';W.scene.add(m);}}
 
 // H2 (the review of 2026-11-13): the stairs between the west rings (PAL_PLAN.west.stairs), as H1's stairs along a wall: a landing 1.6 m long at the head in
@@ -362,6 +362,40 @@ function palApolloSPlant(W,g){const yF=PAL_PLAN.levels.belt+.06;
     trimSet(g,1,.5);box(g,F,0,yF-.06,0,hb,.3,hb,31);g.set(23,.4);g.poly([F.p(-c,yF+.245,-c),F.p(c,yF+.245,-c),F.p(c,yF+.245,c),F.p(-c,yF+.245,c)],[0,1,0]);
     W.trees.push([q[0],yF+.24,q[2],'broad',.56+.1*k,[.035,.07,.028],1]);}
   if(!palInPier(W,38.2,138.4))palBoxBed(W,g,38.2,138.4,yF,0,1.2,.6);}
+// ---- the Apollo's east gate (PAL_PLAN.apE; docs/screenshots/apollo-eastgate-20261119/plan, sheets 01-04) ----
+// the pier faces opened for apE (terraceEdge o.pierOpen): {v: the face's world line} for terrace P, or null
+function palApEOpen(P){const A=PAL_PLAN.apE;if(!A.on)return null;let o=null;
+  for(const k in A.piers.open){const[id,v]=k.split(':');if(id!==P.id)continue;(o=o||{})[+v]=A.piers.open[k].map(p=>palW(p[0],p[1]));}
+  return o;}
+// the gate's stair: the model builds it (rome_apollo.py east_stair: from the court's paving 56.9 at the gate, 5 risers of 0.184, a 3 m landing, 5 more, to
+// the forecourt's paving 55.06 at lx 89.54); here only its registration (the walk graph, the planting and the stair checks keep off it)
+function palApolloE(W,g,st,reg){const S=PAL_PLAN.apE.stair,yT=S.top,yL=yT-5*S.rh,yF=yT-10*S.rh,toW=(lx,y)=>{const q=palW(lx,S.ax);return[q[0],q[1],y];};
+  reg(S.id,[toW(S.head-1,yT),toW(S.head,yT),toW((S.land[0]+S.land[1])/2,yL),toW(S.foot,yF),toW(S.foot+.6,yF),toW(S.foot+1.6,yF)],S.w,yT);
+  (st.ends||(st.ends={}))[S.id]=[S.foot,S.ax];}
+// the forecourt's works (palPlatWalls, after the walls): the ribbon of red stone flush in the paving from the stair's foot to the rim (over the opened
+// pier), the basin under the model's lion spout, the tiers' lawn, box beds on tier 50 and a row of cypresses on tier 46 (none in a pier's square)
+function palApolloEWorks(W,g){const A=PAL_PLAN.apE,yP=A.plats[0].y+.06,n0=W.trees.length;let beds=0;
+  // the ribbon (the review of 2026-11-19, round 2): 1.2 m of dark red paving (part 52) between white marble borders 0.15 m wide (part 6). Across the
+  // pier's coping (top 55.10) and top (55.09) it rides 4 cm higher, reached by a ramp 0.3 m long at either end, so no edge stands up.
+  const[[ax0,az],[bx]]=A.ribbon.pts,h=A.ribbon.w/2,bw=A.ribbon.border,zE=A.ribbon.pts[2][1],y0=yP-.06,yL=yP+.005,yH=yP+.045,
+    slab=(x0,x1,z0,z1,ya,yb)=>{const P=(x,y,z)=>PFR.p(x,y,z),C=P((x0+x1)/2,y0,(z0+z1)/2),out=Q=>{const m=[0,1,2].map(i=>Q.reduce((s,q)=>s+q[i],0)/Q.length-C[i]);m[1]=0;g.poly(Q,m);};
+      g.poly([P(x0,ya,z0),P(x1,ya,z0),P(x1,yb,z1),P(x0,yb,z1)],[0,1,0]);   // top, ya at z0, yb at z1; the four sides facing out
+      out([P(x0,y0,z0),P(x1,y0,z0),P(x1,ya,z0),P(x0,ya,z0)]);out([P(x0,y0,z1),P(x1,y0,z1),P(x1,yb,z1),P(x0,yb,z1)]);
+      out([P(x0,y0,z0),P(x0,y0,z1),P(x0,yb,z1),P(x0,ya,z0)]);out([P(x1,y0,z0),P(x1,y0,z1),P(x1,yb,z1),P(x1,ya,z0)]);},
+    prof=[[0,yL],[60.75,yL],[60.45,yH],[56.4,yH],[56.1,yL],[zE,yL]],   // lz, top: the N-S leg from the stair's axis to the rim
+    run=(x0,x1,part,zs)=>{g.set(part,.4);prof[0][0]=zs;for(let k=0;k+1<prof.length;k++)slab(x0,x1,prof[k][0],prof[k+1][0],prof[k][1],prof[k+1][1]);};
+  run(bx-h,bx+h,52,az+h);run(bx-h-bw,bx-h,6,az-h);run(bx+h,bx+h+bw,6,az+h+bw);   // the N-S leg (from the E-W leg's south edge) and its borders
+  g.set(52,.4);slab(ax0,bx-h,az-h,az+h,yL,yL);g.set(6,.4);slab(ax0,bx-h-bw,az-h-bw,az-h,yL,yL);slab(ax0,bx+h,az+h,az+h+bw,yL,yL);   // the E-W leg from the stair's foot, its borders
+  {const[x0,x1,z0,z1]=A.basin.box,t=A.basin.top,yb=yP-.06;trimSet(g,1,.5);for(const[a,b,c,d]of[[x0,x1,z0,z0+.12],[x0,x1,z1-.12,z1],[x1-.12,x1,z0,z1],[x0,x0+.12,z0,z1]])box(g,PFR,(a+b)/2,yb,(c+d)/2,(b-a)/2,t-yb,(d-c)/2,31);
+    const pg=new GB(64),yw=t-.08;pg.poly([PFR.p(x0+.12,yw,z0+.12),PFR.p(x0+.12,yw,z1-.12),PFR.p(x1-.12,yw,z1-.12),PFR.p(x1-.12,yw,z0+.12)],[0,1,0]);const m=pg.mesh(MAT.pool,false);if(m){m.name='palApEBasin';W.scene.add(m);}}
+  const lawn=(y,x0,x1,z0,z1)=>{g.set(23,.4);g.poly([PFR.p(x0,y,z0),PFR.p(x0,y,z1),PFR.p(x1,y,z1),PFR.p(x1,y,z0)],[0,1,0]);};
+  const y50=A.plats[1].y+.06,y46=A.plats[2].y+.06;lawn(y50+.02,94.2,97.75,60.5,95.6);lawn(y50+.02,86.6,94.2,91.75,95.6);lawn(y46+.02,98.65,102.25,62.45,100.15);lawn(y46+.02,84.45,98.65,96.5,100.15);
+  const B=A.beds50,hx=B.len/2,hz=B.w/2;
+  for(let lz=62.5;lz+hx<=89.5;lz+=B.pitch)if(!palInPier(W,95.98,lz)){palBoxBed(W,g,95.98,lz,y50,Math.PI/2,hx,hz);beds++;}   // tier 50's long strip: the beds along it
+  for(let lx=95.98;lx-hx>=86.4;lx-=B.pitch)if(!palInPier(W,lx,93.675)){palBoxBed(W,g,lx,93.675,y50,0,hx,hz);beds++;}   // and its south strip
+  const C=A.cyp46,xc=102.7-C.in,zc=100.6-C.in,cyp=(lx,lz)=>{if(palInPier(W,lx,lz))return;const q=PFR.p(lx,0,lz);W.trees.push([q[0],y46+.02,q[2],'cyp',.75+.2*teH(q[0],q[2],79),null,1]);};
+  for(let lz=62+C.in;lz<=zc+.01;lz+=C.pitch)cyp(xc,lz);for(let lx=xc-C.pitch;lx>=84+C.in;lx-=C.pitch)cyp(lx,zc);   // tier 46: along its outer walls
+  return{beds,trees:W.trees.length-n0};}
 // the Clivus stair (PAL_CLIVG): head landing out of an opening in beltS's east parapet, flight 1 north (its cheek only on the open side, the belt wall on the
 // other), the turning landing across both flights, flight 2 south between cheek walls to the road's head; a retaining wall round the dug landing's two
 // uphill sides, its top 0.3 m over the ground behind it (at least a parapet's height over the landing)
@@ -593,12 +627,12 @@ const palRectSub=(c,h)=>{if(h[1]<=c[0]||h[0]>=c[1]||h[3]<=c[2]||h[2]>=c[3])retur
 // the floor of terrace P: gravel (part 60 flag 4) with a band of slabs (flag 3) inside its walls, 1.2 m wide, on the belts a 4 m walk (the review of
 // 2026-11-12); slabs over the whole summit rim and the hemicycle garden. The bands are mitred at the corners (they stay inside the outline).
 // 8 m cells clipped exactly to the outline, less the buildings' rects
-function palPlatFloor(g,P,holes){const y=P.y+.06,paveAt=(lx,lz)=>/^sum/.test(P.id)||P.plaza||P.id==='h51'||(P.id==='beltE'&&lz>-42&&lz<6)||(P.id==='beltN'&&palInLaneN(lx,lz)),cs=8,gz0=-42-cs*Math.ceil((-42-P.z0)/cs);let tri=0;
+function palPlatFloor(g,P,holes){const y=P.y+.06,paveAt=(lx,lz)=>/^sum/.test(P.id)||P.plaza||P.paved||P.id==='h51'||(P.id==='beltE'&&lz>-42&&lz<6)||(P.id==='beltN'&&palInLaneN(lx,lz)),cs=8,gz0=-42-cs*Math.ceil((-42-P.z0)/cs);let tri=0;
   for(let x=Math.floor(P.x0);x<P.x1;x+=cs)for(let z=gz0;z<P.z1;z+=cs){let R=[[x,x+cs,z,z+cs]];for(const h of holes)R=R.flatMap(c=>palRectSub(c,h));
     for(const c of R){const Q=palClipRect(P.pts,c[0],c[1],c[2],c[3]);if(Q.length<3)continue;let A=0,cx=0,cz=0;for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length];A+=a[0]*b[1]-b[0]*a[1];cx+=a[0];cz+=a[1];}if(Math.abs(A)<.02)continue;
       g.set(60,.4,1,paveAt(cx/Q.length,cz/Q.length)?3:4);const ix=THREE.ShapeUtils.triangulateShape(Q.map(p=>new THREE.Vector2(p[0],p[1])),[]);
       for(const[i,j,k]of ix){g.poly([PFR.p(Q[i][0],y,Q[i][1]),PFR.p(Q[j][0],y,Q[j][1]),PFR.p(Q[k][0],y,Q[k][1])],[0,1,0]);tri++;}}}
-  if(!/^sum/.test(P.id)){const D=/^belt/.test(P.id)?4.66:1.86,n=P.E.length,
+  if(!/^sum/.test(P.id)&&!P.paved){const D=/^belt/.test(P.id)?4.66:1.86,n=P.E.length,
       mit=(v,d)=>{const e0=P.E[(v+n-1)%n],e1=P.E[v],c=1+e0.nx*e1.nx+e0.nz*e1.nz,p=P.pts[v];if(c<.3)return[p[0]-e1.nx*d,p[1]-e1.nz*d];return[p[0]-(e0.nx+e1.nx)*d/c,p[1]-(e0.nz+e1.nz)*d/c];};   // the corner of the band d inside both edges at vertex v
     for(const e of P.E){if(e.k!=='w'||e.L<4)continue;const lx0=e.a[0],lz0=e.a[1];
       if(P.id==='beltE'&&e.a[1]>-43&&e.a[1]<7&&e.b[1]>-43&&e.b[1]<7)continue;if(holes.some(h=>{const mx=lx0+e.ux*e.L/2,mz=lz0+e.uz*e.L/2;return mx>h[0]-2&&mx<h[1]+2&&mz>h[2]-2&&mz<h[3]+2;}))continue;
@@ -641,7 +675,7 @@ function palCutWall(W,g,P,e){const n=Math.max(2,Math.round(e.L/2)),S=[],y=P.y;le
 // drop: piers to leave out (o.noCorner: no small corner pier either). band: lower terraces' coping levels to carry round a pier as a string course, besides
 // those palPlatWalls finds (a lower terrace's wall ending in the pier's square: v30n's at the pilot; the reviewer, 11-15: without it the pilot read as an 11 m
 // tower, not as the terrace's corner). top: the pilot's cypress in a kerbed square of lawn, as the strip below has cypresses in its beds
-const PAL_PIER_PILOT={band:{'v36n:5':[30]},top:{'v36n:5':'cyp'},drop:PAL_PLAN.h51.on?[...PAL_PLAN.h51.piers.drop,...(PAL_PLAN.h51.piers.abut||[])].map(d=>[d[0],d[1],'small']):[]},palPilotV=(L,id)=>L.filter(f=>f[0]===id).map(f=>f[1]);
+const PAL_PIER_PILOT={band:{'v36n:5':[30]},top:{'v36n:5':'cyp'},drop:[...(PAL_PLAN.h51.on?[...PAL_PLAN.h51.piers.drop,...(PAL_PLAN.h51.piers.abut||[])]:[]),...(PAL_PLAN.apE.on?PAL_PLAN.apE.piers.drop:[])].map(d=>[d[0],d[1],'small'])},palPilotV=(L,id)=>L.filter(f=>f[0]===id).map(f=>f[1]);
 // (lx, lz) under a pier terraceEdge drew: inside its 6 x 6 m square about the vertex (W.pierSq: its axes along the sum of its walls' directions)
 const palInPier=(W,lx,lz)=>{const[x,z]=palW(lx,lz);return!!inPierSq(W,x,z);};
 // the reviewer, 2026-11-15: a concave pier (its outline the triangle between its two walls) whose face stops short of a lower terrace's wall corner, that
@@ -705,14 +739,15 @@ function palPlatWalls(W){const g=new GB(1<<17),gF=new GB(1<<16),st=W.palPlatStat
       rail[e.i]={none:[Math.max(0,Math.min(s0,s1)),Math.min(e.L,Math.max(s0,s1))]};}
     const pF={};for(const c of piers){if(c.P!==P||c.mateOf)continue;const f=palPierFill(c);if(!f)continue;pF[c.v]=f.pts.map(p=>{const q=PFR.p(p[0],0,p[1]);return[q[0],q[2]];});
       (W.pierFillLog=W.pierFillLog||[]).push({pier:P.id+':'+c.v,to:f.to,gap:+f.d.toFixed(3),pts:f.pts.map(p=>p.map(v=>+v.toFixed(3)))});}
-    const out=terraceEdge(W,g,P.pts,P.y,{F:PFR,tag:'pal:'+P.id,pal:1,skip,shared,footY,open,rock:true,m3:true,wing:false,piers:pv,pierX:pX,pierFill:pF,band,noCorner:palPilotV(PAL_PIER_PILOT.drop.filter(d=>d[2]!=='small'),P.id),endV,rooms,roomOpt:{bay:4.6},rail,
+    const out=terraceEdge(W,g,P.pts,P.y,{F:PFR,tag:'pal:'+P.id,pal:1,skip,shared,footY,open,rock:true,m3:true,wing:false,piers:pv,pierX:pX,pierFill:pF,band,pierOpen:palApEOpen(P),noCorner:palPilotV(PAL_PIER_PILOT.drop.filter(d=>d[2]!=='small'),P.id),endV,rooms,roomOpt:{bay:4.6},rail,
       butt:{min:4,sp:9,turn:20,avoid,sym:P.id===F0.wall?{1:F0.at[1]-palPlById(F0.wall).E[1].a[1]}:null},noLump:(x,z)=>{const[lx,lz]=palL(x,z);return(lx<176&&lx>170&&lz>-45&&lz<9)||SB.some(h=>nearPoly(x,z,h.R,h.r+1.5));}});   // the paved hemicycle at the summit wall's foot (H2-B); R11: none on or by a stair along the wall (two stood on eastPn's last treads)
     for(const v of pv){const k=PAL_PIER_PILOT.top[P.id+':'+v];if(k&&(W.pierSq||[]).some(q=>q.tag==='pal:'+P.id+':'+v))palPierTop(W,g,P,v,k,P.y+.09);}   // the pilot pier's top (its paving: terraceEdge, top + 0.09); the others paving only
     for(const e of out.edges){if(e.skip)continue;st.walls++;st.wallLen+=e.L;if(e.runs&&e.runs.length<e.S.length)st.openings+=Math.max(0,e.runs.length-1);for(const q of e.S){st.maxH=Math.max(st.maxH,q.h);if(q.rk!=null)st.rockRuns++;}}
     for(const e of P.E)if(e.k==='w'){if(!palBBack(P,e))st.cutLen+=palCutWall(W,g,P,e);if(e.foot!=null){const r=(W.wallFeet||[]).find(q=>q.tag==='pal:'+P.id+':'+e.i);if(r){r.ledge=true;if(PAL_PLAN.h51.on&&e.foot===PAL_PLAN.h51.plats[0].y)r.bare=true;}}}   // H5.1: h51 is paved wall to wall (the lane, the court, the pocket): no planting at the rim wall's foot   // a wall standing on a terrace's floor: no rocks or moss at its foot (terraceFeet), shrubs and cypresses only
   }
-  for(const P of PAL_PL)if(P.id!=='gApS'&&!P.plaza)st.plants=(st.plants||0)+palPlatPlant(W,g,P,holes);   // after all the walls (no planting in a pier's square: palInPier); a plaza (the lane heads tlE, tlW) is all paving
+  for(const P of PAL_PL)if(P.id!=='gApS'&&!P.plaza&&!P.paved&&P.plant!=='own')st.plants=(st.plants||0)+palPlatPlant(W,g,P,holes);   // after all the walls (no planting in a pier's square: palInPier); a plaza (the lane heads tlE, tlW) is all paving
   palApolloSPlant(W,g);   // gApS: its own planting, on the strip the Apollo's rock leaves open
+  if(PAL_PLAN.apE.on)st.apE=palApolloEWorks(W,g);   // the east forecourt (apE): the ribbon, the basin, the tiers' planting
   st.h51=palH51Works(W,g);   // H5.1 (b2): the fills, W17, the lane's end wall, the niches, the bed
   palHemicycle(W,g);st.ledge=palLedge(W,g,SB);st.shops=palShopAprons(W,gF);
   // the villas' garden terraces (30): their walls carry the model's lower garden where the foot terrace (26) is below, so __floatCheck must not call it floating

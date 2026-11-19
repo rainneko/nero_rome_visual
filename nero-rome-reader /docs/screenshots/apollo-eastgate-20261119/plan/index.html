@@ -1,0 +1,59 @@
+<!doctype html><meta charset=utf-8><title>apE 出图</title><style>body{font:14px sans-serif;margin:20px}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #bbb;padding:3px 7px}img{max-width:100%;border:1px solid #ccc}.n{color:#d06000}</style>
+<h1>apE：俯视和剖面（R12 第 13 节，由数据生成）</h1><p>数据：<code>PAL_PLAN.{PART}</code>（src/scenes/rome/palatine-plan.js），地面、模型、已建的台阶和树来自页面（tools/plan/palatine_paths.mjs）。级数只由两头的台面标高算，踏面 0.38，一跑最多 15 级，中间平台 1.5，梯顶平台 1.6。</p>
+<h2>俯视</h2><img src=plan.png>
+<h2>材质</h2><table><tr><th>级</th><th>用在哪里</th><th>目标色</th></tr><tr><td>1 山岩</td><td>墙与墙之间的陡坡、墙脚岩台</td><td><span style='display:inline-block;width:2em;background:#8f8571'>&nbsp;</span> #8f8571</td></tr><tr><td>2 粗面石</td><td>每道墙最下面 2.4 m、梯基、墩台下半</td><td><span style='display:inline-block;width:2em;background:#9c917b'>&nbsp;</span> #9c917b</td></tr><tr><td>3 方石</td><td>墙身（含 h51 的新墙、尽端墙）</td><td><span style='display:inline-block;width:2em;background:#aca08a'>&nbsp;</span> #aca08a</td></tr><tr><td>4 石灰华</td><td>踏步、压顶、胸墙帽（栏墙 0.95：墙石 + 石灰华帽）</td><td><span style='display:inline-block;width:2em;background:#cdc3ab'>&nbsp;</span> #cdc3ab</td></tr><tr><td>5 铺地</td><td>台面 51.76 / 55、梯中平台、梯顶平台、落脚铺地</td><td><span style='display:inline-block;width:2em;background:#bdb29b'>&nbsp;</span> #bdb29b</td></tr></table>
+<h2>剖面</h2>
+<h3>A</h3><img src=section_A.png>
+<h3>B</h3><img src=section_B.png>
+<h2>台阶</h2><table>
+<tr><th>id</th><th>新</th><th>从 → 到</th><th>标高</th><th>级数</th><th>每跑</th><th>踢面</th><th>踏面</th><th>角度</th><th>宽</th><th>梯顶</th><th>梯脚</th><th>水平长</th></tr>
+<tr><td>apolloE1</td><td>新</td><td>apollo → apE</td><td>56.9 → 55.98</td><td>5</td><td>5</td><td>0.184</td><td>0.38</td><td>25.8°</td><td>10.5</td><td>[83.38, 74]</td><td>[85.4, 74.0]</td><td>1.9</td></tr>
+<tr><td>apolloE2</td><td>新</td><td>apollo → apE</td><td>55.98 → 55.06</td><td>5</td><td>5</td><td>0.184</td><td>0.38</td><td>25.8°</td><td>10.5</td><td>[88.02, 74]</td><td>[89.92, 74.0]</td><td>1.9</td></tr>
+</table><h2>墙</h2><table>
+<tr><th>边</th><th>新</th><th>台面</th><th>墙高</th><th>从</th><th>到</th></tr>
+<tr><td>sumE:3</td><td></td><td>55</td><td>13–13</td><td>[164, 52]</td><td>[90.5, 57]</td></tr>
+<tr><td>sumE:5</td><td></td><td>55</td><td>3.24–3.24</td><td>[86.49, 31.25]</td><td>[86.3, 30]</td></tr>
+<tr><td>sumE:6</td><td></td><td>55</td><td>3.24–3.24</td><td>[86.3, 30]</td><td>[100, 30]</td></tr>
+<tr><td>sumE:7</td><td></td><td>55</td><td>3.24–3.24</td><td>[100, 30]</td><td>[100, 0.5]</td></tr>
+<tr><td>beltE:28</td><td></td><td>42</td><td>16–16</td><td>[130, 94]</td><td>[106, 112]</td></tr>
+<tr><td>apE:0</td><td>新</td><td>55</td><td>5.89–8.43</td><td>[83.38, 60.551]</td><td>[87.655, 60.261]</td></tr>
+<tr><td>apE:2</td><td>新</td><td>55</td><td>5–5</td><td>[93.761, 59.845]</td><td>[93.761, 91.3]</td></tr>
+<tr><td>apE:3</td><td>新</td><td>55</td><td>5–5</td><td>[93.761, 91.3]</td><td>[83.38, 91.3]</td></tr>
+<tr><td>apE50:1</td><td>新</td><td>50</td><td>8–8</td><td>[98.2, 56.476]</td><td>[98.2, 62.0]</td></tr>
+<tr><td>apE50:2</td><td>新</td><td>50</td><td>4–4</td><td>[98.2, 62.0]</td><td>[98.2, 96.05]</td></tr>
+<tr><td>apE50:3</td><td>新</td><td>50</td><td>4–4</td><td>[98.2, 96.05]</td><td>[86.2, 96.05]</td></tr>
+<tr><td>apE46:0</td><td>新</td><td>46</td><td>4–4</td><td>[98.2, 62.0]</td><td>[102.7, 62.0]</td></tr>
+<tr><td>apE46:1</td><td>新</td><td>46</td><td>4–4</td><td>[102.7, 62.0]</td><td>[102.7, 100.6]</td></tr>
+<tr><td>apE46:2</td><td>新</td><td>46</td><td>-1.99–4</td><td>[102.7, 100.6]</td><td>[84.0, 100.6]</td></tr>
+</table><h2>占地框</h2><table>
+<tr><th>名字</th><th>类</th><th>新</th><th>lx0, lz0, lx1, lz1</th><th>面积</th></tr>
+<tr><td>apollo</td><td>model</td><td></td><td>[76.0, 28.0, 86.5, 104.0]</td><td>606.1</td></tr>
+<tr><td>阿波罗东面</td><td>face</td><td></td><td>[83.36, 56.0, 86.2, 100.0]</td><td>0.0</td></tr>
+<tr><td>stair apolloE1</td><td>stair</td><td>新</td><td>[83.38, 68.39, 85.4, 79.61]</td><td>22.7</td></tr>
+<tr><td>stair apolloE2</td><td>stair</td><td>新</td><td>[88.02, 68.39, 89.92, 79.61]</td><td>21.3</td></tr>
+<tr><td>stair sumS</td><td>stair</td><td></td><td>[102.24, 52.19, 135.43, 59.46]</td><td>110.4</td></tr>
+<tr><td>pad 平台（月桂花环）</td><td>pad</td><td>新</td><td>[85.4, 68.75, 88.02, 79.25]</td><td>27.5</td></tr>
+<tr><td>pier sumE@4</td><td>pier</td><td></td><td>[87.24, 53.74, 93.76, 60.26]</td><td>37.5</td></tr>
+<tr><td>pier sumE@5</td><td>pier</td><td></td><td>[83.0, 27.76, 89.98, 34.74]</td><td>37.5</td></tr>
+<tr><td>pier sumE@6</td><td>pier</td><td></td><td>[81.98, 25.68, 90.62, 34.32]</td><td>37.5</td></tr>
+<tr><td>pier sumE@7</td><td>pier</td><td></td><td>[95.67, 25.67, 104.33, 34.33]</td><td>37.5</td></tr>
+</table><h2>墙角墩（按生成器的规则）</h2><table>
+<tr><th>墩</th><th>类</th><th>新</th><th>墙高</th><th>框</th></tr>
+<tr><td>sumE@4</td><td>6 m</td><td></td><td>13</td><td>[87.24, 53.74, 93.76, 60.26]</td></tr>
+<tr><td>sumE@5</td><td>6 m</td><td></td><td>3.24</td><td>[83.0, 27.76, 89.98, 34.74]</td></tr>
+<tr><td>sumE@6</td><td>6 m</td><td></td><td>3.24</td><td>[81.98, 25.68, 90.62, 34.32]</td></tr>
+<tr><td>sumE@7</td><td>6 m</td><td></td><td>3.24</td><td>[95.67, 25.67, 104.33, 34.33]</td></tr>
+</table><h2>检查</h2><p>重叠（面积 &gt; 0.05 m² 且厚 &gt; 0.05 m（块的占地是 0.1 m 栅格，块和面之间 &gt; 0.11 m）；线穿进面 &gt; 0.1 m 长、&gt; 0.05 m 深）：0</p><table>
+<tr><th>甲</th><th>乙</th><th>量</th><th>深 / 厚</th><th>在</th></tr>
+</table><p>缝（0.05–2.4 m）：0</p><table>
+<tr><th>甲</th><th>乙</th><th>缝</th><th>在</th></tr>
+</table>
+<p>路线净宽（R12 第 4 节，沿每条路线每 1 m 量横向净宽；梯段上不量）：</p><table>
+<tr><th>路线</th><th>标高</th><th>点数</th><th>最窄</th><th>在</th><th>&lt; 2.4 的点</th><th>挡住的点</th><th>登记例外的点</th><th>终点宅门的点</th></tr>
+<tr><td>89.92,74 → 92,74 → 92,53</td><td>55</td><td>23</td><td>0.0</td><td>[np.float64(92.0), np.float64(59.0)]</td><td>1</td><td>6</td><td>0</td><td>0</td></tr>
+<tr><td>　段 89.92,74 → 92,74</td><td></td><td>2</td><td>31.23</td><td>[np.float64(90.92), np.float64(74.0)]</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>　段 92,74 → 92,53</td><td></td><td>21</td><td>0.0</td><td>[np.float64(92.0), np.float64(59.0)]</td><td>1</td><td>6</td><td>0</td><td>0</td></tr>
+</table>
+<p>高处净宽（模型实测的帽、檐，对新块、落脚铺地、台阶）：</p><table>
+<tr><th>甲</th><th>乙</th><th>净宽</th><th>合 0 / ≥ 2.4</th></tr>
+</table>

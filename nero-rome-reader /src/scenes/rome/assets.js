@@ -358,6 +358,7 @@ window.__palReach=()=>{const W=W0,units=[],gy=W.gy;
       for(const u of units)if(inU(u,qx,qz)&&Math.abs(y-u.y)<1.6)on.add(u.id);if(W.streetAt&&W.streetAt(qx,qz)&&Math.abs(gy(qx,qz)-y)<1.6)on.add('street');}   // either end, 0.5 m on (a head floor that starts at the end of the stair's apron, tlE/tlW)
     if(over>4)diag.push({stair:s.id,over:+over.toFixed(1),unit:ov,angle:+worst.toFixed(0)});
     const L=[...on];for(let a=0;a<L.length;a++)for(let b=a+1;b<L.length;b++)link(L[a],L[b]);s.on=L;}
+  for(const P of W.palPlats||[])if(P.walk!==false)for(const id of P.join||[])link(P.id,id);   // P.join: terraces at one level walked into each other across an opened pier face (apE and sumE)
   // terraces at the same level that share an open edge ('s') are one floor (gApS, the filled hollow, and the south belt: 图一)
   if(W.palPlats)for(const P of W.palPlats)for(const e of P.E){if(e.k!=='s')continue;const mx=(e.a[0]+e.b[0])/2,mz=(e.a[1]+e.b[1])/2,l=Math.hypot(e.b[0]-e.a[0],e.b[1]-e.a[1])||1,nx=(e.b[1]-e.a[1])/l,nz=-(e.b[0]-e.a[0])/l;
     for(const Q of W.palPlats)if(Q!==P&&Math.abs(Q.y-P.y)<.3&&[1,-1].some(sg=>inPolyXZ(mx+sg*nx*.6,mz+sg*nz*.6,Q.pts)))link(P.id,Q.id);}
