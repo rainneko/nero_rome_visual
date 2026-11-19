@@ -323,7 +323,7 @@ function palGateN(W,g,st,reg){const ax=73.3,yB=51.82,yb=PAL_PLAN.levels.belt,toW
   // slab paving: the gate platform (61.25-85.35, from the lane to its front wall round the exedra) and the gate garden's front (to -158.6, not the slot)
   {const pave=(Q,y)=>{const ix=THREE.ShapeUtils.triangulateShape(Q.map(p=>new THREE.Vector2(p[0],p[1])),[]);g.set(60,.4,1,3);for(const[i,j,k]of ix)g.poly([PFR.p(Q[i][0],y,Q[i][1]),PFR.p(Q[j][0],y,Q[j][1]),PFR.p(Q[k][0],y,Q[k][1])],[0,1,0]);};
     pave([[61.25,-131.5],[85.35,-131.5],[85.35,-155.5],[77.3,-155.5],...arcPts,[69.3,-155.5],[61.25,-155.5]],yF+.02);
-    pave([[61.25,-155.5],[69.3,-155.5],...arcPts.slice().reverse(),[77.3,-155.5],[85.35,-155.5],[85.35,-158.6],[76.3,-158.6],[76.3,-157.3],[70.3,-157.3],[70.3,-158.6],[61.25,-158.6]],39.08);}
+    pave([[61.25,-155.5],[69.3,-155.5],...arcPts.slice().reverse(),[77.3,-155.5],[85.35,-155.5],[85.35,-158.6],[61.25,-158.6]],39.08);}
   // the exedra's wall fountain: local x out of the wall (towards the slot, -lz), z along it (+lx); the wall's face leans out 4 % to its foot
   {const yG=39.06,F=PFR.sub(ax,0,-151.5,Math.PI/2),yE=yG+2.55;
     trimSet(g,1,.5);box(g,F,.58,yG-.06,0,.46,.7,1.9,31);   // the podium
@@ -334,10 +334,12 @@ function palGateN(W,g,st,reg){const ax=73.3,yB=51.82,yb=PAL_PLAN.levels.belt,toW
     pedestalStatue(g,F,.62,0,yG+.64,1.7,{gilt:false});
     g.set(2,.5);box(g,F,1.08,yG+.56,0,.14,.1,.12,31);   // the spout's lip
     const b=F.p(2.15,0,0);fountain(W,g,b[0],b[2],{y:yG-.01,rot:F.rot,hx:1.1,hz:1.8,statue:0});}
-  // the central flight: in the slot (70.3-76.3) from the gate garden's front (39, -157.3) down to 34, then a landing to the terrace 34
-  {const C0=toW([ax,-157.3]),C1=toW([ax,-170.3]),rc=palFlight(W,g,C0,C1,39,6,y=>y<=34.05,()=>false,0,.045);st.steps+=rc.n;st.landings+=rc.nL;
+  // the central flight: in the slot (70.3-76.3) from the gate garden's front (39, -158.6) down to 34, then a landing to the terrace 34.
+  // The head stood at -157.3 until 2026-11-19: its end piers (-157.1..-158.5) and the exedra's corner piers (to -156.55) left 0.55 m between them, and the
+  // upper flights' feet (lx 78.4 and 68.2) were shut in. At -158.6 the paved front is 3.1 m deep from wall to head, 1.8 m clear between the piers
+  {const C0=toW([ax,-158.6]),C1=toW([ax,-170.3]),rc=palFlight(W,g,C0,C1,39,6,y=>y<=34.05,()=>false,0,.045);st.steps+=rc.n;st.landings+=rc.nL;
     const e=rc.pts[rc.pts.length-1],[elx,elz]=palL(e[0],e[1]),L0=toW([ax,elz-.19]),L1=toW([ax,-170.7]);palLanding(W,g,L0,L1,6,34.045);st.landings++;
-    const H=toW([ax,-156.3]),pts=[[H[0],H[1],39],...rc.pts];for(const t of[0,.5,1])pts.push([lerp(L0[0],L1[0],t),lerp(L0[1],L1[1],t),34]);const T=toW([ax,-172]);pts.push([T[0],T[1],34]);
+    const H=toW([ax,-157.6]),pts=[[H[0],H[1],39],...rc.pts];for(const t of[0,.5,1])pts.push([lerp(L0[0],L1[0],t),lerp(L0[1],L1[1],t),34]);const T=toW([ax,-172]);pts.push([T[0],T[1],34]);
     reg('gateC',pts,6,39);W.hillStairs[W.hillStairs.length-1].net=false;(st.ends||(st.ends={})).gateC=[ax,-170.7];}
   (W.palNoButt=W.palNoButt||[]).push([61.25,85.35,-171,-169.6]);}
 // 图一 (the review of 2026-11-13): the planned stair from the opening in the Apollo's lower south terrace (the model: x 7.5-11.5, piers either side, the wall

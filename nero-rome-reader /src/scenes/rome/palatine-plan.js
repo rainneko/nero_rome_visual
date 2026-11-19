@@ -89,10 +89,10 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
     // on the pier where the 30.6 pier stood (edge kind 'm': it ends on a structure, no wall, no pier, the ground not blended to it; PAL_PIER_PILOT)
     {id:'v30n',y:30,walk:false,tl:false,plant:'strip',...rows([[-5.65,-161.5,'s'],[27.35,-161.5,'s'],[27.35,-173.6,'s'],[61.25,-173.6,'w',26],[61.25,-176.6,'w',26],[26.65,-176.6,'m'],[24.35,-174.3,'w',26],[24.35,-164.5,'w',26],[-5.65,-164.5,'w',26]])},
     // 图四: the gate garden (39) under the gate platform: the exedra in the platform's front wall, the slot of the central flight (palGateN, 39 down to 34,
-    // towards the exedra) from its head ('o', -157.3) to its front wall; the terrace 34 below it, on to the east under the belt garden; from 34 the two
+    // towards the exedra) from its head ('o', -158.6) to its front wall; the terrace 34 below it, on to the east under the belt garden; from 34 the two
     // lower flights gLW, gLE run out along the garden walls down to the foot (26)
     {id:'g39',y:39,...rows([[61.25,-155.5,'s'],[69.3,-155.5,'s'],...gArc.slice().reverse().map(p=>[...p,'s']),[77.3,-155.5,'s'],[85.35,-155.5,'w',34],[85.35,-170.3,'w',34],[76.3,-170.3,'w',34],
-       [76.3,-157.3,'o'],[70.3,-157.3,'w',34],[70.3,-170.3,'w',34],[61.25,-170.3,'w',36]])},
+       [76.3,-158.6,'o'],[70.3,-158.6,'w',34],[70.3,-170.3,'w',34],[61.25,-170.3,'w',36]])},
     {id:'g34',y:34,...rows([[61.25,-170.3,'s'],[70.3,-170.3,'s'],[76.3,-170.3,'s'],[85.35,-170.3,'s'],[85.35,-155.5,'s'],[101,-155.5,'s'],[101,-170,'w',30],[101,-173.6,'w',26],[61.25,-173.6,'s']])},
     // under c3 (flat) and house a: 36 terraces, then 30 strips (4.5 m under c3; 4 m under house a, where the foot wall comes in to -180 at its east end)
     {id:'v36p',y:36,pts:[[101,-155.5],[134,-155.5],[134,-168.5],[134,-170],[101,-170]],edge:['s','w','w','w','w'],foot:[null,null,26,30,34]},
