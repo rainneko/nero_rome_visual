@@ -117,7 +117,8 @@ function palRockScrub(W){if(typeof PAL_ROCK==='undefined')return 0;const own=new
     for(let i=0;i<P.length;i++){const[px,pz,nx,nz]=E[i],q=P[(i+1)%P.length],L=Math.hypot(q[0]-px,q[1]-pz);
       for(let k=1.5;k<L;k+=5+4*hash2(px*.37+k,pz*.41)){const h=j=>hash2(px*1.13+k*.71+j*3.7,pz*.97+k*1.31+j*5.1),off=1+5*h(1),u=px+(q[0]-px)*k/L+nx*off,v=pz+(q[1]-pz)*k/L+nz*off;
         if(h(2)>.62)continue;const lx=A.lx+c*u+s*v,lz=A.lz-s*u+c*v;if(inRock(lx,lz))continue;const[x,z]=palW(lx,lz);if(W.streetAt(x,z)||W.foot.hits(x,z,1.2,1.2,0,0,free))continue;
-        const r=h(3),kind=r<.42?'shrub':r<.6?'broadD':r<.72?'fig':r<.84?'cyp':r<.92?'pine':'olive';W.trees.push([x,W.gy(x,z),z,kind,kind==='shrub'?.8+.5*h(4):.55+.35*h(4)]);n++;}}}
+        const r=h(3),k0=r<.42?'shrub':r<.6?'broadD':r<.72?'fig':r<.84?'cyp':r<.92?'pine':'olive',kind=k0!=='shrub'&&k0!=='cyp'&&A.n==='rome_tiberiana'&&u>-84&&u<-29&&v<-104&&v>-117?'cyp':k0;   // beside the Tiberiana's north-west stair (model x -78..-35, y 102..110) a spreading crown hung over the treads and stopped the walk: a cypress there
+        W.trees.push([x,W.gy(x,z),z,kind,kind==='shrub'?.8+.5*h(4):.55+.35*h(4)]);n++;}}}
   return n;}
 
 /* G1 (briefs/rome/podium-stairs-rock.md, 2026-11-04): the foot of the Domus Tiberiana model's rock base on the west slope, as wall-foot records along its

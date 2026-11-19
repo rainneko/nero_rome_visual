@@ -60,10 +60,30 @@ stair_on_base(F, -68.0, 102.1, -25.77, 87.0, -16.0)                # lower fligh
 box(F, -68.0, 85.5, -40.0, 5.2, 3.0, 24.0, 'tuff')                 # landing (top at -16)
 box(F, -68.0, 85.5, -16.0, 5.2, 3.0, 0.1, 'travertine')
 stair_on_base(F, -68.0, 84.0, -16.0, 66.5, -7.0)                   # upper flight, onto the corner pier and the mid terrace
+box(F, -68.0, 66.26, -7.5, 4.0, 0.56, 0.56, 'travertine')          # its head slab: the flight's top tread stopped 0.5 m short of the strip's paving (a slit one could not step over on foot)
 
 # ---- forecourt on the upper arcade, low parapet, statues, flower beds; entrance porch on the north door
 box(F, 0, 55, 0, 130, 10, 0.12, 'paving')
-box(F, 0, 59.6, 0.12, 130, 0.6, 1.0, 'marble')  # solid parapet on the north edge
+# The north door's way down (2026-11-19; our conjecture: no stair is attested on this face). The forecourt had no way off it:
+# two flights, one on each side of the porch, go down along the upper north wall from the forecourt (0.12) to the mid terrace
+# (-6.88): a gap in the parapet, a head landing, 18 risers out (east on the east side, west on the west), a landing, 18 more.
+# 7.0 m in 36 risers of 0.194 on 0.30 m treads, 3.0 m wide, on a solid tuff base; 1.7 m of the terrace stays free between
+# their outer wall and the terrace's balustrade (at 3.6 m wide only 1.0 m was left).
+# From the west one's foot the terrace leads west to the north-west stair and down to the Vicus Tuscus.
+NG0, NG1, NGY, NGW = 40.0, 43.6, 61.5, 3.0                          # the gap and head landing (x), the flights' axis (y), their width
+NGR, NGL = 5.4, 1.6; NGZ = (0.12, -3.38, -6.88)                     # a flight's run, the landing's length; head, landing, foot
+for (pa, pb) in ((-65.0, -NG1), (-NG0, NG0), (NG1, 65.0)):          # solid parapet on the north edge, open at the two stair heads
+    box(F, (pa + pb) / 2, 59.6, 0.12, pb - pa, 0.6, 1.0, 'marble')
+for sd in (-1, 1):
+    xh, xl0 = sd * (NG0 + NG1) / 2, sd * (NG1 + NGR); xl1 = xl0 + sd * NGL; xf = xl1 + sd * NGR
+    box(F, xh, 61.45, -7.0, NG1 - NG0, 3.1, 7.0, 'tuff'); box(F, xh, 61.45, 0.0, NG1 - NG0, 3.1, 0.12, 'travertine')        # the head landing
+    box(F, xh, 63.3, -7.0, NG1 - NG0, 0.6, 8.02, 'tuff'); box(F, sd * (NG0 - 0.3), 61.75, -7.0, 0.6, 3.7, 8.02, 'tuff')      # its walls and parapets, north and towards the porch
+    stair_flight(F, xl0, NGY, sd * NG1, NGY, NGZ[1], NGZ[0], width=NGW, mat='travertine', cheek_mat='tuff')
+    box(F, (sd * NG1 + xl0) / 2, NGY, -7.0, NGR, NGW + 1.2, 7.0 + NGZ[1] - 0.48, 'tuff')
+    box(F, (xl0 + xl1) / 2, NGY, -7.0, NGL, NGW, 7.0 + NGZ[1] - 0.1, 'tuff'); box(F, (xl0 + xl1) / 2, NGY, NGZ[1] - 0.1, NGL + 0.02, NGW, 0.1, 'travertine')
+    for sy in (-1, 1):
+        box(F, (xl0 + xl1) / 2, NGY + sy * (NGW / 2 + 0.3), -7.0, NGL, 0.6, 7.0 + NGZ[1] + 0.9, 'tuff')
+    stair_flight(F, xf, NGY, xl1, NGY, NGZ[2], NGZ[1], width=NGW, mat='travertine', cheek_mat='tuff')
 for x in (-36, -12, 12, 36):
     statue(F, x, 57.0, 0.12, 2.4, 'marble', pedestal=1.0, ped_mat='marble')
 flower_bed(F, -58, 54, 0.12, 8, 5)
