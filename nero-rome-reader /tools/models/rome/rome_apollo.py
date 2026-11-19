@@ -133,7 +133,8 @@ def south_stairs(F):
 def upper_south_wall(F):
     """The upper south retaining wall exactly as retaining_wall(F, [(-H, -H), (H, -H)], 0, z_bot=ZM, buttress='square',
     every=10, b_size=2.2, parapet=None) built it, except that its coping is cut where the two stair landings cross it
-    to the portico doors, and the square buttresses the stairs now bury (x = +-20.9, +-31.3) are left out."""
+    to the portico doors, and only the two outer square buttresses (x = +-41.8) are kept: the stairs bury those at
+    +-20.9 and +-31.3, and the ones at +-10.4 and 0 would stand in or beside the recess under the exedra."""
     t, bt, zb, zt, bs = 2.2, 0.06, ZM, 0.0, 2.2
     Hh = zt - zb; bb = bt * Hh; L = 2 * H
     S = F.sub(-H, -H, 0.0, 0.0)
@@ -147,7 +148,7 @@ def upper_south_wall(F):
     nb = int(L / 10.0)
     for j in range(nb):
         u = (j + 0.5) * L / nb
-        if LAND_IN - 1.5 < abs(u - H) < ST_FOOT + 1.5:
+        if abs(u - H) < 37.0:                                 # only x = +-41.8 (review of 2026-11-19)
             continue
         box(S, u, -bs / 2 + 0.3, zb, bs * 1.1, bs + 0.6, Hh - 0.4, 'tuff')
         box(S, u, -bs / 2 + 0.3, zt - 0.45, bs * 1.1 + 0.3, bs + 0.9, 0.35, 'travertine')
@@ -180,7 +181,8 @@ def gate_and_paths(F):
     """The opening in the lower balustrade (x 7.5..11.5) with a marble pier at each side, each carrying the statue
     that stood next to it; dark peperino guide paving: across the wall top in the opening, level with the lower floor
     (R11: the coping stops there, lower_south_wall), and a band along the lower terrace from stair foot to stair foot,
-    past the colonnade and the exedra."""
+    in two pieces that stop at x +-3.4: the guide band enters the recess under the exedra through the bay beside the
+    axis on one side, crosses its peperino floor (exedra) and leaves through the bay on the other side."""
     zc = ZM + 0.35                                         # top of the lower wall's coping (it runs y -54.86..-52.62)
     for xp in (GATE_X0 - 0.5, GATE_X1 + 0.5):
         box(F, xp, YL, zc, 1.0, 1.0, 0.15, 'marble')
@@ -190,7 +192,7 @@ def gate_and_paths(F):
     g0, g1 = GATE_X0, GATE_X1
     box(F, (g0 + g1) / 2, (-54.86 - 52.62) / 2, ZM - 0.11, g1 - g0, 2.24, 0.12, 'peperino')   # over the wall top, the floor's level
     zf = ZM + 0.01
-    for x0, y0, x1, y1 in ((-ST_FOOT, -52.6, ST_FOOT, -51.0),                        # the band along the terrace
+    for x0, y0, x1, y1 in ((-ST_FOOT, -52.6, -3.4, -51.0), (3.4, -52.6, ST_FOOT, -51.0),   # the band, in two pieces
                            (ST_FOOT, -52.6, ST_FOOT + 1.5, -47.0),                     # pads in front of the stair feet
                            (-ST_FOOT - 1.5, -52.6, -ST_FOOT, -47.0)):
         add_poly('peperino', [F.p(x0, y0, zf), F.p(x1, y0, zf), F.p(x1, y1, zf), F.p(x0, y1, zf)])
@@ -226,18 +228,70 @@ def portico(F):
                 statue_lo(F, x, y, 0.0, 1.9, 'basalt', 0.6)              # the Danaids were black
 
 
+def clip_y(pts, yc):
+    """Clip a polygon (list of (x, y)) to the half-plane y <= yc (Sutherland-Hodgman); keeps the winding."""
+    out = []
+    for i in range(len(pts)):
+        (x0, y0), (x1, y1) = pts[i - 1], pts[i]
+        if (y0 <= yc) != (y1 <= yc):
+            f = (yc - y0) / (y1 - y0); out.append((x0 + (x1 - x0) * f, yc))
+        if y1 <= yc:
+            out.append((x1, y1))
+    return out
+
+
+def pier(F, x, y, rot, w, d, z1):
+    """A square ashlar pier from the lower floor (z -6) to z1: travertine plinth 0.25 and step 0.15, tuff shaft
+    w x d, travertine step 0.2 and abacus 0.28 at the top. Base and cap project 0.1 / 0.2 m past the shaft."""
+    S = F.sub(x, y, ZM, rot); h = z1 - ZM
+    box(S, 0, 0, 0.0, w + 0.4, d + 0.4, 0.25, 'travertine')          # plinth
+    box(S, 0, 0, 0.25, w + 0.2, d + 0.2, 0.15, 'travertine')         # step
+    box(S, 0, 0, 0.38, w, d, h - 0.84, 'tuff')                       # shaft
+    box(S, 0, 0, h - 0.48, w + 0.2, d + 0.2, 0.2, 'travertine')      # cap step
+    box(S, 0, 0, h - 0.28, w + 0.4, d + 0.4, 0.28, 'travertine')     # abacus, its top under the beam
+
+
 def exedra(F):
-    """Viewing exedra in the middle of the south side: a half-round bay of radius 8 m projecting over the slope.
-    Paved floor (z 0) on a 0.6 m slab carried by a ring of piers down to z -6, with open bays between the piers
-    so the lower colonnade shows through. Balustrade on the rim."""
-    R = 8.0; RI = 7.0; cy = -BACK; N = 17
+    """Viewing exedra in the middle of the south side: a half-round bay of radius 8 m about (0, -45) projecting over
+    the lower terrace. Paved floor (z 0) on a 0.6 m slab with a balustrade on the rim. Under the slab a curved
+    travertine beam (radius 6.45..8, z -1.25..-0.6, a small moulding along its top outer edge) runs from the
+    retaining wall round to the wall again; it rests on four square tuff piers on the ring (centre radius 7.25, at
+    228, 256, 284 and 312 degrees, the axis bay open) and on a wall pier at each end (x +-7.25), all with travertine
+    bases and caps. Behind the piers a shaded recess against the retaining wall, with two stone benches with low
+    backs. The recess floor is paved in dark peperino (a half disc of radius 6.45, with a threshold strip in each of
+    the two bays beside the axis): the guide band along the lower terrace enters the recess through the bay between
+    the 228 and 256 degree piers and leaves through the bay between 284 and 312 (gate_and_paths stops it there)."""
+    R = 8.0; RB = 6.45; RP = 7.25; cy = -BACK; N = 17
+    ZB0, ZB1 = -1.25, -0.6                                   # beam under the slab
+    YW = -46.4                                               # beam ends: wall face (~-46.7 at that height) + 0.3
     ang = [math.pi + math.pi * i / N for i in range(N + 1)]
-    arc = [(R * math.cos(a), cy + R * math.sin(a)) for a in ang]
-    prism(F, arc, -0.6, -0.02, 'tuff')                       # floor slab, carried by the piers below
-    for i in range(0, N, 2):                                 # piers on every other segment, open bays between them
-        p = [(R * math.cos(ang[i]), cy + R * math.sin(ang[i])), (R * math.cos(ang[i + 1]), cy + R * math.sin(ang[i + 1])),
-             (RI * math.cos(ang[i + 1]), cy + RI * math.sin(ang[i + 1])), (RI * math.cos(ang[i]), cy + RI * math.sin(ang[i]))]
-        prism(F, p, -6.0, -0.6, 'tuff')
+    ring = lambda r, a: (r * math.cos(a), cy + r * math.sin(a))
+    arc = [ring(R, a) for a in ang]
+    prism(F, arc, ZB1, -0.02, 'tuff')                        # floor slab
+    RM = R + 0.12 / math.cos(math.pi / (2 * N))              # moulding: 0.12 m out from the beam's chord faces
+    for a0, a1 in zip(ang, ang[1:]):                         # beam and moulding, segment by segment, cut at the wall
+        q = clip_y([ring(R, a0), ring(R, a1), ring(RB, a1), ring(RB, a0)], YW)
+        if len(q) > 2:
+            prism(F, q, ZB0, ZB1, 'travertine')
+        q = clip_y([ring(RM, a0), ring(RM, a1), ring(R, a1), ring(R, a0)], YW)
+        if len(q) > 2:
+            prism(F, q, ZB1 - 0.15, ZB1, 'travertine')
+    for deg in (228, 256, 284, 312):                         # free piers, one face looking radially outward
+        a = math.radians(deg); x, y = ring(RP, a)
+        pier(F, x, y, deg, 1.5, 1.5, ZB0)
+    for sd in (-1, 1):                                       # wall piers: 0.6 proud at the foot, back buried in the
+        pier(F, sd * RP, -47.1, 0.0, 1.5, 1.0, ZB0)          # battered wall (y -47.6..-46.6)
+        bx = sd * 3.3                                        # stone bench against the wall: seat top z -5.52
+        box(F, bx, -47.25, ZM + 0.36, 2.4, 0.5, 0.12, 'travertine')
+        box(F, bx, -47.05, ZM + 0.48, 2.4, 0.1, 0.45, 'travertine')   # low back slab against the wall
+        for s in (-0.85, 0.85):
+            box(F, bx + s, -47.25, ZM, 0.3, 0.44, 0.36, 'travertine')
+        a = math.radians(270 + sd * 28)                      # threshold strip in the bay (242 / 298 degrees), 1.6 m
+        ca, sa = math.cos(a), math.sin(a)                    # wide (between the plinths), r 6.3..8.2, joining the band
+        q = [(r * ca - t * sa, cy + r * sa + t * ca) for r, t in ((6.3, -0.8), (8.2, -0.8), (8.2, 0.8), (6.3, 0.8))]
+        add_poly('peperino', [F.p(x, y, ZM + 0.011) for x, y in q])
+    # recess floor: dark peperino half disc r 6.45 on the slab's polyline, cut at the wall foot (y -47)
+    add_poly('peperino', [F.p(x, y, ZM + 0.012) for x, y in clip_y([ring(RB, a) for a in ang], -47.0)])
     add_poly('paving', [F.p(x, y, 0.0) for x, y in arc])
     for (x0, y0), (x1, y1) in zip(arc, arc[1:]):
         balustrade(F, x0, y0, x1, y1, 0.0, 1.05, 'marble', 2.2, 0.28)
@@ -258,17 +312,6 @@ def propylon(F):
         entablature(S, x, -4.0, x, 4.0, base + COL_H, ENT_H, 0.9, 'marble')
     gable_roof(S, 0, 0, base + COL_H + ENT_H, 14.0, 9.0, pitch=15.0, axis='y', overhang=0.5,
                gable_mat='marble', pediment=True, tymp_mat='plaster')
-
-def lower_colonnade(F):
-    """Layering on the lower terrace (z -6): a 30 m Ionic colonnade, one storey, its lean tile roof against the upper
-    south wall. It stands in the middle under the exedra; the exedra's piers and open bays let it show through."""
-    YC, ZC = -50.0, -6.0
-    xs = [-15.0 + i * 3.75 for i in range(9)]
-    for x in xs:
-        column(F, x, YC, ZC, 3.2, None, 'giallo', 'ionic', 0, 8)
-    entablature(F, xs[0], YC, xs[-1], YC, ZC + 3.2, 0.6, 0.7, 'marble')
-    lean_roof(F, xs[0], -46.5, xs[-1], -46.5, -1.2, 4.3, 1.0)
-
 
 def lower_statues(F):
     """A row of marble statues on pedestals every 6 m, inboard of the lower balustrade, standing on its coping."""
@@ -329,7 +372,6 @@ balustrade(F, -46.34, -H, -46.34, YL, ZM + 0.35, 1.05, 'marble', 2.2, 0.28)
 
 exedra(F)
 portico(F)
-lower_colonnade(F)
 lower_statues(F)
 south_stairs(F)
 gate_and_paths(F)
