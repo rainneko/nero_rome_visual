@@ -408,3 +408,16 @@ The author settled several points with the copy session; the plan has 142 rooms 
 - [x] Web file 67 488 triangles; parts file with `tib_base`, `tib_b1`, `tib_garden`, `tib_f1`, `tib_f2`, `tib_f3`, `tib_roof`
 - [x] `room_<id>` slabs for all 141 rooms, partitions, doors, stairs; `apart` and `f1_rooms` renders
 - [x] 暗阁: W02b on the tower's ground floor (plan revision 2026-11-14, below)
+
+## The north gate's way down (2026-11-19)
+The author: no gate of the palace could be reached on foot from a road. Measured with the walker's own height grid
+(`src/ui/fp.js`, steps of at most 0.5 m): the north door stood on the forecourt (page height 54.8) with no way off it;
+the side door's way down was cut at the head of the north-west stair (the top tread stopped 0.5 m short of the terrace
+paving) and, lower down, by the crown of a pine planted at the rock's foot, which hung over the outer lane.
+* Two flights, one on each side of the porch, go down along the upper north wall from the forecourt to the mid terrace
+  (47.8): a gap in the parapet at x 40..43.6, a head landing, 18 risers, a landing, 18 risers; 7.0 m, risers 0.194,
+  treads 0.30, 3.0 m wide (1.7 m of the terrace stays free beside them). 【史】 no stair is attested on this face: our conjecture.
+* A head slab closes the slit at the north-west stair's head.
+* `palRockScrub` (palatine.js) plants a cypress, not a spreading tree, within 6 m of the north-west stair's lanes.
+* Walked both ways with `tools/test/fp-walk.mjs`: Vicus Tuscus (8.1) -> north-west stair -> mid terrace -> west flight ->
+  north door (54.9), and the same to the side door. No footprint changed; `bake-roads.mjs --check` is up to date.
