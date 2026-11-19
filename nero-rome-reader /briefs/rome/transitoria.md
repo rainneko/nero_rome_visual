@@ -115,3 +115,19 @@ page label texts; trees in the court from the page; the two ground anchors.
 - [x] Gold only as bands and on the tower and gate pediment
 - [x] No 【书】 on anything but the tower, lift, clay model and drawing office
 - [x] Parts file with 82 `room_<id>` objects; web file 61 064 triangles
+
+## The north gate's way down (2026-11-19)
+
+The way from the north door to the street, hill coordinates (lx, lz): the grand stair on the axis (lx 73.3, 51.82 to 42), the gate platform (42),
+the paired upper flights gUE / gUW along its front wall (42 to 39), the paved front of the gate garden, the central flight in the slot (39 to 34),
+the terrace 34, the lower flights gLE / gLW (34 to 26), the foot terrace 26, the street stair footMC (26 to 20.6).
+
+The break was at the feet of gUE and gUW. The slot's head stood at lz -157.3; its end piers (to lz -157.1) and the exedra's corner piers (to lz -156.55)
+left 0.55 m between them, so nobody could pass from an upper flight's foot to the central flight. The slot's head is at lz -158.6 now: the paved front
+is 3.1 m deep from the platform's wall to the head and about 1.8 m clear between the piers.
+
+Checked with the first-person walker (`tools/test/fp-walk.mjs`): street stair foot, terrace 26, gLE, terrace 34, central flight, gUE, platform, grand
+stair, the model's own west flight (51.82 to 56.9), the terrace before the north door, the door (lx 73.3, lz -109.1); the same way down to the street; gUW down to the terrace 34. Pictures: `docs/screenshots/palace-gates-transitoria-20261119/`.
+
+Open: the street stair footMC ends on the earth yard under the foot wall (20.6 m); the nearest street is 11.5 m further down (14.8 m), with no paving
+between them.
