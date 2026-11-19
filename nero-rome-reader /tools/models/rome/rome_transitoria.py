@@ -8,6 +8,7 @@ Below z = 0 (two stepped terraces on all four sides, the hill base down to z -14
 import os, sys, math, random, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rk import *                     # noqa: F401,F403  (box, wall, column, statue, rect_building, ...)
+from rk import _seg_frame
 import bpy
 import bl_kit as _bk
 from mathutils import Vector
@@ -230,6 +231,61 @@ def _quad_up(mat, a, b, c, d):
     add_poly(mat, [a, b, c, d] if (b - a).cross(c - a).z >= 0 else [d, c, b, a])
 
 
+def _runs(a, b, cuts):
+    """The parts of the interval a..b outside the (u0, u1) cuts."""
+    out, s = [], a
+    for (u0, u1) in sorted(cuts):
+        if u0 > s:
+            out.append((s, min(u0, b)))
+        s = max(s, u1)
+    if s < b:
+        out.append((s, b))
+    return out
+
+
+def wall_run(p0, p1, z_top, z_bot, bastions=(), butts=(), cut=(), parapet=False, p_cut=(), t=2.2, mat='tuff',
+             batter=0.06, courses=4.0, course_mat='grey', cm='grey', p_cop='grey', b_size=7.5, b_rise=0.8,
+             bt_size=1.8):
+    """One straight run of rk.retaining_wall (same body, string courses, coping, D-bastions or square buttresses and
+    'wall' parapet), with the bastions / buttresses at the given distances u along p0 -> p1, the coping left out on
+    the `cut` u ranges and the parapet on the `p_cut` ones, and no corner piers (the neighbouring walls make them)."""
+    S, L = _seg_frame(F, p0[0], p0[1], p1[0], p1[1], 0)
+    H = z_top - z_bot; bb = batter * H
+    v = [S.p(0, 0, z_bot), S.p(L, 0, z_bot), S.p(L, t, z_bot), S.p(0, t, z_bot),
+         S.p(0, bb, z_top), S.p(L, bb, z_top), S.p(L, t, z_top), S.p(0, t, z_top)]
+    add_mesh(mat, v, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
+    k = 1
+    while z_bot + k * courses < z_top - 0.8:
+        zz = z_bot + k * courses; off = batter * (zz - z_bot)
+        box(S, L / 2, off - 0.08, zz, L, 0.3, 0.28, course_mat); k += 1
+    for (a, b) in _runs(-0.1, L + 0.1, cut):
+        box(S, (a + b) / 2, bb + t / 2 - 0.2, z_top - 0.05, b - a, t + 0.4 - bb, 0.4, cm)
+    rr = b_size / 2; capR = rr + 0.25; zbt = z_top + b_rise
+    for u in bastions:
+        arc = [(u - rr * math.cos(math.pi * q / 16), -rr * math.sin(math.pi * q / 16)) for q in range(17)]
+        prism(S, [(u - rr, bb + 0.3)] + arc + [(u + rr, bb + 0.3)], z_bot, zbt - 0.45, mat)
+        arc2 = [(u - capR * math.cos(math.pi * q / 16), -capR * math.sin(math.pi * q / 16)) for q in range(17)]
+        prism(S, [(u - capR, bb + 0.3)] + arc2 + [(u + capR, bb + 0.3)], zbt - 0.45, zbt - 0.05, cm)
+    for u in butts:
+        box(S, u, -bt_size / 2 + 0.3, z_bot, bt_size * 1.1, bt_size + 0.6, H - 0.4, mat)
+        box(S, u, -bt_size / 2 + 0.3, z_top - 0.45, bt_size * 1.1 + 0.3, bt_size + 0.9, 0.35, cm)
+    if parapet:
+        zp = z_top + 0.35
+        for (a, b) in _runs(0.0, L, p_cut):
+            box(S, (a + b) / 2, bb + 0.35, zp, b - a, 0.5, 1.0, mat)
+            box(S, (a + b) / 2, bb + 0.35, zp + 1.0, b - a + 0.1, 0.62, 0.14, p_cop)
+
+
+def hexa(xa, xb, ya, yb, zba, zbb, zta, ztb, mat):
+    """A block from x xa to xb and y ya to yb whose bottom runs from zba (at xa) to zbb (at xb) and its top from
+    zta to ztb: sloping stair cheeks and copings."""
+    if xa > xb:
+        xa, xb, zba, zbb, zta, ztb = xb, xa, zbb, zba, ztb, zta
+    v = [F.p(xa, ya, zba), F.p(xb, ya, zbb), F.p(xb, yb, zbb), F.p(xa, yb, zba),
+         F.p(xa, ya, zta), F.p(xb, ya, ztb), F.p(xb, yb, ztb), F.p(xa, yb, zta)]
+    add_mesh(mat, v, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
+
+
 def apron(p0, p1, z_in, z_out, w, seed, step=3.5):
     """Rock apron at the foot of a wall p0 -> p1 (outside = right side): rises from the ground (z_out, w m out)
     to z_in against the wall foot. Craggy: jittered rows. Top surface only; the ground hides the rest."""
@@ -264,20 +320,46 @@ box(F, 35.75, 0, ZB, 50.9, 36.6, -ZB, 'tuff')                       # fill A eas
 box(F, 0, 0, ZB, 20.6, 36.6, 0.5, 'tuff')                           # under the sunken water court (floor z -4.5: transitoria-v2, review of round 1)
 retaining_wall(F, [(62.0, -52.0), (62.0, 52.0)], 0.0, z_bot=ZB, t=2.2, mat='tuff', buttress='square', every=9.0,
                parapet=None, course_mat='grey', coping_mat='grey')                 # terrace A east (under the portico)
-retaining_wall(F, [(62.0, 52.0), (-62.0, 52.0)], 0.0, z_bot=ZB, t=2.2, mat='tuff', buttress='square', every=9.0,
-               parapet=None, course_mat='grey', coping_mat='grey')                 # terrace A north
+# terrace A north (y 52, no parapet), u = 62 - x: the old 13 square buttresses every 124/13 m, without the three
+# at x 0 and +-9.5 (now the flights up from B and the axis statue) and with the two at +-19.1 moved out to +-20.5,
+# just past the flights' top landings; the coping is left out at the landings (x +-16.5..+-19.5): step off flush.
+A_BUTTS = [u for u in ((j + 0.5) * 124.0 / 13 for j in range(13)) if abs(62.0 - u) > 20.0] + [62.0 - 20.5, 62.0 + 20.5]
+wall_run((62.0, 52.0), (-62.0, 52.0), 0.0, ZB, butts=A_BUTTS, cut=[(62.0 - 19.5, 62.0 - 16.5), (62.0 + 16.5, 62.0 + 19.5)])
 retaining_wall(F, [(-62.0, 52.0), (-62.0, -52.0)], 0.0, z_bot=ZB, t=2.2, mat='tuff', buttress='square', every=9.0,
                parapet=None, course_mat='grey', coping_mat='grey')                 # terrace A west
 retaining_wall(F, [(-62.0, -52.0), (62.0, -52.0)], 0.0, z_bot=ZB, t=2.2, mat='tuff', buttress='square', every=9.0,
                parapet='wall', course_mat='grey', coping_mat='grey')               # terrace A south
-retaining_wall(F, [(68.0, -58.0), (68.0, 58.0)], ZB, z_bot=ZG, t=2.2, mat='tuff', bastion='d', every=20.0, b_size=7.5, b_rise=0.8, coping=True,
-               parapet=None, course_mat='grey', coping_mat='grey')                 # terrace B east
-retaining_wall(F, [(68.0, 58.0), (-68.0, 58.0)], ZB, z_bot=ZG, t=2.2, mat='tuff', bastion='d', every=20.0, b_size=7.5, b_rise=0.8, coping=True,
-               parapet='wall', course_mat='grey', coping_mat='grey')               # terrace B north
-retaining_wall(F, [(-68.0, 58.0), (-68.0, -58.0)], ZB, z_bot=ZG, t=2.2, mat='tuff', bastion='d', every=20.0, b_size=7.5, b_rise=0.8, coping=True,
-               parapet='wall', course_mat='grey', coping_mat='grey')               # terrace B west
-retaining_wall(F, [(-68.0, -58.0), (68.0, -58.0)], ZB, z_bot=ZG, t=2.2, mat='tuff', bastion='d', every=20.0, b_size=7.5, b_rise=0.8, coping=True,
-               parapet=None, course_mat='grey', coping_mat='grey')                 # terrace B south
+retaining_wall(F, [(68.0, -58.0), (68.0, 58.0)], ZB, z_bot=ZG, t=2.2, mat='tuff', bastion=None, buttress=None,
+               coping=True, parapet=None, course_mat='grey', coping_mat='grey')    # terrace B east: no bastions (the
+#                                                                                    scene fills the gap east of it to B)
+# Terrace B walls: square buttresses, no D-bastions (R7, the review of 2026-11-14: drum piers only at the Tiberiana's
+# two places; a buttress every 8-10 m, only where the wall stands more than 4 m above the ground outside it in the
+# scene). BT_B: 2.2 m buttresses for these 9 m walls (terrace A's 5 m walls keep 1.8).
+BT_B = 2.2
+# terrace B north (y 58), u = 68 - x: shows 8-9.8 m along its whole length. Fourteen buttresses every 136/15 = 9.07 m,
+# without the one on the axis; the inner two at x +-9.07, clear of the 8 m grand stair and its cheeks. Gate on the
+# axis: parapet and coping open at x -4..4, the floor runs flush over the wall top, a pier at each side, the batter
+# filled so the scene's stair abuts a plain face at y 58.
+GATE = 4.0
+B_BUTTS_N = [u for u in ((j + 0.5) * 136.0 / 15 for j in range(15)) if abs(u - 68.0) > 5.0]
+wall_run((68.0, 58.0), (-68.0, 58.0), ZB, ZG, butts=B_BUTTS_N, cut=[(68.0 - GATE, 68.0 + GATE)], parapet=True,
+         p_cut=[(68.0 - GATE, 68.0 + GATE)], cm='rock2', bt_size=BT_B)
+box(F, 0, 57.7, ZG, 2 * GATE, 0.6, (ZB - 0.18) - ZG, 'tuff')                      # batter fill under the threshold
+for sx in (-1, 1):                                                                  # gate piers
+    px = sx * (GATE + 0.5)
+    box(F, px, 57.11, ZB, 1.2, 1.0, 0.42, 'marble')
+    box(F, px, 57.11, ZB + 0.42, 1.0, 0.8, 2.2, 'marble')
+    box(F, px, 57.11, ZB + 2.62, 1.25, 1.05, 0.25, 'marble')
+    box(F, px, 57.11, ZB + 2.87, 0.6, 0.6, 0.18, 'marble')
+    sphere(F, px, 57.11, ZB + 3.33, 0.3, 'marble', 10, 6)
+# terrace B west, u = 58 - y: more than 4 m only at its north end (9.7 m at u 1-8, 4 m at u 13; the rest 0.7-0.9 m,
+# behind the office blocks): two buttresses, at u 4 and 12.5
+wall_run((-68.0, 58.0), (-68.0, -58.0), ZB, ZG, butts=[4.0, 12.5], parapet=True, cm='rock2', bt_size=BT_B)
+# terrace B south, u = x + 68: more than 4 m only over the dip at u 103-116 (4.0-4.6 m; elsewhere under 3.5 m, mostly
+# behind houses): two buttresses, at u 105 and 114
+wall_run((-68.0, -58.0), (68.0, -58.0), ZB, ZG, butts=[105.0, 114.0], cm='rock2', bt_size=BT_B)
+for (x, y) in ((-68.0, 58.0), (-68.0, -58.0)):                                       # the west corner piers (wall_run
+    box(F, x, y, ZG, 2.8, 2.8, (ZB - ZG) + 0.35, 'tuff')                           # makes none; the east wall makes its own)
 # paving of the terrace tops (A at z 0, B at z -5)
 checker_paving(F, -62.0, -52.0, -56.0, 52.0, z=0.12, tile=2.4)                   # A west strip
 checker_paving(F, 56.0, -52.0, 62.0, 52.0, z=0.12, tile=2.4)                    # A east strip under the portico
@@ -301,8 +383,36 @@ for xx in (-24.0, 24.0):
     statue(F, xx, 49.0, 0.12, 2.0, 'marble', pedestal=1.0, ped_mat='marble')
 for yy in (-36.0, 0.0, 36.0):
     statue(F, -65.0, yy, ZB + 0.12, 2.0, 'marble', pedestal=1.0, ped_mat='marble')
-for xx in (-36.0, 0.0, 36.0):
+for xx in (-36.0, 36.0):
     statue(F, xx, 55.0, ZB + 0.12, 2.0, 'marble', pedestal=1.0, ped_mat='marble')
+# the row's middle statue now stands on the axis against wall A, between the flight feet, facing the gate (north)
+statue(F, 0.0, 53.3, ZB + 0.12, 2.0, 'marble', pedestal=1.0, ped_mat='marble', rot=0.0)
+
+# two flights from terrace B up to terrace A against wall A's face (y 52..55): feet at x +-4 by the axis, climbing
+# outward, 30 risers of 1/6 m from B's paving (z -4.88) to A's (z 0.12): 29 treads of 12.5/29 m (x 4..16.5), then
+# a top landing x 16.5..19.5 from which you step south onto A (its coping is left out there). Every step is solid
+# down to B. A tuff cheek wall with a grey coping, 1.05 m above the nosings, closes each flight's open north side
+# and the landing's north side and outer end.
+FZ0, FZ1, FN = ZB + 0.12, 0.12, 30
+FX0, FX1, FXL = 4.0, 16.5, 19.5
+FRUN = (FX1 - FX0) / (FN - 1)
+FY0, FY1 = 51.75, 54.8                       # treads: from wall A's (battered) face to under the cheek
+CY0, CY1 = 54.6, 55.05                       # cheek wall
+RAIL = 1.05
+for sx in (-1, 1):
+    for i in range(1, FN):
+        xa = FX0 + (i - 1) * FRUN
+        box(F, sx * (xa + FRUN / 2), (FY0 + FY1) / 2, ZB, FRUN + 0.01, FY1 - FY0, FZ0 + i * (FZ1 - FZ0) / FN - ZB, 'marble')
+    box(F, sx * (FX1 + FXL) / 2, (52.0 + FY1) / 2, ZB, FXL - FX1, FY1 - 52.0, FZ1 - ZB, 'marble')        # landing
+    nos0 = FZ0 + (FZ1 - FZ0) / FN                                                  # first nosing (x 4)
+    hexa(sx * FX0, sx * FX1, CY0, CY1, ZB, ZB, nos0 + RAIL - 0.14, FZ1 + RAIL - 0.14, 'tuff')        # sloping cheek
+    hexa(sx * FX0, sx * FX1, CY0 - 0.05, CY1 + 0.05, nos0 + RAIL - 0.14, FZ1 + RAIL - 0.14, nos0 + RAIL, FZ1 + RAIL, 'grey')
+    box(F, sx * (FX1 + FXL) / 2, (CY0 + CY1) / 2, ZB, FXL - FX1, CY1 - CY0, FZ1 + RAIL - 0.14 - ZB, 'tuff')   # landing N
+    box(F, sx * (FX1 + FXL) / 2, (CY0 + CY1) / 2, FZ1 + RAIL - 0.14, FXL - FX1 + 0.1, CY1 - CY0 + 0.1, 0.14, 'grey')
+    box(F, sx * (FXL - 0.225), (51.7 + CY1) / 2, ZB, 0.45, CY1 - 51.7, FZ1 + RAIL - 0.14 - ZB, 'tuff')   # landing end
+    box(F, sx * (FXL - 0.225), (51.7 + CY1) / 2, FZ1 + RAIL - 0.14, 0.55, CY1 - 51.7 + 0.1, 0.14, 'grey')
+    box(F, sx * (FX0 + 0.35), (CY0 + CY1) / 2, ZB, 0.7, 0.65, nos0 + RAIL + 0.35 - ZB, 'marble')       # newel at the foot
+    box(F, sx * (FX0 + 0.35), (CY0 + CY1) / 2, nos0 + RAIL + 0.35, 0.82, 0.77, 0.14, 'marble')
 
 # round basin with a statue group, raised on the south terrace B (between the two colonnade runs)
 FY = -55.0
@@ -318,6 +428,7 @@ for ang in (0, 180):
 top_e = rock_mass(F, [(62.0, -62.0), (78.0, -62.0), (78.0, 62.0), (62.0, 62.0)], -17.0, -10.5, seed=21,
                   strata=3, step=5.5, boulders=2, grid=6.0, ground=-14.0)                   # ledge band under the east wall
 foot_rocks(F, [(68.0, -58.0), (68.0, 58.0)], (-14.6, -14.0), width=4.0, seed=11, blocks=4, top_z=top_e)     # east foot
+# (the rock above stays below z -6.1 between y -33 and 58: the scene fills the gap east of wall B to z -5)
 foot_rocks(F, [(68.0, 58.0), (-68.0, 58.0)], (-14.6, -14.0), width=4.0, seed=12, blocks=6)     # north foot
 foot_rocks(F, [(-68.0, 58.0), (-68.0, -58.0)], (-14.6, -14.0), width=4.0, seed=13, blocks=6)   # west foot
 top_s = rock_mass(F, [(-66.0, -70.0), (63.0, -70.0), (63.0, -56.0), (-66.0, -56.0)], -17.0, -10.5, seed=22,
