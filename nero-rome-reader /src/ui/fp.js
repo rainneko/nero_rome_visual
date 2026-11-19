@@ -245,6 +245,14 @@ void main(){vec2 q=gl_PointCoord-.5;q=vec2(q.x*vR.x-q.y*vR.y,q.x*vR.y+q.y*vR.x);
 
 /* ----- the walk ----- */
 function fpNote(s){const el=$('#fpNote');if(el){el.textContent=s;el.hidden=!s;}}
+// One-sided faces (roof sheets, parapet slabs, model walls that have no back) are see-through from behind. From the air nobody is behind them;
+// on foot one is, all the time. While walking, every opaque lit material draws both sides (its shadow pass keeps the back faces it used before);
+// new models that arrive later are picked up every 3 s. Leaving the walk puts every material back.
+const FPS={M:new Set(),t:0};
+function fpSides(on){if(!W0)return 0;if(!on){FPS.M.forEach(m=>{m.side=THREE.FrontSide;m.shadowSide=null;m.needsUpdate=true;});const n=FPS.M.size;FPS.M.clear();return n;}
+  let n=0;W0.scene.traverse(o=>{if(!o.isMesh||!o.material)return;const A=Array.isArray(o.material)?o.material:[o.material];
+    for(const m of A){if(!m||m.side!==THREE.FrontSide||m.transparent||m.isShaderMaterial||m.isMeshBasicMaterial||FPS.M.has(m)||(m.userData&&m.userData.water))continue;
+      m.side=THREE.DoubleSide;m.shadowSide=THREE.BackSide;m.needsUpdate=true;FPS.M.add(m);n++;}});return n;}
 function fpEnter(x,z){if(FP.on||!W0||PAGE!=='rome')return false;
   // the palaces and temples are models that arrive some seconds after the page: land once they stand, or the walker ends up inside one
   if(typeof romeLoadModels==='function'&&ROME.GLB.length&&!window.__romeReady){romeLoadModels();if(!FP.pend){fpNote('正在等宫殿和神庙的模型就位……');FP.pend=setInterval(()=>{if(window.__romeReady){clearInterval(FP.pend);FP.pend=0;fpNote('');fpEnter(x,z);}},250);}return false;}
@@ -255,13 +263,13 @@ function fpEnter(x,z){if(FP.on||!W0||PAGE!=='rome')return false;
   FP.G.visible=false;const C=FPM.landing(x,z);let p=null,pn=-1;for(let i=0;i<C.length&&i<8;i++){const c=C[i];FPM.grid(c[0],c[2],c[1]);const s=fpSettle(c[0],c[2],c[1]);if(!s)continue;const n=FPM.reach(s[0],s[2],s[1],700);if(n>pn){pn=n;p=s;}if(n>=700)break;}
   if(!p)p=C[0];FP.x=p[0];FP.z=p[2];FP.g=FP.y=p[1];FP.yaw=view.yaw;FP.pitch=0;FP.vx=FP.vz=0;FP.bob=0;FP.trail.length=0;FP.keys.clear();FP.moved=0;
   FP.on=true;FP.paused=false;camT=null;U.uWind.value.z=1;U.uFP.value.set(1,FPC.GRASS_R-9,0,0);FPN.init();FPL.init();FPN.clear();FPG.n=0;
-  FPM.now(FP.x,FP.z,FP.g);FP.G.visible=true;
+  FPM.now(FP.x,FP.z,FP.g);FP.G.visible=true;fpSides(true);FPS.t=performance.now();
   // face the way one can walk farthest (of 16), the bird's-eye heading breaking ties: not a wall or a tree in the face
   {let by=FP.yaw,bd=-1;for(let k=0;k<16;k++){const yw=view.yaw+k*TAU/16,fx=-Math.sin(yw),fz=-Math.cos(yw);let g=FP.g,d=0;while(d<30){g=FPM.stand(FP.x+fx*(d+.35),FP.z+fz*(d+.35),g,FPC.R);if(!(g===g))break;d+=.35;}if(d>bd+.5){bd=d;by=yw;}}FP.yaw=by;}
   camera.fov=FPC.FOV;document.body.classList.add('fp');$('#tWalk')&&$('#tWalk').classList.add('on');fpHud();resize();
   FP.hintT=performance.now()+9000;$('#fpHint').classList.remove('gone');fpLock();W0.sdirty=1;return true;}
 function fpExit(){if(!FP.on)return;FP.on=false;FP.paused=false;const s=FP.save;view.tgt.copy(s.tgt);view.yaw=s.yaw;view.pitch=s.pitch;view.dist=s.dist;camera.fov=s.fov;camera.near=s.near;camera.far=s.far;camera.updateProjectionMatrix();
-  U.uWind.value.z=0;U.uFP.value.x=0;FP.G.visible=false;FPN.clear();FPM.job=null;document.body.classList.remove('fp','fp-paused');$('#tWalk')&&$('#tWalk').classList.remove('on');
+  U.uWind.value.z=0;U.uFP.value.x=0;FP.G.visible=false;fpSides(false);FPN.clear();FPM.job=null;document.body.classList.remove('fp','fp-paused');$('#tWalk')&&$('#tWalk').classList.remove('on');
   if(document.pointerLockElement===canvas)document.exitPointerLock();resize();W0.sdirty=1;}
 function fpLock(){if(isTouch||TEST)return;try{const p=canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
 function fpPause(on){if(!FP.on)return;FP.paused=on;FP.keys.clear();document.body.classList.toggle('fp-paused',on);if(!on)fpLock();}
@@ -271,6 +279,7 @@ function fpUnstick(){const g=FPM.stand(FP.x,FP.z,FP.g,FPC.R);if(g===g)return;con
 function fpSettle(x,z,y){for(let r=0;r<6;r+=.125)for(let k=0;k<(r?12:1);k++){const a=k/12*TAU,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r,t=FPM.at(px,pz);if(t<-1e8||Math.abs(t-y)>1.2)continue;const g=FPM.stand(px,pz,t,FPC.R);if(g===g)return[px,g,pz];}return null;}
 function fpHud(){const el=$('#fpWhere');if(el)el.textContent='第一人称 · '+(FP.onHill(FP.x,FP.z)?'帕拉蒂尼山':'罗马城')+' · '+STATES[Math.max(0,curS)].t.split(' · ')[0];}
 function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
+  {const n=performance.now();if(n-FPS.t>3000){FPS.t=n;fpSides(true);}}
   if(!FP.paused){
     const run=K.has('shift'),sp=run?FPC.RUN:FPC.WALK;let mf=0,ms=0;if(K.has('w')||K.has('arrowup'))mf+=1;if(K.has('s')||K.has('arrowdown'))mf-=1;if(K.has('d'))ms+=1;if(K.has('a'))ms-=1;
     if(K.has('arrowleft')||K.has('q'))FP.yaw+=1.9*dt;if(K.has('arrowright')||K.has('e'))FP.yaw-=1.9*dt;
