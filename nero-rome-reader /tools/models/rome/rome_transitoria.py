@@ -33,7 +33,10 @@ OPTS = {
     'MS2': {'open': [(2, 'S', -32.0, 32.0)], 'gold': True, 'col_mat': 'grey'},                          # 2S04 南敞廊
     'MS1': {'windows': {(3, 'S'): (1.2, 2.4, 13.0, 'arch'), (3, 'N'): (1.2, 2.4, 13.0, 'arch')}, 'gold': True},   # the south block's third storey: a row of arched windows
     'MSE2': {'open': [(1, 'S', 38.0, 56.0), (1, 'E', -46.0, -36.0)], 'deck': 'paving'},   # S16 南敞廊 under the terrace 2S16
-    'MSW1': {'vault_mat': 'stone', 'windows': {(1, 'W'): (1.6, 2.8, 3.4, 'arch', 7.0)}}, 'MSW2': {'vault_mat': 'stone'},   # the bath: warm grey vaults (the kit has no grey plaster), three arched windows to the west
+    # the bath: warm grey vault ends (the kit has no grey plaster), three arched windows to the west. The vaults' backs are tiled (the
+    # author, 2026-11-20: bare stone read as a building with no roof). 【史】Roman builders kept the rain off a vault's back with tiles laid
+    # in mortar over it, or with a pitched roof on a fill; tiles on the curve keep the vaults' shape seen from the hill.
+    'MSW1': {'vault_mat': 'stone', 'vault_top': 'tile', 'windows': {(1, 'W'): (1.6, 2.8, 3.4, 'arch', 7.0)}}, 'MSW2': {'vault_mat': 'stone', 'vault_top': 'tile'},
     # East front (ME3, ME5: flat roofs at 11.6 since the review of round 2): lower order Ionic in pavonazzetto, upper order
     # Corinthian in white marble, 3.8 m, standing on the floor with a stone balustrade between; a beam 0.8 m up to the roof,
     # a stone balustrade round the roof with figures on its piers (below).

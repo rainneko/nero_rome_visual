@@ -576,7 +576,8 @@ gate_and_paths(F)
 # temple: podium, front stair, columns; the Sun's quadriga replaces the front acroterion on the apex
 TW, TL = 24.0, 40.0
 T = podium_temple(F, 0.0, TEMPLE_Y, W=TW, L=TL, pod_h=5.0, col_h=14.0, nf=6, kind='pseudo', porch=3,
-                  order='corinthian', front='-Y', stair='front', flutes=12, door_mat='giallo', acroteria=None, seg=10)
+                  order='corinthian', front='-Y', stair='front', flutes=12, door_mat='giallo', acroteria=None, seg=10,
+                  cella_mat='marble_wall')   # the author, 2026-11-20: the half-columns merged with the wall; the wall is laid in courses, a shade darker
 rc = 14.0 / 20.0; m = rc * 1.6 + 0.35; ed = rc * 2.9
 Le = (TL - 2 * m) + ed                      # roof length, front pediment to back pediment
 We = 2 * (TW / 2 - m) + ed                  # roof width

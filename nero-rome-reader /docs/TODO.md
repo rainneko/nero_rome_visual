@@ -1161,6 +1161,18 @@ Keep this file current: every promise made to the author goes here until it is d
   `rome_domus_b.glb` 原来是 11-04 导出的旧件，这次照现在的脚本导出，H1 R7 的方扶壁也带上了。
 - [x] 检查：`npm run check`、`bake-roads.mjs --check`、`city-audit.mjs --assert`、`test:boot` 通过；模型不改占地，不用重新烘焙。
 
+### 2026-11-20 帕拉蒂尼窗户、拱廊门、阿波罗神庙半柱、过渡宫浴室拱顶（作者四条，分支 `claude/palatine-windows-arcades`）
+- [x] 窗户：帕拉蒂尼的模型（提比略宫、过渡宫、阿波罗圣域、奥古斯都宅、宅块 a–d、大母神庙、胜利女神庙）窗洞后面是一块平板（`dark`，拱窗是 `gallery_wall`），
+  页面把它提亮成灰色方块。`assets.js` 的 `romeWindows` 在模型载入时按大小（竖直平面，方窗宽 0.4–2.0、高 0.5–2.25 m，拱窗宽 0.5–2.1、高 0.8–3.5 m）
+  把窗板挑出来，换成 `window` 材质，每扇窗带自己的坐标：木窗框，窗内按各自的骰子画木格栅（约 2/3）、关着的两扇木板窗或推开的窗扇，夜里部分窗亮灯。
+  门、拱廊背墙比这个大，不动。不改 GLB。参照元老宅花园面（`renders/palatine/domus-loggia-v1`）的木格窗。没找到可用的 CC0 罗马窗户资产。
+  - [ ] 以后要全城用：把 `ROME_WIN` 放宽；或者等门窗图集（2026-10-27 那条）。
+- [x] 民居拱窗后面的门（`materials.js` 拱窗视差背墙）：原来宽 0.36 m，像一条缝，约 28% 的拱里才有。改成双扇木板门，宽约拱宽的三分之一（0.72–1.1 m），石门框，五个拱里四个有。
+- [x] 阿波罗神庙半柱（`rk.py` `podium_temple` 的 `pseudo`）：内殿墙厚 t 以柱轴为中线，侧墙和后墙把半柱埋得只剩一条边。改成墙外皮在柱轴上，半柱露出一半
+  （如尼姆方形神庙）。内殿墙改用新材质 `marble_wall`（页面画石块砌缝，颜色比柱子暗一档）。重新导出 `rome_apollo.glb`（包围盒不变）。只有阿波罗用 `pseudo`。
+- [x] 过渡宫浴室两道筒拱（MSW1、MSW2）背上原是光石头，看着像没顶。`tib_plan._vault` 加 `vault_top`，两道拱背铺瓦。重新导出 `rome_transitoria.glb` 和 parts（只有 40 个三角形从 stone 换成 tile）。
+- [ ] 提比略宫和宅块的脚本与仓库里的 GLB 已有出入（宅块 d_low 重导会多出 rock、少一些砖），这次没重导它们；以后重导前先对比。
+
 ### 2026-11-20 过渡宫北门：街梯 footMC 的梯脚接到巷头（`briefs/rome/transitoria.md`，分支 `claude/transitoria-footmc-street`）
 作者经高级审查监督员定的做法：转角平台加带梯帮的直梯。图在 `docs/screenshots/palace-gates-footmc-20261120/`（机位 A、B，修改前 / 修改后）。
 - [x] 梯脚（21.0）沿墙再下 5 级到转角平台（20.0），直梯 14 级下到 17.2，落脚铺地 17.0，往东伸进巷头。共 20 级，踢面都是 0.2 m；铺地朝街一侧另有三级踏步。

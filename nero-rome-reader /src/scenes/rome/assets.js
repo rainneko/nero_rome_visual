@@ -4,7 +4,7 @@
 const ROME={GLB:[],loadState:0};
 // GLB material name -> procedural surface pattern in romeMat (1 ashlar, 2 brick, 3 marble, 4 slabs, 5 basalt polygons,
 // 6 plaster, 7 modelled tiles, 8 vegetation, 9 flat roof slopes get tiles from the slope direction)
-const ROME_PAT={tuff:1,stone:1,travertine:1,peperino:1,rock:10,rock3:10,rock4:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,turf:11,hedge:8,ivy:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
+const ROME_PAT={marble_wall:1,tuff:1,stone:1,travertine:1,peperino:1,rock:10,rock3:10,rock4:10,brick:2,marble:3,paving:4,basalt:5,plaster:6,plaster2:6,plaster3:6,mud:6,tile:7,tile2:7,roof_tile:7,roof_rib:7,travertine_light:1,grass:8,moss:8,rock2:10,turf:11,hedge:8,ivy:8,gravel:8,roof:9,stucco:6,warmwall:6,warmstone:1,ivory:1,ash:1,panelred:6,courtyard:4,gallery_wall:6,gallery_floor:4};
 const GL_ROMEPAT=`
 float rpJ(float x,float per,float w){float aa=fwidth(x)*1.5+1e-4;float d=abs(fract(x/per+.5)-.5)*per;return 1.-smoothstep(w,w+aa,d);}
 // the hills' wild grass through the year, as the terrain draws it (builders.js): green in winter and spring, straw in summer, with bare earth
@@ -65,22 +65,69 @@ vec3 romePat(vec3 c,vec3 wp,float pat){
   float rib=.5+.5*cos(6.2832*u),crs=smoothstep(0.,.25,fract(v)),th=h12(vec2(floor(u),floor(v)));
   c*=(1.-.3*cu*(1.-rib))*(1.-.16*cv*(1.-crs))*(1.+.22*cu*cv*(th-.5));c*=.9+.18*fbm2(vec2(u*.47,v*.42)*.05);}
  return c;}`;
+/* Palatine windows (the author, 2026-11-20: "the senator houses' windows", renders/palatine/domus-loggia-v1): the models' window openings end in a
+   flat back panel ('dark', arched ones 'gallery_wall'), which read as grey squares. romeWindows takes those panels out of a model when it loads
+   (by size: a vertical plane 0.4-2.0 m wide and 0.5-2.25 m high, arched 0.5-2.1 by 0.8-3.5; doors, arcade backs and gallery walls are larger and
+   stay) and draws them with the 'window' material: a timber casing and, by the window's own dice, a timber lattice (transenna) over the dark room,
+   a pair of closed board shutters, or the shutters folded open. Some rooms are lit at night. No glass (AD 56).
+   Each window carries its own panel coordinates (wuv: metres from its lower left corner, and its width and height; wk: its dice, arched or not). */
+const ROME_WIN=/^rome_(pal_block|apollo|transitoria|tiberiana|domus_augusti|magna_mater|victoria)/;
+const GL_ROMEWIN=`
+vec3 winPat(vec4 q,vec2 k,out float lit){vec2 p=q.xy,s=q.zw;float hs=k.x;
+ vec3 wood=vec3(.25,.165,.095)*(.82+.36*fract(hs*7.13)),dark=vec3(.045,.035,.026);
+ float fr=.08,ex=min(min(p.x,s.x-p.x),p.y);
+ if(k.y<.5)ex=min(ex,s.y-p.y);else{float r=s.x*.5,yc=s.y-r;ex=p.y>yc?min(ex,r-length(vec2(p.x-r,p.y-yc))):ex;}
+ float aa=fwidth(p.x)+fwidth(p.y)+1e-4,frame=1.-smoothstep(fr-aa,fr+aa,ex),far=smoothstep(.015,.05,aa),kind=fract(hs*3.17);vec3 c;lit=0.;
+ if(kind<.66){vec2 g=abs(fract((p-fr)/.17)-.5)*.17;float bar=1.-smoothstep(.014,.014+aa,min(g.x,g.y));
+  c=mix(mix(dark,wood,bar),mix(dark,wood,.36),far);lit=1.-mix(bar,.36,far);}
+ else if(kind<.9){float seam=1.-smoothstep(.006,.006+aa,abs(p.x-s.x*.5)),bd=abs(fract(p.x/.14)-.5);
+  c=wood*(.86+.14*smoothstep(.06,.18,bd)*(1.-far))*(1.-.6*seam);c*=1.-.18*(1.-step(.05,abs(p.y-s.y*.28)))-.18*(1.-step(.05,abs(p.y-s.y*.7)));}
+ else{float sd=step(min(p.x,s.x-p.x),s.x*.17);c=mix(dark,wood*.8,sd);lit=1.-sd;}
+ c=mix(c,wood*1.15,frame);lit*=(1.-frame)*step(.45,fract(hs*5.71));return c;}`;
+function romeWindows(scene){scene.updateMatrixWorld(true);const add=[],v=new THREE.Vector3(),nm=new THREE.Vector3(),e1=new THREE.Vector3(),e2=new THREE.Vector3(),st={win:0,kept:0};
+  scene.traverse(m=>{if(!m.isMesh||!m.material||!/^(dark|gallery_wall)$/.test(m.material.name))return;const arch=m.material.name==='gallery_wall',g=m.geometry,P=g.attributes.position,I=g.index,n=I?I.count:P.count,nt=n/3,X=new Float32Array(n*3);
+    for(let i=0;i<n;i++){v.fromBufferAttribute(P,I?I.getX(i):i).applyMatrix4(m.matrixWorld);X[i*3]=v.x;X[i*3+1]=v.y;X[i*3+2]=v.z;}
+    const par=new Int32Array(nt).map((_,i)=>i),f=i=>{while(par[i]!==i)i=par[i]=par[par[i]];return i;},key=new Map();
+    for(let t=0;t<nt;t++)for(let k=0;k<3;k++){const j=(t*3+k)*3,kk=Math.round(X[j]*50)+','+Math.round(X[j+1]*50)+','+Math.round(X[j+2]*50),o=key.get(kk);if(o===undefined)key.set(kk,t);else par[f(t)]=f(o);}
+    const comp=new Map();for(let t=0;t<nt;t++){const r=f(t);if(!comp.has(r))comp.set(r,[]);comp.get(r).push(t);}
+    const keep=[],win=[];
+    for(const T of comp.values()){let N=null;for(const t of T){const j=t*9;e1.set(X[j+3]-X[j],X[j+4]-X[j+1],X[j+5]-X[j+2]);e2.set(X[j+6]-X[j],X[j+7]-X[j+1],X[j+8]-X[j+2]);nm.crossVectors(e1,e2);if(nm.lengthSq()>1e-8){N=nm.clone().normalize();break;}}
+      let ok=N&&Math.abs(N.y)<.12,u0=1e9,u1=-1e9,y0=1e9,y1=-1e9,d0=1e9,d1=-1e9;const hx=N?-N.z:0,hz=N?N.x:0,hl=Math.hypot(hx,hz)||1;
+      if(ok)for(const t of T)for(let k=0;k<3;k++){const j=(t*3+k)*3,u=(X[j]*hx+X[j+2]*hz)/hl,d=X[j]*N.x+X[j+1]*N.y+X[j+2]*N.z;u0=Math.min(u0,u);u1=Math.max(u1,u);y0=Math.min(y0,X[j+1]);y1=Math.max(y1,X[j+1]);d0=Math.min(d0,d);d1=Math.max(d1,d);}
+      const w=u1-u0,h=y1-y0;ok=ok&&d1-d0<.03&&(arch?w>=.5&&w<=2.1&&h>=.8&&h<=3.5:w>=.4&&w<=2&&h>=.5&&h<=2.25);
+      if(ok)win.push({T,N,hx:hx/hl,hz:hz/hl,u0,y0,w,h});else keep.push(...T);}
+    st.win+=win.length;st.kept+=comp.size-win.length;if(!win.length)return;
+    const ix=[];for(const t of keep)for(let k=0;k<3;k++)ix.push(I?I.getX(t*3+k):t*3+k);g.setIndex(ix);
+    const wt=win.reduce((a,o)=>a+o.T.length,0)*3,pos=new Float32Array(wt*3),nor=new Float32Array(wt*3),wuv=new Float32Array(wt*4),wk=new Float32Array(wt*2);let q=0;
+    for(const o of win){const hs=((Math.sin(o.u0*12.9898+o.y0*78.233+(o.N.x*3.1+o.N.z*1.7))*43758.5453)%1+1)%1;
+      // u runs along the panel (the sign does not matter: every pattern is symmetric left to right), v up from its sill
+      for(const t of o.T)for(let k=0;k<3;k++){const j=(t*3+k)*3;pos.set([X[j],X[j+1],X[j+2]],q*3);nor.set([o.N.x,o.N.y,o.N.z],q*3);
+        wuv.set([(X[j]*o.hx+X[j+2]*o.hz)-o.u0,X[j+1]-o.y0,o.w,o.h],q*4);wk.set([hs,arch?1:0],q*2);q++;}}
+    const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(pos,3));G.setAttribute('normal',new THREE.BufferAttribute(nor,3));
+    G.setAttribute('wuv',new THREE.BufferAttribute(wuv,4));G.setAttribute('wk',new THREE.BufferAttribute(wk,2));add.push(G);});
+  if(!ROME.winMat)ROME.winMat=new THREE.MeshStandardMaterial({name:'window',color:0xffffff,roughness:.88,metalness:0,side:THREE.DoubleSide});
+  for(const G of add){const w=new THREE.Mesh(G,ROME.winMat);w.name='windows';scene.add(w);}
+  return st;}
 function romeMat(mt){if(!mt||mt.userData.rome)return;mt.userData.rome=1;const pat=ROME_PAT[mt.name]||0;
   if(mt.name==='gold'){mt.metalness=.35;mt.roughness=.38;mt.color.setRGB(.9,.62,.22);mt.emissive=new THREE.Color(.17,.1,.02);}
   if(mt.name==='flame'){mt.emissive=new THREE.Color(2.2,.8,.18);mt.color.setRGB(1,.5,.1);}
   if(mt.name==='water'){mt.roughness=.05;mt.color.setRGB(.1,.26,.3);}
   if(mt.name==='dark'||mt.name==='gallery_wall'){mt.color.setRGB(.40,.35,.28);mt.roughness=.92;mt.userData.galleryInterior=true;}
   if(mt.name==='gallery_floor'){mt.color.setRGB(.47,.42,.34);mt.userData.galleryInterior=true;}
-  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.385,.315,.2],rock2:[.295,.24,.15],rock3:[.245,.193,.112],rock4:[.175,.125,.07],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
+  mt.userData.oc=mt.color.clone();{const W={marble:[.5,.45,.385],marble_wall:[.43,.39,.33],travertine:[.51,.425,.3],travertine_light:[.56,.49,.37],plaster:[.56,.51,.42],plaster2:[.54,.47,.36],plaster3:[.52,.36,.27],stone:[.43,.365,.26],rock:[.385,.315,.2],rock2:[.295,.24,.15],rock3:[.245,.193,.112],rock4:[.175,.125,.07],tuff:[.37,.33,.275],warmwall:[.54,.47,.37],warmstone:[.47,.4,.3],ivory:[.57,.51,.40]}[mt.name];if(W)mt.color.setRGB(W[0],W[1],W[2]);}   // warm ivory instead of near-white (albedo ~.5 linear)
   if(mt.name==='blue')mt.color.setRGB(.2,.09,.15);                // no blue cloth in AD 56: faded purple
   if(mt.name==='roof')mt.color.setRGB(.39,.1,.047);           // the old Domus Tiberiana roof: terracotta like the kit tiles
+  const win=mt.name==='window';
   mt.onBeforeCompile=sh=>{for(const k in U)sh.uniforms[k]=U[k];
+    if(win){sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec4 wuv;attribute vec2 wk;varying vec4 vWuv;varying vec2 vWk;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWuv=wuv;vWk=wk;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec4 vWuv;varying vec2 vWk;'+GL_ROMEWIN).replace('#include <color_fragment>','#include <color_fragment>\nfloat wLit;diffuseColor.rgb=winPat(vWuv,vWk,wLit);')
+        .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=vec3(1.,.42,.13)*wLit*uNight*.55;');}
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWPa;varying float vBY;').replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\nvWPa=(modelMatrix*instanceMatrix*vec4(transformed,1.)).xyz;\n#else\nvWPa=(modelMatrix*vec4(transformed,1.)).xyz;\n#endif\n#ifdef USE_INSTANCING\nvBY=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).y;\n#else\nvBY=(modelMatrix*vec4(0.,0.,0.,1.)).y;\n#endif');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+GL_NOISE+GL_ATMO+GL_ROMEPAT+'\nuniform vec4 uDbg;varying vec3 vWPa;varying float vBY;')
       .replace('#include <color_fragment>','#include <color_fragment>\n'+(mt.name==='moss'?'if(fbm2(vWPa.xz*.9+vWPa.y*.4)<.5)discard;':'')+(pat?'diffuseColor.rgb=romePat(diffuseColor.rgb,vWPa,'+pat+'.);':'')+'\nif(uDbg.z<.5){vec3 wn=normalize(cross(dFdx(vWPa),dFdy(vWPa)));float hy=vWPa.y-vBY;float gr=1.-smoothstep(0.,3.,hy);diffuseColor.rgb*=1.-.28*gr*(.6+.8*fbm2(vWPa.xz*.6));diffuseColor.rgb*=mix(1.,.72,smoothstep(-.3,-.8,wn.y));if(abs(wn.y)<.5)diffuseColor.rgb*=1.-.1*smoothstep(.55,.85,fbm2(vec2((vWPa.x+vWPa.z)*.9,vWPa.y*.07)));}')
       .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\n'+(mt.userData.galleryInterior?'reflectedLight.indirectDiffuse=max(reflectedLight.indirectDiffuse,vec3(.080,.067,.049)*(1.-uNight));':''))
       .replace('#include <fog_fragment>','gl_FragColor.rgb=atmo(gl_FragColor.rgb,vWPa);');};
-  mt.customProgramCacheKey=()=>'romeglb'+pat+(mt.name==='moss'?'m':'')+(mt.userData.galleryInterior?'gi':'');mt.needsUpdate=true;}
+  mt.customProgramCacheKey=()=>'romeglb'+(win?'w':'')+pat+(mt.name==='moss'?'m':'')+(mt.userData.galleryInterior?'gi':'');mt.needsUpdate=true;}
 // register a placement; fn(g,F) draws the stand-in (optional). o: {parent: group, sx, sy, sz: scale}
 function romeStand(W,n,x,z,y,rot,fn,o){const G=layTag(new THREE.Group(),'models');G.name='stand_'+n;
   if(fn){const pend=W.cols,G0=W.colGroup;W.cols={};for(const k in pend)W.cols[k]=[];   // the stand-in's own columns only: the ones still waiting (e.g. a peristyle the Golden House takes) go where their builder flushes them
@@ -91,7 +138,7 @@ function romePlace(n,x,y,z,rot,o){ROME.GLB.push({n,x,y,z,r:rot||0,o:o||{}});}
 // A model placed three times or more is drawn as one InstancedMesh per part, per parent group and per ROME_INST_CELL square (instTiles/instCull, builders.js):
 // a clone per placement cost a draw call per part (170 insulae of 13-18 parts were ~2500 calls a frame). p.ghost() makes that placement's clone on demand (__floatCheck).
 const ROME_INST_CELL=1000;
-function romePutModels(n,scene){scene.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});
+function romePutModels(n,scene){if(ROME_WIN.test(n))(ROME.winLog||(ROME.winLog={}))[n]=romeWindows(scene);scene.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true;romeMat(m.material);}});
   const inst=[],share=ROME.GLB.filter(p=>p.n===n&&!p.o.inst).length>=3,byPar=new Map();
   for(const p of ROME.GLB){if(p.n!==n)continue;if(p.o.inst){inst.push(p);continue;}const par=p.o.parent||(p.o.parentLayer&&W0.preLayers&&W0.preLayers[p.o.parentLayer])||W0.scene;
     const mk=()=>{const o=layTag(scene.clone(true),'models');o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);return o;};
