@@ -1,0 +1,1070 @@
+{
+  "schema": "rome_clivus_B.hydrology.v1",
+  "date": "2026-11-19",
+  "label": "【设计推演】水路与标高是本项目新设计，不是此地点已有管线的考古结论。",
+  "coordinate_order": "local_lx_lz_y; world_xyz supplied alongside",
+  "nodes": [
+    {
+      "id": "feed",
+      "title": "上口供水分支接口",
+      "local_lx_lz_y": [
+        59.5,
+        147,
+        33.7
+      ],
+      "world_xyz": [
+        78.028512,
+        33.7,
+        457.055734
+      ],
+      "kind": "new_supply_connector"
+    },
+    {
+      "id": "supply_a",
+      "title": "西侧梯墙内供水转点A",
+      "local_lx_lz_y": [
+        59.5,
+        150,
+        32.3
+      ],
+      "world_xyz": [
+        76.528512,
+        32.3,
+        459.653811
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "supply_b",
+      "title": "西侧梯墙内供水转点B",
+      "local_lx_lz_y": [
+        59.5,
+        155,
+        29.7
+      ],
+      "world_xyz": [
+        74.028512,
+        29.7,
+        463.983938
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "supply_turn",
+      "title": "梯墙与壁泉连接处",
+      "local_lx_lz_y": [
+        59.5,
+        156.8,
+        28.8
+      ],
+      "world_xyz": [
+        73.128512,
+        28.8,
+        465.542783
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "supply_wall",
+      "title": "壁泉檐部内的供水管",
+      "local_lx_lz_y": [
+        62.2,
+        156.8,
+        28.3
+      ],
+      "world_xyz": [
+        75.46678,
+        28.3,
+        466.892783
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "regulator",
+      "title": "实心壁墩内的调节水柜",
+      "local_lx_lz_y": [
+        86,
+        156.8,
+        27.6
+      ],
+      "world_xyz": [
+        96.078185,
+        27.6,
+        478.792783
+      ],
+      "kind": "regulating_tank"
+    },
+    {
+      "id": "header",
+      "title": "壁墩内的均压配水槽",
+      "local_lx_lz_y": [
+        85.5,
+        156.8,
+        26.0
+      ],
+      "world_xyz": [
+        95.645172,
+        26.0,
+        478.542783
+      ],
+      "kind": "header"
+    },
+    {
+      "id": "manifold",
+      "title": "背墙内的横向配水分支",
+      "local_lx_lz_y": [
+        85.5,
+        156.2,
+        25.9
+      ],
+      "world_xyz": [
+        95.945172,
+        25.9,
+        478.023168
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "nozzle_feed_1",
+      "title": "第1水嘴背墙内分支",
+      "local_lx_lz_y": [
+        68,
+        156.2,
+        25.32
+      ],
+      "world_xyz": [
+        80.789727,
+        25.32,
+        469.273168
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "spout_1",
+      "title": "第1水嘴",
+      "local_lx_lz_y": [
+        68,
+        157.45,
+        24.8
+      ],
+      "world_xyz": [
+        80.164727,
+        24.8,
+        470.3557
+      ],
+      "kind": "downward_spout",
+      "angle_below_horizontal_deg": 60
+    },
+    {
+      "id": "nozzle_feed_2",
+      "title": "第2水嘴背墙内分支",
+      "local_lx_lz_y": [
+        75,
+        156.2,
+        25.32
+      ],
+      "world_xyz": [
+        86.851905,
+        25.32,
+        472.773168
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "spout_2",
+      "title": "第2水嘴",
+      "local_lx_lz_y": [
+        75,
+        157.45,
+        24.8
+      ],
+      "world_xyz": [
+        86.226905,
+        24.8,
+        473.8557
+      ],
+      "kind": "downward_spout",
+      "angle_below_horizontal_deg": 60
+    },
+    {
+      "id": "nozzle_feed_3",
+      "title": "第3水嘴背墙内分支",
+      "local_lx_lz_y": [
+        82,
+        156.2,
+        25.32
+      ],
+      "world_xyz": [
+        92.914083,
+        25.32,
+        476.273168
+      ],
+      "kind": "embedded_supply"
+    },
+    {
+      "id": "spout_3",
+      "title": "第3水嘴",
+      "local_lx_lz_y": [
+        82,
+        157.45,
+        24.8
+      ],
+      "world_xyz": [
+        92.289083,
+        24.8,
+        477.3557
+      ],
+      "kind": "downward_spout",
+      "angle_below_horizontal_deg": 60
+    },
+    {
+      "id": "long_basin",
+      "title": "长接水池",
+      "local_lx_lz_y": [
+        75,
+        159.1,
+        22.08
+      ],
+      "world_xyz": [
+        85.401905,
+        22.08,
+        475.284642
+      ],
+      "kind": "basin",
+      "floor_y": 21.55,
+      "rim_y": 22.25
+    },
+    {
+      "id": "rill_head",
+      "title": "浅渠头的小跌口",
+      "local_lx_lz_y": [
+        75,
+        161.2,
+        21.35
+      ],
+      "world_xyz": [
+        84.351905,
+        21.35,
+        477.103295
+      ],
+      "kind": "small_drop"
+    },
+    {
+      "id": "rill_1",
+      "title": "浅渠第1段",
+      "local_lx_lz_y": [
+        75,
+        163.7,
+        21.338
+      ],
+      "world_xyz": [
+        83.101905,
+        21.338,
+        479.268359
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "rill_2",
+      "title": "浅渠第2段",
+      "local_lx_lz_y": [
+        75,
+        166.2,
+        21.326
+      ],
+      "world_xyz": [
+        81.851905,
+        21.326,
+        481.433422
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "rill_3",
+      "title": "浅渠第3段",
+      "local_lx_lz_y": [
+        75,
+        168.7,
+        21.314
+      ],
+      "world_xyz": [
+        80.601905,
+        21.314,
+        483.598486
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "rill_4",
+      "title": "浅渠第4段",
+      "local_lx_lz_y": [
+        75,
+        171.2,
+        21.302
+      ],
+      "world_xyz": [
+        79.351905,
+        21.302,
+        485.763549
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "rill_5",
+      "title": "浅渠第5段",
+      "local_lx_lz_y": [
+        75,
+        173.7,
+        21.29
+      ],
+      "world_xyz": [
+        78.101905,
+        21.29,
+        487.928613
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "rill_6",
+      "title": "浅渠第6段",
+      "local_lx_lz_y": [
+        75,
+        176.2,
+        21.278
+      ],
+      "world_xyz": [
+        76.851905,
+        21.278,
+        490.093676
+      ],
+      "kind": "shallow_rill_pool",
+      "width_m": 0.75,
+      "depth_m": 0.08,
+      "check_sill": true
+    },
+    {
+      "id": "weir",
+      "title": "前缘小溢流",
+      "local_lx_lz_y": [
+        75,
+        176.65,
+        21.24
+      ],
+      "world_xyz": [
+        76.626905,
+        21.24,
+        490.483388
+      ],
+      "kind": "visible_weir"
+    },
+    {
+      "id": "drop_top",
+      "title": "墙内跌水箱上口",
+      "local_lx_lz_y": [
+        75,
+        177.1,
+        20.85
+      ],
+      "world_xyz": [
+        76.401905,
+        20.85,
+        490.873099
+      ],
+      "kind": "hidden_drop_box"
+    },
+    {
+      "id": "drop_bottom",
+      "title": "墙内跌水箱下口",
+      "local_lx_lz_y": [
+        75,
+        177.1,
+        16.0
+      ],
+      "world_xyz": [
+        76.401905,
+        16.0,
+        490.873099
+      ],
+      "kind": "hidden_drop_box"
+    },
+    {
+      "id": "lower_spout",
+      "title": "下层右侧小水嘴",
+      "local_lx_lz_y": [
+        85,
+        179.0,
+        15.8
+      ],
+      "world_xyz": [
+        84.112159,
+        15.8,
+        497.518547
+      ],
+      "kind": "low_spout"
+    },
+    {
+      "id": "lower_pool",
+      "title": "坐席庭右侧收水盆",
+      "local_lx_lz_y": [
+        85,
+        180.15,
+        14.88
+      ],
+      "world_xyz": [
+        83.537159,
+        14.88,
+        498.514476
+      ],
+      "kind": "lower_collecting_basin",
+      "rim_y": 15.18,
+      "floor_y": 14.42,
+      "not_drinking_water": true
+    },
+    {
+      "id": "settling",
+      "title": "有清掏盖板的沉砂井",
+      "local_lx_lz_y": [
+        87.5,
+        181.0,
+        14.3
+      ],
+      "world_xyz": [
+        85.277223,
+        14.3,
+        500.500598
+      ],
+      "kind": "settling_sump",
+      "cover_y": 15.0
+    },
+    {
+      "id": "slope_shaft_top",
+      "title": "沿坡暗沟跌水井上口",
+      "local_lx_lz_y": [
+        82,
+        188,
+        13.85
+      ],
+      "world_xyz": [
+        77.014083,
+        13.85,
+        503.812776
+      ],
+      "kind": "drop_shaft"
+    },
+    {
+      "id": "slope_shaft_bottom",
+      "title": "沿坡暗沟跌水井下口",
+      "local_lx_lz_y": [
+        82,
+        188,
+        8.03
+      ],
+      "world_xyz": [
+        77.014083,
+        8.03,
+        503.812776
+      ],
+      "kind": "drop_shaft"
+    },
+    {
+      "id": "drain_a",
+      "title": "步道边暗沟转点A",
+      "local_lx_lz_y": [
+        72,
+        199,
+        7.88
+      ],
+      "world_xyz": [
+        62.853829,
+        7.88,
+        508.339055
+      ],
+      "kind": "covered_drain"
+    },
+    {
+      "id": "drain_b",
+      "title": "步道边暗沟转点B",
+      "local_lx_lz_y": [
+        68,
+        214,
+        7.65
+      ],
+      "world_xyz": [
+        51.889727,
+        7.65,
+        519.329436
+      ],
+      "kind": "covered_drain"
+    },
+    {
+      "id": "street",
+      "title": "山脚街道支沟接口",
+      "local_lx_lz_y": [
+        56,
+        240,
+        7.4
+      ],
+      "world_xyz": [
+        28.497423,
+        7.4,
+        535.846097
+      ],
+      "kind": "new_street_collector",
+      "street_level_y": 8.5
+    }
+  ],
+  "edges": [
+    {
+      "id": "supply_feed_0",
+      "from": "feed",
+      "to": "supply_a",
+      "kind": "covered_supply",
+      "diameter_m": 0.1
+    },
+    {
+      "id": "supply_feed_1",
+      "from": "supply_a",
+      "to": "supply_b",
+      "kind": "covered_supply",
+      "diameter_m": 0.1
+    },
+    {
+      "id": "supply_feed_2",
+      "from": "supply_b",
+      "to": "supply_turn",
+      "kind": "covered_supply",
+      "diameter_m": 0.1
+    },
+    {
+      "id": "supply_feed_3",
+      "from": "supply_turn",
+      "to": "supply_wall",
+      "kind": "covered_supply",
+      "diameter_m": 0.1
+    },
+    {
+      "id": "supply_feed_4",
+      "from": "supply_wall",
+      "to": "regulator",
+      "kind": "covered_supply",
+      "diameter_m": 0.1
+    },
+    {
+      "id": "controlled_feed",
+      "from": "regulator",
+      "to": "header",
+      "kind": "regulated_supply",
+      "diameter_m": 0.075
+    },
+    {
+      "id": "header_outlet",
+      "from": "header",
+      "to": "manifold",
+      "kind": "covered_supply",
+      "diameter_m": 0.075
+    },
+    {
+      "id": "branch_1",
+      "from": "manifold",
+      "to": "nozzle_feed_1",
+      "kind": "covered_supply",
+      "diameter_m": 0.032
+    },
+    {
+      "id": "nozzle_arm_1",
+      "from": "nozzle_feed_1",
+      "to": "spout_1",
+      "kind": "visible_spout_body"
+    },
+    {
+      "id": "branch_2",
+      "from": "manifold",
+      "to": "nozzle_feed_2",
+      "kind": "covered_supply",
+      "diameter_m": 0.032
+    },
+    {
+      "id": "nozzle_arm_2",
+      "from": "nozzle_feed_2",
+      "to": "spout_2",
+      "kind": "visible_spout_body"
+    },
+    {
+      "id": "branch_3",
+      "from": "manifold",
+      "to": "nozzle_feed_3",
+      "kind": "covered_supply",
+      "diameter_m": 0.032
+    },
+    {
+      "id": "nozzle_arm_3",
+      "from": "nozzle_feed_3",
+      "to": "spout_3",
+      "kind": "visible_spout_body"
+    },
+    {
+      "id": "jet_1",
+      "from": "spout_1",
+      "to": "long_basin",
+      "kind": "visible_jet"
+    },
+    {
+      "id": "jet_2",
+      "from": "spout_2",
+      "to": "long_basin",
+      "kind": "visible_jet"
+    },
+    {
+      "id": "jet_3",
+      "from": "spout_3",
+      "to": "long_basin",
+      "kind": "visible_jet"
+    },
+    {
+      "id": "basin_overflow",
+      "from": "long_basin",
+      "to": "rill_head",
+      "kind": "visible_small_overfall"
+    },
+    {
+      "id": "rill_run_1",
+      "from": "rill_head",
+      "to": "rill_1",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_run_2",
+      "from": "rill_1",
+      "to": "rill_2",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_run_3",
+      "from": "rill_2",
+      "to": "rill_3",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_run_4",
+      "from": "rill_3",
+      "to": "rill_4",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_run_5",
+      "from": "rill_4",
+      "to": "rill_5",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_run_6",
+      "from": "rill_5",
+      "to": "rill_6",
+      "kind": "visible_shallow_rill",
+      "width_m": 0.75,
+      "water_depth_m": 0.08
+    },
+    {
+      "id": "rill_overflow",
+      "from": "rill_6",
+      "to": "weir",
+      "kind": "visible_overfall"
+    },
+    {
+      "id": "drop_inlet",
+      "from": "weir",
+      "to": "drop_top",
+      "kind": "covered_channel",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "energy_drop",
+      "from": "drop_top",
+      "to": "drop_bottom",
+      "kind": "enclosed_drop_with_baffles",
+      "baffle_count": 8
+    },
+    {
+      "id": "wall_return",
+      "from": "drop_bottom",
+      "to": "lower_spout",
+      "kind": "covered_channel",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "lower_jet",
+      "from": "lower_spout",
+      "to": "lower_pool",
+      "kind": "visible_jet"
+    },
+    {
+      "id": "sump_inlet",
+      "from": "lower_pool",
+      "to": "settling",
+      "kind": "covered_channel",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "seating_drain",
+      "from": "settling",
+      "to": "slope_shaft_top",
+      "kind": "covered_drain",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "slope_shaft",
+      "from": "slope_shaft_top",
+      "to": "slope_shaft_bottom",
+      "kind": "enclosed_drop_with_baffles",
+      "baffle_count": 8
+    },
+    {
+      "id": "drain_slope",
+      "from": "slope_shaft_bottom",
+      "to": "drain_a",
+      "kind": "covered_drain",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "drain_lane",
+      "from": "drain_a",
+      "to": "drain_b",
+      "kind": "covered_drain",
+      "width_m": 0.28,
+      "height_m": 0.3
+    },
+    {
+      "id": "drain_street",
+      "from": "drain_b",
+      "to": "street",
+      "kind": "covered_drain",
+      "width_m": 0.28,
+      "height_m": 0.3
+    }
+  ],
+  "flow": {
+    "spout_count": 3,
+    "nozzle_bore_m": 0.008,
+    "regulated_head_m": 1.2,
+    "discharge_coefficient": 0.62,
+    "design_litres_per_second_each": 0.1512,
+    "total_litres_per_second": 0.4537,
+    "rill_uses_check_sills": true,
+    "note": "低堰保住浅渠水深；不把低流量误算成整段均匀满流。"
+  },
+  "walk_crossing": {
+    "rill_x": 75,
+    "cover_z_range": [
+      166.2,
+      169.2
+    ],
+    "clear_walking_width_m": 3,
+    "slab_top_y": 21.4,
+    "under_slab_waterway": true
+  },
+  "offsite": {
+    "kind": "proposed_alignment_not_existing_scene_sewer",
+    "world_xyz": [
+      [
+        28.497423,
+        7.4,
+        535.846097
+      ],
+      [
+        15,
+        7.2,
+        565
+      ],
+      [
+        -100,
+        6.4,
+        575
+      ],
+      [
+        -240,
+        5.0,
+        585
+      ],
+      [
+        -370,
+        3.0,
+        595
+      ],
+      [
+        -430,
+        2.2,
+        600
+      ]
+    ],
+    "river_water_level_y": 1.5,
+    "outfall_invert_y": 2.2,
+    "outfall_open_apron_xyz": [
+      [
+        -430,
+        2.2,
+        600
+      ],
+      [
+        -456,
+        1.65,
+        600
+      ]
+    ],
+    "outfall_note": "暗沟终止于干岸挡墙；最后26m单列为开敞石砌消能槽，越过低河滩直到实际河面边缘，不冒充埋地管线。",
+    "receiver": "台伯河东岸；中间通过竞技场北侧谷地的拟定集水干线",
+    "model_scope": "本地services模型只到street；城外续线单独作规划图和接口数据，不混入水庭GLB。"
+  },
+  "checks": {
+    "all_gravity_segments_descend": true,
+    "no_recirculation_pump": true,
+    "downstream_not_drinking_water": true,
+    "segments": [
+      {
+        "id": "supply_feed_0",
+        "fall_m": 1.4,
+        "plan_length_m": 3.0,
+        "grade": 0.466667
+      },
+      {
+        "id": "supply_feed_1",
+        "fall_m": 2.6,
+        "plan_length_m": 5.0,
+        "grade": 0.52
+      },
+      {
+        "id": "supply_feed_2",
+        "fall_m": 0.9,
+        "plan_length_m": 1.8,
+        "grade": 0.5
+      },
+      {
+        "id": "supply_feed_3",
+        "fall_m": 0.5,
+        "plan_length_m": 2.7,
+        "grade": 0.185185
+      },
+      {
+        "id": "supply_feed_4",
+        "fall_m": 0.7,
+        "plan_length_m": 23.8,
+        "grade": 0.029412
+      },
+      {
+        "id": "controlled_feed",
+        "fall_m": 1.6,
+        "plan_length_m": 0.5,
+        "grade": 3.2
+      },
+      {
+        "id": "header_outlet",
+        "fall_m": 0.1,
+        "plan_length_m": 0.6,
+        "grade": 0.166667
+      },
+      {
+        "id": "branch_1",
+        "fall_m": 0.58,
+        "plan_length_m": 17.5,
+        "grade": 0.033143
+      },
+      {
+        "id": "nozzle_arm_1",
+        "fall_m": 0.52,
+        "plan_length_m": 1.25,
+        "grade": 0.416
+      },
+      {
+        "id": "branch_2",
+        "fall_m": 0.58,
+        "plan_length_m": 10.5,
+        "grade": 0.055238
+      },
+      {
+        "id": "nozzle_arm_2",
+        "fall_m": 0.52,
+        "plan_length_m": 1.25,
+        "grade": 0.416
+      },
+      {
+        "id": "branch_3",
+        "fall_m": 0.58,
+        "plan_length_m": 3.5,
+        "grade": 0.165714
+      },
+      {
+        "id": "nozzle_arm_3",
+        "fall_m": 0.52,
+        "plan_length_m": 1.25,
+        "grade": 0.416
+      },
+      {
+        "id": "jet_1",
+        "fall_m": 2.72,
+        "plan_length_m": 7.1918,
+        "grade": 0.378207
+      },
+      {
+        "id": "jet_2",
+        "fall_m": 2.72,
+        "plan_length_m": 1.65,
+        "grade": 1.648485
+      },
+      {
+        "id": "jet_3",
+        "fall_m": 2.72,
+        "plan_length_m": 7.1918,
+        "grade": 0.378207
+      },
+      {
+        "id": "basin_overflow",
+        "fall_m": 0.73,
+        "plan_length_m": 2.1,
+        "grade": 0.347619
+      },
+      {
+        "id": "rill_run_1",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_run_2",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_run_3",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_run_4",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_run_5",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_run_6",
+        "fall_m": 0.012,
+        "plan_length_m": 2.5,
+        "grade": 0.0048
+      },
+      {
+        "id": "rill_overflow",
+        "fall_m": 0.038,
+        "plan_length_m": 0.45,
+        "grade": 0.084444
+      },
+      {
+        "id": "drop_inlet",
+        "fall_m": 0.39,
+        "plan_length_m": 0.45,
+        "grade": 0.866667
+      },
+      {
+        "id": "energy_drop",
+        "fall_m": 4.85,
+        "plan_length_m": 0.0,
+        "grade": null
+      },
+      {
+        "id": "wall_return",
+        "fall_m": 0.2,
+        "plan_length_m": 10.1789,
+        "grade": 0.019648
+      },
+      {
+        "id": "lower_jet",
+        "fall_m": 0.92,
+        "plan_length_m": 1.15,
+        "grade": 0.8
+      },
+      {
+        "id": "sump_inlet",
+        "fall_m": 0.58,
+        "plan_length_m": 2.6405,
+        "grade": 0.219651
+      },
+      {
+        "id": "seating_drain",
+        "fall_m": 0.45,
+        "plan_length_m": 8.9022,
+        "grade": 0.050549
+      },
+      {
+        "id": "slope_shaft",
+        "fall_m": 5.82,
+        "plan_length_m": 0.0,
+        "grade": null
+      },
+      {
+        "id": "drain_slope",
+        "fall_m": 0.15,
+        "plan_length_m": 14.8661,
+        "grade": 0.01009
+      },
+      {
+        "id": "drain_lane",
+        "fall_m": 0.23,
+        "plan_length_m": 15.5242,
+        "grade": 0.014816
+      },
+      {
+        "id": "drain_street",
+        "fall_m": 0.25,
+        "plan_length_m": 28.6356,
+        "grade": 0.00873
+      }
+    ]
+  },
+  "sources": [
+    {
+      "kind": "primary_text",
+      "url": "https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Frontinus/De_Aquis/Rodgers/2**.html#111",
+      "note": "Frontinus §111 说明溢流水可用于冲洗排水沟；不能由此认定本地存在同一管线。"
+    },
+    {
+      "kind": "official_archaeology",
+      "url": "https://colosseo.it/sito/wp-content/uploads/2019/04/La-prima-reggia-di-Nerone.pdf",
+      "note": "尼禄过渡宫的壁泉和阶梯式水景提供同期形式参照。"
+    }
+  ]
+}

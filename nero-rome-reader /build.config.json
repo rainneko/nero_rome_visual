@@ -32,6 +32,7 @@
     "src/scenes/rome/palatine-plan.js",
     "src/scenes/rome/palatine.js",
     "src/scenes/rome/palatine-h1.js",
+    "src/scenes/rome/clivus-b.js",
     "src/scenes/rome/layers.js",
     "src/scenes/rome/assets.js",
     "src/scenes/rome/construction.js",

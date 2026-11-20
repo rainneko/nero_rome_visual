@@ -112,3 +112,13 @@ Each runs along X (x = ±L/2), with upstream at +Y and z = 0 = the deck level at
 gives each one its deck-end level Y (where the banks reach it), its shift from the river station, its length and width, and the profile used by the
 stand-in `bridgeStand`. `brPlace` puts the GLB at y = Y, turned by the frame's rot + PI, registers its footprint and adds it to `W.bridges` for the
 road joins. If a bank or the river changes, measure the landings again and change Y, off and L together with the model.
+
+## The wall-fountain terraces on the Palatine's south slope (Clivus Palatinus B, 2026-11-20)
+`tools/models/rome/rome_clivus_palatinus_b_blender.py` (Blender) builds `assets/models/rome/rome_clivus_palatinus_b.glb` (23,801 triangles, 14 material
+parts, walls in `ash`) and `tools/models/rome/clivus_palatinus_b_plan.json` from `rome_clivus_palatinus_b.py` (with `clivus_b_geometry.py`, `clivus_b_legacy.py`,
+`clivus_b_audit.py`; inputs in `clivus_b_data/`: the survey, the water levels and a snapshot of the hill's meshes). The joins with the hill are in
+`clivus_palatinus_b_connections.json`. Then `python3 tools/models/rome/clivus_b_page_data.py` writes the page's data block (`CLV_B`) into
+`src/scenes/rome/clivus-b.js`, which places the model (local 57, 147, y 34.2, PALF.rot), cuts the hill's meshes and the terrain where the terrace joins
+or covers them, writes the ground mask and keeps the city's trees out (`clivusB(W)`, one line in `monuments.js` before `groundMaskUpload`). The model rides
+in `rome-assets.js` like the other Rome GLBs. Review pictures and the B1–B5 history: `renders/palatine/clivus-palatinus-b-v5/` (git-ignored), a few in
+`docs/screenshots/clivus-b-20261120/`.
