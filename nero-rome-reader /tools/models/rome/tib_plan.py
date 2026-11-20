@@ -809,13 +809,14 @@ def _flat(b):
 
 
 def _vault(b, seg=10):
-    """A plastered barrel vault along b['ridge'], with a low parapet wall at both ends."""
-    vm = OPT.get(b['id'], {}).get('vault_mat', 'plaster'); e = b['eaves']; ew = b['ridge'] == 'EW'; span = (b['y1'] - b['y0']) if ew else (b['x1'] - b['x0'])
+    """A plastered barrel vault along b['ridge'], with a low parapet wall at both ends. OPT vault_top: the extrados's own material
+    (tiles laid on the vault, as the Transitoria's bath)."""
+    vm = OPT.get(b['id'], {}).get('vault_mat', 'plaster'); tm = OPT.get(b['id'], {}).get('vault_top', vm); e = b['eaves']; ew = b['ridge'] == 'EW'; span = (b['y1'] - b['y0']) if ew else (b['x1'] - b['x0'])
     ends = 'WE' if ew else 'SN'; W0, L0 = _W(b, ends[0]); length = (b['x1'] - b['x0']) if ew else (b['y1'] - b['y0'])
     prof = [(span * i / seg, e + _arc(span, span * i / seg - span / 2)) for i in range(seg + 1)]      # (u across the span, z)
     for i in range(seg):                           # the extrados, from end 0 to end 1 (W0: local x across, +y inward)
         (ua, za), (ub, zb) = prof[i], prof[i + 1]
-        add_poly(vm, [W0.p(ua, 0, za), W0.p(ub, 0, zb), W0.p(ub, length, zb), W0.p(ua, length, za)], smooth=True)
+        add_poly(tm, [W0.p(ua, 0, za), W0.p(ub, 0, zb), W0.p(ub, length, zb), W0.p(ua, length, za)], smooth=True)
     for s in ends:
         W, L = _W(b, s); top = [(u, z + VAULT_PARAPET) for u, z in prof]
         if _covered(b, s, top):
