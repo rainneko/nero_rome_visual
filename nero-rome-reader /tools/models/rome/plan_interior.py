@@ -25,15 +25,16 @@ ARCH_SEG = 6           # segments of an arched door's head
 # colours (linear RGB, about the albedo the page's romeMat gives its stone and plaster); names are the page's material names
 MATS = {
     'int_plaster': (0.56, 0.51, 0.42),      # walls, ceilings, parapets
-    'int_marble': (0.66, 0.63, 0.57),       # floors: state, art, dining, living rooms, bath
-    'int_trav': (0.52, 0.43, 0.29),         # floors: building office, guards; the stairs
-    'int_earth': (0.33, 0.22, 0.13),        # floors: servants, stores (beaten-earth coloured tiles)
-    'int_paving': (0.38, 0.36, 0.32),       # floors: porticoes, passages, stair halls
+    'int_marble': (0.72, 0.55, 0.32),       # floors: state, art, dining, living rooms, bath (warm ivory: indoors a floor has only the blue sky light, which greys a paler one into water; measured on the page)
+    'int_trav': (0.66, 0.47, 0.25),         # floors: building office, guards; the stairs (warm buff)
+    'int_earth': (0.28, 0.16, 0.08),        # floors: servants, stores (earth brown)
+    'int_paving': (0.52, 0.40, 0.24),       # floors: porticoes, passages, stair halls (warm stone)
     'dado_red': (0.30, 0.035, 0.025),       # 深红: state rooms, living rooms
     'dado_black': (0.025, 0.022, 0.02),     # 黑: picture gallery, library, music, sculpture
     'dado_yellow': (0.56, 0.36, 0.05),      # 黄: dining rooms
     'dado_teal': (0.04, 0.22, 0.19),        # 蓝绿: the bath
     'int_wallred': (0.133, 0.0116, 0.0072), # a portico's back wall where the shell's painted one is cut (the shell's wallred)
+    'int_reveal': (0.20, 0.15, 0.10),       # the reveals of every doorway and arch (jambs, soffits): a door reads as a door across a room
 }
 FLOOR = {'state': 'int_marble', 'art': 'int_marble', 'dining': 'int_marble', 'private': 'int_marble', 'family': 'int_marble', 'bath': 'int_marble',
          'work': 'int_trav', 'guard': 'int_trav', 'service': 'int_earth', 'portico': 'int_paving', 'corridor': 'int_paving', 'stair': 'int_paving',
@@ -183,7 +184,7 @@ class Interior:
         a, b, cc, d = self.P(ax, c, u, o0, z0), self.P(ax, c, u, o1, z0), self.P(ax, c, u, o1, z1), self.P(ax, c, u, o0, z1)
         self.quad(m, a, b, cc, d, self.P(ax, 0, side, 0, 0))
 
-    def wall(self, ax, c, u0, u1, z0, top, o0=-WALL_T / 2, o1=WALL_T / 2, ends=(True, True), dado=(None, None), zd=None, mat='int_plaster', face=(None, None)):
+    def wall(self, ax, c, u0, u1, z0, top, o0=-WALL_T / 2, o1=WALL_T / 2, ends=(True, True), dado=(None, None), zd=None, mat='int_plaster', face=(None, None), jamb=(None, None)):
         """A wall run on a line: from u0 to u1, thickness o0..o1 across the line, bottom z0, top(u) a function (sampled at the run's
         breaks); dado (material on the -side, on the +side) DADO_H high from zd (default z0); face: the -side's and +side's own material."""
         us = [u0] + [u for u in self.breaks(ax, c, u0, u1) if u0 < u < u1] + [u1]; zd = z0 if zd is None else zd
@@ -192,8 +193,8 @@ class Interior:
             self.vface(face[0] or mat, ax, c, o0, a, b, z0, z0, ta, tb, -1); self.vface(face[1] or mat, ax, c, o1, a, b, z0, z0, ta, tb, +1)
             pa0, pb0, pb1, pa1 = self.P(ax, c, a, o0, ta), self.P(ax, c, b, o0, tb), self.P(ax, c, b, o1, tb), self.P(ax, c, a, o1, ta)
             self.quad(mat, pa0, pb0, pb1, pa1, (0, 0, 1))
-        if ends[0]: self.endface(mat, ax, c, u0, o0, o1, z0, top(u0), -1)
-        if ends[1]: self.endface(mat, ax, c, u1, o0, o1, z0, top(u1), +1)
+        if ends[0]: self.endface(jamb[0] or mat, ax, c, u0, o0, o1, z0, top(u0), -1)
+        if ends[1]: self.endface(jamb[1] or mat, ax, c, u1, o0, o1, z0, top(u1), +1)
         for side, dm in ((-1, dado[0]), (1, dado[1])):
             if dm and u1 - u0 > 0.05:
                 off = (o0 - 0.006) if side < 0 else (o1 + 0.006)
@@ -206,7 +207,7 @@ class Interior:
         if not arch:
             for off, side in ((o0, -1), (o1, 1)): self.vface('int_plaster', ax, c, off, u0, u1, zs, zs, ta, tb, side)
             a, b, cc, d = self.P(ax, c, u0, o0, zs), self.P(ax, c, u1, o0, zs), self.P(ax, c, u1, o1, zs), self.P(ax, c, u0, o1, zs)
-            self.quad('int_plaster', a, b, cc, d, (0, 0, -1))                  # the soffit faces down
+            self.quad('int_reveal', a, b, cc, d, (0, 0, -1))                   # the soffit faces down
         else:
             r = (u1 - u0) / 2; um = (u0 + u1) / 2
             pts = [(um - r * math.cos(math.pi * i / ARCH_SEG), zs + r * math.sin(math.pi * i / ARCH_SEG)) for i in range(ARCH_SEG + 1)]
@@ -215,7 +216,7 @@ class Interior:
                 for off, side in ((o0, -1), (o1, 1)): self.vface('int_plaster', ax, c, off, ua, ub, za, zb, tops(ua), tops(ub), side)
                 a, b, cc, d = self.P(ax, c, ua, o0, za), self.P(ax, c, ub, o0, zb), self.P(ax, c, ub, o1, zb), self.P(ax, c, ua, o1, za)
                 um2 = (ua + ub) / 2 - um; zm = (za + zb) / 2 - zs                  # the soffit faces the arch's centre
-                self.quad('int_plaster', a, b, cc, d, self.P(ax, 0, -um2, 0, -zm))
+                self.quad('int_reveal', a, b, cc, d, self.P(ax, 0, -um2, 0, -zm))
         p0, p1, p2, p3 = self.P(ax, c, u0, o0, ta), self.P(ax, c, u1, o0, tb), self.P(ax, c, u1, o1, tb), self.P(ax, c, u0, o1, ta)
         self.quad('int_plaster', p0, p1, p2, p3, (0, 0, 1))
 
@@ -369,7 +370,8 @@ class Interior:
                 pieces.append((s, a)); s = b
             pieces.append((s, Ln['hi']))
             for i, (a, b) in enumerate(pieces):
-                self.wall(ax, c, a, b, z0, top, o0, o1, ends=(i > 0, i < len(pieces) - 1), dado=(dn, dp), face=face); nwall += 1
+                self.wall(ax, c, a, b, z0, top, o0, o1, ends=(i > 0, i < len(pieces) - 1), dado=(dn, dp), face=face,
+                          jamb=('int_reveal' if i > 0 else None, 'int_reveal' if i < len(pieces) - 1 else None)); nwall += 1
             if Ln.get('skin'):
                 us = self.breaks(ax, c, Ln['lo'], Ln['hi']); zb = min(top(u) for u in us) - 0.01
                 sides = {self.skin_top(Ln, u)[1] for u in us}

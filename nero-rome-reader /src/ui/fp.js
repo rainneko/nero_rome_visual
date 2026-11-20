@@ -306,10 +306,13 @@ function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
   fpCam();}
 // a move to (x, z): standable, and not a scramble (more than 50 degrees over the last metre of the way)
 // right click: through one door or thin wall. Straight ahead, the first thing in the way within 1.6 m, no thicker than 1.5 m, with ground to stand on behind it within a metre of this level
-function fpDoor(){if(!FP.on||FP.paused||!FPM.ready||FP.jy>0)return false;const fx=-Math.sin(FP.yaw),fz=-Math.cos(FP.yaw);let hit=-1;
-  for(let d=.2;d<=1.6+FPC.DOOR+.8;d+=.1){const x=FP.x+fx*d,z=FP.z+fz*d,t=FPM.at(x,z);if(hit<0){if(t>FP.g+FPC.STEP){if(d>1.6)break;hit=d;}continue;}
-    if(d-hit>FPC.DOOR+.8)break;if(t<-1e8||Math.abs(t-FP.g)>1)continue;const g=FPM.stand(x,z,t,FPC.R);if(g===g&&d-hit>=.3){FP.x=x;FP.z=z;FP.g=FP.y=g;FP.vx=FP.vz=0;FP.trail.length=0;return true;}}
-  fpNote(hit<0?'面前没有门或墙。':'这里穿不过去（太厚，或者后面没有落脚的地方）。');setTimeout(()=>{if(FP.on)fpNote('');},1600);return false;}
+// The centre ray first, then rays 0.15 and 0.3 m to either side (a door of bars lets the centre ray through its gaps); each ray judges a door the same way.
+function fpDoor(){if(!FP.on||FP.paused||!FPM.ready||FP.jy>0)return false;const fx=-Math.sin(FP.yaw),fz=-Math.cos(FP.yaw);let any=false;
+  const ray=o=>{const ox=FP.x-fz*o,oz=FP.z+fx*o;let hit=-1;
+    for(let d=.2;d<=1.6+FPC.DOOR+.8;d+=.1){const x=ox+fx*d,z=oz+fz*d,t=FPM.at(x,z);if(hit<0){if(t>FP.g+FPC.STEP){if(d>1.6)break;hit=d;any=true;}continue;}
+      if(d-hit>FPC.DOOR+.8)break;if(t<-1e8||Math.abs(t-FP.g)>1)continue;const g=FPM.stand(x,z,t,FPC.R);if(g===g&&d-hit>=.3){FP.x=x;FP.z=z;FP.g=FP.y=g;FP.vx=FP.vz=0;FP.trail.length=0;return true;}}return false;};
+  for(const o of[0,.15,-.15,.3,-.3])if(ray(o))return true;
+  fpNote(any?'这里穿不过去（太厚，或者后面没有落脚的地方）。':'面前没有门或墙。');setTimeout(()=>{if(FP.on)fpNote('');},1600);return false;}
 function fpTry(x,z){if(FP.jy>.05){const g=FPM.stand(x,z,FP.g+Math.min(FP.jy,.45),FPC.R,FPC.DOWN1+.45);if(g===g)return g;}const g=FPM.stand(x,z,FP.g,FPC.R,FPC.DOWN1);if(!(g===g))return NaN;const T=FP.trail;if(T.length){const p=T[0],d=Math.hypot(x-p[0],z-p[1]);if(d>.3&&g-p[2]>1.19*d+.3)return NaN;}return g;}
 function fpCam(){const b=Math.abs(Math.sin(FP.bob))*.032*Math.min(1,Math.hypot(FP.vx,FP.vz)/FPC.WALK);camera.position.set(FP.x,FP.y+FP.jy+FPC.EYE-(FP.jy>0?0:b),FP.z);camera.rotation.set(FP.pitch,FP.yaw,0,'YXZ');
   if(camera.near!==FPC.NEAR){camera.near=FPC.NEAR;camera.updateProjectionMatrix();}view.tgt.set(FP.x,FP.y,FP.z);view.dist=60;

@@ -6,7 +6,8 @@
    so its floors, stairs and walls are what the walker stands on and runs into.
    While it shows, the shell's own faces where the inside has its walls and doorways (the porticoes' painted back walls, the two terrace
    windows that become doors, the two loggia floors that get stair openings) are taken out of the shell's index: the boxes come with the
-   model (node extras `cuts`, model axes x east, y north, z up). Leaving the walk puts the shell's own index back; its file is not changed. */
+   model (node extras `cuts`, model axes x east, y north, z up; a seventh entry names the only material a box takes, as the
+   eave tiles of a neighbouring roof that hang inside a room). Leaving the walk puts the shell's own index back; its file is not changed. */
 const TRI={load:0,G:null,cuts:null,shell:[],on:false,NEAR:140};
 function triInit(W){if(TRI.init)return;TRI.init=1;W.anim.push(triTick);}
 function triPlace(){return ROME.GLB.find(p=>p.n==='rome_transitoria');}
@@ -27,9 +28,9 @@ function triLoad(p){TRI.load=1;
 function triCut(p,on){if(!TRI.cuts||!TRI.cuts.length)return;
   if(!TRI.shell.length){const inv=new THREE.Matrix4(),M=new THREE.Matrix4(),v=new THREE.Vector3(),B=TRI.cuts;p.obj.updateMatrixWorld(true);inv.copy(p.obj.matrixWorld).invert();
     p.obj.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;const g=o.geometry,P=g.attributes.position;if(!P)return;M.multiplyMatrices(inv,o.matrixWorld);
-      const n=P.count,inB=new Uint8Array(n*B.length);
+      const n=P.count,inB=new Uint8Array(n*B.length),mn=o.material&&o.material.name;
       for(let i=0;i<n;i++){v.fromBufferAttribute(P,i).applyMatrix4(M);const x=v.x,y=-v.z,z=v.y;   // glTF y up to the model's z up
-        for(let b=0;b<B.length;b++){const q=B[b];if(x>=q[0]-1e-3&&y>=q[1]-1e-3&&z>=q[2]-1e-3&&x<=q[3]+1e-3&&y<=q[4]+1e-3&&z<=q[5]+1e-3)inB[i*B.length+b]=1;}}
+        for(let b=0;b<B.length;b++){const q=B[b];if(q[6]&&q[6]!==mn)continue;if(x>=q[0]-1e-3&&y>=q[1]-1e-3&&z>=q[2]-1e-3&&x<=q[3]+1e-3&&y<=q[4]+1e-3&&z<=q[5]+1e-3)inB[i*B.length+b]=1;}}
       const I0=g.index?g.index.array:Uint32Array.from({length:n},(_,i)=>i),keep=[];let cut=0;
       for(let t=0;t<I0.length;t+=3){const a=I0[t],b=I0[t+1],c=I0[t+2];let gone=false;for(let k=0;k<B.length&&!gone;k++)gone=inB[a*B.length+k]&&inB[b*B.length+k]&&inB[c*B.length+k];if(gone)cut++;else keep.push(a,b,c);}
       if(cut)TRI.shell.push({g,full:g.index,part:new THREE.BufferAttribute(n>65535?Uint32Array.from(keep):Uint16Array.from(keep),1),cut});});
