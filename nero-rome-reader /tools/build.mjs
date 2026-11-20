@@ -27,7 +27,7 @@ if(cfg.book&&fs.existsSync(path.join(root,cfg.book.src))){const B=cfg.book,lines
   const out=`window.BOOK=${JSON.stringify(book)};if(window.bookLoaded)bookLoaded();\n`;fs.writeFileSync(path.join(root,'dist',B.out),out);
   console.log('dist/'+B.out,chs.length+' chapters',(words/1e4).toFixed(1)+' 万字',(out.length/1e6).toFixed(2)+' MB');}
 // lazy model bundles (loaded by the page on demand): dist/<file> sets window[var]={name:base64} and calls window[cb]()
-for(const L of cfg.lazy||[]){const dir=path.join(root,L.dir),names=fs.existsSync(dir)?fs.readdirSync(dir,{recursive:!!L.recursive}).map(f=>f.split(path.sep).join('/')).filter(f=>f.endsWith('.glb')).sort():[];   // recursive: names keep the sub-folder, e.g. 'furnaceA/K0'
+for(const L of cfg.lazy||[]){const dir=path.join(root,L.dir),names=fs.existsSync(dir)?fs.readdirSync(dir,{recursive:!!L.recursive}).map(f=>f.split(path.sep).join('/')).filter(f=>f.endsWith('.glb')&&(!L.only||L.only.includes(f.slice(0,-4)))&&!(L.skip||[]).includes(f.slice(0,-4))).sort():[];   // recursive: names keep the sub-folder, e.g. 'furnaceA/K0'; only / skip: model names a pack takes alone or leaves to another pack
   const body=names.map(f=>`${JSON.stringify(f.slice(0,-4))}:'${(L.optimize?zlib.gzipSync(optimize(fs.readFileSync(path.join(dir,f))),{level:9}):fs.readFileSync(path.join(dir,f))).toString('base64')}'`).join(',\n');
   const out=`window.${L.var}={${body}};${L.optimize?`window.${L.var}_gz=true;`:''}if(window.${L.cb})window.${L.cb}();\n`;fs.writeFileSync(path.join(root,'dist',L.file),out);console.log('dist/'+L.file,names.length+' models',(out.length/1e6).toFixed(2)+' MB');}
 // media next to the page (the music box Canon): copied as they are

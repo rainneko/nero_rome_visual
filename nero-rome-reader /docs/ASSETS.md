@@ -52,6 +52,18 @@ palace above z = 0 (`briefs/rome/tiberiana.md`, "v2 (2026-11)"). The tool lifts 
 is a bank up to 2.25 m above the model's own lowest surface, and it covers whatever of the model lies under it. Anything that
 has to meet the ground (the north-west stair's foot) is laid out against that bank (`NW_PAGE`, `_page` in `rome_tiberiana.py`).
 
+## East palace: the walkable inside (2026-11-20)
+`python3 tools/models/rome/rome_transitoria_interior.py` (plain Python and numpy, no Blender; geometry in `plan_interior.py`) builds
+`assets/models/rome/rome_transitoria_interior.glb` from `transitoria_plan.json` (rooms, roof blocks, and the `doors` and `vertical` that
+`tools/plan/transitoria_plan.py` writes and checks): floor slabs F1-F3 with openings over the stairs, partitions 0.45 m to the slab or
+roof above with real doorways and arches, solid stairs, landings, 1.5 m parapets, a dado by room use; colours only, one mesh per
+material. It reads `rome_transitoria.glb` and never writes it. Where a doorway meets the shell's own faces (the porticoes' painted back
+walls, two terrace windows), those faces are cut whole and the inside's wall takes their place; the cut boxes go in the node's extras
+(`cuts`, model axes) and the script exits 1 when a door is still blocked or a cut face is not covered.
+The build packs it alone (`dist/transitoria-interior.js`, `TRI_GLB`; the rome pack `skip`s it). `src/scenes/rome/palace-interior.js`
+fetches it the first time a walker (first person) is within 140 m of the palace, shows it only on foot, and while it shows takes the cut
+faces out of the shell's index (they come back when the walk ends). It casts no shadow; the walker stands on it like any visible mesh.
+
 ## Golden House: the round dining hall (2026-10-28, v3 2026-11-11)
 Since 2026-11-11 the file is GPT's v3 (`renders/domus-aurea/coenatio-v3/models/coenatio.glb` in the main checkout, 2.45 MB, brief
 `briefs/rome/aurea-refine-v2/`): the front wall is opened to the lake and a dais added; `ROTATING_CEILING` is kept. The view
