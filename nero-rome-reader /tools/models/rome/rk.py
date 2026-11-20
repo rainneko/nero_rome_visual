@@ -25,6 +25,7 @@ from mathutils import Vector
 _bk.GLB_SUB = 'rome'
 _bk.PAL.update({
     'grey':       ((0.60, 0.61, 0.62), 0.0, 0.45),   # grey marble (bardiglio)
+    'marble_wall': ((0.84, 0.81, 0.75), 0.0, 0.55),  # a marble cella wall laid in courses (the page draws the joints): a shade under the columns' marble, so engaged columns read against it
     'giallo':     ((0.86, 0.72, 0.42), 0.0, 0.45),   # giallo antico, yellow Numidian marble
     'porphyry':   ((0.46, 0.17, 0.18), 0.0, 0.40),   # rosso antico / porphyry
     'pavonazzetto': ((0.86, 0.82, 0.85), 0.0, 0.42),   # pavonazzetto: near-white marble with a pale violet-grey cast (Transitoria v2, east front)
@@ -166,7 +167,11 @@ def podium_temple(F, cx=0.0, cy=0.0, W=20.0, L=34.0, pod_h=4.0, col_h=12.0, nf=6
     # cella walls (up to the underside of the entablature)
     t = max(1.0, r * 1.7)
     x0c, y0c, x1c, y1c = cella
-    box(T, (x0c + x1c) / 2, (y0c + y1c) / 2, zt, (x1c - x0c) + t, (y1c - y0c) + t, col_h, cella_mat)
+    if kind == 'pseudo':      # the side and back faces on the engaged columns' axes, so half of each column stands proud of the wall (as at the
+        #                       Maison Carree); a wall t thick centred on that line buried all but a sliver of them (the author, 2026-11-20)
+        box(T, 0, (y0c - t / 2 + y1c) / 2, zt, x1c - x0c, y1c - y0c + t / 2, col_h, cella_mat)
+    else:
+        box(T, (x0c + x1c) / 2, (y0c + y1c) / 2, zt, (x1c - x0c) + t, (y1c - y0c) + t, col_h, cella_mat)
     if kind == 'sine_postico':
         box(T, 0, yB, zt, 2 * xS + t, t, col_h, cella_mat)
     if kind == 'pseudo':

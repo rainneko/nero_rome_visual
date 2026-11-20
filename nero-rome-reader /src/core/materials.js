@@ -331,10 +331,14 @@ void wallS(inout PS S,vec3 N,float P,float aa){
   vec3 corridor=sideHit?vec3(.33,.30,.25):(floorHit?vec3(.40,.35,.28):vec3(.39,.36,.31));
   float floorJoint=max(joint(hit.x,1.,.015,aa),joint(hit.y,.65,.015,aa));
   if(floorHit)corridor*=1.-floorJoint*.16;
-  float door=step(.72,fract(seed*31.7))*step(abs(hit.x),.24)*step(.08,hit.y)*step(hit.y,min(2.05,oh-.15));
-  float doorFrame=door*(1.-step(abs(hit.x),.18));
+  // the room door in the gallery's back wall (the author, 2026-11-20: it was a 0.36 m slit): a double-leaf board door about as wide as a
+  // third of the arch, up to 1.1 m, with a stone frame; behind four arches in five
+  float dw=clamp(hw*.62,.36,.55),dh=min(2.1,oh-.12),door=step(.2,fract(seed*31.7+bi*.37))*step(abs(hit.x),dw+.07)*step(.04,hit.y)*step(hit.y,dh+.07);
+  float doorFrame=door*(1.-step(abs(hit.x),dw)*step(hit.y,dh));
+  float leaf=abs(fract(hit.x/.16)-.5),seam=1.-step(.012,abs(hit.x));
+  vec3 wood=vec3(.27,.17,.09)*(.86+.14*smoothstep(.08,.2,leaf))*(1.-.55*seam)*(1.-.14*step(abs(hit.y-dh*.62),.04));
   inter=rear?plaster:corridor;
-  if(rear){inter=mix(inter,vec3(.20,.14,.09),door);inter=mix(inter,vec3(.52,.46,.36),doorFrame*.75);}
+  if(rear){inter=mix(inter,wood,door);inter=mix(inter,vec3(.6,.55,.45),doorFrame);}
   em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<2.5){inter=S.alb*.44;em=lamp*lit*uNight*.7*flk*back*step(qb.y,2.6);}
  else if(kind<3.5){   // a square-headed shop: closed with its boards in the threshold groove, or a trade on the back wall (briefs/rome/ground-floor.md)
