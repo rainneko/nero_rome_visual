@@ -257,6 +257,7 @@ function palPlatStairs(W){const g=new GB(1<<16),SP=W.palStairs=[],gy=W.gy,toW=p=
   palWestStairs(W,g,st,reg);   // H2: between the west rings
   palR8Walk(W,g,st);
   palGateN(W,g,st,reg);   // 图四: the east palace's north gate
+  palFootMCStreet(W,g,st,reg);   // the street stair footMC on down to the lane's head
   palApolloS(W,g,st,reg);if(PAL_PLAN.apE.on)palApolloE(W,g,st,reg);palClivG(W,g,st,reg);palMMEast(W,g,st,reg);palTibLane(W,g,st,reg);palSCFoot(W,g,st,reg);palVillaW1(W,g,st,reg);   // 图一 (and its way on down to the Clivus), 图七 east, 图三; R10 乙
   W.palStairStats=st;const m=layTag(g.mesh(MAT.city),'stairs');if(m){m.name='palPlatStairs';W.scene.add(m);}}
 
@@ -481,6 +482,31 @@ function palStepWalk(W,g,A,ux,uz,s0,w,max){const gy=W.gy,F=frame(A[0],0,A[1],Mat
   for(let k=0;k<walk.length;k++){const sa=s0+k*.5;let lo=1e9,hi=-1e9;for(const t of[sa,sa+.5])for(const v of[-w/2,w/2]){const q=F.p(t,0,v),h=gy(q[0],q[2]);lo=Math.min(lo,h);hi=Math.max(hi,h);}
     const T=hi+.04;g.set(60,.5,1,0);box(g,F,sa+.25,lo-.4,0,.26,T-.08-lo+.4,w/2,31&~32);trimSet(g,1,.45);box(g,F,sa+.25,T-.08,0,.27,.08,w/2+.02,31);}
   return{len:+(s-s0).toFixed(1),pts:walk};}
+function palFootMCStreet(W,g,st,reg){const C=PAL_PLAN.footMCst,S=(W.palStairs||[]).find(s=>s.id==='footMC');if(!C||!S||!W.streetAt)return;
+  const n=S.pts.length,E=S.pts[n-1],P=S.pts[n-3],yE=S.Y[n-1],w=S.w,hw=w/2;if(yE<C.landY+.15||yE>C.landY+1.6){st.footMCst={skipped:'footMC ends at '+yE.toFixed(2)};return;}   // the wall-side flight ends where it meets the sampled ground (20.6-21.0 with the terrain's tier): from there everything is at the plan's levels
+  const l=Math.hypot(E[0]-P[0],E[1]-P[1]),ux=(E[0]-P[0])/l,uz=(E[1]-P[1])/l,F=frame(E[0],0,E[1],Math.atan2(-uz,ux)),dz=F.d(0,0,1),o0=palW(0,0),o1=palW(0,-1),
+    sn=dz[0]*(o1[0]-o0[0])+dz[2]*(o1[1]-o0[1])>0?1:-1,ex=.35,zc=-sn*ex/2,hz=hw+ex/2,gy=W.gy;   // sn: the frame's z towards the street (hill north); ex: in to the wall line (R11)
+  const base=(s0,s1,y)=>{let m=y;for(const a of[s0,s1])for(const b of[-hw,hw]){const q=F.p(a,0,b);m=Math.min(m,gy(q[0],q[2]));}return m-.8;},
+    slab=(s0,s1,y)=>{const c=(s0+s1)/2,h=(s1-s0)/2,yb=base(s0,s1,y);g.set(60,.5,1,0);box(g,F,c,yb,zc,h+.01,y-.12-yb,hz,31&~32);trimSet(g,1,.45);box(g,F,c,y-.12,zc,h+.03,.12,hz+.03,31);},
+    wall=(c,z,hx,hzz,y,h)=>{const q=F.p(c,0,z),yb=Math.min(gy(q[0],q[2]),y)-.8;g.set(60,.5,1,0);box(g,F,c,yb,z,hx,y+h-yb,hzz,31);trimSet(g,1,.5);box(g,F,c,y+h,z,hx+.03,.08,hzz+.04,31);};
+  const along=lx=>{const q=palW(lx,palL(E[0],E[1])[1]);return(q[0]-E[0])*ux+(q[1]-E[1])*uz;},west=Math.max(1,Math.round((yE-C.landY)/.2)),rh=(yE-C.landY)/west;   // risers of 0.2 (0.17-0.2 where the end is not on the 0.2 grid)
+  let y=yE,s=0;const pts=[[E[0],E[1],yE]];
+  for(let k=0;k<west;k++){y-=rh;slab(s,s+.38,y);wall(s+.19,sn*(hw+.18),.2,.18,y,.95);s+=.38;}   // on along the wall, the parapet on the street's side
+  y=C.landY;const sL=s,sE=along(C.end),sM=along(C.axis);slab(sL,sE,y);wall(sE+.18,zc,.18,hz+.36,y,1);   // the turn landing and the parapet across its end
+  {const a=F.p(-.1,0,-sn*(hw+ex)),b=F.p(sE+.05,0,-sn*(hw+ex)),c=F.p(sE+.05,0,sn*(hw+.15)),d=F.p(-.1,0,sn*(hw+.15));groundMaskQuad(W,[a,b,c,d].map(q=>[q[0],q[2]]));}
+  {const c=(sE-.1)/2;g.set(60,.5,1,0);box(g,F,c,y-1,-sn*(hw+ex-.04),(sE+.1)/2,yE+.7-y+1,.05,31);}   // the cut's face against the foot wall (its masonry goes 1.2 m under the ground, the cut up to 1.5)
+  {const q=F.p(sM,0,0);pts.push([q[0],q[2],y]);}
+  const yL=y,a=F.p(sM,0,sn*hw),b=F.p(sM,0,sn*(hw+C.north*.38+.5)),yF=yL-C.north*.2,r=palFlight(W,g,[a[0],a[2]],[b[0],b[2]],yL,w,v=>v<=yF+.01,undefined,15,0);pts.push(...r.pts);
+  {const m=hw+.15,q=[F.p(sM-m,0,sn*hw),F.p(sM+m,0,sn*hw),F.p(sM+m,0,sn*(hw+r.s)),F.p(sM-m,0,sn*(hw+r.s))];groundMaskQuad(W,q.map(v=>[v[0],v[2]]));}   // the flight runs within 0.3 m of the slope: no ground over a tread
+  const sF=along(C.footTo),zf=sn*(hw+r.s+C.foot/2),f0=F.p(sM+hw+.36,0,zf),f1=F.p(sF,0,zf);palLanding(W,g,[f0[0],f0[2]],[f1[0],f1[2]],C.foot,yF-.2);   // the foot paving, one riser under the last tread, across the flight's foot and on east into the lane's head (sF is behind E: negative)
+  for(const t of[sM,(sM+sF)/2,sF+.5]){const q=F.p(t,0,zf);pts.push([q[0],q[2],yF-.2]);}
+  {const s0=Math.min(sF,sM+hw+.36),s1=Math.max(sF,sM+hw+.36),c=(s0+s1)/2,h=(s1-s0)/2;   // the slope falls away under the paving's street edge (0.2-0.65 m): C.skirt steps along it, buried where the ground stands higher
+    for(let k=0;k<(C.skirt||0);k++){const yk=yF-.2-(k+1)*.2,zk=sn*(hw+r.s+C.foot+(k+.5)*.38);let yb=yk;for(const a of[s0,c,s1]){const q=F.p(a,0,zk+sn*.19);yb=Math.min(yb,gy(q[0],q[2]));}yb-=.8;
+      g.set(60,.5,1,0);box(g,F,c,yb,zk,h,yk-.12-yb,.19,31&~32);trimSet(g,1,.45);box(g,F,c,yk-.12,zk,h+.03,.12,.205,31);}}
+  for(const q of pts)W.foot.addCircle(q[0],q[1],hw+.8,'road');
+  st.steps+=west+r.n+1+(C.skirt||0);st.landings+=2;const e=pts[pts.length-1],f=[e[0],e[1]];
+  st.footMCst={top:+yE.toFixed(2),west,rh:+rh.toFixed(3),landing:+yL.toFixed(2),landLen:+(sE-sL).toFixed(2),foot:+(yF-.2).toFixed(2),risers:west+r.n+1,at:palL(e[0],e[1]).map(v=>+v.toFixed(1)),ground:+gy(f[0],f[1]).toFixed(2),street:!!W.streetAt(f[0],f[1])};
+  reg('footMCst',pts,w,yE);}
 // R8 (the review of 2026-11-12): the Domus Tiberiana's north-west stair (its model, tiberiana-v2) comes down to the rock's hem at PAL_PLAN.r8.foot, its lowest tread
 // at r8.y, facing north; from there a walk of low steps as wide as the stair, north to the Vicus Tuscus' paving
 function palR8Walk(W,g,st){const R=PAL_PLAN.r8;if(!R||!W.streetAt)return;const A=palW(R.foot[0],R.foot[1]),B=palW(R.foot[0],R.foot[1]-1),ux=B[0]-A[0],uz=B[1]-A[1];
