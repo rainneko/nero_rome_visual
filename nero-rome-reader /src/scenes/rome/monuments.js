@@ -933,6 +933,7 @@ async function buildRome(msg){
    palTerraceWalls(W);   // the Palatine terrace walls, planned before the houses (palTerraces), drawn now that every hill stair exists: open where one goes through (palatine.js)
    palPlatWalls(W);   // H1: floors, walls, piers and cut walls of the closed terraces, the hemicycle garden (palatine-h1.js)
    palWestSlope(W);   // H2: rock and grove on the west and south-west slopes, no walls (palatine-h1.js)
+   clivusB(W);   // the wall-fountain terraces on the south slope: model, joins cut in the hill, ground under it (clivus-b.js); before the ground mask goes up
    groundMaskUpload(W);   // the stairs that wrote their footprints into the ground mask are all in (option 甲, terrain-roads.js)
    placeShopWares(W);   // shop goods in the street once the stairs, links and terrace walls are in (roman-details.js)
    // rock outcrops (rome_rock_a/b/c GLBs): clusters of 3-5 overlapping ledges along the steepest breaks of the Capitol (Tarpeian side) and the Palatine slopes
