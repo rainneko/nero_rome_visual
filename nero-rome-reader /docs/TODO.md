@@ -11,6 +11,22 @@ Keep this file current: every promise made to the author goes here until it is d
   测试页和审阅页（test.html、city-audit.html 等）不上线。
 * ⚠️ 章节访客计数：先部署 `server/visit-counter/`，再把地址填进 `build.config.json` 的 `"counter"`。
 
+## 2026-11-20 宫殿内部、提比略宫 v3、元老宅新宅型
+作者 2026-11-20 的安排。规划在 `briefs/rome/tiberiana-v3-masterplan.md`，参考图的用法在 `briefs/rome/tiberiana-rebuild-refs.md`。
+* ⚠️ 作者把两份工单和对应的图交给 GPT：`briefs/rome/tiberiana-v3-gpt-workorder.md`、`briefs/rome/domus-senatorum-gpt-workorder.md`；
+  `briefs/rome/clivus-palatinus-gpt-workorder.md`（帕拉蒂尼坡，2026-11-19 写的，还没交）。
+* ⬜ 东宫（过渡宫）内部结构：分房间、过道、上下楼，第一人称能走进去。高级审查监督员规划并审，子代理建。规划写进 `briefs/rome/transitoria-interior.md`。
+* ⬜ 提比略宫 v3：一座平台，五户人家。平台以下不动。GPT 出图 → 作者选“少拆”或“多拆” → 监督员改平面数据 → 提比略宫 v2 会话重建 → 内部结构照东宫的做法。
+* ⬜ 元老宅新宅型四种（`rome_domus_c`–`f`）和庭院小件十样：GPT 出图 → 作者选 → 四座旧元老宅会话建。
+* 🔶 过渡宫北面两段街梯的梯脚接到街上（宫殿正门会话）：监督员替作者定了甲方案，footMC 先做，footWC 另开一个 PR。
+* ✅ 阿波罗圣域南面半圆台下层（PR 39）、东门台阶和前庭（PR 40），2026-11-20 上线。东门的已知问题：
+  * 从草坪平视，种植台墙脚自动种的柏树挡住墙面（去掉是一行改动，等作者定）。
+  * 门两侧方壁柱顶端穿进东门屋檐一点；从庭院里看得到台阶栏板顶端的两块灰石。
+  * 石带平视偏粉红；门两侧各有一条 1.15 m 宽的墙面没有嵌板；狮头简单；庭院一侧两步各 0.15 m。
+  * 没有在第一人称里实地走过，手机上没看。
+* ⬜ 阿波罗东墙和山顶东平台之间的明沟（宽 1.2–2.07 m），不合路径规则第 4 节。
+* ⬜ 阿波罗南面门廊背墙的样子（降低、加檐口和门框），第二步，还没开始。
+
 ## 2026-11-14 台伯河的桥、阿格里帕浴场
 * ✅ 六座桥换成 GLB（`briefs/rome/bridges.md`，`tools/models/rome/rome_pons_*.py`），代码里留着简化替身：法布里奇乌斯桥（两个大拱、泄洪小拱、拱背桥面）、
   切斯提乌斯桥（一大两小）、埃米利乌斯桥（八拱，桥墩开泄洪洞）、苏布利基乌斯木桥（全木，不用铁）、阿格里帕桥（八拱、石板栏杆）、尼禄桥（七个圆拱，砖砌）。
