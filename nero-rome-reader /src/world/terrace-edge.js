@@ -118,7 +118,7 @@ function terraceEdge(W,g,P,yTop,o={}){
       for(let k=k0;k<=k1;){if(!S[k].sub){k++;continue;}let k2=k;while(k2<k1&&S[k2+1].sub)k2++;const s0=S[k].s,s1=S[k2].s;
         if(s1-s0>=12){const SS=EF.sub(X((s0+s1)/2),0,0,0),nb=Math.max(1,Math.round((s1-s0)/7));substructure(W,g,SS,s1-s0,yW,0,1,{pil:60,sty:pal,bay:7});for(let j=0;j<=nb;j++)e.brk.push(s0+(s1-s0)*j/nb);}k=k2+1;}
       // B8 rooms in the wall
-      if(o.rooms&&o.rooms[e.i]){const[r0,r1]=o.rooms[e.i];arcadeRooms(W,g,e,Math.max(r0,sA),Math.min(r1,sB),S[k0].gF,yW,pal,o.roomOpt||{});}
+      if(o.rooms&&o.rooms[e.i]){const[r0,r1]=o.rooms[e.i],q0=Math.max(r0,sA),q1=Math.min(r1,sB);if(q1-q0>=2)arcadeRooms(W,g,e,q0,q1,S[k0].gF,yW,pal,o.roomOpt||{});}   // only on the run the rooms are in: a run that ends before them (footN 10: the run under the stair footMC, s < 2, rooms from 22) got two arches, awnings and stalls built backwards over 20 m of wall, on the stair
       // B5 ends at the openings: a pier with a statue or a tripod, a stepped wing wall back into the slope
       for(const[end,k,dir]of[[!cA||(o.endV&&o.endV.includes(e.i)),k0,1],[!cB||(o.endV&&o.endV.includes((e.i+1)%n)),k1,-1]]){if(!end)continue;const q=S[k],kind=S[k-dir]&&S[k-dir].open;if(kind==='arch')continue;const s=q.s+dir*.45;endPier(W,g,e,s,q.rk!=null?q.rk+1.2:q.gF,top,pal,seed,kind);e.brk.push(q.s);out.ends.push([q.x,q.z]);
         if(o.wing!==false&&top-q.gF>1.5)wingWall(W,g,e,s,top,pal,seed);}}

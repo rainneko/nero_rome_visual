@@ -378,6 +378,11 @@ const PAL_PLAN=(()=>{const{c,R,stair}=PAL_HEMI,arc=[],ae=[];
     // a walk of low steps from there to the Vicus Tuscus (palR8Walk)
     r8:{foot:[-214.3,-139.9],y:9.65,w:3.6},
     // shop arches in the north foot wall, towards the Via Sacra (masterplan 2.5): edge -> [s0, s1] along it; the ground in front is levelled and paved
+    // the street stair footMC on to the lane's head (palFootMCStreet, 2026-11-20). footMC ends where it meets the sampled ground (21.0, or 20.6 on the
+    // coarser terrain); landY: the turn landing's level, reached by risers on along the wall; end, axis (hill x): the landing's west end and the line of
+    // the flight down the slope; north: its risers (to 17.2); foot: the foot paving's depth, one riser lower (17.0),
+    // footTo: it runs on east to there (the lane's head is at hill x 81-85)
+    footMCst:{landY:20,end:79.4,axis:80.9,north:14,foot:1,footTo:83.5,skirt:3},   // skirt: steps along the paving's street edge, where the slope falls away under it
     shops:{footN:{7:[5,26],8:[3,27],9:[3,27],10:[22,35],11:[3,31],12:[3,29]}},
     // the villas: the cut models (R10 乙: house 42, its garden T1 38.6 with W1 down to the system's 36; palVillaW1 the two flights from W1's opening); their entrance is on the belt street behind them
     villas:[{n:'rome_domus_a_belt',lx:202.6,lz:-72,turn:90,y:42,plat:'beltE',gardens:'v36a'},{n:'rome_domus_b_belt',lx:202.6,lz:36,turn:90,y:42,plat:'beltE',gardens:'v36b'},

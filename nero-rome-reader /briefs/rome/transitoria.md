@@ -129,5 +129,38 @@ is 3.1 m deep from the platform's wall to the head and about 1.8 m clear between
 Checked with the first-person walker (`tools/test/fp-walk.mjs`): street stair foot, terrace 26, gLE, terrace 34, central flight, gUE, platform, grand
 stair, the model's own west flight (51.82 to 56.9), the terrace before the north door, the door (lx 73.3, lz -109.1); the same way down to the street; gUW down to the terrace 34. Pictures: `docs/screenshots/palace-gates-transitoria-20261119/`.
 
-Open: the street stair footMC ends on the earth yard under the foot wall (20.6 m); the nearest street is 11.5 m further down (14.8 m), with no paving
-between them.
+## The street stair's foot to the lane (2026-11-20)
+
+footMC comes down west along the north foot wall and meets the ground at the wall's foot, hill (84.3, -184.4), 21.0 (20.6 on the coarser terrain of
+the test build: it ends where it meets the sampled ground). The nearest street is the head of a lane 6 m north of that, hill x 81-85 at lz -190 to -192,
+17.6 m at its tip. (The note of 2026-11-19 said 11.5 m and 14.8 m: that was the cross street further down.)
+
+The slope between them falls 55 %: steeper than a flight (0.2 on 0.38) with a landing, so a flight straight down from a landing at 21.0 stays 1 m over
+the ground all the way to the cross street. The turn landing is therefore set into the slope (`palFootMCStreet`, `PAL_PLAN.footMCst`):
+
+1. five more risers on west along the wall, 21.0 to 20.0 (three from 20.6), the parapet on the street's side; the cut is against the foot wall, with
+   a face of masonry on it, and the ground is masked over it (the path rules, 15.1);
+2. the turn landing at 20.0, 3.0 m long, a parapet across its west end (1.3 m short of the first shop arch's apron);
+3. one flight with cheeks straight down the slope on hill x 80.9, 14 risers of 0.2, 20.0 to 17.2;
+4. a foot paving one riser lower (17.0), 1 m deep, across the flight's foot and on east to hill x 83.5, in the lane's head.
+
+20 risers in all from footMC's old foot, none over 0.2 m; the levels are the plan's, not the sampled ground's (15.4). The footprints are registered
+after the houses: nothing to bake. No house footprint stands on the slope (checked in `W.foot.list`).
+
+Walked with `tools/test/fp-walk.mjs`: terrace 26, footMC, the new risers, the landing, the flight, the foot paving, the lane, the cross street (14.8),
+and back up. Pictures: `docs/screenshots/palace-gates-footmc-20261120/` (cameras A and B, before and after; one from the walk, looking up from the foot paving).
+
+Review round 1 (2026-11-20):
+- the awning and the stall that stood on footMC's lowest treads were not the street kit's: `terraceEdge` built the foot wall's shop rooms (B8,
+  `arcadeRooms`) on every run of edge footN 10, also on the run under the stair (s < 2, the rooms are at 22-35), with a negative length: two arches,
+  awnings and stalls backwards over 20 m of wall. It now builds rooms only on a run that holds at least 2 m of their span. The street kit is unchanged
+  (every prop of the city compared before and after: 2168 in test.html, 1166 in index.html, none moved, none dropped);
+- the slope falls away under the foot paving's street edge (0.2-0.65 m, over the walker's 0.5 m step): three steps along that edge (`skirt`), 0.2 m
+  each, buried where the ground stands higher. Walked straight up from the cross street on to the paving, and on the stair's inner half;
+- `tools/test/boot.mjs` fails when the stair is not built, is skipped, or its foot paving is more than 0.9 m off the ground.
+
+Known, not changed here:
+- the lane itself falls about 40 % from its head (17.6) to the cross street (14.8), 6 m, with no steps (the city's street, not the palace's);
+- on the software renderer's tier (and in test.html) the wall-side flight ends at 20.6, not 21.0 (3 risers on along the wall, not 5), and the street
+  raster has no cell at the lane's head: the paving's skirt ends about a metre short of the lane's cobbles there, on walkable ground;
+- the west street stair footWC has the same break (its foot at 19.6, the street 15.5 m on and 8.6 m lower): next, in its own PR.
