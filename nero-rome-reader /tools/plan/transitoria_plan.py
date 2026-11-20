@@ -195,9 +195,217 @@ if errs:
 print('checks pass: %d rooms (F1 %d, F2 %d, F3 %d, B1 %d), %d roof blocks, roofed %.0f m2, open %.0f m2' % (
     len(R), *[sum(1 for q in R if q['floor'] == f) for f in ('F1', 'F2', 'F3', 'B1')], len(M), AM, AO))
 
+# ---------------------------------------------------------------- doors and the ways up and down (briefs/rome/transitoria-interior.md, 三-五)
+# The door list was laid out route by route (正路, 长廊路, 内路, 工路, 役路) and checked on 2026-11-20 (91 doors + 7 vertical links,
+# every room reachable from N01). Plan section 五.1 asks for three doors from the audience hall N09 to the court's north walk:
+# the two side doors are added here (N09-P01 three times, 93 doors in all).
+# Sizes (五): the main route 2.4 x 3.6 m, the servants' way 1.2 x 2.2 m, the rest 1.6 x 2.6 m; a portico's side toward the court
+# (or toward the next portico) is columns, no wall: kind 'open', as wide as the shared side. 'at' = the door's middle along its wall
+# (x on an east-west wall, y on a north-south one); without it the middle of the shared side. Heights from the floor slab's top.
+SLAB = 0.06                                      # floor slabs: top 0.06 above the level (as tib_plan.floors_and_rooms)
+WALL_T = 0.45                                    # partitions
+SIZE = {'main': (2.4, 3.6), 'room': (1.6, 2.6), 'service': (1.2, 2.2)}
+DOOR_LIST = [   # (room a, room b, size, kind, at)
+    # F1: the main route, north gate to south gate (正路)
+    ('N01', 'N09', 'main', 'arch', 0.0), ('N09', 'P01', 'main', 'arch', 0.0), ('N09', 'P01', 'room', 'doorway', -8.0), ('N09', 'P01', 'room', 'doorway', 8.0),
+    ('S01', 'P02', 'main', 'arch', 0.0), ('S06', 'S01', 'main', 'arch', 0.0),
+    ('N01', 'N02', 'room', 'doorway', None), ('N01', 'N03', 'room', 'doorway', None),
+    ('N04', 'N02', 'room', 'doorway', 38.4), ('N05', 'N03', 'room', 'doorway', 38.4), ('N06', 'N04', 'room', 'doorway', 38.4), ('N12', 'N05', 'room', 'doorway', 38.4),
+    # the gallery way from the Domus Tiberiana (长廊路) and the guards
+    ('N06', 'N07', 'room', 'doorway', None), ('N07', 'N08', 'room', 'doorway', None), ('N08', 'W01', 'room', 'doorway', None), ('W01', 'P03', 'room', 'doorway', None),
+    ('N10', 'P01', 'room', 'doorway', None), ('N11', 'P01', 'room', 'doorway', None),
+    ('W02', 'P03', 'room', 'doorway', None), ('W03', 'W02', 'room', 'doorway', None), ('W04', 'P03', 'room', 'doorway', None),
+    # the south range, the bath, the servants' way (役路)
+    ('S02', 'P02', 'room', 'doorway', None), ('S12', 'S02', 'room', 'doorway', None), ('S12', 'S11', 'room', 'doorway', None), ('S11', 'S10', 'room', 'doorway', None),
+    ('S13', 'S04', 'service', 'doorway', None), ('S04', 'S05', 'service', 'doorway', None), ('S05', 'S06', 'service', 'doorway', None),
+    ('S07', 'S06', 'service', 'doorway', None), ('S07', 'S01', 'service', 'doorway', None), ('S03', 'S01', 'service', 'doorway', None),
+    ('S03', 'S08', 'service', 'doorway', 20.7), ('S09', 'S08', 'service', 'doorway', -40.0), ('S14', 'S03', 'service', 'doorway', -30.0),
+    ('S14', 'S15', 'room', 'doorway', -26.2), ('S14', 'S16', 'room', 'doorway', -43.6), ('S15', 'S16', 'room', 'doorway', None),
+    # the east range: the tower, the workshops (工路), the music hall
+    ('E01', 'P04', 'room', 'doorway', None), ('E01', 'T1', 'room', 'doorway', None), ('T1', 'E04', 'room', 'doorway', None), ('E04', 'E04a', 'room', 'doorway', None),
+    ('E04a', 'P04', 'room', 'doorway', None), ('E04', 'E05', 'room', 'doorway', None), ('E02', 'E02a', 'room', 'doorway', None), ('E02a', 'P04', 'room', 'doorway', None),
+    ('E02', 'E03', 'room', 'doorway', None), ('N14', 'E03', 'room', 'doorway', None), ('N14', 'N13', 'room', 'doorway', None), ('N13', 'N12', 'room', 'doorway', None),
+    # the court: porticoes open to one another and to the garden
+    ('P01', 'P03', 'open', 'open', None), ('P01', 'P04', 'open', 'open', None), ('P02', 'P03', 'open', 'open', None), ('P02', 'P04', 'open', 'open', None),
+    ('P01', 'P05', 'open', 'open', None), ('P02', 'P05', 'open', 'open', None), ('P03', 'P05', 'open', 'open', None), ('P04', 'P05', 'open', 'open', None),
+    # B1: the sunken court and its side rooms (B02-B05 stay solid in the web model until step 3: data only)
+    ('B05', 'B01', 'room', 'doorway', None), ('B03', 'B01', 'room', 'doorway', None), ('B04', 'B01', 'room', 'doorway', None), ('B02', 'B01', 'room', 'doorway', None),
+    # F2: the private way (内路), the guards, the building office
+    ('2E04', '2T', 'room', 'doorway', None), ('2T', '2E02', 'room', 'doorway', None), ('2E04', '2S15', 'room', 'arch', None), ('2E04', '2E04a', 'room', 'doorway', None),
+    ('2E04a', '2S14', 'room', 'doorway', 35.0), ('2T', '2E01', 'room', 'doorway', None), ('2E01', '2P04', 'room', 'doorway', None),
+    ('2E02', '2E02a', 'room', 'doorway', None), ('2E02a', '2P04', 'room', 'doorway', None), ('2E02', '2E03', 'room', 'doorway', None), ('2E04', '2E05', 'room', 'doorway', None),
+    ('2S15', '2S14', 'room', 'doorway', -26.2), ('2S16', '2S14', 'room', 'doorway', -43.6), ('2S15', '2S16', 'room', 'doorway', None),
+    ('2S03', '2S14', 'service', 'doorway', -30.0), ('2S03', '2P02', 'service', 'doorway', None),
+    ('2S01', '2P02', 'room', 'doorway', 0.0), ('2S01', '2S04', 'room', 'doorway', 0.0), ('2S02', '2P02', 'room', 'doorway', None),
+    ('2N09', '2N01', 'room', 'doorway', None), ('2N09', '2P01', 'room', 'doorway', None), ('2N10', '2P01', 'room', 'doorway', None), ('2N11', '2P01', 'room', 'doorway', None),
+    ('2N06', '2N01', 'room', 'doorway', None), ('2N06', '2N07', 'room', 'doorway', None), ('2N07', '2N08', 'room', 'doorway', None),
+    ('2N12', '2N01', 'room', 'doorway', None), ('2N12', '2N13', 'room', 'doorway', None), ('2N13', '2N14', 'room', 'doorway', None), ('2N14', '2E03', 'room', 'doorway', None),
+    ('2P01', '2P04', 'open', 'open', None), ('2P02', '2P04', 'open', 'open', None)]
+
+# The ways up and down (四). A flight: its plan rectangle, the side it climbs toward ('up'), its first and last height, risers, tread.
+# The two flights of a stair stand side by side, never one over the other; under each flight it is solid, and the landing is a solid
+# block at half height. 'hole': the opening in the floor above, over the upper flight; 'rails': the solid parapets (1.5 m high,
+# standing on the upper floor) on the opening's open sides, each x0, y0, x1, y1.
+RISE_MAX, TREAD, RAIL_H, RAIL_T = 0.185, 0.30, 1.5, 0.2
+IN = WALL_T / 2; F1 = Z['F1'] + SLAB; F2 = Z['F2'] + SLAB; F3 = Z['F3'] + SLAB
+def _flight(x0, y0, x1, y1, up, z0, z1, n):
+    return dict(x0=round(x0, 4), y0=round(y0, 4), x1=round(x1, 4), y1=round(y1, 4), up=up, z0=round(z0, 4), z1=round(z1, 4), risers=n, riser=round((z1 - z0) / n, 5), tread=TREAD)
+def _two(sid, zh, room, to, foot, side0, width, landing, up, s):
+    """A two-flight stair from F1 to F2, 19 + 19 risers: flight A has its foot at `foot` (x for up E/W, y for up N/S) and its side
+    at `side0`..`side0 + width`; it climbs toward `up` over 18 treads to a landing `landing` deep; flight B, beside it on side s
+    (+1 higher x / y, -1 lower), climbs back to the upper floor and ends over A's foot."""
+    zm = (F1 + F2) / 2; run = 18 * TREAD; d = 1 if up in 'EN' else -1; back = {'E': 'W', 'W': 'E', 'N': 'S', 'S': 'N'}[up]
+    t = foot + d * run; l = t + d * landing; b0 = side0 + width if s > 0 else side0 - width
+    lo, hi = min(foot, t), max(foot, t); l0, l1 = min(t, l), max(t, l); s0, s1 = min(side0, b0), max(side0, b0) + width
+    if up in 'EW':
+        A = _flight(lo, side0, hi, side0 + width, up, F1, zm, 19); B = _flight(lo, b0, hi, b0 + width, back, zm, F2, 19)
+        L = dict(x0=round(l0, 4), y0=round(s0, 4), x1=round(l1, 4), y1=round(s1, 4), z=round(zm, 4))
+        ext = (RAIL_T, 0) if up == 'W' else (0, RAIL_T)       # the long rails reach over the landing end
+        rails = [(B['x0'] - ext[0], B['y0'] - RAIL_T, B['x1'] + ext[1], B['y0']), (B['x0'] - ext[0], B['y1'], B['x1'] + ext[1], B['y1'] + RAIL_T),
+                 (t - RAIL_T, B['y0'], t, B['y1']) if up == 'W' else (t, B['y0'], t + RAIL_T, B['y1'])]
+    else:
+        A = _flight(side0, lo, side0 + width, hi, up, F1, zm, 19); B = _flight(b0, lo, b0 + width, hi, back, zm, F2, 19)
+        L = dict(x0=round(s0, 4), y0=round(l0, 4), x1=round(s1, 4), y1=round(l1, 4), z=round(zm, 4))
+        ext = (RAIL_T, 0) if up == 'S' else (0, RAIL_T)
+        rails = [(B['x0'] - RAIL_T, B['y0'] - ext[0], B['x0'], B['y1'] + ext[1]), (B['x1'], B['y0'] - ext[0], B['x1'] + RAIL_T, B['y1'] + ext[1]),
+                 (B['x0'], t - RAIL_T, B['x1'], t) if up == 'S' else (B['x0'], t, B['x1'], t + RAIL_T)]
+    return dict(id=sid, zh=zh, room=room, to=to, kind='stair', width=width, flights=[A, B], landings=[L],
+                hole=dict(x0=B['x0'], y0=B['y0'], x1=B['x1'], y1=B['y1']), rails=[[round(v, 4) for v in q] for q in rails])
+VERTICAL = [
+    # 西楼梯 / 东楼梯: flight A along the north wall climbs toward the palace's end, the landing against the room's end wall, flight B
+    # beside it (south) climbs back and comes out on the loggia 2N01. The doors (from N02 / N03 and the guards' N06 / the office N12)
+    # open onto the free strip along the south wall; the foot of A is reached past the head of B.
+    _two('N04~2N01', '西楼梯', 'N04', '2N01', -22.6, 43.0, 2.4, 3.775, 'W', -1),
+    _two('N05~2N01', '东楼梯', 'N05', '2N01', 22.6, 43.0, 2.4, 3.775, 'E', -1),
+    # 南楼梯: two flights along y, 3 m wide. Flight A climbs south from the door of the serving room S03, the landing against the south
+    # wall, flight B (west of A) climbs back north to the south loggia 2S04. A 1.55 m strip along the east wall leads from the servants'
+    # room S09 to the foot.
+    _two('S08~2S04', '南楼梯', 'S08', '2S04', -37.225, 19.225, 3.0, 3.015, 'S', -1),
+    # 过道楼梯: one straight run of 38 risers against the east wall with a landing half way; the 3 m passage beside it (west) joins the
+    # serving room, the morning room and the south portico. Out at the top (north) to the wardrobe 2E04a, the study 2S15, the
+    # chamberlains' room 2S03; the terrace door is reached along the west side of the opening.
+    dict(id='S14~2S14', zh='过道楼梯', room='S14', to='2S14', kind='stair', width=2.4,
+         flights=[_flight(35.375, -41.5, 37.775, -36.1, 'N', F1, (F1 + F2) / 2, 19), _flight(35.375, -33.7, 37.775, -28.3, 'N', (F1 + F2) / 2, F2, 19)],
+         landings=[dict(x0=35.375, y0=-36.1, x1=37.775, y1=-33.7, z=round((F1 + F2) / 2, 4))], hole=dict(x0=35.375, y0=-33.7, x1=37.775, y1=-28.3),
+         rails=[[35.175, -33.9, 35.375, -28.3], [35.375, -33.9, 37.775, -33.7]], passage=[32.225, -45.64, 35.375, -24.225]),
+    # 观景厅的梯 (new): one run of 28 risers, 1.5 m wide, against the inside of the upper dining room's east wall, up to the belvedere.
+    dict(id='2S01~3S1', zh='观景厅的梯', room='2S01', to='3S1', kind='stair', width=1.5,
+         flights=[_flight(16 - IN - 1.5, -34.5, 16 - IN, -34.5 + 27 * TREAD, 'N', F2, F3, 28)], landings=[],
+         hole=dict(x0=round(16 - IN - 1.5, 4), y0=-34.5, x1=round(16 - IN, 4), y1=round(-34.5 + 27 * TREAD, 4)),
+         rails=[[round(16 - IN - 1.5 - RAIL_T, 4), -34.7, round(16 - IN - 1.5, 4), round(-34.5 + 27 * TREAD, 4)], [round(16 - IN - 1.5, 4), -34.7, round(16 - IN, 4), -34.5]]),
+    # 下水庭的楼梯: one run from the garden (0.1) down to the sunken court's floor (-4.45). Plan 四 says 24 risers: 4.55 m in 24 is
+    # 0.19 a riser, over the 0.185 limit, so 25. Data only: B05 lies in the web model's solid fill; the web model's own stair inside the
+    # sunken court (rome_transitoria.py: 26 risers of 0.177 on 0.4 m, 2.2 m wide, along x 8.9) is the way down until step 3.
+    dict(id='P05~B05', zh='下水庭的楼梯', room='B05', to='P05', kind='stair', width=3.4, built=False,
+         flights=[_flight(12.0, -1.7, 12.0 + 24 * TREAD, 1.7, 'W', Z['B1'] + 0.05, 0.1, 25)], landings=[], hole=None, rails=[]),
+    # 吊笼: from the bedroom floor (2T) to the tower top (+30). Not walked: a click, step 4.
+    dict(id='2T~3T', zh='吊笼', room='2T', to='3T', kind='lift', built=False, stops=[Z['F2'], 30.0], flights=[], landings=[], hole=None, rails=[])]
+
+def shared(a, b):
+    """The wall two rooms of one floor share: ('x', x, lo, hi) for a north-south wall, ('y', y, lo, hi) for an east-west one, or None."""
+    if a['floor'] != b['floor']:
+        return None
+    for x in (a['x1'], a['x0']):
+        if x == (b['x0'] if x == a['x1'] else b['x1']):
+            lo, hi = max(a['y0'], b['y0']), min(a['y1'], b['y1'])
+            if hi > lo: return ('x', x, lo, hi)
+    for y in (a['y1'], a['y0']):
+        if y == (b['y0'] if y == a['y1'] else b['y1']):
+            lo, hi = max(a['x0'], b['x0']), min(a['x1'], b['x1'])
+            if hi > lo: return ('y', y, lo, hi)
+    return None
+DOORS = []; derr = []; _span = {}
+for a, b, size, kind, at in DOOR_LIST:
+    if a not in byid or b not in byid:
+        derr.append('door %s-%s: unknown room' % (a, b)); continue
+    s = shared(byid[a], byid[b])
+    if not s:
+        derr.append('door %s-%s: the two rooms share no wall' % (a, b)); continue
+    ax, c, lo, hi = s; L = hi - lo; fl = byid[a]['floor']
+    if kind == 'open':
+        w, h, u = L, HT[fl], (lo + hi) / 2
+    else:
+        w, h = SIZE[size]; u = (lo + hi) / 2 if at is None else at
+        if L < w + 0.6 - 1e-6: derr.append('door %s-%s: they share %.2f m of wall, the door needs %.2f' % (a, b, L, w + 0.6))
+        if u - w / 2 < lo + 0.3 - 1e-6 or u + w / 2 > hi - 0.3 + 1e-6: derr.append('door %s-%s: %.2f m wide at %.2f is not within %g..%g with 0.3 m to spare' % (a, b, w, u, lo, hi))
+    n = sum(1 for d in DOORS if d['a'] == a and d['b'] == b); x, y = (c, u) if ax == 'x' else (u, c)
+    DOORS.append(dict(id='%s-%s' % (a, b) + ('#%d' % (n + 1) if n else ''), a=a, b=b, floor=fl, z=round(Z[fl] + (SLAB if fl != 'B1' else 0.05), 3), wall=ax,
+                      x=round(x, 3), y=round(y, 3), w=w, h=h, kind=kind, route={'main': 'main', 'service': 'service'}.get(size, '')))
+    _span[DOORS[-1]['id']] = (lo, hi)
+for i, d in enumerate(DOORS):           # two doors on one wall must not run into each other
+    for e in DOORS[i + 1:]:
+        if d['floor'] == e['floor'] and d['wall'] == e['wall'] and 'open' not in (d['kind'], e['kind']):
+            if ((d['x'] == e['x']) if d['wall'] == 'x' else (d['y'] == e['y'])):
+                u, v = (d['y'], e['y']) if d['wall'] == 'x' else (d['x'], e['x'])
+                if abs(u - v) < (d['w'] + e['w']) / 2 + 0.6: derr.append('doors %s and %s run into each other' % (d['id'], e['id']))
+
+def _clear(r):
+    """A room's clear floor: the partitions take WALL_T / 2 on each side, the outer wall's skin 0.36 (tib_plan.SKIN)."""
+    return (r['x0'] + (0.36 if r['x0'] <= X0 else IN), r['y0'] + (0.36 if r['y0'] <= Y0 else IN), r['x1'] - (0.36 if r['x1'] >= X1 else IN), r['y1'] - (0.36 if r['y1'] >= Y1 else IN))
+def _within(q, box, tol=1e-6): return q[0] >= box[0] - tol and q[1] >= box[1] - tol and q[2] <= box[2] + tol and q[3] <= box[3] + tol
+def _over(p, q): return min(p[2], q[2]) - max(p[0], q[0]) > 1e-6 and min(p[3], q[3]) - max(p[1], q[1]) > 1e-6
+WANT = {'N04~2N01': (2, 19, 2.4), 'N05~2N01': (2, 19, 2.4), 'S08~2S04': (2, 19, 3.0), 'S14~2S14': (2, 19, 2.4), '2S01~3S1': (1, 28, 1.5), 'P05~B05': (1, 25, 3.4)}
+for v in VERTICAL:
+    if v['room'] not in byid or v['to'] not in byid:
+        derr.append('%s: unknown room' % v['id']); continue
+    if v['kind'] != 'stair':
+        continue
+    r = byid[v['room']]; up = byid[v['to']]; box = _clear(r); n, nr, wd = WANT[v['id']]; built = v.get('built', True)
+    if len(v['flights']) != n: derr.append('%s: %d flights, the plan has %d' % (v['id'], len(v['flights']), n))
+    for f in v['flights']:
+        fb = (f['x0'], f['y0'], f['x1'], f['y1']); ew = f['up'] in 'EW'; width = (f['y1'] - f['y0']) if ew else (f['x1'] - f['x0']); run = (f['x1'] - f['x0']) if ew else (f['y1'] - f['y0'])
+        if f['riser'] > RISE_MAX + 1e-9: derr.append('%s: riser %.4f m, over %.3f' % (v['id'], f['riser'], RISE_MAX))
+        if abs(f['tread'] - TREAD) > 1e-9 or abs(run - (f['risers'] - 1) * TREAD) > 1e-3: derr.append('%s: a run of %.3f m is not %d treads of %.2f' % (v['id'], run, f['risers'] - 1, TREAD))
+        if f['risers'] != nr: derr.append('%s: %d risers a flight, the plan has %d' % (v['id'], f['risers'], nr))
+        if abs(width - wd) > 1e-6: derr.append('%s: %.2f m wide, the plan has %.2f' % (v['id'], width, wd))
+        if built and not _within(fb, box): derr.append('%s: flight %s leaves the stair room\'s clear floor %s' % (v['id'], fb, box))
+        for d in DOORS:                 # a door into the stair room opens onto floor, not onto a flight (0.6 m in front of it)
+            if d['floor'] != r['floor'] or v['room'] not in (d['a'], d['b']) or d['kind'] == 'open': continue
+            hw = d['w'] / 2; db = (d['x'] - (0.6 if d['wall'] == 'x' else hw), d['y'] - (hw if d['wall'] == 'x' else 0.6), d['x'] + (0.6 if d['wall'] == 'x' else hw), d['y'] + (hw if d['wall'] == 'x' else 0.6))
+            if built and _over(db, fb): derr.append('%s: door %s opens onto a flight' % (v['id'], d['id']))
+    for L in v['landings']:
+        if built and not _within((L['x0'], L['y0'], L['x1'], L['y1']), box): derr.append('%s: the landing leaves the stair room' % v['id'])
+    for i, f in enumerate(v['flights']):        # side by side, never stacked
+        for g in v['flights'][i + 1:]:
+            if _over((f['x0'], f['y0'], f['x1'], f['y1']), (g['x0'], g['y0'], g['x1'], g['y1'])): derr.append('%s: two flights overlap in plan' % v['id'])
+    z_a = Z[r['floor']] + (SLAB if r['floor'] != 'B1' else 0.05); z_b = 0.1 if v['to'] == 'P05' else Z[up['floor']] + SLAB
+    zs = sorted([f['z0'] for f in v['flights']] + [f['z1'] for f in v['flights']])
+    if abs(zs[0] - min(z_a, z_b)) > 1e-3 or abs(zs[-1] - max(z_a, z_b)) > 1e-3: derr.append('%s: the flights run %.3f..%.3f, the floors are at %.3f and %.3f' % (v['id'], zs[0], zs[-1], z_a, z_b))
+    if not built:
+        continue
+    h = v['hole']; zc = Z[up['floor']] + SLAB - 0.3              # the underside of the floor above
+    if not _within((h['x0'], h['y0'], h['x1'], h['y1']), (up['x0'], up['y0'], up['x1'], up['y1'])): derr.append('%s: the opening leaves the room above' % v['id'])
+    for f in v['flights']:                      # 2.1 m of headroom over every tread, or the opening over it
+        for i in range(f['risers'] - 1):
+            t = (i + 0.5) / (f['risers'] - 1); zt = f['z0'] + f['riser'] * (i + 1)
+            if f['up'] in 'EW':
+                px = f['x0'] + (f['x1'] - f['x0']) * (t if f['up'] == 'E' else 1 - t); pts = [(px, f['y0'] + 0.05), (px, f['y1'] - 0.05)]
+            else:
+                py = f['y0'] + (f['y1'] - f['y0']) * (t if f['up'] == 'N' else 1 - t); pts = [(f['x0'] + 0.05, py), (f['x1'] - 0.05, py)]
+            if any(not (h['x0'] - 1e-6 <= px <= h['x1'] + 1e-6 and h['y0'] - 1e-6 <= py <= h['y1'] + 1e-6) and zc - zt < 2.1 for px, py in pts):
+                derr.append('%s: %.2f m of headroom over tread %d' % (v['id'], zc - zt, i + 1)); break
+    for q in v['rails']:
+        if _over(q, (h['x0'], h['y0'], h['x1'], h['y1'])): derr.append('%s: a parapet stands in the opening' % v['id'])
+    if 'passage' in v and v['passage'][2] - v['passage'][0] < 3.0 - 1e-6: derr.append('%s: the passage beside the stair is under 3 m' % v['id'])
+
+G = {q['id']: set() for q in R}         # every room reachable from the north gate's hall through the doors and the ways up and down
+for d in DOORS: G[d['a']].add(d['b']); G[d['b']].add(d['a'])
+for v in VERTICAL: G[v['room']].add(v['to']); G[v['to']].add(v['room'])
+seen, st = set(), ['N01']
+while st:
+    k = st.pop()
+    if k not in seen: seen.add(k); st += list(G[k])
+miss = [q['id'] for q in R if q['id'] not in seen]
+if miss: derr.append('not reachable from N01: ' + ' '.join(miss))
+if derr:
+    print('\n'.join(derr)); raise SystemExit(1)
+print('door checks pass: %d doors (%d main, %d service, %d open), %d ways up and down; %d/%d rooms reachable from N01' % (
+    len(DOORS), sum(d['route'] == 'main' for d in DOORS), sum(d['route'] == 'service' for d in DOORS), sum(d['kind'] == 'open' for d in DOORS), len(VERTICAL), len(seen), len(R)))
+
 plan = dict(name='rome_transitoria', version=2, units='m', axes='x east (Velia), y north (gate), z up; origin = centre of the footprint, z 0 = ground floor',
             size=[WW, DD], levels=Z, floor_heights=HT, roof_pitch=PITCH,
-            types={k: dict(zh=v[0], colour=v[1]) for k, v in TYPES.items()}, rooms=R, roof_blocks=M, open_courts=OPEN, features=FEATURES)
+            types={k: dict(zh=v[0], colour=v[1]) for k, v in TYPES.items()}, rooms=R, roof_blocks=M, open_courts=OPEN, features=FEATURES,
+            doors=DOORS, vertical=VERTICAL)
 out = os.path.join(ROOT, 'tools', 'models', 'rome', 'transitoria_plan.json')
 json.dump(plan, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=1); print('wrote', os.path.relpath(out, ROOT))
 
@@ -250,8 +458,55 @@ def floor_svg(fl):
             if q['floor'] == 'F1': o.append('<rect x="%g" y="%g" width="%g" height="%g" class="%s"/>' % (px(q['x0']), py(q['y1']), (q['x1'] - q['x0']) * S, (q['y1'] - q['y0']) * S, 'ghost open' if q['id'] in OPEN else 'ghost'))
     for q in R:
         if q['floor'] == fl: o.append(room_rect(q, 'class="open"' if q['id'] in OPEN else ''))
-    o.append(feat(fl))
+    o.append(feat(fl)); o.append(ways(fl)); o.append(doors_svg(fl))
     return frame(''.join(o), {'F1': '一层', 'F2': '二层', 'F3': '三层', 'B1': '地下'}[fl])
+def doors_svg(fl):
+    """The doors of a floor: a gap in the wall (white, dark jambs), the main route's red, the servants' grey; an open side dotted."""
+    o = []
+    for d in DOORS:
+        if d['floor'] != fl: continue
+        hw = d['w'] / 2; (x0, y0, x1, y1) = (d['x'], d['y'] - hw, d['x'], d['y'] + hw) if d['wall'] == 'x' else (d['x'] - hw, d['y'], d['x'] + hw, d['y'])
+        tip = esc('%s ↔ %s｜%s %.1f × %.1f m' % (byid[d['a']]['zh'], byid[d['b']]['zh'], {'arch': '拱门', 'doorway': '门洞', 'open': '敞开（柱子）'}[d['kind']], d['w'], d['h']))
+        if d['kind'] == 'open':
+            o.append('<path d="M%g %gL%g %g" class="dopen"><title>%s</title></path>' % (px(x0), py(y0), px(x1), py(y1), tip)); continue
+        cls = 'dmain' if d['route'] == 'main' else 'dserv' if d['route'] == 'service' else 'dgap'
+        nx, ny = (4, 0) if d['wall'] == 'x' else (0, 4)
+        o.append('<g class="dr"><title>%s</title><path d="M%g %gL%g %g" class="%s"/><path d="M%g %gL%g %gM%g %gL%g %g" class="djamb"/></g>' % (
+            tip, px(x0), py(y0), px(x1), py(y1), cls, px(x0) - nx, py(y0) - ny, px(x0) + nx, py(y0) + ny, px(x1) - nx, py(y1) - ny, px(x1) + nx, py(y1) + ny))
+    return ''.join(o)
+def ways(fl):
+    """The stairs on the floor they start from: each flight with its treads and an arrow up; the landing; on the floor above, the
+    opening (hatched) and its parapets."""
+    o = []
+    for v in VERTICAL:
+        lo, hi = byid[v['room']]['floor'], byid[v['to']]['floor']
+        if v['kind'] == 'lift':
+            if fl in (lo, 'F1'):
+                f = next(f for f in FEATURES if f['id'] == 'lift'); o.append('<rect x="%g" y="%g" width="%g" height="%g" class="lift"><title>%s（%s，第 4 步）</title></rect>' % (px(f['x'] - 1.5), py(f['y'] + 1.5), 3 * S, 3 * S, esc(v['zh']), '二层 ↔ 塔顶 +30 m'))
+            continue
+        tag = '' if v.get('built', True) else '（只有数据，网页模型里暂用下沉水庭里原有的梯）'
+        if fl == lo or (v['id'] == 'P05~B05' and fl == 'B1'):
+            for L in v['landings']:
+                o.append('<rect x="%g" y="%g" width="%g" height="%g" class="landing"><title>平台 +%.2f m</title></rect>' % (px(L['x0']), py(L['y1']), (L['x1'] - L['x0']) * S, (L['y1'] - L['y0']) * S, L['z']))
+            for f in v['flights']:
+                g = ['<g class="flight"><title>%s：%d 级，踢面 %.3f m，踏面 %.2f m，宽 %.1f m，%.2f → %.2f m%s</title><rect x="%g" y="%g" width="%g" height="%g"/>' % (
+                    esc(v['zh']), f['risers'], f['riser'], f['tread'], v['width'], f['z0'], f['z1'], tag, px(f['x0']), py(f['y1']), (f['x1'] - f['x0']) * S, (f['y1'] - f['y0']) * S)]
+                ew = f['up'] in 'EW'; n = f['risers'] - 1
+                for i in range(1, n + 1):
+                    if ew: xx = f['x0'] + i * TREAD; g.append('<path d="M%g %gL%g %g" class="tread"/>' % (px(xx), py(f['y0']), px(xx), py(f['y1'])))
+                    else: yy = f['y0'] + i * TREAD; g.append('<path d="M%g %gL%g %g" class="tread"/>' % (px(f['x0']), py(yy), px(f['x1']), py(yy)))
+                cx, cy = (f['x0'] + f['x1']) / 2, (f['y0'] + f['y1']) / 2; d = {'E': (1, 0), 'W': (-1, 0), 'N': (0, 1), 'S': (0, -1)}[f['up']]
+                half = ((f['x1'] - f['x0']) if ew else (f['y1'] - f['y0'])) / 2 - 0.4
+                ax, ay, bx, by = px(cx - d[0] * half), py(cy - d[1] * half), px(cx + d[0] * half), py(cy + d[1] * half); ux, uy = d[0], -d[1]
+                g.append('<path d="M%g %gL%g %gM%g %gL%g %gL%g %g" class="up"/>' % (ax, ay, bx, by, bx - ux * 7 - uy * 4, by - uy * 7 + ux * 4, bx, by, bx - ux * 7 + uy * 4, by - uy * 7 - ux * 4))
+                g.append('<text x="%g" y="%g" class="upt">上</text></g>' % (bx + ux * 8 + (0 if ux else 7), by + uy * 8 + (4 if ux else 0)))
+                o.append(''.join(g))
+        if fl == hi and v.get('hole'):
+            h = v['hole']; a0, b0, a1, b1 = px(h['x0']), py(h['y1']), px(h['x1']), py(h['y0'])
+            o.append('<g class="hole2"><title>%s的梯口（楼板在这里开洞，下面是梯）</title><rect x="%g" y="%g" width="%g" height="%g"/><path d="M%g %gL%g %gM%g %gL%g %g"/></g>' % (esc(v['zh']), a0, b0, a1 - a0, b1 - b0, a0, b0, a1, b1, a0, b1, a1, b0))
+            for q in v['rails']:
+                o.append('<rect x="%g" y="%g" width="%g" height="%g" class="rail"><title>栏板 1.5 m</title></rect>' % (px(q[0]), py(q[3]), max(1.2, (q[2] - q[0]) * S), max(1.2, (q[3] - q[1]) * S)))
+    return ''.join(o)
 ROOFCOL = {'gable': '#c8623f', 'hip': '#c8623f', 'lean': '#d17a55', 'pyramid': '#c8623f', 'compluviate': '#bd5a3a', 'flat': '#dccba6', 'vault': '#cdbda6'}
 ROOFZH = {'gable': '人字顶', 'hip': '四坡顶', 'lean': '单坡披檐', 'pyramid': '攒尖顶', 'compluviate': '内坡天井顶', 'flat': '平顶', 'vault': '筒拱顶'}
 def roof_svg():
@@ -351,7 +606,8 @@ main{max-width:1060px;margin:0 auto;padding:20px 16px 60px}h1{font-size:22px;mar
 .ghost{fill:#e9e2d6;stroke:#d5ccbd;stroke-width:.6}.ghost.open{fill:#e3ecd9}
 text{font:11px -apple-system,"PingFang SC","Hiragino Sans GB",sans-serif;fill:#1d1916;pointer-events:none}.nm{text-anchor:middle;font-size:11.5px;font-weight:600}.rid{text-anchor:middle;font-size:9.5px;fill:#3d362f}
 .vert{writing-mode:vertical-rl;text-anchor:middle}.edge{font-size:12.5px;fill:var(--mut)}.tiny{font-size:10px;fill:var(--mut)}
-.water{fill:#7fc4e8;stroke:#2e7fa8;stroke-width:1}.pav{fill:#e9b9a0;stroke:#8a2f1d;stroke-width:1.2}.sunk{fill:#9fd0d8;stroke:#2e7fa8;stroke-width:1.4;stroke-dasharray:4 2;fill-opacity:.75}.door{fill:var(--acc)}.eagle{fill:#5a2d14}
+.water{fill:#7fc4e8;stroke:#2e7fa8;stroke-width:1}.pav{fill:#e9b9a0;stroke:#8a2f1d;stroke-width:1.2}.sunk{fill:#9fd0d8;stroke:#2e7fa8;stroke-width:1.4;stroke-dasharray:4 2;fill-opacity:.75}.door{fill:var(--acc)}.dgap{stroke:#fff;stroke-width:4.5}.dmain{stroke:#fff;stroke-width:6}.dserv{stroke:#fff;stroke-width:3.2}.djamb{stroke:#2b2622;stroke-width:1.6}.dr:hover .djamb{stroke:#c00}.dopen{stroke:#fff;stroke-width:2;stroke-dasharray:2 3}
+.flight rect{fill:#d9d4cb;stroke:#4a4038;stroke-width:1}.tread{stroke:#7d7368;stroke-width:.5}.up{stroke:#8a2f1d;stroke-width:1.6;fill:none}.upt{font-size:9px;fill:#8a2f1d;font-weight:700}.landing{fill:#cbc4b8;stroke:#4a4038;stroke-width:1}.hole2 rect{fill:#f7f3ea;stroke:#4a4038;stroke-width:1}.hole2 path{stroke:#8a7f70;stroke-width:.8}.rail{fill:#3a322b}.lift{fill:#5a2d14;opacity:.75}.eagle{fill:#5a2d14}
 .rb rect{stroke:var(--line);stroke-width:1.1}.ridge{stroke:#5e2414;stroke-width:1.6;fill:none}.ridge.thin{stroke-width:.7}.arrow{stroke:#5e2414;stroke-width:1.2;fill:none}.hole{fill:#f4efe6;stroke:#5e2414}
 .pl{stroke:#3a322b;stroke-width:.5}.wl{stroke:#b9ad9a;stroke-width:.4}.rf{stroke:#6b2a18;stroke-width:.5}
 #axo .lv{transform:translateY(calc(var(--i) * var(--k,1) * var(--gap) * -1));transition:transform .15s}
@@ -373,7 +629,7 @@ tr.fl td{background:#f6f0e4;font-weight:700}td.la{font-style:italic;color:var(--
 <li>东立面：两层柱廊夹在东塔和两座角亭之间，原来的两层连拱去掉。</li>
 <li>正中是庭园，庭园正中下沉 4.5 m 的水庭：西面喷泉墙，东头柱亭，两侧凉室。</li>
 <li>每条屋脊跨度不超过 14 m；没有烟囱和老虎窗。</li></ul></div>
-<div class="tabs" role="tablist">__TABS__</div>
+<div class="note"><b>门和楼梯（2026-11-20）</b><ul><li>门：墙上的白色缺口，两头一道黑线。宽的是正路（2.4 × 3.6 m），中等的是一般的门（1.6 × 2.6 m），窄的是仆役走的门（1.2 × 2.2 m）；白色虚线是廊子朝院子、朝另一条廊子的一面，只有柱子没有墙。鼠标放上去看是哪两间房。</li><li>楼梯画在它出发的那一层：一条条踏步线，红箭头指向上楼的方向；灰块是中间平台。上一层画梯口（白框打叉）和梯口三面 1.5 m 高的栏板。吊笼（深棕方块）这一轮不做。</li><li>__NDOORS__ 道门，__NWAYS__ 处上下楼；82 间房从北门全部走得到（平面脚本自己检查）。</li></ul></div>\n<div class="tabs" role="tablist">__TABS__</div>
 __PANES__
 <div class="legend">__LEGEND__</div>
 <h2 style="font-size:17px;margin:22px 0 8px">房间表</h2><div class="wrap">__TABLE__</div>
@@ -389,5 +645,5 @@ ctl = '<div class="ctl"><label>拆开 <input id="k" type="range" min="0" max="1"
     '<label><input type="checkbox" value="%s" checked>%s</label>' % (v, n) for n, v in (('屋顶', 'ROOF'), ('三层', 'F3'), ('二层', 'F2'), ('一层', 'F1'))) + '<span>从东南往西北看；房间只画了后面两道矮墙</span></div>'
 ctl = ctl.replace('拆开 <input', '合上 <input').replace('> 合上</label>', '> 拆开</label>')
 panes = ''.join('<div class="pane%s">%s</div>' % (' on' if i == 0 else '', (ctl + axo_svg()) if v is None else roof_svg() if v == 'ROOF' else floor_svg(v)) for i, (n, v) in enumerate(names))
-page = PAGE.replace('__TABS__', tabs).replace('__PANES__', panes).replace('__LEGEND__', legend).replace('__TABLE__', table())
+page = PAGE.replace('__TABS__', tabs).replace('__PANES__', panes).replace('__LEGEND__', legend).replace('__TABLE__', table()).replace('__NDOORS__', str(len(DOORS))).replace('__NWAYS__', str(len(VERTICAL)))
 out2 = os.path.join(ROOT, 'briefs', 'rome', 'plans', 'transitoria-plan.html'); open(out2, 'w', encoding='utf-8').write(page); print('wrote', os.path.relpath(out2, ROOT), len(page), 'bytes')
