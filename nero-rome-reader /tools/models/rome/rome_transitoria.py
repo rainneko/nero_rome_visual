@@ -27,7 +27,7 @@ ROUND = int(os.environ.get('TR_ROUND', '3'))     # 1 massing and roofs, 2 the ou
 _PAV = {(1, s): (2.0, 3.4, 2.4, 'arch', 12.5) for s in 'NESW'}; _PAV.update({(2, s): (2.0, 2.8, 8.3, 'arch', 12.5) for s in 'NESW'})   # corner pavilions: one large window per storey on each outer face
 OPTS = {
     'MT': {'wall_top': 31.0, 'roof': 'own', 'windows': {1: (0.9, 1.7, 3.6, 'rect', 4.0), 2: (0.9, 1.7, 8.4, 'rect', 4.0), 3: (0.9, 1.7, 13.2, 'rect', 4.0)}},        # the tower: shaft to the terrace floor at 30 and its parapet; the terrace and the copper roof are below
-    'MNF': {'pediment': 'N', 'gold': True},         # the gate block
+    'MNF': {'pediment': 'N', 'gold': True, 'shut': [(2, 'N')], 'windows': {(2, 'N'): (2.0, 3.0, 8.4, 'arch')}},   # the gate block: its upper north face is a wall (the loggia 2N01 passes behind it), one arched window over the gate
     'MNW': {'windows': _PAV, 'gold': True}, 'MNE': {'windows': _PAV, 'gold': True}, 'MSE1': {'windows': _PAV, 'gold': True},
     'MN1': {'open': [(2, 'N', -32.0, -7.0), (2, 'N', 7.0, 32.0)], 'gold': True, 'col_mat': 'grey'},      # 2N01 北敞廊, either side of the gate block
     'MS2': {'open': [(2, 'S', -32.0, 32.0)], 'gold': True, 'col_mat': 'grey'},                          # 2S04 南敞廊

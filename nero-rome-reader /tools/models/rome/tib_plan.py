@@ -19,7 +19,7 @@ Model axes as in the plan: x east, y north, z up; z = 0 is the platform top.
 
 Options (opts[block id]): hip_ends 'E'; over 'M01m'; open [(storey, side, a, b)] an open bay between plan coordinates a..b along
 that side; gaps [(side, a, b)] in a flat roof's parapet; deck 'paving'; cross_walls [coordinates along the ridge];
-pediment 'NS'; gold True; wall_top z; roof 'own'; vault_mat; parapet False; col_mat, col_mat2 (upper order); on_floor, arch2, rail (upper order on the floor, its beam, the parapet's material); order1 (ground-floor order); low (a lean-to's low edge); windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
+pediment 'NS'; gold True; wall_top z; roof 'own'; vault_mat; parapet False; col_mat, col_mat2 (upper order); shut [(storey, side)] (a face kept walled though a portico room lies behind it); on_floor, arch2, rail (upper order on the floor, its beam, the parapet's material); order1 (ground-floor order); low (a lean-to's low edge); windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
 
 How blocks meet: surf(b, x, y) is the height of a block's roof at a plan point. A wall face is drawn from the lowest roof
 height of whatever stands on the other side (0 for a court or the outside) up to the block's own wall top. Roofs are single
@@ -337,6 +337,8 @@ def is_open(b, s, iv, k):
     for kk, sd, a, c in OPT.get(b['id'], {}).get('open', ()):
         if kk == k and sd == s and min(_u(b, s, a), _u(b, s, c)) - 1e-6 <= um <= max(_u(b, s, a), _u(b, s, c)) + 1e-6:
             return True
+    if (k, s) in OPT.get(b['id'], {}).get('shut', ()):          # opts 'shut': this storey's face stays a wall
+        return False
     r = room_at(FLN[k - 1], *iv['pin'])
     if not r or r['type'] != 'portico':
         return False
