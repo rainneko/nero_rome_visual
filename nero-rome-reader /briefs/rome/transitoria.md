@@ -136,7 +136,7 @@ the test build: it ends where it meets the sampled ground). The nearest street i
 17.6 m at its tip. (The note of 2026-11-19 said 11.5 m and 14.8 m: that was the cross street further down.)
 
 The slope between them falls 55 %: steeper than a flight (0.2 on 0.38) with a landing, so a flight straight down from a landing at 21.0 stays 1 m over
-the ground all the way to the cross street. The turn landing is therefore set into the slope (`palFootMCStreet`, `PAL_PLAN.footMCst`):
+the ground all the way to the cross street. The turn landing is therefore set into the slope (`palStreetFoot`, `PAL_PLAN.footMCst`):
 
 1. five more risers on west along the wall, 21.0 to 20.0 (three from 20.6), the parapet on the street's side; the cut is against the foot wall, with
    a face of masonry on it, and the ground is masked over it (the path rules, 15.1);
@@ -163,4 +163,33 @@ Known, not changed here:
 - the lane itself falls about 40 % from its head (17.6) to the cross street (14.8), 6 m, with no steps (the city's street, not the palace's);
 - on the software renderer's tier (and in test.html) the wall-side flight ends at 20.6, not 21.0 (3 risers on along the wall, not 5), and the street
   raster has no cell at the lane's head: the paving's skirt ends about a metre short of the lane's cobbles there, on walkable ground;
-- the west street stair footWC has the same break (its foot at 19.6, the street 15.5 m on and 8.6 m lower): next, in its own PR.
+- the west street stair footWC had the same break: see the next section.
+
+### The west street stair footWC on down to the street (2026-11-20, branch `claude/transitoria-footwc-street`)
+
+footWC comes down west along the north foot wall and meets the ground at hill (-24.7, -158.4), 19.6 (18.0 on the software renderer's tier, 3 m
+further along the wall). The street's nearest cells are 15.5 m down the slope and about 10 m lower; no house footprint stands on the slope (only
+road, open and precinct tags), so nothing was rebaked. The author's choice through the supervisor: at least three flights and two landings, the
+landings no smaller than 2.4 x 2.4 m. Built by the same `palStreetFoot` as footMC, from `PAL_PLAN.footWCst`:
+
+1. on west along the wall down to the turn landing at 17.6 (10 risers from 19.6, 2 from 18.0), the parapet on the street's side, 2.99 m long;
+2. three flights square to the wall, 15 + 15 + 9 risers of 0.2 on treads of 0.38, 2.6 m wide, with cheeks; two landings 2.4 m long by 2.6 m wide
+   at 14.6 and 11.6;
+3. the foot paving at 9.6, one riser under the last tread, on the street's cells at hill (-40.6, -173.7), the ground 9.5-9.7 there; one skirt step
+   on the street's side.
+
+50 risers from footWC's old foot (42 on the software tier), none over 0.2 m. The turn landing and the axis are set by the hill's lx on the wall's
+line (`along` in `palStreetFoot`), not from where the wall-side flight happens to end: the first version measured from that end, and the lower
+stair stood 0.86 m further west on one tier than on the other (the walk found it: the route ran into a cheek). footMC's plan values were
+restated the same way (end 79.43, axis 80.92); its geometry is where it was. The footprints are registered after the houses.
+
+Walked with `tools/test/fp-walk.mjs`: terrace 26, footWC, the turn landing, the three flights and both landings, the foot paving, the street
+(8.8), and back up the same way. Pictures: `docs/screenshots/palace-gates-footwc-20261120/` (cameras B and C before / after, the top view, three
+daytime views on foot). `tools/test/boot.mjs` checks footWCst as it does footMCst.
+
+Known, not changed here:
+- the slope is not a plane: the first flight is cut 0.25-0.65 m into it (the ground is masked over the treads) and the landings' lower ends
+  stand 1.1-1.3 m over it on solid bases;
+- the foot paving and its skirt take about 2 m of a street about 5 m wide there;
+- on the software renderer's tier footWC ends at 18.0, so there are 2 risers along the wall instead of 10; everything from the turn landing down
+  is the same on both tiers.
