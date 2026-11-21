@@ -45,6 +45,7 @@
     "src/ui/book.js",
     "src/ui/review.js",
     "src/ui/fp.js",
+    "src/ui/fp-people.js",
     "src/ui/app.js",
     "src/ui/empire.js"
   ],

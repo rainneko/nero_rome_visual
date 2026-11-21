@@ -20,9 +20,9 @@ const FP={on:false,paused:false,x:0,z:0,g:0,y:0,yaw:0,pitch:0,vx:0,vz:0,vy:0,jy:
   onHill(x,z){const H=FPC.HILL;return polyDist(x,z,[[H[0],H[1]],[H[2],H[3]]])[0]<H[4];}};
 
 /* ----- the height picture ----- */
-const FPM={ready:false,job:null,x0:0,z0:0,cx:0,cz:0,yRef:0,cs:FPC.SPAN/FPC.N,top:null,flo:null,vt:null,veg:null,col:null,buf:[],rt:null,rtC:null,cam:null,mat:null,hide:[],
+const FPM={ready:false,job:null,x0:0,z0:0,cx:0,cz:0,yRef:0,cs:FPC.SPAN/FPC.N,top:null,flo:null,vt:null,veg:null,col:null,cov:null,buf:[],rt:null,rtC:null,cam:null,mat:null,hide:[],
   init(){if(this.rt)return;const N=FPC.N,o={type:THREE.UnsignedByteType,minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:true};
-    this.rt=new THREE.WebGLRenderTarget(N,N,o);this.rtC=new THREE.WebGLRenderTarget(N,N,o);for(let i=0;i<3;i++)this.buf.push(new Uint8Array(N*N*4));this.col=new Uint8Array(N*N*4);
+    this.rt=new THREE.WebGLRenderTarget(N,N,o);this.rtC=new THREE.WebGLRenderTarget(N,N,o);for(let i=0;i<4;i++)this.buf.push(new Uint8Array(N*N*4));this.cov=new Uint8Array(N*N);this.col=new Uint8Array(N*N*4);
     this.top=new Float32Array(N*N);this.flo=new Float32Array(N*N);this.vt=new Float32Array(N*N);this.veg=new Uint8Array(N*N);const s=FPC.SPAN/2;this.cam=new THREE.OrthographicCamera(-s,s,s,-s,1,100);this.cam.up.set(0,0,-1);
     this.mat=new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{uSh:{value:new THREE.Vector3()},uY:{value:new THREE.Vector2()},uK:{value:1}},
       vertexShader:`uniform vec3 uSh;varying float vY;void main(){vec4 wp=vec4(position,1.);
@@ -51,6 +51,10 @@ wp=modelMatrix*wp;vY=wp.y;wp.x+=uSh.x*(wp.y-uSh.z);wp.z+=uSh.y*(wp.y-uSh.z);gl_P
     sun.intensity=0;hemi.intensity=Math.PI;hemi.color.setRGB(1,1,1);hemi.groundColor.setRGB(1,1,1);for(const o of J.hide)o.visible=false;
     R.setRenderTarget(this.rtC);R.setClearColor(0x000000,0);R.clear();R.render(sc,c);R.readRenderTargetPixels(this.rtC,0,0,N,N,this.col);
     for(const o of J.hide)o.visible=true;sun.intensity=si;hemi.intensity=hi;hemi.color.copy(hc);hemi.groundColor.copy(hg);R.setRenderTarget(rt0);R.setClearColor(cc,ca);},
+  // what is overhead: one more picture, of everything solid from a hand above the walker's head upwards. A cell under a roof, a vault or an upper floor is "covered" (for the people: who belongs indoors)
+  cover(J){const N=FPC.N,B=this.buf[3],cov=this.cov;this.draw({...J,lo:J.yRef+FPC.UP+.3,hi:J.yRef+130,hide:J.hide.concat(J.veg),veg:[]},3);for(let j=0;j<N;j++)for(let i=0;i<N;i++)cov[(N-1-j)*N+i]=B[(j*N+i)*4+2]>200?1:0;},
+  // green ground under a cell (the colour picture), as the plants read it
+  green(c){const N=FPC.N,i=c%N,j=(c-i)/N,o=((N-1-j)*N+i)*4,C=this.col,r=C[o],g=C[o+1],b=C[o+2];return!(g<22||g<r*1.06||g<b*1.3||(g-Math.max(r,b))<g*.1);},
   fold(J){const N=FPC.N,cs=this.cs,S=FPC.SPAN,top=this.top,flo=this.flo,vt=this.vt,veg=this.veg,rng=J.hi-J.lo,x0=J.cx-S/2,z0=J.cz-S/2,z1=J.cz+S/2,K=FPC.K;top.fill(-1e9);flo.fill(-1e9);vt.fill(-1e9);
     for(let p=0;p<3;p++){const B=this.buf[p],kx=p===1?K:0,kz=p===2?K:0;
       for(let j=0;j<N;j++){const zs=z1-(j+.5)*cs;for(let i=0;i<N;i++){const o=(j*N+i)*4,k=B[o+2];if(!k)continue;const y=J.lo+(B[o]*256+B[o+1])/65535*rng,T=k>200?top:vt;
@@ -59,11 +63,11 @@ wp=modelMatrix*wp;vY=wp.y;wp.x+=uSh.x*(wp.y-uSh.z);wp.z+=uSh.y*(wp.y-uSh.z);gl_P
     for(let c=0;c<N*N;c++){if(vt[c]>top[c]+.25){top[c]=1e6;veg[c]=1;}else veg[c]=0;}   // a plant standing a hand above the ground: in the way, whatever the height of the feet
     this.x0=x0;this.z0=z0;this.cx=J.cx;this.cz=J.cz;this.yRef=J.yRef;this.ready=true;},
   jobAt(x,z,y){const s=FPC.SNAP;this.sig=renderer.info.memory.geometries;return{cx:Math.round(x/s)*s,cz:Math.round(z/s)*s,yRef:y,lo:y-FPC.DOWN,hi:y+FPC.UP,stage:0,...this.lists()};},
-  grid(x,z,y){this.init();const J=this.jobAt(x,z,y);for(let i=0;i<3;i++)this.draw(J,i);this.fold(J);this.job=null;return J;},
+  grid(x,z,y){this.init();const J=this.jobAt(x,z,y);for(let i=0;i<3;i++)this.draw(J,i);this.cover(J);this.fold(J);this.job=null;return J;},
   now(x,z,y){this.drawColour(this.grid(x,z,y));FPG.grow();FPN.census(true);},
   // one step a frame: three pictures, the grid, the colour picture, the plants
-  step(){const J=this.job;if(!J)return;if(J.stage<3)this.draw(J,J.stage);else if(J.stage===3){this.fold(J);fpUnstick();   // a new picture can differ by a cell from the last: the place under the feet must stay one a body can leave
-      FPN.census(false);}else if(J.stage===4){if(J.moved)this.drawColour(J);}else{if(J.moved)FPG.grow();this.job=null;return;}J.stage++;},
+  step(){const J=this.job;if(!J)return;if(J.stage<3)this.draw(J,J.stage);else if(J.stage===3)this.cover(J);else if(J.stage===4){this.fold(J);fpUnstick();}   // a new picture can differ by a cell from the last: the place under the feet must stay one a body can leave
+    else if(J.stage===5){if(J.moved)this.drawColour(J);}else{if(J.moved)FPG.grow();FPN.census(false);this.job=null;return;}J.stage++;},
   // force: the scene itself has changed (a model has arrived, a layer has come or gone)
   want(x,z,y){if(this.job)return;const far=Math.max(Math.abs(x-this.cx),Math.abs(z-this.cz))>FPC.MOVE,force=nFrame%30===0&&renderer.info.memory.geometries!==this.sig;
     if(far||force||Math.abs(y-this.yRef)>FPC.DY){this.job=this.jobAt(x,z,y);this.job.moved=far||force||!FPG.n;this.job.force=force;}},
@@ -89,112 +93,7 @@ wp=modelMatrix*wp;vY=wp.y;wp.x+=uSh.x*(wp.y-uSh.z);wp.z+=uSh.y*(wp.y-uSh.z);gl_P
         const px=x-FPC.SPAN/2+(i+.5)*cs,pz=z-FPC.SPAN/2+(j+.5)*cs;if(out.some(o=>Math.hypot(o[0]-px,o[2]-pz)<6))continue;out.push([px,h,pz,r*cs+(Math.abs(h-W0.gy(px,pz))>1.5?70:0)]);}}
     out.sort((a,b)=>a[3]-b[3]);return out.length?out:[[x,gy,z,0]];}};
 
-/* ----- figures: a guard, a freedman, a senator ----- */
-// A figure stands on y = 0 and faces +z (its left is +x). aC = colour and how much of the instance tint it takes; aP = limb and metal.
-// Limbs: 0 body, 1 left leg, 2 right leg, 3 left arm, 4 right arm (these swing), 5 held still, 6 a long hem (sways a little).
-function fpFigure(kind){const P=[],Nn=[],C=[],L=[],M=new THREE.Matrix4(),E=new THREE.Euler(),Qq=new THREE.Quaternion(),V=new THREE.Vector3(),S=new THREE.Vector3();
-  const put=(geo,pos,rot,scl,col,limb,tint=0,metal=0)=>{const g=geo.index?geo.toNonIndexed():geo;M.compose(V.set(pos[0],pos[1],pos[2]),Qq.setFromEuler(E.set(rot[0],rot[1],rot[2])),S.set(scl[0],scl[1],scl[2]));g.applyMatrix4(M);
-    const p=g.attributes.position.array,n=g.attributes.normal.array;for(let i=0;i<p.length;i+=3){P.push(p[i],p[i+1],p[i+2]);Nn.push(n[i],n[i+1],n[i+2]);C.push(col[0],col[1],col[2],tint);L.push(limb,metal);}};
-  const cyl=(rt,rb,h,n=7,open=true)=>new THREE.CylinderGeometry(rt,rb,h,n,1,open),box=(x,y,z)=>new THREE.BoxGeometry(x,y,z),sph=(r,a=7,b=5)=>new THREE.SphereGeometry(r,a,b),O=[0,0,0],I=[1,1,1];
-  const skin=[.5,.34,.25],hair=[.07,.055,.045],leather=[.12,.08,.055],iron=[.3,.3,.31],bronze=[.5,.36,.15],wood=[.3,.2,.11],white=[.66,.63,.56],purple=[.2,.035,.11];
-  // head and neck
-  put(cyl(.05,.055,.1,6),[0,1.45,0],O,I,skin,0);put(sph(.105),[0,1.57,0],O,[.92,1.1,1],skin,0);
-  const legs=(col,tint,shoe)=>{for(const s of[1,-1]){const l=s>0?1:2;put(cyl(.075,.055,.8,6),[s*.09,.46,0],O,I,col,l,tint);put(box(.09,.07,.24),[s*.09,.035,.045],O,I,shoe,l);}};
-  const arm=(s,limb,sleeve,tint)=>{put(cyl(.058,.05,.3,6),[s*.215,1.25,0],[0,0,s*.06],I,sleeve,limb,tint);put(cyl(.046,.04,.3,6),[s*.232,.96,0],[0,0,s*.04],I,skin,limb);put(sph(.045,5,4),[s*.24,.79,0],O,I,skin,limb);};
-  // an arm held bent, the forearm level and forward
-  const armBent=(s,sleeve,tint)=>{put(cyl(.058,.05,.3,6),[s*.215,1.25,0],[0,0,s*.06],I,sleeve,5,tint);put(cyl(.046,.04,.28,6),[s*.225,1.1,.13],[1.4,0,0],I,skin,5);put(sph(.045,5,4),[s*.225,1.12,.28],O,I,skin,5);};
-  if(kind==='f'){   // freedman: a belted wool tunic to the knee, sandals, wax tablets under the left arm
-    put(sph(.11,7,4),[0,1.6,-.01],O,[.95,.8,1.02],hair,0);legs(skin,0,leather);
-    put(cyl(.175,.155,.56,8),[0,1.16,0],O,[1,1,.7],[1,1,1],0,1);put(cyl(.16,.235,.44,8),[0,.72,0],O,[1,1,.72],[1,1,1],0,1);put(cyl(.165,.165,.045,8),[0,.93,0],O,[1,1,.72],leather,0);
-    arm(-1,4,[1,1,1],1);armBent(1,[1,1,1],1);put(box(.035,.2,.15),[.19,1.12,.3],[.2,0,0],I,wood,5);put(box(.03,.19,.14),[.165,1.12,.3],[.2,0,0],I,wood,5);}
-  else if(kind==='g'){   // guard: tunic, mail shirt, helmet with a crest, oval shield, javelin, sword on the right hip
-    legs(skin,0,leather);put(cyl(.165,.215,.3,8),[0,.77,0],O,[1,1,.72],[.4,.09,.06],0);
-    put(cyl(.19,.175,.6,8),[0,1.16,0],O,[1,1,.72],iron,0,0,1);put(box(.44,.06,.2),[0,1.43,0],O,I,iron,0,0,1);put(cyl(.185,.185,.05,8),[0,.9,0],O,[1,1,.72],leather,0);put(box(.09,.2,.02),[0,.78,.15],O,I,leather,0);
-    put(sph(.125,8,5),[0,1.6,-.005],O,[.95,.92,1.04],bronze,0,0,1);put(box(.21,.03,.07),[0,1.53,-.12],[.5,0,0],I,bronze,0,0,1);for(const s of[1,-1])put(box(.02,.12,.07),[s*.1,1.52,.035],O,I,bronze,0,0,1);
-    put(box(.03,.11,.27),[0,1.75,-.01],O,I,[.48,.07,.05],0);
-    armBent(-1,[.4,.09,.06],0);put(cyl(.013,.013,2,5,false),[-.235,1.03,.3],O,I,wood,5);put(cyl(0,.02,.3,5,false),[-.235,2.16,.3],O,I,iron,5,0,1);
-    put(cyl(.058,.05,.3,6),[.215,1.25,0],[0,0,.06],I,[.4,.09,.06],5);put(cyl(.046,.04,.26,6),[.235,1.08,.08],[.9,0,0],I,skin,5);
-    put(cyl(1,1,.035,12,false),[.3,1.02,.16],[1.5708,0,.12],[.31,1,.56],[.36,.07,.05],5);put(sph(.07,6,4),[.3,1.02,.2],O,[1,1,.6],bronze,5,0,1);
-    put(box(.05,.5,.03),[-.2,.78,-.02],[.15,0,0],I,leather,0);put(box(.035,.1,.035),[-.2,1.07,-.06],[.15,0,0],I,bronze,0,0,1);}
-  else{   // senator: white toga over a tunic with the broad purple stripe, dark boots
-    put(sph(.108,7,4),[0,1.6,-.015],O,[.95,.72,1],[.42,.4,.38],0);
-    for(const s of[1,-1])put(box(.09,.09,.25),[s*.085,.045,.05],O,I,[.2,.06,.045],s>0?1:2);
-    put(cyl(.2,.3,.95,9),[0,.52,0],O,[1,1,.78],white,6);put(cyl(.18,.2,.46,9),[0,1.21,0],O,[1,1,.74],white,0);
-    put(box(.05,.36,.012),[-.07,1.22,.134],O,I,purple,0);
-    put(box(.13,.82,.36),[.04,1.08,0],[0,0,.62],[1,1,1.02],[.72,.69,.62],0);put(box(.2,.16,.34),[.17,1.39,0],O,I,[.72,.69,.62],0);   // the fold from the left shoulder down to the right hip
-    armBent(1,white,0);put(box(.07,.62,.2),[.25,.8,.14],O,I,[.7,.67,.6],5);arm(-1,4,white,0);}
-  const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(P,3));G.setAttribute('normal',new THREE.Float32BufferAttribute(Nn,3));
-  G.setAttribute('aC',new THREE.Float32BufferAttribute(C,4));G.setAttribute('aP',new THREE.Float32BufferAttribute(L,2));return G;}
-const FPN={list:[],mesh:{},blob:null,max:{g:14,f:9,s:3},cap:40,rng:RNG(6811),tints:[[.62,.56,.45],[.36,.25,.16],[.5,.38,.18],[.28,.33,.2],[.33,.36,.4],[.45,.2,.12],[.55,.5,.42]],
-  info:{g:['禁卫军','cohortes praetoriae','【史】皇帝的卫队，营地在城东北。每天有一个大队到帕拉蒂尼山当值。塔西佗记当值的士兵穿托加、暗佩短剑；这里画的是野战装束（锁子甲、椭圆盾、标枪），为的是好认。'],
-    f:['释奴','liberti','【史】获释的奴隶。克劳狄和尼禄两朝，皇帝的书信、账目和请愿都由宫里的释奴经办。束腰短袍，手里是蜡板。'],
-    s:['元老','senator','【史】托加里面是带宽紫条的短袍（latus clavus），脚上是元老的皮靴（calceus）。清晨到宫里问安（salutatio）。']},
-  init(){if(this.blob)return;const mat=procMat({key:'fpNpc',env:.5,
-      vHead:`attribute vec4 aC;attribute vec2 aP;attribute vec4 aN;attribute vec3 aT;varying vec3 vCol;varying float vMt;
-vec3 fpRx(vec3 p,float y0,float a){float c=cos(a),s=sin(a);p.y-=y0;p=vec3(p.x,p.y*c-p.z*s,p.y*s+p.z*c);p.y+=y0;return p;}`,
-      vBody:`{float sw=sin(aN.x)*aN.y,l=aP.x;vec3 q=transformed,n=objectNormal;
- if(l>.5&&l<1.5){q=fpRx(q,.86,sw*.6);n=fpRx(n,0.,sw*.6);}else if(l>1.5&&l<2.5){q=fpRx(q,.86,-sw*.6);n=fpRx(n,0.,-sw*.6);}
- else if(l>2.5&&l<3.5){q=fpRx(q,1.38,-sw*.5);n=fpRx(n,0.,-sw*.5);}else if(l>3.5&&l<4.5){q=fpRx(q,1.38,sw*.5);n=fpRx(n,0.,sw*.5);}
- else if(l>5.5){q.z+=sw*.07*(1.-smoothstep(.1,1.,q.y));}
- q.y+=abs(cos(aN.x))*.02*aN.y;q.x+=sin(uTime*.8+aN.z*6.3)*.008*q.y*(1.-aN.y);
- transformed=q;objectNormal=n;vCol=aC.rgb*mix(vec3(1.),aT,aC.a);vMt=aP.y;}`,
-      fHead:'varying vec3 vCol;varying float vMt;',fSurf:'S.alb=vCol*(.92+.16*vn2(vWP.xy*9.+vWP.z*7.));S.rough=mix(.88,.5,vMt);S.metal=vMt*.7;S.nw=normalize(vWN);S.useN=1.;'});
-    for(const k of['g','f','s']){const G=fpFigure(k),n=this.cap;G.setAttribute('aN',new THREE.InstancedBufferAttribute(new Float32Array(n*4),4));G.setAttribute('aT',new THREE.InstancedBufferAttribute(new Float32Array(n*3),3));
-      const m=layTag(new THREE.InstancedMesh(G,mat,n),'people');m.count=0;m.frustumCulled=false;m.castShadow=false;m.receiveShadow=true;FP.G.add(m);this.mesh[k]=m;}
-    const bg=new THREE.CircleGeometry(1,14);bg.rotateX(-Math.PI/2);
-    this.blob=new THREE.InstancedMesh(bg,fxMat({vs:`varying vec2 vQ;varying vec3 vW;void main(){vQ=position.xz;vec4 w=modelMatrix*instanceMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-      fs:`varying vec2 vQ;varying vec3 vW;void main(){float a=(1.-smoothstep(.25,1.,length(vQ)))*.42*(1.-uNight*.6);gl_FragColor=vec4(vec3(0.),a);}`}),this.cap*3);
-    this.blob.count=0;this.blob.frustumCulled=false;this.blob.renderOrder=2;this.blob.material.polygonOffset=true;this.blob.material.polygonOffsetFactor=-2;this.blob.material.polygonOffsetUnits=-2;layTag(this.blob,'people');FP.G.add(this.blob);},
-  clear(){this.list.length=0;for(const k in this.mesh)this.mesh[k].count=0;if(this.blob)this.blob.count=0;},
-  count(k){let n=0;for(const a of this.list)if(a.k===k)n++;return n;},
-  mk(k,x,z,y,h){const r=this.rng,a={k,x,z,y,h,ph:r()*TAU,amp:0,st:'wait',t:r()*2,tx:x,tz:z,sp:k==='s'?.75+r()*.15:k==='g'?1.15:1.3+r()*.35,seed:r(),tint:k==='f'?this.tints[Math.floor(r()*this.tints.length)]:[1,1,1],lead:null,ox:0,oz:0,post:false,h0:h};this.list.push(a);return a;},
-  // a straight walk from (x, z) at height y to (tx, tz): every 0.35 m must be standable, each from the one before
-  clearWay(x,z,y,tx,tz){const d=Math.hypot(tx-x,tz-z),n=Math.ceil(d/.35);let g=y;for(let i=1;i<=n;i++){const t=i/n;g=FPM.stand(x+(tx-x)*t,z+(tz-z)*t,g,.3);if(!(g===g))return false;}return true;},
-  target(a){const r=this.rng;for(let i=0;i<10;i++){const an=r()*TAU,d=(26-i*2)*(.5+.5*r()),tx=a.x+Math.sin(an)*d,tz=a.z+Math.cos(an)*d;if(Math.hypot(tx-FP.x,tz-FP.z)>38)continue;if(this.clearWay(a.x,a.z,a.y,tx,tz)){a.tx=tx;a.tz=tz;a.st='walk';return true;}}a.st='wait';a.t=1+r()*2;return false;},
-  // after each new grid: drop the figures it no longer covers, then fill up to the numbers (on the hill only). first: the walker has just arrived, figures may stand in view
-  census(first){if(!FPM.ready)return;const r=this.rng;this.list=this.list.filter(a=>{if(Math.hypot(a.x-FP.x,a.z-FP.z)>41)return false;const g=FPM.stand(a.x,a.z,a.y,.25);if(!(g===g))return false;return true;});
-    for(const a of this.list)if(a.lead&&this.list.indexOf(a.lead)<0)a.lead=null;
-    if(!FP.onHill(FP.x,FP.z))return;const fx=Math.sin(FP.yaw),fz=Math.cos(FP.yaw);
-    // only where the walker could walk to: not a shut court, the top of a hedge or a roof
-    const Wk=FPM.walk(FP.x,FP.z,FP.g,6000),free=(x,z)=>{for(const b of this.list)if(Math.hypot(b.x-x,b.z-z)<2.2)return false;return true;};
-    // wall: a place with a wall at its back and three paces clear in front, for a sentry; then [x, z, ground, the wall's bearing]
-    const spot=wall=>{for(let i=0;i<(wall?160:50);i++){const nd=Wk[Math.floor(r()*Wk.length)],x=nd[0],z=nd[1],dx=x-FP.x,dz=z-FP.z,d=Math.hypot(dx,dz);if(d<(first?5:15)||d>36)continue;
-        if(!first&&d<24&&(-dx*fx-dz*fz)/d>.45)continue;   // not where the walker is looking (the camera looks along -(sin yaw, cos yaw))
-        if(!free(x,z))continue;const g=FPM.stand(x,z,nd[2],.4);if(!(g===g))continue;if(!wall)return[x,z,g];
-        for(let k=0;k<8;k++){const a=k*.7854,sx=Math.sin(a),sz=Math.cos(a);if(FPM.wall(x+sx*1.1,z+sz*1.1,g)&&FPM.at(x+sx*.5,z+sz*.5)<g+.5&&this.clearWay(x,z,g,x-sx*2.4,z-sz*2.4))return[x,z,g,a];}}return null;};
-    let tries=0;
-    while(this.count('g')<this.max.g&&tries++<10){let np=0;for(const a of this.list)if(a.post)np++;
-      if(np<6){const p=spot(true);if(p){const h=p[3]+Math.PI,a=this.mk('g',p[0],p[1],p[2],h);a.post=true;a.st='post';a.tx=h;   // back to the wall, a second man two paces along it
-          const sx=Math.cos(p[3])*2.1,sz=-Math.sin(p[3])*2.1,g2=FPM.stand(p[0]+sx,p[1]+sz,p[2],.35);if(g2===g2&&free(p[0]+sx,p[1]+sz)||g2===g2&&this.list.length<3){const b=this.mk('g',p[0]+sx,p[1]+sz,g2,h);b.post=true;b.st='post';b.tx=h;}continue;}}
-      const p=spot(false);if(!p)break;const a=this.mk('g',p[0],p[1],p[2],r()*TAU),b=this.mk('g',p[0],p[1],p[2],a.h);b.lead=a;b.ox=.95;b.oz=0;}   // a patrol of two, abreast
-    tries=0;while(this.count('s')<this.max.s&&tries++<4){const p=spot(false);if(!p)break;const a=this.mk('s',p[0],p[1],p[2],r()*TAU);if(r()<.5&&this.count('s')<this.max.s){const b=this.mk('s',p[0],p[1],p[2],a.h);b.lead=a;b.ox=.85;b.oz=.1;}
-      const c=this.mk('f',p[0],p[1],p[2],a.h);c.lead=a;c.ox=-.5;c.oz=-1.4;}   // an attendant a pace behind
-    tries=0;while(this.count('f')<this.max.f&&tries++<6){const p=spot(false);if(!p)break;this.mk('f',p[0],p[1],p[2],r()*TAU);}
-    if(this.list.length>this.cap)this.list.length=this.cap;},
-  tick(dt){const r=this.rng,L=this.list;
-    for(const a of L){let want=0;
-      if(a.lead){const l=a.lead,c=Math.cos(l.h),s=Math.sin(l.h),tx=l.x+c*a.ox+s*a.oz,tz=l.z-s*a.ox+c*a.oz,dx=tx-a.x,dz=tz-a.z,d=Math.hypot(dx,dz);
-        if(d>.12){const v=Math.min(l.sp*1.5,d*2.2),st=Math.min(d,v*dt),nx=a.x+dx/d*st,nz=a.z+dz/d*st,g=FPM.stand(nx,nz,a.y,.25);if(g===g&&Math.hypot(nx-FP.x,nz-FP.z)>.7){a.x=nx;a.z=nz;a.y+=(g-a.y)*Math.min(1,dt*10);a.ph+=st*4.2;want=Math.min(1,v/1.2);}
-          a.h=fpTurn(a.h,d>.4?Math.atan2(dx,dz):l.h,dt*4);}else a.h=fpTurn(a.h,l.h,dt*3);}
-      else if(a.st==='post'){a.t-=dt;if(a.t<0){a.t=5+r()*9;a.tx=a.h0+(r()-.5)*.9;}a.h=fpTurn(a.h,a.tx,dt*.6);}
-      else if(a.st==='wait'){a.t-=dt;if(a.t<=0)this.target(a);}
-      else{const dx=a.tx-a.x,dz=a.tz-a.z,d=Math.hypot(dx,dz);
-        if(d<.35){a.st='wait';a.t=a.k==='s'?3+r()*7:a.k==='g'?1+r()*2:.6+r()*3.5;}
-        else{const hd=Math.atan2(dx,dz);a.h=fpTurn(a.h,hd,dt*3.2);const st=a.sp*dt,nx=a.x+Math.sin(a.h)*st,nz=a.z+Math.cos(a.h)*st,g=FPM.stand(nx,nz,a.y,.28),pd=Math.hypot(nx-FP.x,nz-FP.z);
-          let hit=pd<.85&&pd<Math.hypot(a.x-FP.x,a.z-FP.z);if(!hit)for(const b of L)if(b!==a&&b.lead!==a&&a.lead!==b){const bd=Math.hypot(nx-b.x,nz-b.z);if(bd<.6&&bd<Math.hypot(a.x-b.x,a.z-b.z)){hit=true;break;}}
-          if(!(g===g)){a.st='wait';a.t=.4+r();}else if(hit){a.t+=dt;if(a.t>2.5){a.st='wait';a.t=.2;}}else{a.x=nx;a.z=nz;a.y+=(g-a.y)*Math.min(1,dt*10);a.ph+=st*4.2;want=1;a.t=0;}}}
-      a.amp+=(want-a.amp)*Math.min(1,dt*6);}
-    // draw
-    const M=new THREE.Matrix4(),n={g:0,f:0,s:0};let nb=0;
-    for(const a of L){const m=this.mesh[a.k],i=n[a.k]++,aN=m.geometry.attributes.aN,aT=m.geometry.attributes.aT;M.makeRotationY(a.h);M.setPosition(a.x,a.y,a.z);m.setMatrixAt(i,M);aN.setXYZW(i,a.ph,a.amp,a.seed,0);aT.setXYZ(i,a.tint[0],a.tint[1],a.tint[2]);
-      M.makeScale(.42,1,.42);M.setPosition(a.x,a.y+.03,a.z);this.blob.setMatrixAt(nb++,M);}
-    for(const k in this.mesh){const m=this.mesh[k];m.count=n[k];m.instanceMatrix.needsUpdate=true;m.geometry.attributes.aN.needsUpdate=true;m.geometry.attributes.aT.needsUpdate=true;}
-    this.blob.count=nb;this.blob.instanceMatrix.needsUpdate=true;},
-  // the figure the walker is looking at, within 7 m, with nothing as high as the chin in between
-  facing(){const dx=-Math.sin(FP.yaw)*Math.cos(FP.pitch),dy=Math.sin(FP.pitch),dz=-Math.cos(FP.yaw)*Math.cos(FP.pitch),ey=FP.y+FPC.EYE;let best=null,bd=7;
-    for(const a of this.list){const x=a.x-FP.x,y=a.y+1.2-ey,z=a.z-FP.z,d=Math.hypot(x,y,z);if(d>=bd||(x*dx+y*dy+z*dz)/d<=.955)continue;
-      let seen=true;for(let n=Math.ceil(d/.3),i=1;i<n;i++)if(FPM.at(FP.x+x*i/n,FP.z+z*i/n)>FP.g+1.45){seen=false;break;}if(seen){bd=d;best=a;}}return best;}};
-function fpTurn(h,to,k){let d=to-h;d=Math.atan2(Math.sin(d),Math.cos(d));return h+d*Math.min(1,k);}
+/* ----- the figures are in fp-people.js ----- */
 
 /* ----- plants: tufts and flowers where the ground is green ----- */
 const FPG={n:0,nf:0,tuft:null,flower:null,
@@ -330,5 +229,5 @@ function fpInit(){if(FP.inited)return;FP.inited=true;const b=$('#tWalk');if(b){i
   addEventListener('pointerup',()=>{FP.drag=null;});addEventListener('mousedown',e=>{if(FP.on&&!FP.paused&&e.button===2){fpDoor();e.preventDefault();}},true);
   const ov=$('#fpPause');if(ov){ov.querySelector('[data-a="go"]').onclick=()=>fpPause(false);ov.querySelector('[data-a="out"]').onclick=fpExit;}const x=$('#fpOut');if(x)x.onclick=fpExit;
   W0.anim.push(fpTick);
-  window.__fp={enter:fpEnter,exit:fpExit,state:()=>({on:FP.on,posts:FPN.list.filter(a=>a.post).length,x:FP.x,y:FP.y,z:FP.z,jy:FP.jy,yaw:FP.yaw,pitch:FP.pitch,ready:FPM.ready,people:FPN.list.map(a=>a.k).join(''),tufts:FPG.n,flowers:FPG.nf,hill:FP.onHill(FP.x,FP.z)}),
+  window.__fp={enter:fpEnter,exit:fpExit,state:()=>({on:FP.on,posts:FPN.list.filter(a=>a.post).length,x:FP.x,y:FP.y,z:FP.z,jy:FP.jy,yaw:FP.yaw,pitch:FP.pitch,ready:FPM.ready,people:FPN.list.map(a=>a.k).join(','),zones:FPN.zones,misplaced:FPM.ready?FPN.list.filter(a=>{const R=FP_ROLES[a.lead?a.lead.k:a.k],q=FPN.zone(a.x,a.z,a.y);return'EGM'.indexOf(q)>=0&&R.z&&R.z.indexOf(q)<0&&!(q==='M'&&R.z.indexOf('C')>=0);}).map(a=>a.k+'@'+FPN.zone(a.x,a.z,a.y)).join(','):'',zone:FPM.ready?FPN.zone(FP.x,FP.z,FP.g):'',tufts:FPG.n,flowers:FPG.nf,hill:FP.onHill(FP.x,FP.z)}),
     look:(yaw,pitch)=>{FP.yaw=yaw;FP.pitch=pitch||0;},door:fpDoor,key:(k,on)=>{on?FP.keys.add(k):FP.keys.delete(k);},FP,FPM,FPN,FPG};}

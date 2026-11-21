@@ -65,7 +65,8 @@ src/scenes/antium/main.js      layers, labels, camera views, GLB loader
 src/ui/book.js                 full text: contents, chapters, reading place, reader counts
 src/ui/app.js                  states, resource bar, reader, place-name links, triggers, pages, music
 src/ui/empire.js               empire map overlay
-src/ui/fp.js                   first-person walk on the Palatine: ground and collision from depth captures, guards, freedmen, senators, grass, wind
+src/ui/fp.js                   first-person walk on the Palatine: ground and collision from depth captures, grass, wind
+src/ui/fp-people.js            the people of the walk: 36 roles (guards, senators, equestrians, priests, slaves...), the zones each may stand in, hours of the day
 data/                          density map, empire map data, book.txt (the full text)
 assets/models/*.glb            Rome hero buildings (Jupiter temple, Domus Tiberiana, Curia), inlined in the page
 assets/models/antium/*.glb     Antium core buildings, bundled into dist/antium-assets.js
