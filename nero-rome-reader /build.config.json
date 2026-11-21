@@ -98,7 +98,8 @@
       "dir": "assets/models/rome",
       "optimize": true,
       "skip": [
-        "rome_transitoria_interior"
+        "rome_transitoria_interior",
+        "rome_tr_fit_S09"
       ]
     },
     {
@@ -108,6 +109,16 @@
       "dir": "assets/models/rome",
       "only": [
         "rome_transitoria_interior"
+      ],
+      "optimize": true
+    },
+    {
+      "file": "transitoria-fit-s.js",
+      "var": "TRF_S_GLB",
+      "cb": "trfLoaded",
+      "dir": "assets/models/rome",
+      "only": [
+        "rome_tr_fit_S09"
       ],
       "optimize": true
     },

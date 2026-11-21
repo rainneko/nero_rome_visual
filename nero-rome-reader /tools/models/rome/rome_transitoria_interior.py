@@ -90,11 +90,42 @@ for c in (-7.0, 7.0):
     I.wall('x', c, y0, 41.0, 11.4, top, ends=(False, False)); I.wall('x', c, 41.0, y1, 11.4, top, ends=(False, False))
     I.hrect('int_plaster', c - h, y0, c + h, y1, 11.4, up=False)
     I.report.setdefault('lintel', []).append(['2N01', c])
+# Item 0.5 of briefs/rome/transitoria-v3 ("walk in"): the north and south gates stand open while a reader walks. The shell keeps its shut
+# leaves (seen from the air, nothing changes); on foot the leaf and the dark back of its recess leave the shell's index, so the doorway
+# is a real opening: walk through it, see the vestibule from the porch. Jambs, arch and plinth are the shell's and stay.
+for fid, w, top in (('doorN', 2.8, 4.8), ('doorS', 2.4, 3.8)):
+    f = next(q for q in plan['features'] if q['id'] == fid); sg = 1 if f['y'] > 0 else -1
+    ya, yb = sorted((sg * (abs(f['y']) - 0.42), sg * (abs(f['y']) - 0.23)))          # the leaf (0.30 inside the face) and the recess's back (0.34)
+    lo, hi = [f['x'] - w / 2 - 0.05, ya, -0.01], [f['x'] + w / 2 + 0.05, yb, top + 0.05]
+    gone = I.inside_box(lo, hi)
+    I.cuts.append(dict(fl='F1', line='open gate ' + fid, u=None, box=[round(v, 3) for v in lo + hi], tris=len(gone), mats=sorted({I.TMAT[i] for i in gone})))
+# 2N01, the middle: the gate porch's pediment roof (the shell's, x -4.7..4.7) runs back through the front wall into the loggia, its ridge
+# 1.8 m over the floor, and a walker climbed onto it. Until the shell's porch is moved (item 2, with the vestibule), a plaster pier stands
+# round the part inside: it reads as the gate block's back, and nobody walks up a roof.
+I.box('int_plaster', -4.95, 43.35, 4.95, 45.64, plan['levels']['F2'], plan["levels"]["F2"] + 1.98, faces='tsew')
+I.report.setdefault('pier', []).append(['2N01', 'porch roof'])
+# The great kitchen's smoke outlet (v3 B9; 【史】 Roman kitchens had no chimney, the smoke left by an opening high in the wall): a louvred
+# opening high in the south wall of S09, under the loggia's floor. The shell's wall there is one plain face and stays as it is (nothing
+# changes from the air); this is a panel set through it, seen from the terrace and from the kitchen on foot: a travertine frame, a dark
+# back, five slats. When the shell is next rebuilt (item 2) the opening goes into it and this panel goes.
+vx, vz0, vz1, vy = 28.0, 5.1, 6.1, -46.0
+I.box('int_reveal', vx - 0.8, vy - 0.03, vx + 0.8, vy + 0.03, vz0, vz1, faces='ns')
+for x0, x1, z0, z1 in ((vx - 0.92, vx + 0.92, vz0 - 0.12, vz0), (vx - 0.92, vx + 0.92, vz1, vz1 + 0.12), (vx - 0.92, vx - 0.8, vz0, vz1), (vx + 0.8, vx + 0.92, vz0, vz1)):
+    I.box('int_trav', x0, vy - 0.08, x1, vy + 0.08, z0, z1)
+for k in range(5):
+    z = vz0 + 0.1 + k * 0.19; I.box('int_earth', vx - 0.8, vy - 0.07, vx + 0.8, vy + 0.07, z, z + 0.06)
+I.report.setdefault('vent', []).append(['S09', vx, vy, vz0, vz1])
 print(json.dumps(I.report))
 for c in I.cuts: print('cut', c['fl'], c['line'], c['u'], c['tris'], 'tris', c['mats'])
 if I.report.get('blocked'): print('BLOCKED doors:', I.report['blocked'])
 out = os.path.join(ROOT, 'assets', 'models', 'rome', 'rome_transitoria_interior.glb')
-n = I.write(out, 'rome_transitoria_interior', extras=dict(cuts=[c['box'] for c in I.cuts], cutInfo=[c['fl'] + ' ' + c['line'] for c in I.cuts]))
+# the room table the page shows furnishings by (palace-interior.js, the zone packs): [id, x0, y0, x1, y1, floor z, ceiling z, ids it opens to]
+link = {}
+for d in plan['doors']: link.setdefault(d['a'], set()).add(d['b']); link.setdefault(d['b'], set()).add(d['a'])
+for v in plan.get('vertical', []):
+    if v.get('room') and v.get('to'): link.setdefault(v['room'], set()).add(v['to']); link.setdefault(v['to'], set()).add(v['room'])
+ROOMS = [[r['id'], r['x0'], r['y0'], r['x1'], r['y1'], plan['levels'][r['floor']], plan['levels'][r['floor']] + plan['floor_heights'][r['floor']], sorted(link.get(r['id'], ()))] for r in plan['rooms']]
+n = I.write(out, 'rome_transitoria_interior', extras=dict(cuts=[c['box'] for c in I.cuts], cutInfo=[c['fl'] + ' ' + c['line'] for c in I.cuts], rooms=ROOMS))
 print('wrote', os.path.relpath(out, ROOT), n, 'bytes,', I.tris(), 'triangles,', len([m for m in PI.MATS if I.G[m][0]]), 'materials')
 print('by material', {m: len(I.G[m][0]) // 3 for m in PI.MATS})
 if I.report.get('blocked') or I.report.get('uncovered') or I.report.get('through_floor'):

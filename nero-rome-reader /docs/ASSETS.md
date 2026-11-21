@@ -122,3 +122,17 @@ parts, walls in `ash`) and `tools/models/rome/clivus_palatinus_b_plan.json` from
 or covers them, writes the ground mask and keeps the city's trees out (`clivusB(W)`, one line in `monuments.js` before `groundMaskUpload`). The model rides
 in `rome-assets.js` like the other Rome GLBs. Review pictures and the B1–B5 history: `renders/palatine/clivus-palatinus-b-v5/` (git-ignored), a few in
 `docs/screenshots/clivus-b-20261120/`.
+
+## East palace furnishings: zone packs, loaded near and released far (2026-11-21)
+
+The rooms' things (hearths, tables, basins) are not in `rome-assets.js` and not in `transitoria-interior.js`. Each zone of the palace has
+its own lazy pack (`build.config.json`; the first is `transitoria-fit-s.js`, the south range), holding one GLB per work order, named
+`rome_tr_fit_<room or group>.glb`. A GLB has one top object `interior` and under it one object `room_<id>` per room (`room_S09`); model
+axes and origin are the palace's (x east, y north, z up, origin the centre, z 0 the ground floor). Every such name must also stand in the
+`skip` list of `rome-assets.js`, or it lands in the main pack.
+`src/scenes/rome/palace-interior.js` (`TRF`) fetches a zone's pack when a reader on foot is within 45 m of the zone's rectangle and lets it
+go beyond 90 m or when the walk ends: out of the scene, geometries and materials disposed, the pack's text and script tag dropped. The
+walls and floors (`TRI`) come within 140 m and go beyond 220 m. Of a loaded pack only the room the reader stands in and the rooms it opens
+to are shown (the room table is the walls' model's node extra `rooms`, written by `rome_transitoria_interior.py`), nearest first up to
+45 000 faces. The low tier and phones load no furnishings. Brief and measurements: `briefs/rome/transitoria-v3/item1-zone-packs.md`.
+`rome_tr_fit_S09.glb` is a stand-in of plain boxes (`rome_tr_fit_S09_standin.py`) until the real kitchen model arrives.
