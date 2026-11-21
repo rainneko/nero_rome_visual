@@ -252,7 +252,7 @@ window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
   // reference floor y0): from the model scripts (rome_domus_a.py cut variant, rome_pal_blocks.py, rome_transitoria.py)
   const DOM={o:[-15,15,-14.5,23],f:(x,y)=>y>=-2.2?0:-3.4,st:4.5,own:[['garden face (y -2.2)',3.4],['W1 (y -14.5)',2.6]]};   // R10 乙 (round 4, laughing-franklin): T1 3.4 under the floor, W1 2.6 m down to the 36
   const BLK={a:{o:[-18,18,-15,15],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): along the block\'s inner lane',5]},b:{o:[-30,30,-8,8],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): behind the low range',5]},
-    c:{o:[-15,15,-15,15],f:(x,y)=>y>=-10?0:-10,st:4.2,own:[['garden drop (y -10, z 0 to -10): open to the lower terrace',10]]},cf:{o:[-15,15,-10,15],f:()=>0,st:4.2},dh:{o:[-14,14,-15.4,15.4],f:()=>0,st:3.8},bf:{o:[-30,30,-8,8],f:()=>0,st:4.4},d:{o:[-17,17,-13,13],f:(x,y)=>y>=-3?0:-5,st:4.4,split:['split wall (y -3, z 0 to -5): 12 m of it open beside the archive',5]}};
+    c:{o:[-15,15,-15,15],f:(x,y)=>y>=-10?0:-10,st:4.2,own:[['garden drop (y -10, z 0 to -10): open to the lower terrace',10]]},cf:{o:[-15,15,-10,15],f:()=>0,st:4.2},dh:{o:[-14,14,-15.4,15.4],f:()=>0,st:3.8},do:{o:[-16,16,-15.4,15.4],f:()=>0,st:3.8},bf:{o:[-30,30,-8,8],f:()=>0,st:4.4},d:{o:[-17,17,-13,13],f:(x,y)=>y>=-3?0:-5,st:4.4,split:['split wall (y -3, z 0 to -5): 12 m of it open beside the archive',5]}};
   const L=[];
   for(const A of PAL_ASSETS){
     if(/^rome_domus_[ab]_belt$/.test(A.n))L.push({n:A.n,kind:'domus',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,...DOM});
@@ -260,7 +260,7 @@ window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
     else if(A.n==='rome_tiberiana')L.push({n:A.n,kind:'palace',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,skip:'accepted: the cliff and terrace garden do not change (tiberiana-v2)'});
     else if(A.n==='rome_domus_augusti')L.push({n:A.n,kind:'palace',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,o:[-36,36,-35,41],f:(x,y)=>y>=0?0:y>=-29?-5:-9,st:4.5,own:[['south wall 1 (y -29, z -5 to -9)',4],['south wall 2 (y -35, z -9 to -14) on a rock foot to -20',5]],note:'outline: x 36, y -35..41 (south wall 2 line); flanks drop 1 m by design'});
     else L.push({n:A.n,kind:'temple',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,model:true});}
-  for(const B of palBL){const k=BLK[B.t],sc=B.t==='c'||B.t==='cf'||B.t==='bf'||B.t==='dh'?1:B.dr/5;   // the low split variants (R10, round 4): the same plan, the split 3.3 m (B.dr) instead of 5
+  for(const B of palBL){const k=BLK[B.t],sc=B.t==='c'||B.t==='cf'||B.t==='bf'||B.dr===0?1:B.dr/5;   // the low split variants (R10, round 4): the same plan, the split 3.3 m (B.dr) instead of 5
     L.push({n:B.n,kind:'block',type:B.t,lx:B.lx,lz:B.lz,t:B.tn,y0:B.y,o:k.o,f:sc===1?k.f:(x,y)=>k.f(x,y)*sc,st:k.st,own:k.own,split:k.split&&[k.split[0].replace('-5','-'+B.dr),+(k.split[1]*sc).toFixed(2)]});}
   // Jupiter Victor (palatine.js, the plateau strips): temple() W 11 x L 19 at (113.5, 10), floor = the highest ground under 16 x 24 m + 0.3
   {const[x,z]=palW(113.5,10);let m=-1e9;for(let u=-8;u<=8;u+=1)for(let v=-12;v<=12;v+=1){const[a,b]=palW(113.5+u,10+v);m=Math.max(m,gy(a,b));}L.push({n:'Jupiter Victor',kind:'temple',lx:113.5,lz:10,t:0,y0:PAL_PLAN.h51.on?PAL_PLAN.h51.jv.y+.06:m+.3,o:[-5.5,5.5,-9.5,9.5],f:()=>0,st:null});}
