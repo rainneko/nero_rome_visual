@@ -217,9 +217,10 @@ MAT.foliageD=procMat({key:'folD',vHead:'attribute vec3 aF;attribute vec4 aI;vary
   S.alb=vSC*(.6+.55*n)*mix(.5,1.05,vF.z);S.alb+=vec3(.25,.3,.1)*step(.68,n2)*sunF*.15;
   S.rough=.85;S.ao=mix(.5,1.,vF.z)*mix(.75,1.,vF.y);
   S.emit=vec3(.04,.07,.015)*max(dot(-N,uSunDir),0.)*(1.-uNight)*.6;
-  if(vEx.x>.01){float kd=vEx.y;vec3 fc=kd<1.5?vec3(.8,.07,.03):kd<2.5?vec3(.62,.05,.035):vec3(.97,.74,.78);float mk;
+  if(vEx.x>.01){float kd=vEx.y;vec3 fc=kd<1.5?vec3(.8,.07,.03):kd<2.5?vec3(.62,.05,.035):vec3(.93,.45,.58);float mk;
    if(kd>2.5){float nn=vn3(vWP*1.9);mk=smoothstep(.15,.4,nn+vEx.x*.35-.35);}
-   else{vec3 q3=vWP*2.,id=floor(q3);vec3 jt=vec3(h13(id+1.3),h13(id+7.7),h13(id+13.1))-.5;float d=length(fract(q3)-.5-jt*.35);   // flowers and fruit: a few distinct dots on the outer shell, never noise over the whole crown
+   else if(kd<1.5){float nn=vn3(vWP*2.6+3.);mk=smoothstep(.5,.58,nn+vEx.x*.12-.12)*smoothstep(.45,.8,vF.z);}   // pomegranate in flower: scarlet clusters over the outer crown, about a third of it, so it reads from the air
+   else{vec3 q3=vWP*2.,id=floor(q3);vec3 jt=vec3(h13(id+1.3),h13(id+7.7),h13(id+13.1))-.5;float d=length(fract(q3)-.5-jt*.35);   // fruit: a few distinct dots on the outer shell, never noise over the whole crown
     mk=(1.-smoothstep(.26,.34,d))*step(h13(id+21.9),.8)*smoothstep(.72,.9,vF.z)*smoothstep(0.,.35,vEx.x);}
    S.alb=mix(S.alb,fc*(.8+.4*n),mk*min(1.,vEx.x*1.2));}}
 `});
@@ -230,7 +231,7 @@ DEPTH_D.onBeforeCompile=sh=>{sh.uniforms.uSeason=U.uSeason;
   .replace('#include <begin_vertex>','#include <begin_vertex>\n{float lv0;vec2 ex0;decCol(aI.x,aI.y,uSeason,lv0,ex0);if(aF.x>.5){float k=mix(.7,1.,smoothstep(.2,1.,lv0));transformed.xz*=k;transformed.y=mix(transformed.y,transformed.y*.88+.35,1.-k);}}');};
 // flower shrubs: green body, flower dots whose cover and colour family follow the season and the owner (0 public/wild, 1 imperial, 2 senatorial, 4 plebeian pots)
 const FLW_GL=`
-float flDens(float ow,float s){vec4 d=ow<.5?vec4(1.,.08,0.,0.):ow<1.5?vec4(1.,.5,.35,.3):ow<2.5?vec4(1.,.4,.14,0.):ow<3.5?vec4(0.):vec4(1.,.8,0.,0.);
+float flDens(float ow,float s){vec4 d=ow<.5?vec4(1.,.08,0.,0.):ow<1.5?vec4(1.4,.6,.35,.3):ow<2.5?vec4(1.,.4,.14,0.):ow<3.5?vec4(0.):vec4(1.,.8,0.,0.);
  return s<1.?mix(d.x,d.y,s):s<2.?mix(d.y,d.z,s-1.):s<3.?mix(d.z,d.w,s-2.):mix(d.w,d.x,s-3.);}
 vec3 flCol(float ow,float s,float h){
  if(s<.55||s>3.45){ if(ow<.5)return h<.3?vec3(.62,.05,.03):h<.6?vec3(.85,.84,.78):h<.85?vec3(.8,.58,.08):vec3(.3,.14,.55);

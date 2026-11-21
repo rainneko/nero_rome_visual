@@ -11,6 +11,17 @@ Keep this file current: every promise made to the author goes here until it is d
   测试页和审阅页（test.html、city-audit.html 等）不上线。
 * ⚠️ 章节访客计数：先部署 `server/visit-counter/`，再把地址填进 `build.config.json` 的 `"counter"`。
 
+## 2026-11-21 帕拉蒂尼春花（鸟瞰看得见）
+作者：“春天也没花太奇怪了”。阅读器的 `palatine` 鸟瞰（离山约 500 m）春天只看得到绿树：山上的杏树、石榴是零星单棵，树冠约 4 m，花看不出来。
+* ✅ `palSpring`（`palatine-h1.js`，在 `palWestClear` 之后跑）：几处成片的花树，用现成的悬铃木方池，不加新位置。表 `PAL_SPRING`：
+  东南台地双排树东头九棵杏（鸟瞰左前）、同一排西头十棵石榴、半圆花园南北两对杏、东台地北段六棵杏、再往北几棵石榴；半圆花园六个黄杨花床里补种玫瑰（84 株）。
+  树冠 6–7 m（老树）。带【史】注：普林尼说杏是最早开花的树（一月，NH 16.103）、石榴（NH 13.112）；尼禄一次宴会的玫瑰花费（苏维托尼乌斯《尼禄传》27.3）。
+* ✅ `builders.js`：杏花颜色从近白（0.97/0.74/0.78）调成浅粉（0.93/0.45/0.58），远看不再和石灰华地面混在一起；石榴花期改成外层树冠上成团的猩红（约三分之一），
+  结果期仍是点；皇家花床春季花量 1 → 1.4、夏季 0.5 → 0.6（只影响 owner 1）。
+* ✅ 季节：杏花冬末到仲春（季节 3.55–0.55），季节 0.75 已谢；石榴季节 0.45–1.6 开花，之后结果；秋冬没有花（秋天黄叶，冬天光枝）。
+  截图 `shots/bl_before_s0.png`、`bl_after_s0.png`、`bl_after_s075.png`、`bl_after_s1.png`、`bl_after_s2.png`、`bl_after_s3.png`（`tools/test/cam.mjs`，1280×720）。
+* ⬜ 西坡花园和宫殿内院没加花丛（这次只动鸟瞰里看得清的东南、东台地）。石榴花在 500 m 外偏棕红，不算显眼。
+
 ## 2026-11-20 宫殿内部、提比略宫 v3、元老宅新宅型
 作者 2026-11-20 的安排。规划在 `briefs/rome/tiberiana-v3-masterplan.md`，参考图的用法在 `briefs/rome/tiberiana-rebuild-refs.md`。
 * ⚠️ 作者把两份工单和对应的图交给 GPT：`briefs/rome/tiberiana-v3-gpt-workorder.md`、`briefs/rome/domus-senatorum-gpt-workorder.md`；

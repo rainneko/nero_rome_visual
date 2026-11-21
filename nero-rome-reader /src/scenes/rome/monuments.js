@@ -953,7 +953,7 @@ async function buildRome(msg){
       for(const q of pend)W.foot.add(...q);if(pend.length&&rkSeg.length<16)rkSeg.push([pend[0][0],pend[0][1],pend[pend.length-1][0]+.5,pend[pend.length-1][1]]);}   // (a cluster may overlap itself, not the buildings)
     rkSeg.forEach((q,i)=>U.uRk.value[i].set(...q));
     W.nRocks=nR;W.rockInfo={rej,cand:cand.length,top:top.length,seeds:seeds.length};}
-   W.palScrub=palRockScrub(W);palGlbFeet(W);W.edgeFeet=terraceFeet(W);palWestClear(W);}   // scrub round the foot of the Palatine rock bases (palatine.js); then rocks, moss, shrubs and cypresses at the foot of the terrace walls and of the Tiberiana's base (terrace-edge.js); no tall tree by the west rings' parapets (palatine-h1.js)
+   W.palScrub=palRockScrub(W);palGlbFeet(W);W.edgeFeet=terraceFeet(W);palWestClear(W);palSpring(W);}   // scrub round the foot of the Palatine rock bases (palatine.js); then rocks, moss, shrubs and cypresses at the foot of the terrace walls and of the Tiberiana's base (terrace-edge.js); no tall tree by the west rings' parapets (palatine-h1.js)
   /* ---- trees ---- */
   const treeN0=W.trees.length;
   {const R=RNG(91),cap=Math.round(21000*Q.trees);for(let z=-2800;z<3500&&W.trees.length<cap;z+=19)for(let x=-3100;x<2700;x+=19){const X=x+(R()-.5)*19,Z=z+(R()-.5)*19,[rd]=polyDist(X,Z,TIBER);if(rd<RTW+8)continue;
