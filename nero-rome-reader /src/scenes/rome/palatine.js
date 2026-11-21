@@ -34,21 +34,26 @@ const PAL_PATCH=[-210,40,440,660];                 // world rect [x0,z0,x1,z1] o
 const PAL_DECK=51.4,PAL_TOP=56.4;
 const PAL_BASIN=[[-72,10,-106,26],[-72,-12,26,76]];  // [lx0,lx1,lz0,lz1]: carved to the deck, paved, walled where the neighbour is higher
 // footprints include the overhangs of the GLBs (a 38.8x32.8, b 62.8x18.6, c 32.9x30.8, d 36.8x28.3); stand-ins are drawn with the nominal sizes
-const PAL_BLK={a:{n:'rome_pal_block_a',w:39,d:33,dr:5},b:{n:'rome_pal_block_b',w:63,d:19,dr:5},c:{n:'rome_pal_block_c',w:33,d:31,dr:10},cf:{n:'rome_pal_block_c_flat',w:33,d:31,dr:0},bf:{n:'rome_pal_block_b_flat',w:63,d:19,dr:0},d:{n:'rome_pal_block_d',w:37,d:29,dr:5}};
+// dh: the corner-loggia house (rome_domus_h, 28.3 x 31.1, one level, its own base to -0.5); it keeps cf's reserved footprint (33 x 31), so the road bake does not change
+// do: the forecourt-library house (rome_domus_o and rome_domus_o_library on one origin, 32.2 x 31.1 together), as dh
+// PAL_HOUSE: the one-level houses' outline in the model's axes (x half width, z back..front), their own base's depth, the stand-in's height, companion GLBs
+const PAL_HOUSE={dh:{x:14,z0:-15.4,z1:15.4,b:.5,h:7.6},do:{x:16,z0:-15.4,z1:15.4,b:.5,h:5.4,more:['rome_domus_o_library']},dm:{x:15.5,z0:-19.3,z1:19.7,b:.4,h:6,more:['rome_domus_m_bath']},dk:{x:20.8,z0:-11.6,z1:11.8,b:.6,h:6,more:['rome_domus_k_loggia'],py:47,pdr:5}};   // py, pdr: the ground stays shaped as for the block that stood here (b at 47, its low floor 5 m down): a platform at 41.65, the house on it
+const PAL_BLK={a:{n:'rome_pal_block_a',w:39,d:33,dr:5},b:{n:'rome_pal_block_b',w:63,d:19,dr:5},c:{n:'rome_pal_block_c',w:33,d:31,dr:10},cf:{n:'rome_pal_block_c_flat',w:33,d:31,dr:0},dh:{n:'rome_domus_h',w:33,d:31,dr:0},do:{n:'rome_domus_o',w:33,d:31,dr:0},dk:{n:'rome_domus_k',w:63,d:19,dr:0},dm:{n:'rome_domus_m',w:29,d:37,dr:0},bf:{n:'rome_pal_block_b_flat',w:63,d:19,dr:0},d:{n:'rome_pal_block_d',w:37,d:29,dr:5}};
 // [type, lx, lz, turn (0: front/low side faces +lz, 90: +lx, 180: -lz, 270: -lx), y of the HIGH floor, low: the low split variant (dr 3.3)]
 const PAL_BL_DWAS=PAL_PLAN.h51.blocks.was;   // d@34,8 and d@75,8 before H5.1 (the plateau strips' planting still reads them: palObstacles(1))
 const PAL_BL=[
-  ['d',-46.5,-81.5,0,54.7,1],['cf',-8.5,-80.5,0,51.4],       // north row of the basin (the gallery runs along its north side); R10: low d, c flat on the deck (was c at 61.4, its garden 5 m over the plateau)
-  ['d',-52,-48,180,54.7,1],['d',-12,-48,180,54.7,1],         // second row
-  ['a',-50.5,-14.5,0,54.7,1],['cf',-12,-14.5,0,51.4],        // third row
+  ['d',-46.5,-81.5,0,54.7,1],['do',-8.5,-80.5,0,51.4],       // north row of the basin (the gallery runs along its north side); B2 (2026-11-21, the author: "按假想图做"): the forecourt-library house in place of the flat c (the lane to B4 1.7 m, was 6.6); R10: low d, c flat on the deck (was c at 61.4, its garden 5 m over the plateau)
+  ['d',-52,-48,180,54.7,1],['dm',-12,-48,90,51.4],           // second row; B4 (2026-11-21, step 4 of the author's plan): the bath-wing house (rome_domus_m and its bath) turned to face east, in d's 37 x 29 (was the low d at 54.7)
+  ['a',-50.5,-14.5,0,54.7,1],['dh',-12,-14.5,0,51.4],        // third row; B6 (2026-11-21, the author: "你来做规划 然后一步一步开始"): the corner-loggia house in place of the flat c (its tower and garden beds go; the lane to B7 4.5 m, was 9.4)
   ['b',-38,14,0,54.7,1],['a',-51,43,0,54.7,1],               // south basin
   ['bf',-130,39,0,56.4],                                     // south of the Tiberiana (plateau strip): its arcade faces south onto the plaza as before; the author (2026-11-15, "改回，做平院"): the flat
                                                              // variant (laughing-franklin, rome_pal_block_b_flat: one floor at its origin, the plaza's 56.4; the back 1.55 m over the lane, a stair of 9 down to it)
   ...(PAL_PLAN.h51.on?PAL_PLAN.h51.blocks.now:PAL_BL_DWAS),      // between Transitoria and Apollo; H5.1 built (b2, round 4): turned round, the low variant, on h51 (lz 11.640)
   ['cf',156,-14,90,55],['a',153,26,90,58.3,1],               // east of the Transitoria, fronts to the east slope: low floors on the summit rim (55, H1); R10: c flat at 55, a low
   ['cf',10.85,-145.5,180,42],['cf',117.5,-145.5,180,42],    // 图四: c1 into the west garden (was at 46). north slope towards the Forum (H2): the north houses 1 and 3 on the belt (42) (were at -66,-123 and 15,-135); R10 乙 (round 4): the flat variant (laughing-franklin: 30 x 25, x -15..15, y -10..15, a balustrade on its garden edge, which is the belt's wall down to 36); the footprint reserved as c's
-  ['b',5,148,0,47],['b',5,171,0,31],['b',5,194,0,18.5]];     // south slope: three long colonnaded ranges stacked down the hill, seen from the Circus; low floors on the belt (42) and the foot terrace (26), H1
-const palBlOf=([t,lx,lz,tn,y,low])=>{const k=PAL_BLK[t],q=tn*Math.PI/180;return{t,lx,lz,tn,y,low:!!low,hw:k.w/2,hd:k.d/2,dr:low?3.3:k.dr,c:Math.cos(q),s:Math.sin(q),n:k.n+(low?'_low':'')};};
+  ['dk',5,148,0,41.8],['b',5,171,0,31],['b',5,194,0,18.5]];     // south slope: long colonnaded ranges stacked down the hill, seen from the Circus; low floors on the belt (42) and the foot terrace (26), H1.
+                                                             // B16 (2026-11-21, step 3 of the author's "你来做规划 然后一步一步开始"): the top row is the cliff-loggia house (rome_domus_k and its loggia, 41.6 m wide in b's 63 m; b stood at 47)
+const palBlOf=([t,lx,lz,tn,y,low])=>{const k=PAL_BLK[t],q=tn*Math.PI/180,H=PAL_HOUSE[t]||{};return{t,lx,lz,tn,y,py:H.py||y,pdr:H.py?H.pdr:low?3.3:k.dr,low:!!low,hw:k.w/2,hd:k.d/2,dr:low?3.3:k.dr,c:Math.cos(q),s:Math.sin(q),n:k.n+(low?'_low':'')};};
 const palBL=PAL_BL.map(palBlOf);
 if(PAL_PLAN.h51.on)for(const B of palBL)if(PAL_PLAN.h51.blocks.now.some(b=>b[1]===B.lx&&b[2]===B.lz))B.h51=1;   // the two d_low on h51 (palShape: their pad stops at the back wall)
 const palBLWas=PAL_PLAN.h51.on?PAL_BL.filter(b=>!PAL_PLAN.h51.blocks.now.includes(b)).concat(PAL_BL_DWAS).map(palBlOf):palBL;
@@ -74,8 +79,8 @@ function palShape(x,z,h){const[lx,lz]=palL(x,z);if(lx<-260||lx>300||lz<-220||lz>
     // H5.1: a d_low on h51 (turned round, its back wall at model z -13 on the Apollo buttress caps' line): the ground at its low floor's level under it and
     // 1.5 m out at the front and sides, nothing behind the back wall (the fills and the Apollo's foot are there: lowering it would open their bases)
     if(B.h51){if(v>-13&&e>-3)h=Math.min(h,lerp(h,B.y-B.dr-.5,clamp((Math.min(e,(v+13)*4)+3)/4,0,1)));continue;}
-    if(e>-3)h=Math.min(h,lerp(h,lerp(B.y-.5,B.y-B.dr-.5,sstep(-4,4,v)),clamp((e+3)/4,0,1)));
-    const yb=B.y-(B.dr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb&&!palLaneAt(lx,lz,1)){const Pl=palPlIn(lx,lz);if(!(Pl&&Pl.y<yb))h=lerp(h,yb,clamp((e2+8)/8,0,1));}}   // not in a stair lane (H2: its ground follows the flight)   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m; not on a lower H1 terrace, which has its own floor
+    if(e>-3)h=Math.min(h,lerp(h,lerp(B.py-.5,B.py-B.pdr-.5,sstep(-4,4,v)),clamp((e+3)/4,0,1)));
+    const yb=B.py-(B.pdr>6?10.5:10)-.2,e2=Math.min(B.hw+6-Math.abs(u),B.hd+6-Math.abs(v));if(e2>-8&&h<yb&&!palLaneAt(lx,lz,1)){const Pl=palPlIn(lx,lz);if(!(Pl&&Pl.y<yb))h=lerp(h,yb,clamp((e2+8)/8,0,1));}}   // not in a stair lane (H2: its ground follows the flight)   // on steep slopes the ground is raised to the foot of the block's walls (the GLB walls go 10 m below the high floor), blending out over 8 m; not on a lower H1 terrace, which has its own floor
   return h;}
 const palInBasin=(lx,lz,m=0)=>PAL_BASIN.some(([x0,x1,z0,z1])=>lx>x0-m&&lx<x1+m&&lz>z0-m&&lz<z1+m);
 function palInAsset(lx,lz,m){for(const A of PAL_ASSETS){const t=A.turn*DEG,c=Math.cos(t),s=Math.sin(t),dx=lx-A.lx,dz=lz-A.lz,u=c*dx-s*dz,v=s*dx+c*dz;
@@ -369,6 +374,8 @@ function palBlockStand(W,g,F,B){const dr=B.dr,L=-dr,R=RNG(Math.abs(Math.round(B.
   else if(B.t==='b'||B.t==='bf'){const t=L+4.2+3.6;rectWalls(g,F,0,3.5,60,9,L-2,t,L,fac({nSt:2,gH:4.2,sH:3.6,sty:11,fl:8|2|32}));roof(g,F,'gable',0,3.5,60,9,t,14*DEG,.6,sd,{part:0,seed:sd,nSt:2,gH:4.2,sH:3.6,floorY:L});
     arcade(g,F,0,L,8.3,60,4,15,1.1,2,{span:.34,attic:.8});
     for(let i=0;i<5;i++){const x=-24+12*i,yo=3.4+(i%3)*1.2;rectWalls(g,F,x,-4.5,11.4,7,L-2,yo,0,fac({nSt:1,gH:yo,sH:3,sty:3,fl:2|8|16,seed:sd+i*.07}));roof(g,F,'gableZ',x,-4.5,11.4,7,yo,22*DEG,.4,sd+i*.1,{part:0,seed:sd,nSt:1,gH:yo,sH:3,floorY:0});}}
+  else if(PAL_HOUSE[B.t]){const H=PAL_HOUSE[B.t],cz=(H.z0+H.z1)/2,hd=(H.z1-H.z0)/2,n=H.h>6?2:1;g.set(6,.4);box(g,F,0,-H.b,cz,H.x,H.b,hd,31);   // the one-level houses' stand-in: a hipped box on the outline
+    rectWalls(g,F,0,cz,H.x*2,hd*2,0,H.h,0,fac({nSt:n,gH:H.h/n,sH:H.h/n}));roof(g,F,'hip',0,cz,H.x*2,hd*2,H.h,22*DEG,.6,sd,{part:0,seed:sd,nSt:n,gH:H.h/n,sH:H.h/n,floorY:0});}
   else if(B.t==='cf'){g.set(6,.4);box(g,F,0,-1.2,-2.5,15,1.2,12.5,31);g.set(23,.5);g.poly([F.p(-15,.06,10),F.p(5,.06,10),F.p(5,.06,-6),F.p(-15,.06,-6)],[0,1,0]);   // the flat block's stand-in (rome_pal_block_c_flat: z -15..10, front +z): garden in the corner, the north range and the east range
     rectWalls(g,F,0,-10.5,30,9,0,8.4,0,fac({nSt:2,gH:4.2,sH:4.2}));roof(g,F,'hip',0,-10.5,30,9,8.4,22*DEG,.6,sd,{part:0,seed:sd,nSt:2,gH:4.2,sH:4.2,floorY:0});
     rectWalls(g,F,10,2,10,16,0,12.6,0,fac({nSt:3,gH:4.2,sH:4.2,seed:sd+.1}));roof(g,F,'hip',10,2,10,16,12.6,22*DEG,.6,sd+.1);
@@ -384,20 +391,25 @@ function palBlockStand(W,g,F,B){const dr=B.dr,L=-dr,R=RNG(Math.abs(Math.round(B.
     rectWalls(g,F,0,8,34,10,L-2,L+7.4,L,{part:9,seed:sd,sty:3,fl:1,nSt:1,gH:7.4,sH:3,lit:.2});roof(g,F,'flat',0,8,34,10,L+7.4,0,0,sd,{part:9,seed:sd,nSt:1,gH:7.4,sH:3,floorY:L});stairs(18.4,13,0,L,0);}}
 function palBlocks(W){const gF=new GB(1<<14);
   for(const B of palBL){const[x,z]=palW(B.lx,B.lz),rot=PALF.rot+B.tn*DEG;romeStand(W,B.n,x,z,B.y,rot,(g,F)=>palBlockStand(W,g,F,B));W.foot.add(x,z,B.hw,B.hd,rot);
+    for(const n of (PAL_HOUSE[B.t]||{}).more||[])romePlace(n,x,B.y,z,rot);
     // solid foundation under the lowest floor: hidden inside the walls, shows only where the ground falls away
     const F=frame(x,B.y,z,rot);let m=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,-1],[0,1],[-1,0],[1,0],[0,0]]){const q=F.p(sx*B.hw,0,sz*B.hd);m=Math.min(m,W.gy(q[0],q[2]));}
+    if(PAL_HOUSE[B.t]){const H=PAL_HOUSE[B.t];(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // one level on the deck, as the flat blocks: a plain block under it only where the ground is lower than its own base
+      if(B.y-H.b-m>.05){H.py?gF.set(22,.42):gF.set(6,.4);box(gF,F,0,m-1.5-B.y,(H.z0+H.z1)/2,H.x,B.y-H.b+.05-m+1.5,(H.z1-H.z0)/2,31);}
+      if(!H.py)continue;   // py (a house where a split block stood): that block's platform and ledges below, the platform paved (the house's flanks)
+      const top=B.py-B.pdr-.32-B.y,hw=B.hw-.5,hd=B.hd-.5;gF.set(11,.4);gF.poly([F.p(-hw,top,hd),F.p(hw,top,hd),F.p(hw,top,-hd),F.p(-hw,top,-hd)],[0,1,0]);}
     if(B.t==='cf'){(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // R10: the flat block (on a terrace's floor or the deck: its own foundation to -1.2 is all it needs); a plain
       if(B.y-1.2-m>.05){gF.set(6,.4);box(gF,F,0,m-1.5-B.y,-2.5,15,B.y-1.15-m+1.5,12.5,31);}continue;}   // block under it where the ground falls away (c@156 on the rim), never stepped ledges
     if(B.t==='bf'){(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // the flat b: its own foundation goes to -1.7 (its back, over the lane,
       if(B.y-1.7-m>.05){gF.set(6,.4);box(gF,F,0,m-1.5-B.y,0,30,B.y-1.65-m+1.5,8,31);}continue;}   // shows 1.55 m of it); a plain block under it only where the ground is lower still
     // where the ground falls far below the low floor the foundation steps down in 3 m ledges (paved, with coping and planting), not one plain wall
     ROME.supports=ROME.supports||[];ROME.supports.push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd+9});
-    const top=B.y-B.dr-.35,D=top-m,n=D>5?Math.min(3,Math.ceil(D/5)-1):0,y0=m-1.5-B.y;
+    const top=B.py-B.pdr-.35,D=top-m,HH=PAL_HOUSE[B.t],n=D>5?Math.min(3,Math.ceil(D/5)-1):0,y0=m-1.5-B.y;
     if(D>.3){gF.set(6,.4);box(gF,F,0,y0,0,B.hw-.5,top-m+1.5,B.hd-.5,31);}
     for(let j=1;j<=n;j++){const yj=top-D*j/(n+1),ez=3*j,zf=B.hd-.5+ez,r=RNG(j*17+Math.round(B.lx));gF.set(22,.42);box(gF,F,0,y0,ez/2,B.hw-.5,yj-m+1.5,B.hd-.5+ez/2,31);
       gF.set(11,.4);gF.poly([F.p(-B.hw+.5,yj-B.y+.03,zf),F.p(B.hw-.5,yj-B.y+.03,zf),F.p(B.hw-.5,yj-B.y+.03,zf-2.6),F.p(-B.hw+.5,yj-B.y+.03,zf-2.6)],[0,1,0]);
       gF.set(2,.5);box(gF,F,0,yj-B.y-.4,zf-.2,B.hw-.3,.5,.4,31);
-      for(let x=-B.hw+3;x<B.hw-2;x+=5+r()*4){const q=F.p(x,0,zf-1.5);W.trees.push([q[0],yj,q[2],r()<.55?'cyp':'shrub',.6+r()*.4]);}}}
+      for(let x=-B.hw+3;x<B.hw-2;x+=5+r()*4){if(HH&&Math.abs(x)<HH.x+1.5&&zf-1.5<HH.z1+1.5)continue;const q=F.p(x,0,zf-1.5);W.trees.push([q[0],yj,q[2],r()<.55?'cyp':'shrub',.6+r()*.4]);}}}
   const mm=gF.mesh(MAT.city);if(mm)W.scene.add(mm);}
 // obstacles for planting: axis-aligned local rects of heroes, blocks, temple, cryptoporticus
 const PAL_CRYPTO=[[-72,-64.5],[-69,-64.5],[-69,-101.5],[2,-101.5],[10,-97.5]];   // Nero's cryptoporticus: from the Tiberiana's east wall, north along it, east along the north edge of the saddle, bending to the Transitoria
