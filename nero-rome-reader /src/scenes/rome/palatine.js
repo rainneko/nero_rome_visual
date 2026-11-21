@@ -418,36 +418,227 @@ function palObstacles(was){const o=[];for(const B of was?palBLWas:palBL){const a
   for(let i=0;i<PAL_CRYPTO.length-1;i++){const a=PAL_CRYPTO[i],b=PAL_CRYPTO[i+1];o.push([Math.min(a[0],b[0])-3,Math.max(a[0],b[0])+3,Math.min(a[1],b[1])-3,Math.max(a[1],b[1])+3]);}
   return o.concat(PAL_OBS);}
 const palClear=(O,lx,lz)=>{let m=1e9;for(const[x0,x1,z0,z1]of O){const dx=Math.max(x0-lx,0,lx-x1),dz=Math.max(z0-lz,0,lz-z1);m=Math.min(m,(dx||dz)?Math.hypot(dx,dz):-Math.min(lx-x0,x1-lx,lz-z0,z1-lz));}return m;};
-/* Nero's cryptoporticus (Cryptoporticus Neroniana): lower level = half-sunk vaulted corridor (brick walls 2.6 m above the ground, a row of small arched
+/* Nero's cryptoporticus (Cryptoporticus Neroniana): lower level = vaulted corridor (brick walls 2.6 m above the deck, a row of small arched
    windows every ~3.5 m, cornice; only parts 0/9/24/30 get windows from the wall shader); upper level on its roof = covered walkway (travertine floor, small columns on both sides, tile gable roof).
-   An arched passage lets a lane run under it where the route crosses one; both ends have arched doors. */
+   An arched passage lets a lane run under it where the route crosses one; both ends have arched doors.
+   Walkable inside (briefs/rome/cryptoporticus-interior-plan.md, step 1): the outside stays as it was, except that the wall foot goes down to 50.3 (PAL_CRY.foot) and the
+   two painted doors on the south faces of the corner blocks P1 and P3 are real openings. Inside: floor 50.80 (0.72 under the deck), clear width 4.6 (walls 0.6), a plaster
+   barrel vault springing at 52.3 with its crown at 54.05 (the cornice slab's underside is 54.07), flat ceilings at that height in the corner rooms, 4 steps down
+   behind each door; at the lane crossing 6 m ramps (12 %) up to the deck and across it; the walkable part ends at the corner rooms P1 (west) and P3 (east), each
+   with a closed arched door in its end wall (the last 5 m of P3->P4 stand in the East palace's model: step 3). The inside is its own mesh (palCryInside), shown
+   only on foot within PAL_CRY.near m (palCryTick); while it is hidden the doors and the lane's tunnel are closed again by the old faces (the cover mesh). */
 const PAL_ARCHES=[[2,-26.5]];                                      // [segment index, lx of a lane crossing it]
-function palGallery(W,g){const y0=PAL_DECK+.12,Wd=5.8,P=PAL_CRYPTO,n=P.length-1,seed=.1;
+const PAL_CRY={fl:50.8,spr:52.3,rise:1.75,hw:2.3,top:54.05,foot:50.3,near:60,ramp:6,win:[52.6,53.35,.45]};   // win: sill, head, half width of the inner window openings
+const PAL_CRY_ST={G:null,cover:null,pts:null,on:false,tris:0,flips:0};
+// the wall shader's hash (renderer.js h12) in float32, to find the bays where it paints a window (the inner windows line up with every second of them)
+function palH12(px,py){const f=Math.fround,fr=x=>f(x-Math.floor(x));let a=fr(f(px*.1031)),b=fr(f(py*.1031)),c=fr(f(px*.1031));const d=f(f(a*f(b+33.33))+f(b*f(c+33.33))+f(c*f(a+33.33)));a=f(a+d);b=f(b+d);c=f(c+d);return fr(f(f(a+b)*c));}
+// part of the face A->B (local [x,z] in frame F) as a polygon of [u,y] points, with the uv, length and push wall() gives the whole face (yP: the face's own y0)
+function palFacePoly(g,F,A,B,pts,floorY,sH,yP){const A0=F.p(A[0],0,A[1]),B0=F.p(B[0],0,B[1]),L=Math.hypot(B[0]-A[0],B[1]-A[1]),dx=B0[0]-A0[0],dz=B0[2]-A0[2],l2=Math.hypot(dx,dz)||1;
+  let ox=0,oz=0;if(yP!=null){const m=g.m,o=(((m[1]*977.13+m[2]*13.71+m[3]*3.17+m[4]*5.31+m[0]*7.9+yP*.37)%1)+1)%1*.035;ox=dz/l2*o;oz=-dx/l2*o;}
+  const P=pts.map(([u,y])=>{const t=u/L,q=F.p(A[0]+(B[0]-A[0])*t,y,A[1]+(B[1]-A[1])*t);q[0]+=ox;q[2]+=oz;return q;});
+  g.poly(P,[dz,0,-dx],pts.map(([u,y])=>[u,y-floorY]),L,sH);}
+function palGallery(W,g){const y0=PAL_DECK+.12,Wd=5.8,P=PAL_CRYPTO,n=P.length-1,seed=.1,yF=PAL_CRY.foot,fac={part:9,seed,sty:1,fl:0,nSt:3,gH:2.5,sH:2.6,lit:0},gc=new GB(1<<11),segs=[];
   const col=(F,x,z,h,rot)=>W.cols.dor.push([...F.p(x,y0+3,z),rot,h,[1,.97,.92]]);
-  const body=(F,cx,len,rot,arch)=>{  // one straight piece of the gallery in frame F (local x along the route)
-    if(arch)arcade(g,F,cx,y0-.3,0,len,2.9,1,Wd,22,{span:.26,attic:.5,pilasters:false,cornice:false});
-    else rectWalls(g,F,cx,0,len,Wd,y0-.5,y0+2.6,y0-2.5,{part:9,seed,sty:1,fl:0,nSt:3,gH:2.5,sH:2.6,lit:0});   // floorY y0-2.5: the wall shader keeps gH>=2.5, so this puts the first storey (small arched windows) above the ground
+  // rectWalls' faces (floorY y0-2.5: the wall shader keeps gH>=2.5, so this puts the first storey (small arched windows) above the ground), only those in mask
+  // (bit i = rectWalls' face i: 0 local -z, 1 +x, 2 +z, 3 -x): where two pieces meet the faces are inside the walls now that the gallery is hollow
+  const faces=(F,cx,cz,w,d,mask)=>{const hw=w/2,hd=d/2,C=[[cx-hw,cz-hd],[cx+hw,cz-hd],[cx+hw,cz+hd],[cx-hw,cz+hd]];
+    for(let i=0;i<4;i++){if(!(mask>>i&1))continue;const a=C[i],b=C[(i+1)%4];g.set(fac.part,fac.seed,fac.sty,fac.fl,fac.nSt,fac.gH,0,fac.lit);wall(g,F,a[0],a[1],b[0],b[1],yF,y0+2.6,y0-2.5,fac.sH);}};
+  const body=(F,cx,len,rot,arch,mask)=>{  // one straight piece of the gallery in frame F (local x along the route)
+    if(arch)palCrossing(g,gc,F,cx,y0-.3,len,Wd);
+    else faces(F,cx,0,len,Wd,mask);
     g.set(2,.5);box(g,F,cx,y0+2.55,0,len/2+.2,.45,Wd/2+.35,31);                       // cornice slab
     g.set(33,.3);g.poly([F.p(cx-len/2,y0+3.02,-2.9),F.p(cx+len/2,y0+3.02,-2.9),F.p(cx+len/2,y0+3.02,2.9),F.p(cx-len/2,y0+3.02,2.9)],[0,1,0]);   // travertine floor of the walkway
     for(let t=-len/2+.5;t<=len/2-.2;t+=2.6)for(const sd of[-1,1])col(F,cx+t,sd*2.6,2.8,rot);
     g.set(2,.5);for(const sd of[-1,1])box(g,F,cx,y0+5.8,sd*2.6,len/2+.1,.4,.32,31);   // architraves
     roof(g,F,'gableX',cx,0,len+.2,6.4,y0+6.2,16*DEG,.3,.05,{part:24,seed:.46,nSt:1,gH:3,sH:3,floorY:y0+3});};
-  const corner=(lx,lz,door)=>{rectWalls(g,PFR,lx,lz,Wd,Wd,y0-.5,y0+2.6,y0-2.5,{part:9,seed,sty:1,fl:0,nSt:3,gH:2.5,sH:2.6,lit:0});g.set(2,.5);box(g,PFR,lx,y0+2.55,lz,Wd/2+.35,.45,Wd/2+.35,31);
+  const corner=(lx,lz,door,mask)=>{faces(PFR,lx,lz,Wd,Wd,door?mask&~4:mask);if(door){g.set(fac.part,fac.seed,fac.sty,fac.fl,fac.nSt,fac.gH,0,fac.lit);palDoorFace(g,lx,lz,yF,y0,fac);}
+    g.set(2,.5);box(g,PFR,lx,y0+2.55,lz,Wd/2+.35,.45,Wd/2+.35,31);
     g.set(33,.3);g.poly([PFR.p(lx-2.9,y0+3.02,lz-2.9),PFR.p(lx+2.9,y0+3.02,lz-2.9),PFR.p(lx+2.9,y0+3.02,lz+2.9),PFR.p(lx-2.9,y0+3.02,lz+2.9)],[0,1,0]);
     for(const[a,b]of[[-2.6,-2.6],[2.6,-2.6],[2.6,2.6],[-2.6,2.6]])W.cols.dor.push([...PFR.p(lx+a,y0+3,lz+b),PALF.rot,2.8,[1,.97,.92]]);
     roof(g,PFR,'pyr',lx,lz,6.4,6.4,y0+6.2,22*DEG,.3,.05);
-    if(door){const S=PFR.sub(lx,0,lz+Wd/2+.03,0);g.set(7,.3);g.poly(arch(g,S,0,1.15,y0,1.6,0),S.d(0,0,1));g.set(2,.5);box(g,S,-1.4,y0,0,.2,3.2,.3,31);box(g,S,1.4,y0,0,.2,3.2,.3,31);box(g,S,0,y0+3.1,0,1.7,.3,.3,31);}};
+    if(door){const S=PFR.sub(lx,0,lz+Wd/2+.03,0);gc.set(7,.3);gc.poly(arch(gc,S,0,1.15,y0,1.6,0),S.d(0,0,1));   // the painted door, now the cover of the real one
+      g.set(2,.5);box(g,S,-1.4,y0,0,.2,3.2,.3,31);box(g,S,1.4,y0,0,.2,3.2,.3,31);box(g,S,0,y0+3.1,0,1.7,.3,.3,31);}};
   // piers where the ground falls away from the gallery's floor (outer edge and the far side), carrying it on a row of squat stone piers with a string course
+  // (their inner parts stood inside the gallery's walls and, near the corners, in the next run: now that it is hollow they are cut back to the walls, palCryClip)
   for(let i=0;i<n;i++){const a=P[i],b=P[i+1],len=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/len,uz=(b[1]-a[1])/len;
-    for(let t=1;t<len;t+=5.8)for(const sd of[-1,1]){const lx=a[0]+ux*t-uz*sd*3.05,lz=a[1]+uz*t+ux*sd*3.05,q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);if(gh<y0-.6&&PAL_DECK-gh>.6){g.set(22,.45);box(g,PFR,lx,gh-1.2,lz,.75,y0-gh+1.2,.75,31);g.set(2,.5);box(g,PFR,lx,y0-.5,lz,1,.35,1,31);}}}
+    for(let t=1;t<len;t+=5.8)for(const sd of[-1,1]){const lx=a[0]+ux*t-uz*sd*3.05,lz=a[1]+uz*t+ux*sd*3.05,q=PFR.p(lx,0,lz),gh=W.gy(q[0],q[2]);if(gh<y0-.6&&PAL_DECK-gh>.6){
+      const pb=(hx,yb,h)=>{const r=palCryClip([lx-hx,lx+hx,lz-hx,lz+hx]);if(r)box(g,PFR,(r[0]+r[1])/2,yb,(r[2]+r[3])/2,(r[1]-r[0])/2,h,(r[3]-r[2])/2,31);};
+      g.set(22,.45);pb(.75,gh-1.2,y0-gh+1.2);g.set(2,.5);pb(1,y0-.5,.35);}}}
   let total=0;
   for(let i=0;i<n;i++){const a=P[i],b=P[i+1],A=palW(a[0],a[1]),B=palW(b[0],b[1]),L=Math.hypot(B[0]-A[0],B[1]-A[1]),rot=Math.atan2(-(B[1]-A[1]),B[0]-A[0]),st=i>0?Wd/2:0,en=i<n-1?Wd/2:0,len=L-st-en,cx=(st-en)/2,F=frame((A[0]+B[0])/2,0,(A[1]+B[1])/2,rot);total+=L;
     const arch=PAL_ARCHES.filter(q=>q[0]===i).map(q=>{const t=Math.abs(q[1]-a[0])/Math.hypot(b[0]-a[0],b[1]-a[1])*L-L/2;return t;});   // arch centre along the piece
-    if(!arch.length)body(F,cx,len,rot,false);
-    else{let lo=cx-len/2;for(const t of arch.sort((u,v)=>u-v)){const w=6.4,e0=t-w/2;if(e0>lo+.5)body(F,(lo+e0)/2,e0-lo,rot,false);body(F,t,w,rot,true);lo=t+w/2;}if(cx+len/2>lo+.5)body(F,(lo+cx+len/2)/2,cx+len/2-lo,rot,false);}}
-  for(let i=1;i<n;i++)corner(P[i][0],P[i][1],i===1||i===n-1);
+    const mask=i===1||i===2?5:i===3?7:15,pieces=[];   // the runs between two corner blocks lose their end faces; the stub at P0 keeps its, the last run to P4 its far one
+    // (its near end face, turned 26.6° off P3's, stood inside room P3)
+    if(!arch.length){body(F,cx,len,rot,false,mask);pieces.push([cx-len/2,cx+len/2]);}
+    else{let lo=cx-len/2;for(const t of arch.sort((u,v)=>u-v)){const w=6.4,e0=t-w/2;if(e0>lo+.5){body(F,(lo+e0)/2,e0-lo,rot,false,mask);pieces.push([lo,e0]);}body(F,t,w,rot,true,mask);lo=t+w/2;}if(cx+len/2>lo+.5){body(F,(lo+cx+len/2)/2,cx+len/2-lo,rot,false,mask);pieces.push([lo,cx+len/2]);}}
+    segs.push({i,F,L,pieces,cross:arch.length?[arch[0]-3.2,arch[0]+3.2]:null});}
+  for(let i=1;i<n;i++)corner(P[i][0],P[i][1],i===1||i===n-1,[0,14,9,7][i]);   // P1: E S W (N is the run), P2: N W, P3: N E S (W is the run; E stays: half of it shows)
   const q=palW(-34,-101.5),gyq=y0+3;W.palGalleryLen=total;
-  W.pois.push({n:'尼禄的长廊',l:'Cryptoporticus Neroniana',x:q[0],z:q[1],y:gyq+9,s0:0,s1:99,d:700,sub:true,info:'【史】帕拉蒂尼山上至今还保存着一段半埋在地下的拱顶长廊（约130米），光线从拱顶的窗洞透进来，连接提比略宫一带和东面的宫殿。山坡上能看到的屋顶上那层有柱子的有顶步道是复原想象。'});}
+  W.pois.push({n:'尼禄的长廊',l:'Cryptoporticus Neroniana',x:q[0],z:q[1],y:gyq+9,s0:0,s1:99,d:700,sub:true,info:'【史】帕拉蒂尼山上至今保存着一段拱顶长廊（约130米），光从一侧的小窗进来，拱顶有灰泥装饰。它原是提比略宫一带的旧廊，年代有争议，一说尼禄时延长并装饰过。【设】廊里的样子、窗开在北侧高处、屋顶上那层有柱的步道，都是复原想象。'});
+  const cv=layTag(gc.mesh(MAT.city),'other');if(cv){cv.name='palCryCover';W.scene.add(cv);}
+  palCryInside(W,segs,cv);}
+// the south face of a corner block (rectWalls' face 2) with the door cut through it: the painted door's outline (half width 1.15, springing 1.6 over the deck), clipped at
+// the corner room's ceiling (54.05; the cornice slab hides the wall above 54.07 anyway); the reveals through the 0.6 m wall and the threshold at the deck's level
+function palDoorH(d,y0){return Math.min(PAL_CRY.top,y0+1.6+Math.sqrt(Math.max(0,1.3225-d*d)));}
+const PAL_DOOR_D=[-1.15,-1.1,-1,-.85,-.676,.676,.85,1,1.1,1.15];
+function palDoorFace(g,lx,lz,yF,y0,fac){const A=[lx+2.9,lz+2.9],B=[lx-2.9,lz+2.9],top=y0+2.6,fp=pts=>palFacePoly(g,PFR,A,B,pts,y0-2.5,fac.sH,yF),D=PAL_DOOR_D;
+  fp([[0,yF],[1.75,yF],[1.75,top],[0,top]]);fp([[4.05,yF],[5.8,yF],[5.8,top],[4.05,top]]);fp([[1.75,yF],[4.05,yF],[4.05,y0],[1.75,y0]]);
+  for(let k=0;k<D.length-1;k++)fp([[2.9+D[k],palDoorH(D[k],y0)],[2.9+D[k+1],palDoorH(D[k+1],y0)],[2.9+D[k+1],top],[2.9+D[k],top]]);
+  g.set(2,.5);const R=(d,y,z)=>PFR.p(lx-d,y,lz+z);
+  for(const d of[-1.15,1.15])g.poly([R(d,y0,2.3),R(d,y0,2.9),R(d,y0+1.6,2.9),R(d,y0+1.6,2.3)],PFR.d(Math.sign(d),0,0));   // jambs, facing the opening
+  for(let k=0;k<D.length-1;k++){const a=D[k],b=D[k+1],ha=palDoorH(a,y0),hb=palDoorH(b,y0),m=(a+b)/2;g.poly([R(a,ha,2.3),R(b,hb,2.3),R(b,hb,2.9),R(a,ha,2.9)],PFR.d(m,y0+1.6-(ha+hb)/2,0));}
+  box(g,PFR,lx,PAL_CRY.fl,lz+2.6,1.15,y0-PAL_CRY.fl,.3,31);}   // threshold, its top flush with the deck
+// the lane's crossing: the two side walls of the old arcade (same shape, so the same faces outside), each 0.6 m thick, the room between them open along the gallery;
+// the cover (the old arcade's tunnel between them) closes it again while the inside is hidden
+function palCrossing(g,gc,F,cx,yb,len,Wd){const s=new THREE.Shape();s.moveTo(-len/2,-.06);s.lineTo(len/2,-.06);s.lineTo(len/2,2.9);s.lineTo(-len/2,2.9);s.closePath();
+  const r=len*.26,spring=Math.max(.6,2.9-r-.5),h=new THREE.Path();h.moveTo(-r,0);h.lineTo(r,0);h.lineTo(r,spring);h.absarc(0,spring,r,0,Math.PI,false);h.lineTo(-r,0);s.holes.push(h);
+  const M=new THREE.Matrix4().makeRotationY(F.rot),pp=F.p(cx,yb,0);M.setPosition(pp[0],pp[1],pp[2]);
+  for(const z of[2.3,-Wd/2]){const geo=new THREE.ExtrudeGeometry(s,{depth:Wd/2-2.3,bevelEnabled:false,curveSegments:5});geo.translate(0,0,z);g.set(22,.4,0);g.addGeo(geo,M);}
+  const geo=new THREE.ExtrudeGeometry(s,{depth:4.6,bevelEnabled:false,curveSegments:5});geo.translate(0,0,-2.3);gc.set(22,.4,0);gc.addGeo(geo,M);}
+// the deck's holes under the hollow gallery (hill frame): the outer outline of P1, the run north, P2 and the run east up to the lane's crossing, and from there to P3
+function palCryHoles(){const[p1,p2,p3]=[PAL_CRYPTO[1],PAL_CRYPTO[2],PAL_CRYPTO[3]],a=PAL_ARCHES[0][1],e=2.9;
+  return[[[p1[0]-e,p1[1]+e],[p1[0]+e,p1[1]+e],[p2[0]+e,p2[1]+e],[a-3.2,p2[1]+e],[a-3.2,p2[1]-e],[p2[0]-e,p2[1]-e]],[[a+3.2,p3[1]+e],[p3[0]+e,p3[1]+e],[p3[0]+e,p3[1]-e],[a+3.2,p3[1]-e]]];}
+// the inside's floor plan (hill frame, [lx0,lx1,lz0,lz1], 3 cm wider than the inner faces): the run north with the rooms P1 and P2, the run east with P3
+function palCryRooms(){const[p1,p2,p3]=[PAL_CRYPTO[1],PAL_CRYPTO[2],PAL_CRYPTO[3]],e=PAL_CRY.hw+.03;return[[p1[0]-e,p1[0]+e,p2[1]-e,p1[1]+e],[p2[0]-e,p3[0]+e,p2[1]-e,p2[1]+e]];}
+// an axis-aligned rect of the hill frame cut back out of the inside: the side that goes least far in is pulled back; null if nothing is left
+function palCryClip(r){r=r.slice();for(const R of palCryRooms()){if(r[1]<=R[0]||r[0]>=R[1]||r[3]<=R[2]||r[2]>=R[3])continue;
+    const o=[[0,R[1]],[1,R[0]],[2,R[3]],[3,R[2]]].map(([k,v])=>{const q=r.slice();q[k]=v;return q;}).filter(q=>q[1]-q[0]>.05&&q[3]-q[2]>.05);
+    if(!o.length)return null;o.sort((a,b)=>(b[1]-b[0])*(b[3]-b[2])-(a[1]-a[0])*(a[3]-a[2]));r=o[0];}return r;}
+/* The inside (geometry in the runs' own frames: x along the run, z across), drawn with its own material (palCryMat): lime plaster walls with a Pompeian-red dado,
+   a stucco vault in shallow coffers, paving, stone steps. Windows (【设】): one behind each painted window of the outer face, on the east run's north wall and the
+   north run's east wall: a splayed embrasure cut into the vault, a bright lattice and a soft pool of skylight on the floor (they face north-north-east and east: no sun patch). Oil lamps in small arched
+   niches about every 14 m in the other wall (【设】): a flame and a pool of light on the wall and floor, no light source and no shadow. */
+function palCryInside(W,segs,cover){const C=PAL_CRY,gi=new GB(1<<13),fl=C.fl,sp=C.spr,R=C.rise,hw=C.hw,top=C.top,dk=PAL_DECK+.12,K=8,TH=[],GL=[],PN=[];for(let k=0;k<=K;k++)TH.push(k/K*Math.PI/2);
+  const th=y=>Math.asin(Math.min(1,Math.max(0,(y-sp)/R))),zv=y=>hw*Math.cos(th(y)),V=(F,s,t,sd,i=0)=>F.p(s,sp+(R-i)*Math.sin(t),sd*(hw-i)*Math.cos(t));
+  const glow=(pts,k,a,uv)=>{for(const t of[[0,1,2],[0,2,3]])for(const j of t){GL.push(pts[j][0],pts[j][1],pts[j][2],k,a,uv[j][0],uv[j][1]);}};
+  const pane=(pts)=>{const uv=[[0,0],[1,0],[1,1],[0,1]];for(const t of[[0,1,2],[0,2,3]])for(const j of t)PN.push(pts[j][0],pts[j][1],pts[j][2],uv[j][0],uv[j][1]);};
+  // the inside's own codes (palCryMat): 0 wall plaster with the dado (v = height over the floor at that point), 44 vault (u along, v arc length from the springing),
+  // 45 plain plaster, 46 window reveal, 11 paving (u along, v across), 2 stone, 3 bronze, 7 niche, 47 tuff
+  const plaster=()=>gi.set(0,.5),WL=[],LM=[];
+  const wq=(F,sd,sa,sb,ya,yb,yt)=>{if(ya!==yb&&sb-sa>1.2){const n=6;for(let i=0;i<n;i++)wq(F,sd,sa+(sb-sa)*i/n,sa+(sb-sa)*(i+1)/n,ya+(yb-ya)*i/n,ya+(yb-ya)*(i+1)/n,yt);return;}plaster();gi.poly([F.p(sa,ya,sd*hw),F.p(sb,yb,sd*hw),F.p(sb,yt,sd*hw),F.p(sa,yt,sd*hw)],F.d(0,0,-sd),[[sa,0],[sb,0],[sb,yt-yb],[sa,yt-ya]]);};
+  const AL=2.03;   // arc length of the quarter vault per radian of its parameter, near enough (half width 2.3, rise 1.75)
+  // a lamp niche on a wall: frame Fw (origin on the wall, local z into the room), floor f
+  const lamp=(Fw,f,vault)=>{LM.push(Fw.p(0,f+1.6,.5));gi.set(7,.3);gi.poly(arch(gi,Fw,0,.2,f+1.45,.28,.012),Fw.d(0,0,1));gi.set(2,.5);box(gi,Fw,0,f+1.39,.06,.32,.06,.07,31);box(gi,Fw,0,f+1.45,.02,.26,.03,.03,31);
+    gi.set(3,.5);box(gi,Fw,0,f+1.45,.08,.07,.04,.035,31);
+    glow([Fw.p(-.035,f+1.48,.085),Fw.p(.035,f+1.48,.085),Fw.p(.035,f+1.62,.085),Fw.p(-.035,f+1.62,.085)],3,1,[[-1,-1],[1,-1],[1,1],[-1,1]]);
+    // the pool on the wall up to its top (vt: the springing in the runs, the ceiling in the rooms), and in the runs on into the vault (two flat strips)
+    const vt=vault?sp:f+2.7,vv=y=>(y-f-1.55)/1.15;glow([Fw.p(-1.3,f+.4,.02),Fw.p(1.3,f+.4,.02),Fw.p(1.3,vt,.02),Fw.p(-1.3,vt,.02)],2,.8,[[-1,vv(f+.4)],[1,vv(f+.4)],[1,vv(vt)],[-1,vv(vt)]]);
+    if(vault){let v0=vv(sp),t0=0;for(const t1 of[.3,.6]){const v1=v0+R*(t1-t0)/1.15,q=(t,x)=>Fw.p(x,sp+(R-.02)*Math.sin(t),hw-(hw-.02)*Math.cos(t));glow([q(t0,-1.3),q(t0,1.3),q(t1,1.3),q(t1,-1.3)],2,.8,[[-1,v0],[1,v0],[1,v1],[-1,v1]]);v0=v1;t0=t1;}}
+    glow([Fw.p(-1.6,f+.014,0),Fw.p(1.6,f+.014,0),Fw.p(1.6,f+.014,2.4),Fw.p(-1.6,f+.014,2.4)],2,.7,[[-1,-.15],[1,-.15],[1,1],[-1,1]]);};
+  // a closed arched door in an end wall (the next steps open it): tuff infill in a stone surround, 1.8 x 2.6
+  const blocked=(Fw,f)=>{const n=8,pt=(x,y,z)=>Fw.p(x,y,z),O=[];for(let k=0;k<=n;k++){const a=k/n*Math.PI;O.push([Math.cos(a)*.9,f+1.7+Math.sin(a)*.9]);}
+    gi.set(47,.5);gi.poly([pt(-.9,f,.03),pt(.9,f,.03),...O.map(([x,y])=>pt(x,y,.03)),pt(-.9,f,.03)].slice(0,-1),Fw.d(0,0,1),[[-.9,0],[.9,0],...O.map(([x,y])=>[x,y-f])].map(([u,v])=>[u+.9,v]),1.8,2.6);
+    gi.set(2,.5);for(const s of[-1,1])box(gi,Fw,s*1.02,f,.04,.12,1.7,.05,31);
+    for(let k=0;k<n;k++){const a0=k/n*Math.PI,a1=(k+1)/n*Math.PI,P0=r=>pt(Math.cos(a0)*r,f+1.7+Math.sin(a0)*r,.09),P1=r=>pt(Math.cos(a1)*r,f+1.7+Math.sin(a1)*r,.09);gi.poly([P0(1.14),P0(.9),P1(.9),P1(1.14)],Fw.d(0,0,1));}};
+  for(const S of segs){if(S.i!==1&&S.i!==2)continue;const{F,L}=S,e=L/2-2.9+.6,X=S.cross;
+    const flo=s=>{if(!X)return fl;const[a,b]=X;if(s>=a&&s<=b)return dk;if(s>a-C.ramp&&s<a)return fl+(s-a+C.ramp)/C.ramp*(dk-fl);if(s>b&&s<b+C.ramp)return dk-(s-b)/C.ramp*(dk-fl);return fl;};
+    const runs=X?[[-e,X[0]-C.ramp],[X[0]-C.ramp,X[0]],[X[1],X[1]+C.ramp],[X[1]+C.ramp,e]]:[[-e,e]];
+    // floor and walls up to the springing (in the crossing the old arcade's side walls stand there)
+    for(const[a,b]of runs){gi.set(11,.4);gi.poly([F.p(a,flo(a),-hw),F.p(b,flo(b),-hw),F.p(b,flo(b),hw),F.p(a,flo(a),hw)],[0,1,0],[[a,-hw],[b,-hw],[b,hw],[a,hw]]);for(const sd of[-1,1])wq(F,sd,a,b,flo(a),flo(b),sp);}
+    // inner windows (【设】): one behind every painted window of the outer face, on the east run's north wall (face 0, u along +x) and the north run's east wall
+    // (face 2, u along -x); the shader's bays and its dice (wallS: bayW, nb, h12(bi+seed*97, si+seed*31) > .15, storey 1)
+    const wsd=S.i===2?-1:1,WI=.85,WO=.45,zO=wsd*2.8,wins=[];{const sdq=Math.floor(Math.fround(.1)*4096+.5)/4096,bayW=3+(f=>f-Math.floor(f))(Math.fround(sdq*5.1));
+      for(const[p0,p1]of S.pieces){const Lp=p1-p0,nb=Math.max(1,Math.floor(Lp/bayW+.3)),bay=Lp/nb;
+        for(let bi=0;bi<nb;bi++)if(palH12(Math.fround(bi+Math.fround(sdq*97)),Math.fround(1+Math.fround(sdq*31)))>.15){const w=wsd<0?p0+(bi+.5)*bay:p1-(bi+.5)*bay;
+          if(w-WI<-e+.3||w+WI>e-.3||(X&&w+WI>X[0]-.3&&w-WI<X[1]+.3))continue;wins.push(w);}}}
+    const[wy0,wy1]=C.win,ta=th(wy0),tb=th(wy1);
+    // the lane's arch in both side walls of the crossing, where it rises above the springing: a lunette
+    let lane=null;if(X){const c=(X[0]+X[1])/2,r=6.4*.26,ys=PAL_DECK+.12-.3+Math.max(.6,2.9-r-.5),f0=Math.asin((sp-ys)/r),N=12;lane={c,r,ys,pts:[]};for(let k=0;k<=N;k++){const a=Math.PI-f0-(Math.PI-2*f0)*k/N;lane.pts.push([c+Math.cos(a)*r,ys+Math.sin(a)*r]);}}
+    for(const sd of[-1,1]){const W_=sd===wsd?wins:[],cut=new Set([-e,e]);for(const w of W_){cut.add(w-WI);cut.add(w+WI);}if(lane)for(const[s]of lane.pts)cut.add(s);
+      const B=[...cut].sort((u,v)=>u-v),lo=s=>{if(!lane||s<lane.pts[0][0]-1e-6||s>lane.pts[lane.pts.length-1][0]+1e-6)return 0;for(let k=0;k<lane.pts.length-1;k++){const[s0,h0]=lane.pts[k],[s1,h1]=lane.pts[k+1];if(s>=s0-1e-6&&s<=s1+1e-6)return th(h0+(h1-h0)*(s-s0)/(s1-s0||1));}return 0;};
+      gi.set(44,.5);
+      for(let j=0;j<B.length-1;j++){const a=B[j],b=B[j+1],m=(a+b)/2,inW=W_.some(w=>Math.abs(m-w)<WI),la=lo(a),lb=lo(b),inL=lane&&m>lane.pts[0][0]&&m<lane.pts[lane.pts.length-1][0];
+        for(let k=0;k<K;k++){const t0=TH[k],t1=TH[k+1],rng=inW?[[t0,Math.min(t1,ta)],[Math.max(t0,tb),t1]]:[[t0,t1]];
+          for(const[u0,u1]of rng){if(u1-u0<1e-5)continue;const A0=inL?Math.max(u0,la):u0,A1=inL?Math.max(u1,la):u1,B0=inL?Math.max(u0,lb):u0,B1=inL?Math.max(u1,lb):u1;if(A1-A0<1e-5&&B1-B0<1e-5)continue;
+            const tm=(u0+u1)/2;gi.poly([V(F,a,A0,sd),V(F,b,B0,sd),V(F,b,B1,sd),V(F,a,A1,sd)],F.d(0,-Math.sin(tm),-sd*Math.cos(tm)),[[a,A0*AL],[b,B0*AL],[b,B1*AL],[a,A1*AL]]);}}}
+      // the windows: a splayed embrasure (1.4 m wide at the vault, 0.9 m at the lattice 0.5 m further out), a bright lattice, the sunlight on the floor and its shaft
+      for(const w of W_){gi.set(46,.5);const zi=y=>sd*zv(y),Po=(x,y)=>F.p(w+x,y,zO);
+        const ru=[[0,0],[0,0],[1,0],[1,0]];   // u: 0 at the lattice, 1 at the vault (the reveal is lit most near the glass)
+        gi.poly([Po(-WO,wy0),Po(WO,wy0),F.p(w+WI,wy0,zi(wy0)),F.p(w-WI,wy0,zi(wy0))],[0,1,0],ru);gi.poly([Po(-WO,wy1),Po(WO,wy1),F.p(w+WI,wy1,zi(wy1)),F.p(w-WI,wy1,zi(wy1))],[0,-1,0],ru);
+        for(const sg of[-1,1])for(let k=0;k<4;k++){const y0_=wy0+(wy1-wy0)*k/4,y1_=wy0+(wy1-wy0)*(k+1)/4;gi.poly([V(F,w+sg*WI,th(y0_),sd),V(F,w+sg*WI,th(y1_),sd),Po(sg*WO,y1_),Po(sg*WO,y0_)],F.d(-sg,0,0),[[1,0],[1,0],[0,0],[0,0]]);}
+        pane([Po(-WO,wy0),Po(WO,wy0),Po(WO,wy1),Po(-WO,wy1)].map((p,k,a)=>sd<0?p:a[[1,0,3,2][k]]));
+        WL.push(F.p(w,53,sd*1.5));
+        // these windows face north-north-east (the north run's: east), so no sun comes in at midday: skylight only, a soft pool on the floor below, no lattice shadow, no shaft
+        const Fl=(x,z)=>F.p(w+x,flo(w+x)+.012,z);
+        glow([Fl(-1.7,sd*2.25),Fl(1.7,sd*2.25),Fl(1.7,-sd*1.5),Fl(-1.7,-sd*1.5)],1,1,[[-1,-1],[1,-1],[1,1],[-1,1]]);}
+      // lane lunette: the arch's intrados carried in to the vault
+      if(lane){gi.set(45,.5);const P_=lane.pts;for(let k=0;k<P_.length-1;k++){const[s0,h0]=P_[k],[s1,h1]=P_[k+1],sm=(s0+s1)/2,hm=(h0+h1)/2;gi.poly([F.p(s0,h0,sd*hw),F.p(s1,h1,sd*hw),F.p(s1,h1,sd*zv(h1)),F.p(s0,h0,sd*zv(h0))],F.d(lane.c-sm,lane.ys-hm,0));}}
+      // spandrels where the vault meets the corner rooms' flat ceilings
+      for(const s of[-e,e]){const c=F.p(s,top,sd*hw);gi.set(45,.5);for(let k=0;k<K;k++)gi.poly([c,V(F,s,TH[k],sd),V(F,s,TH[k+1],sd)],F.d(Math.sign(s),0,0));}}
+    // lamps about every 14 m in the wall without windows (seg 1: the west wall, seg 2: the south wall)
+    for(const s of S.i===1?[-14,0,14]:[-30,-16,-2,14,28])lamp(S.i===1?F.sub(s,0,-hw,0):F.sub(s,0,hw,Math.PI),flo(s),1);
+    S.wins=wins.length;}
+  // the corner rooms (hill frame): floor, flat ceiling, the closed walls, the door wall with its steps, end walls with the closed doors
+  const P=PAL_CRYPTO,y0=PAL_DECK+.12;
+  for(const[i,closed,door]of[[1,['E','W'],1],[2,['N','W'],0],[3,['N','E'],1]]){const cx=P[i][0],cz=P[i][1],Q=(x,y,z)=>PFR.p(cx+x,y,cz+z);
+    gi.set(11,.4);gi.poly([Q(-hw,fl,-hw),Q(hw,fl,-hw),Q(hw,fl,hw),Q(-hw,fl,hw)],[0,1,0],[[cx-hw,cz-hw],[cx+hw,cz-hw],[cx+hw,cz+hw],[cx-hw,cz+hw]]);gi.set(45,.5);gi.poly([Q(-hw,top,-hw),Q(hw,top,-hw),Q(hw,top,hw),Q(-hw,top,hw)],[0,-1,0]);
+    if(door)WL.push(Q(0,fl+1.6,hw-.4));
+    const side={N:[[-hw,-hw],[hw,-hw],[0,1]],E:[[hw,-hw],[hw,hw],[-1,0]],S:[[hw,hw],[-hw,hw],[0,-1]],W:[[-hw,hw],[-hw,-hw],[1,0]]};
+    for(const k of closed){const[a,b,nn]=side[k];plaster();gi.poly([Q(a[0],fl,a[1]),Q(b[0],fl,b[1]),Q(b[0],top,b[1]),Q(a[0],top,a[1])],PFR.d(nn[0],0,nn[1]),[[0,0],[4.6,0],[4.6,top-fl],[0,top-fl]],4.6,2.4);}
+    if(door){plaster();const z=hw,D=PAL_DOOR_D,wv=(x0,y0_,x1,y1_,y2,y3)=>gi.poly([Q(x0,y0_,z),Q(x1,y1_,z),Q(x1,y3,z),Q(x0,y2,z)],PFR.d(0,0,-1),[[x0,y0_-fl],[x1,y1_-fl],[x1,y3-fl],[x0,y2-fl]],4.6,2.4);
+      wv(-hw,fl,-1.15,fl,top,top);wv(1.15,fl,hw,fl,top,top);for(let k=0;k<D.length-1;k++){const a=-D[k],b=-D[k+1];wv(a,palDoorH(D[k],y0),b,palDoorH(D[k+1],y0),top,top);}
+      gi.set(2,.5);for(let k=1;k<=3;k++)box(gi,PFR,cx,fl,cz+hw-.3*k+.15,1.3,y0-.18*k-fl,.15,31);}
+    if(i===1){blocked(PFR.sub(cx-hw,0,cz,Math.PI/2),fl);lamp(PFR.sub(cx+hw,0,cz-.8,-Math.PI/2),fl);}
+    if(i===3){blocked(PFR.sub(cx+hw,0,cz,-Math.PI/2),fl);lamp(PFR.sub(cx,0,cz-hw,0),fl);}}
+  // the meshes: the walls and vaults, the window lattices (opaque, bright by day), the daylight and lamplight (added light, never ground for the walker)
+  const G=new THREE.Group();G.name='palCryInside';G.visible=false;const m=layTag(gi.mesh(palCryMat(WL,LM),false),'other');if(m)G.add(m);
+  const vs='attribute vec4 aG;varying vec4 vG;void main(){vG=aG;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+  {const geo=new THREE.BufferGeometry(),a=new Float32Array(GL),n=a.length/7,p=new Float32Array(n*3),q=new Float32Array(n*4);for(let i=0;i<n;i++){p.set(a.subarray(i*7,i*7+3),i*3);q.set(a.subarray(i*7+3,i*7+7),i*4);}
+    geo.setAttribute('position',new THREE.BufferAttribute(p,3));geo.setAttribute('aG',new THREE.BufferAttribute(q,4));
+    const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,uniforms:{uNight:U.uNight,uTime:U.uTime},vertexShader:vs,
+      fragmentShader:`uniform float uNight,uTime;varying vec4 vG;void main(){float k=vG.x;vec2 q=vG.zw;vec3 c;
+ if(k<1.5){float f=1.-smoothstep(0.,1.,length(q));f*=f;c=vec3(.95,.9,.8)*.16*(1.-smoothstep(.4,.9,uNight))*f;}
+ else if(k<2.5){float f=1.-smoothstep(0.,1.,length(q));f*=f;c=vec3(1.,.56,.22)*.5*max(uNight,.1)*f*(.93+.07*sin(uTime*7.+gl_FragCoord.x*.002));}
+ else if(k<3.5){float r=length(vec2(q.x,(q.y+.35)*.75));c=vec3(1.,.66,.3)*2.4*(1.-smoothstep(.35,.95,r))*(.85+.15*sin(uTime*11.));}
+ else c=vec3(0.);
+ gl_FragColor=vec4(c*vG.y,1.);}`});
+    const gm=layTag(new THREE.Mesh(geo,mat),'other');gm.renderOrder=2;gm.frustumCulled=true;geo.computeBoundingSphere();G.add(gm);}
+  {const geo=new THREE.BufferGeometry(),a=new Float32Array(PN),n=a.length/5,p=new Float32Array(n*3),q=new Float32Array(n*4);for(let i=0;i<n;i++){p.set(a.subarray(i*5,i*5+3),i*3);q.set([0,1,a[i*5+3],a[i*5+4]],i*4);}
+    geo.setAttribute('position',new THREE.BufferAttribute(p,3));geo.setAttribute('aG',new THREE.BufferAttribute(q,4));geo.computeBoundingSphere();
+    const mat=new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{uNight:U.uNight},vertexShader:vs,fragmentShader:`uniform float uNight;varying vec4 vG;void main(){vec2 q=vG.zw;float gx=abs(fract(q.x*3.)-.5),gy=abs(fract(q.y*4.)-.5),
+ bar=max(step(.44,max(gx,gy)),step(min(min(q.x,1.-q.x),min(q.y,1.-q.y)),.05));float d=1.-uNight;vec3 sky=mix(vec3(.045,.05,.075),vec3(2.2,2.1,1.85),d),wd=vec3(.13,.09,.06)*(.25+.75*d);gl_FragColor=vec4(mix(sky,wd,bar),1.);}`});
+    G.add(layTag(new THREE.Mesh(geo,mat),'other'));}
+  W.scene.add(G);const S=PAL_CRY_ST;S.G=G;S.cover=cover;S.pts=PAL_CRYPTO.slice(0,4).map(p=>palW(p[0],p[1]));S.on=false;
+  S.tris=0;G.traverse(o=>{if(o.isMesh)S.tris+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3;});
+  if(!S.anim){S.anim=1;W.anim.push(palCryTick);}
+  window.__cry=()=>({on:S.on,tris:S.tris,flips:S.flips,shown:!!(S.G&&S.G.visible)});}
+// the inside's material, its own: the city's would take the sun, and the shadow map cannot shade a room from its own vault (the sun's depth bias, renderer.js, is about
+// 3.5 m, more than the room is high). So no sun here: a warm, dim sky light, and the light of the windows and doors (WL, by day) and of the lamps (LM, at night) falling
+// off with distance. Lime plaster, cream, a Pompeian-red dado 0.9 m high with a dark top line; the vault in shallow coffers (0.9 m) with thin ochre lines, a plain band
+// at the springing, a little darker toward the crown; warm grey-buff paving (codes: palCryInside)
+function palCryMat(WL,LM){const v3=a=>(a.length?a:[[0,-1e4,0]]).map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+  return new THREE.ShaderMaterial({side:THREE.DoubleSide,defines:{NW:Math.max(1,WL.length),NL:Math.max(1,LM.length)},uniforms:{uNight:U.uNight,uWin:{value:v3(WL)},uLmp:{value:v3(LM)}},
+    vertexShader:'attribute vec4 aA;attribute vec4 aB;varying vec2 vU;varying float vK;varying vec3 vP;varying vec3 vN;void main(){vU=aA.xy;vK=aB.y;vec4 w=modelMatrix*vec4(position,1.);vP=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
+    fragmentShader:`uniform float uNight;uniform vec3 uWin[NW];uniform vec3 uLmp[NL];varying vec2 vU;varying float vK;varying vec3 vP;varying vec3 vN;
+float hh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hh(i),hh(i+vec2(1.,0.)),f.x),mix(hh(i+vec2(0.,1.)),hh(i+vec2(1.,1.)),f.x),f.y);}
+float ln(float d,float w){float aw=fwidth(d);return 1.-smoothstep(w,w+aw+.001,abs(d));}
+float jt(float x,float per){return (fract(x/per+.5)-.5)*per;}
+void main(){vec2 u=vU;float k=vK,n=.55*vn(u*2.3)+.3*vn(u*7.)+.15*vn(u*.5);vec3 cr=vec3(.70,.65,.55),oc=vec3(.6,.5,.36),a;
+ if(k<.5){a=cr*(.93+.12*n);float v=u.y;if(v<.9){a=vec3(.29,.135,.10)*(.88+.2*n);a*=1.-.22*(1.-smoothstep(0.,.1,v));}a=mix(a,vec3(.14,.08,.06),ln(v-.915,.018));}
+ else if(k<2.5)a=vec3(.6,.55,.46)*(.88+.18*n);
+ else if(k<3.5)a=vec3(.32,.21,.1);
+ else if(k<7.5)a=vec3(.12,.1,.08);
+ else if(k<11.5){vec2 c=floor(vec2(u.x/1.15,(u.y+2.3)/1.15));a=vec3(.53,.48,.40)*(.86+.16*n)*(.92+.14*hh(c));a*=1.-.3*max(ln(jt(u.x,1.15),.008),ln(jt(u.y+2.3,1.15),.008));}
+ else if(k<44.5){float v=u.y;a=cr*(.95+.08*n);
+  if(v<.22){a=mix(cr,oc,.35)*(.95+.08*n);a=mix(a,oc*.85,ln(v-.22,.012));}
+  else{vec2 q=vec2(u.x/.9,(v-.27)/.9),f=fract(q),dd=min(f,1.-f)*.9;float e=min(dd.x,dd.y),inner=smoothstep(.1,.12,e);
+   a*=mix(1.03,.94,inner);a=mix(a,oc,ln(e,.012)*step(.24,v)*.75);a=mix(a,oc,ln(e-.12,.005)*.4);}
+  a*=mix(1.,.84,smoothstep(.4,3.2,v));}
+ else if(k<45.5)a=cr*(.95+.08*n);
+ else if(k<46.5)a=cr*1.06*(.96+.06*n);
+ else{vec2 q=vec2(u.x/.6+.5*mod(floor(u.y/.45),2.),u.y/.45),f=fract(q);a=vec3(.43,.37,.28)*(.85+.25*n)*(.9+.15*hh(floor(q)));a*=1.-.35*max(1.-smoothstep(0.,.05,min(f.x,1.-f.x)),1.-smoothstep(0.,.07,min(f.y,1.-f.y)));}
+ vec3 N=normalize(vN);if(!gl_FrontFacing)N=-N;float d=1.-uNight,dw=1.-smoothstep(.4,.9,uNight);vec3 L=mix(vec3(.024,.022,.022),vec3(.30,.275,.235),d);
+ for(int i=0;i<NW;i++){vec3 w=uWin[i]-vP;float r2=dot(w,w);L+=dw*vec3(1.,.9,.74)*.75*(.25+.75*max(dot(N,w)*inversesqrt(r2),0.))/(1.+r2*1.1);}
+ for(int i=0;i<NL;i++){vec3 w=uLmp[i]-vP;float r2=dot(w,w);L+=max(uNight,.05)*vec3(1.,.62,.32)*1.25*(.3+.7*max(dot(N,w)*inversesqrt(r2),0.))/(1.+r2*.4);}
+ if(k>45.5&&k<46.5)L+=dw*vec3(1.,.9,.74)*(.25+1.6*pow(1.-clamp(u.x,0.,1.),1.3));
+ gl_FragColor=vec4(a*L,1.);}`});}
+// on foot within PAL_CRY.near m of the gallery: the inside shows and the covers go; the walker's picture is drawn again (palace-interior.js triRedraw)
+// the walk's figures keep out of the inside (it is a passage of the palace, and its doors are 2.3 m wide): the rooms' plan, 0.6 m wider, as world polygons
+function palCryKeepOut(){const P=palCryRooms().map(([a,b,c,d])=>[[a-.6,c-.6],[b+.6,c-.6],[b+.6,d+.6],[a-.6,d+.6]].map(q=>palW(q[0],q[1])));
+  return(x,z)=>{for(const Q of P){let n=false;for(let i=0,j=3;i<4;j=i++){const[xi,zi]=Q[i],[xj,zj]=Q[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)n=!n;}if(n)return true;}return false;};}
+function palCryTick(){const S=PAL_CRY_ST;if(!S.G||!S.G.parent)return;if(!S.out&&typeof FPN!=='undefined'&&FPN.out){FPN.out.push(palCryKeepOut());S.out=1;}const on=!!(typeof FP!=='undefined'&&FP.on&&polyDist(FP.x,FP.z,S.pts)[0]<PAL_CRY.near);
+  if(on===S.on)return;S.on=on;S.G.visible=on;if(S.cover)S.cover.visible=!on;S.flips++;if(typeof triRedraw==='function')triRedraw();}
 function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(lx,y,lz),qd=(x0,x1,z0,z1,y)=>[P(x0,y,z1),P(x1,y,z1),P(x1,y,z0),P(x0,y,z0)],O=palObstacles(1),R=RNG(31);   // O: the blocks as they stood before H5.1, so the planting's dice stay (palH51Trees)
   const stairs=(x0,x1,z0,z1,y0,y1,ax,wd,cheek)=>{const n=Math.max(2,Math.round(Math.abs(y1-y0)/.3));g.set(2,.45);
     for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,h=Math.abs(y1-y0)*t1+(y1>y0?0:0);const yy=Math.min(y0,y1);
@@ -455,7 +646,10 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
       else box(g,PFR,(x0+x1)/2,yy-.6,lerp(z0,z1,(t0+t1)/2),wd/2,.6+Math.abs(y1-y0)*(y1>y0?t1:1-t0),Math.abs(z1-z0)/n/2+.02,31);}
     if(cheek)for(const sd of[1,-1]){if(ax==='x')box(g,PFR,(x0+x1)/2,Math.min(y0,y1)-.6,(z0+z1)/2+sd*(wd/2+.4),Math.abs(x1-x0)/2,Math.abs(y1-y0)+1.7,.4,31);else box(g,PFR,(x0+x1)/2+sd*(wd/2+.4),Math.min(y0,y1)-.6,(z0+z1)/2,.4,Math.abs(y1-y0)+1.7,Math.abs(z1-z0)/2,31);}};
   // paved deck of the basins, kerbs along the walls
-  g.set(60,.3,1,3);for(const[x0,x1,z0,z1]of PAL_BASIN)g.poly(qd(x0,x1,z0,z1,dk),[0,1,0]);
+  // (the north basin's deck has holes under the hollow cryptoporticus, palCryHoles: its floor is 0.72 m lower; the lane's crossing keeps the deck)
+  g.set(60,.3,1,3);PAL_BASIN.forEach(([x0,x1,z0,z1],bi)=>{if(bi){g.poly(qd(x0,x1,z0,z1,dk),[0,1,0]);return;}
+    const O=[[x0,z1],[x1,z1],[x1,z0],[x0,z0]],H=palCryHoles(),all=O.concat(...H),v=a=>a.map(p=>new THREE.Vector2(p[0],p[1]));
+    for(const[i,j,k]of THREE.ShapeUtils.triangulateShape(v(O),H.map(v)))g.poly([P(all[i][0],dk,all[i][1]),P(all[j][0],dk,all[j][1]),P(all[k][0],dk,all[k][1])],[0,1,0]);});
   // retaining walls: the plateau is 5 m above the deck on the east (strip A) and the west (south of the Tiberiana)
   const topY=PAL_TOP,wh=topY-(PAL_DECK-.6);
   // east wall (lx 8.8..10, z -10..26, stair opening 5.5..10.5) and west wall (lx -72..-70.8, z 22..76, opening 66..71): plateau side higher by 5 m
@@ -473,7 +667,8 @@ function palBasins(W){const g=new GB(1<<16),dk=PAL_DECK+.12,P=(lx,y,lz)=>PFR.p(l
   // plinth wall along the Augusti's north front (its facade ends at the plateau level, the basin deck is 5 m lower)
   g.set(22,.45);box(g,PFR,-47.5,PAL_DECK-.6,76.9,37.5,PAL_TOP-.5-PAL_DECK+.6,1.1,31);
   // short west wall north of the Tiberiana's corner
-  {const gy=W.gy(PFR.p(-74,0,-98)[0],PFR.p(-74,0,-98)[2]);if(gy<PAL_DECK-.3){g.set(22,.45);box(g,PFR,-71.4,gy-1.6,-98.5,.6,PAL_DECK-gy+1.6,7.5,31);}}
+  // (under the cryptoporticus, lz > -104.4, only its outer 0.6 m: the rest would stand 0.6 m proud of the gallery's floor; same faces outside)
+  {const gy=W.gy(PFR.p(-74,0,-98)[0],PFR.p(-74,0,-98)[2]);if(gy<PAL_DECK-.3){g.set(22,.45);box(g,PFR,-71.4,gy-1.6,-105.2,.6,PAL_DECK-gy+1.6,.8,31&~1);box(g,PFR,-71.7,gy-1.6,-97.7,.3,PAL_DECK-gy+1.6,6.7,31&~4);}}
   // stairs from the deck up to the two promenades
   stairs(2,10.4,5.5,10.5,PAL_DECK,topY,'x',5,true);stairs(-72.4,-65,66,71,topY,PAL_DECK,'x',5,true);
   // a fountain in the corner of the south basin, planters along the lanes
