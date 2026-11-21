@@ -11,7 +11,7 @@ ROWS = [('vent-out', '① 站在南侧台地上抬头看大厨房的南墙（二
         ('vent-in', '② 站在大厨房里抬头看南墙。', [(380, 300, '一面光墙', 0), (540, 330, '同一个出烟口，从屋里看', 1)])]
 can = Image.new('RGB', (PAD * 3 + W * 2, 110 + len(ROWS) * (H + CAP + PAD) + 104), (30, 26, 24)); d = ImageDraw.Draw(can)
 d.text((PAD, 14), '东宫 · 大厨房南墙的出烟口（第 1 项，总规划 B9）', font=F(30, True), fill=(255, 240, 200))
-d.text((PAD, 62), '第一人称，58 年，上午。左边是现在的网页，右边是改后。【史】罗马厨房没有烟囱，烟从墙高处的洞出去；位置和样子是【设】。', font=F(20), fill=(230, 224, 214))
+d.text((PAD, 62), '第一人称，58 年，上午。左边是现在的网页，右边是改后。【史】庞贝的厨房没有烟囱留存，灶台上方有小窗出烟（Mau 1902, p. 266）；这里的位置和样子是【设】。', font=F(20), fill=(230, 224, 214))
 for r, (name, cap, marks) in enumerate(ROWS):
     y = 110 + r * (H + CAP + PAD)
     for c, (suf, lab) in enumerate((('before', '改前'), ('after', '改后'))):
