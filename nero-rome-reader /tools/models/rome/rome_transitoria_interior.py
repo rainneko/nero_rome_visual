@@ -104,7 +104,7 @@ for fid, w, top in (('doorN', 2.8, 4.8), ('doorS', 2.4, 3.8)):
 # round the part inside: it reads as the gate block's back, and nobody walks up a roof.
 I.box('int_plaster', -4.95, 43.35, 4.95, 45.64, plan['levels']['F2'], plan["levels"]["F2"] + 1.98, faces='tsew')
 I.report.setdefault('pier', []).append(['2N01', 'porch roof'])
-# The great kitchen's smoke outlet (v3 B9; 【史】 Roman kitchens had no chimney, the smoke left by an opening high in the wall): a louvred
+# The great kitchen's smoke outlet (v3 B9; 【史】 no chimney survives in Pompeii's kitchens; a small window over the hearth let the smoke out, Mau 1902 p. 266; place and look here are 【设】): a louvred
 # opening high in the south wall of S09, under the loggia's floor. The shell's wall there is one plain face and stays as it is (nothing
 # changes from the air); this is a panel set through it, seen from the terrace and from the kitchen on foot: a travertine frame, a dark
 # back, five slats. When the shell is next rebuilt (item 2) the opening goes into it and this panel goes.
