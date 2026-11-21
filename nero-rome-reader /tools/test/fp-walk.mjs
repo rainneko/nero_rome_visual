@@ -19,7 +19,7 @@ const state=()=>p.evaluate(()=>window.__fp.state());
 const mapPng=()=>p.evaluate(()=>{const F=window.__fp,M=F.FPM,N=512,cv=document.createElement('canvas');cv.width=cv.height=N;const g=cv.getContext('2d'),im=g.createImageData(N,N),f=F.FP.g;
   for(let c=0;c<N*N;c++){const t=M.top[c],o=c*4,d=t-f;let r,gg,bb;if(t<-1e8){r=255;gg=0;bb=255;}else if(d>1.2){r=gg=bb=30;}else if(d>.5){r=200;gg=60;bb=40;}else if(d<-.75){r=30;gg=60+Math.max(0,90+d*6);bb=160;}else{const v=140+d*150;r=v*.6;gg=v;bb=v*.6;}
     im.data[o]=r;im.data[o+1]=gg;im.data[o+2]=bb;im.data[o+3]=255;}g.putImageData(im,0,0);
-  for(const a of F.FPN.list){g.fillStyle=a.k==='g'?'#f00':a.k==='s'?'#fff':'#fa0';g.fillRect((a.x-M.x0)/M.cs-2,(a.z-M.z0)/M.cs-2,5,5);}
+  for(const a of F.FPN.list){g.fillStyle=a.k[0]==='g'?'#f00':a.k[0]==='s'&&'cpy'.includes(a.k[1]||'c')?'#fff':a.k[0]==='p'||a.k==='vv'?'#f0f':a.k[0]==='e'?'#0ff':'#fa0';g.fillRect((a.x-M.x0)/M.cs-2,(a.z-M.z0)/M.cs-2,5,5);}
   const px=(F.FP.x-M.x0)/M.cs,pz=(F.FP.z-M.z0)/M.cs;g.fillStyle='#ff0';g.fillRect(px-3,pz-3,7,7);g.strokeStyle='#ff0';g.beginPath();g.moveTo(px,pz);g.lineTo(px-Math.sin(F.FP.yaw)*24,pz-Math.cos(F.FP.yaw)*24);g.stroke();return cv.toDataURL('image/png');});
 const save=(name,url)=>{fs.writeFileSync(path.join(outDir,name),Buffer.from(url.split(',')[1],'base64'));console.log('saved',path.join(outDir,name));};
 async function run(s){
@@ -76,7 +76,7 @@ else{
     if(!await p.evaluate(()=>{const F=window.__fp,g=F.FPM.stand(F.FP.x,F.FP.z,F.FP.g+.05,F.FP.R||.15);return g===g;}))bad++;}
   console.log('walked',path_.toFixed(1)+' m, people '+last.people+', tufts '+last.tufts+', flowers '+last.flowers);
   if(path_<8)fail.push('walked only '+path_.toFixed(1)+' m');if(bad)fail.push('stood on a place the grid refuses, '+bad+' times');
-  for(const k of'gfs')if(!last.people.includes(k))fail.push('no figure of kind '+k);if(!(last.tufts>0))fail.push('no grass tufts');
+  {const Pp=last.people.split(',');for(const k of['g','f'])if(!Pp.includes(k))fail.push('no figure of kind '+k);if(new Set(Pp).size<6)fail.push('only '+new Set(Pp).size+' kinds of figures');if(last.misplaced)fail.push('out of place: '+last.misplaced);console.log('zones',JSON.stringify(last.zones),'here',last.zone);}if(!(last.tufts>0))fail.push('no grass tufts');
   await run({shot:'check.png'});await run({map:'check-map.png'});await p.evaluate(()=>window.__fp.exit());await frames(3);
   if(await p.evaluate(()=>document.body.classList.contains('fp')||window.__fp.state().on))fail.push('did not leave');}
 if(errs.length)fail.push('page errors:\n'+errs.join('\n'));
