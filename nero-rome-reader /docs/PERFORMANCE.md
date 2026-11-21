@@ -102,3 +102,13 @@
 ## 下一批
 
 见 `docs/REVIEW-2026-11-11.md` 第 5.3 节。第一项是深度预画，要先解决三件事：树叶等有镂空和顶点位移的材质不进预画；后处理管线里深度缓冲的清除顺序；预画和正式绘制的深度要一致（预画加一点多边形偏移）。
+
+## East palace interior: what is held and when (2026-11-21)
+
+Measured by `GPU=1 node tools/test/tr-zones.mjs` (headless Chrome; it moves the reader along straight lines of the plan and prints a table,
+exit 1 on a failure): three round trips kitchen - 150 m out leave geometries, textures, faces and the JS heap where they were; 250 m out
+the walls go too and the counts equal a control run that loads nothing; on the spot, release takes away exactly the palace's own
+geometries; no reloading between 45 and 90 m; the longest frame while a pack arrives. Budgets: at most two zone packs and the basement in
+memory (about 115 000 faces), 45 000 shown. Frame times in a headless browser are only good for before / after; the 33 ms worst-frame
+target has to be read in a real browser. The geometry count drifts by itself as the reader moves (people, grass), so compare with the
+control, not with the count before the first visit.

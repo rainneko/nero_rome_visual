@@ -52,11 +52,11 @@ r('F1','S01','水榭餐厅','cenatio aestiva',-16,-36,16,-24,'dining','朝北向
 r('F1','S02','冬季小餐室','triclinium hibernum',-32,-36,-16,-24,'dining')
 r('F1','S03','备餐间','',16,-36,32,-24,'service')
 r('F1','S04','酒窖·冰窖','apotheca',-32,-46,-16,-36,'service')
-r('F1','S05','小厨房','culina',-16,-46,-4,-36,'service','只供这座宫；大宴仍在提比略宫的大餐厅')
+r('F1','S05','小厨房','culina',-16,-46,-4,-36,'service','只管日常和冬季小餐室的饭；菜经酒窖进小餐室（v3 B9）')
 r('F1','S06','南门厅','',-4,-46,4,-36,'state','通后花园和阿波罗神庙一侧')
-r('F1','S07','试毒·侍者','',4,-46,16,-36,'service','试毒的规矩照旧宫')
+r('F1','S07','仆役·试毒','',4,-46,16,-36,'service','试毒的规矩照旧宫')
 r('F1','S08','南楼梯','scalae',16,-46,24,-36,'stair')
-r('F1','S09','仆役房','',24,-46,32,-36,'service')
+r('F1','S09','大厨房','culina',24,-46,32,-36,'service','大宴的饭在这里做，菜经备餐间进餐厅；南墙高处出烟（v3 B9）【设】')
 r('F1','S10','热水厅','caldarium',-56,-46,-44,-35,'bath','筒拱顶，西窗')
 r('F1','S11','温水池厅','tepidarium',-56,-35,-44,-24,'bath','设计安排，新宫自己的小浴室')
 r('F1','S12','更衣·冷水池','apodyterium',-44,-36,-32,-24,'bath')
@@ -217,7 +217,7 @@ DOOR_LIST = [   # (room a, room b, size, kind, at)
     ('W02', 'P03', 'room', 'doorway', None), ('W03', 'W02', 'room', 'doorway', None), ('W04', 'P03', 'room', 'doorway', None),
     # the south range, the bath, the servants' way (役路)
     ('S02', 'P02', 'room', 'doorway', None), ('S12', 'S02', 'room', 'doorway', None), ('S12', 'S11', 'room', 'doorway', None), ('S11', 'S10', 'room', 'doorway', None),
-    ('S13', 'S04', 'service', 'doorway', None), ('S04', 'S05', 'service', 'doorway', None), ('S05', 'S06', 'service', 'doorway', None),
+    ('S13', 'S04', 'service', 'doorway', None), ('S04', 'S05', 'service', 'doorway', None), ('S04', 'S02', 'service', 'doorway', -24.0), ('S09', 'S03', 'service', 'doorway', 28.0), ('S07', 'S08', 'service', 'doorway', -44.6),   # v3 B9: the two kitchens serve without crossing the south vestibule (S05-S06 closed)
     ('S07', 'S06', 'service', 'doorway', None), ('S07', 'S01', 'service', 'doorway', None), ('S03', 'S01', 'service', 'doorway', None),
     ('S03', 'S08', 'service', 'doorway', 20.7), ('S09', 'S08', 'service', 'doorway', -40.0), ('S14', 'S03', 'service', 'doorway', -30.0),
     ('S14', 'S15', 'room', 'doorway', -26.2), ('S14', 'S16', 'room', 'doorway', -43.6), ('S15', 'S16', 'room', 'doorway', None),
