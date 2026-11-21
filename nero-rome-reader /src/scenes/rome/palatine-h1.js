@@ -28,7 +28,7 @@ const palModelRect=(lx,lz,tn,x0,x1,y0,y1,m=0)=>{const t=((Math.round(tn/90)%4)+4
 const palPlBuild=()=>{const R=[],add=(lx,lz,hu,hv,tn,m)=>{const q=((tn%180)+180)%180===0;R.push(q?[lx-hu-m,lx+hu+m,lz-hv-m,lz+hv+m]:[lx-hv-m,lx+hv+m,lz-hu-m,lz+hu+m]);};
   for(const A of PAL_ASSETS)if(/_belt$/.test(A.n))R.push(palModelRect(A.lx,A.lz,A.turn,-15,15,-14.5,23,-.2));
   for(const B of palBL){if(B.t==='cf'){R.push(palModelRect(B.lx,B.lz,B.tn,-15,15,-10,15,-.2));continue;}
-    if(B.t==='dh'){R.push(palModelRect(B.lx,B.lz,B.tn,-14,14,-15.4,15.4,-.2));continue;}   // rome_domus_h: its walls' outer faces
+    if(PAL_HOUSE[B.t]){const H=PAL_HOUSE[B.t];R.push(palModelRect(B.lx,B.lz,B.tn,-H.x,H.x,-H.z1,-H.z0,-.2));continue;}   // the one-level houses: their walls' outer faces (model y = -z)
     if(B.h51){R.push(palModelRect(B.lx,B.lz,B.tn,-15.2,15.2,-14,13,-.2));continue;}   // H5.1: the d_low as it stands (its wing walls' ends at model y -14, its back wall at 13; the porch's steps stand on the paving).
     // Across, its walls' outer faces (x +-15): the roof's eaves reach 18.4, but nothing stands under them, and a hole to 18.4 showed the ground there (51.47) in
     // two 3.4 m strips at each house's ends (review 33, L4: the court's niche)
