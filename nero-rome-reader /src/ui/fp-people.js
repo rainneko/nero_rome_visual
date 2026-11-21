@@ -137,7 +137,8 @@ const FP_ROLES={
   ma:{zh:'侍女',la:'ancilla',t:'slave',sp:.9,z:'',n:[0,0,0,0],note:'【史】跟着女主人的女奴（ancilla）。'},
   gk:{zh:'希腊学者',la:'philosophus, medicus',t:'dingy',sp:.7,z:'BDPC',n:[1,2,1,0],pairs:.3,note:'【史】蓄须、披希腊外衣（pallium）的是希腊人：哲学家、修辞教师，或者医生。宫里的医生大多是希腊人。'}};
 
-const FPN={list:[],mesh:{},blob:null,cap:64,rng:RNG(6811),info:{},Z:null,
+const FPN={list:[],mesh:{},out:[],   // out: places the figures keep out of, tests (x, z) => true pushed by the scenes (palatine.js: the cryptoporticus)
+  blob:null,cap:64,rng:RNG(6811),info:{},Z:null,
   init(){if(this.blob)return;for(const k in FP_ROLES){const R=FP_ROLES[k];R.look=R.look||k;this.info[k]=[R.zh,R.la,R.note];}
     const mat=procMat({key:'fpNpc',env:.5,
       vHead:`attribute vec4 aC;attribute vec2 aP;attribute vec4 aN;attribute vec3 aT;varying vec3 vCol;varying float vMt;
@@ -177,7 +178,8 @@ vec3 fpRx(vec3 p,float y0,float a){float c=cos(a),s=sin(a);p.y-=y0;p=vec3(p.x,p.
   year(){const m=/(\d+)/.exec(STATES[Math.max(0,curS)].t||'');return m?+m[1]:54;},
   mk(k,x,z,y,h){const r=this.rng,R=FP_ROLES[k],T=FP_T[R.t],a={k,look:R.look,x,z,y,h,ph:r()*TAU,amp:0,st:R.b==='stand'?'post':'wait',t:r()*2,tx:R.b==='stand'?h:x,tz:z,sp:R.sp*(.92+.16*r()),seed:r(),tint:T[Math.floor(r()*T.length)],lead:null,ox:0,oz:0,post:false,h0:h,sc:R.sc||1};this.list.push(a);return a;},
   // a straight walk from (x, z) at height y to (tx, tz): every 0.35 m must be standable, each from the one before
-  clearWay(x,z,y,tx,tz){const d=Math.hypot(tx-x,tz-z),n=Math.ceil(d/.35);let g=y;for(let i=1;i<=n;i++){const t=i/n;g=FPM.stand(x+(tx-x)*t,z+(tz-z)*t,g,.3);if(!(g===g))return false;}return true;},
+  bad(x,z){for(const f of this.out)if(f(x,z))return true;return false;},
+  clearWay(x,z,y,tx,tz){const d=Math.hypot(tx-x,tz-z),n=Math.ceil(d/.35);let g=y;for(let i=1;i<=n;i++){const t=i/n;if(this.bad(x+(tx-x)*t,z+(tz-z)*t))return false;g=FPM.stand(x+(tx-x)*t,z+(tz-z)*t,g,.3);if(!(g===g))return false;}return true;},
   // the way there must not cross the service level or a roof, unless the role belongs there
   zoneWay(a,tx,tz,zs){for(let i=1;i<6;i++){const q=this.zone(a.x+(tx-a.x)*i/6,a.z+(tz-a.z)*i/6,a.y);if((q==='E'||q==='G'||q==='M')&&zs.indexOf(q)<0&&!(q==='M'&&zs.indexOf('C')>=0))return false;}return true;},
   target(a){const r=this.rng,R=FP_ROLES[a.k],far=R.b==='idle'?7:26;for(let i=0;i<10;i++){const an=r()*TAU,d=(far-i*far/13)*(.5+.5*r()),tx=a.x+Math.sin(an)*d,tz=a.z+Math.cos(an)*d;if(Math.hypot(tx-FP.x,tz-FP.z)>38)continue;
@@ -186,7 +188,7 @@ vec3 fpRx(vec3 p,float y0,float a){float c=cos(a),s=sin(a);p.y-=y0;p=vec3(p.x,p.
   // first: the walker has just arrived, figures may stand in view
   census(first){if(!FPM.ready)return;const r=this.rng,sl=this.slot(),yr=this.year(),quota=k=>{const R=FP_ROLES[k];return R.from&&yr<R.from?0:R.n[sl];};
     const over={};for(const k in FP_ROLES)over[k]=this.count(k)-quota(k);
-    this.list=this.list.filter(a=>{const d=Math.hypot(a.x-FP.x,a.z-FP.z);if(d>41)return false;const g=FPM.stand(a.x,a.z,a.y,.25);if(!(g===g))return false;
+    this.list=this.list.filter(a=>{const d=Math.hypot(a.x-FP.x,a.z-FP.z);if(d>41||this.bad(a.x,a.z))return false;const g=FPM.stand(a.x,a.z,a.y,.25);if(!(g===g))return false;
       if(!a.lead&&!first&&d>22&&over[a.k]>0){over[a.k]--;return false;}return true;});
     for(let pass=0;pass<3;pass++)this.list=this.list.filter(a=>!a.lead||this.list.indexOf(a.lead)>=0);   // a follower goes with its leader
     if(!FP.onHill(FP.x,FP.z))return;const fx=Math.sin(FP.yaw),fz=Math.cos(FP.yaw);
@@ -196,7 +198,7 @@ vec3 fpRx(vec3 p,float y0,float a){float c=cos(a),s=sin(a);p.y-=y0;p=vec3(p.x,p.
     // a place in one of the zones. wall: with a wall at its back and three paces clear in front (a sentry); then [x, z, ground, the wall's bearing]
     const spot=(zs,wall)=>{for(let i=0;i<(wall?200:70);i++){const ni=Math.floor(r()*Wk.length),nd=Wk[ni];if(zs.indexOf(ZN[ni])<0)continue;const x=nd[0],z=nd[1],dx=x-FP.x,dz=z-FP.z,d=Math.hypot(dx,dz);if(d<(first?5:15)||d>36)continue;
         if(!first&&d<24&&(-dx*fx-dz*fz)/d>.45)continue;   // not where the walker is looking (the camera looks along -(sin yaw, cos yaw))
-        if(!free(x,z))continue;const g=FPM.stand(x,z,nd[2],.4);if(!(g===g))continue;if(!wall)return[x,z,g];
+        if(!free(x,z)||this.bad(x,z))continue;const g=FPM.stand(x,z,nd[2],.4);if(!(g===g))continue;if(!wall)return[x,z,g];
         for(let k=0;k<8;k++){const a=k*.7854,sx=Math.sin(a),sz=Math.cos(a);if(FPM.wall(x+sx*1.1,z+sz*1.1,g)&&FPM.at(x+sx*.5,z+sz*.5)<g+.5&&this.clearWay(x,z,g,x-sx*2.4,z-sz*2.4))return[x,z,g,a];}}return null;};
     const room=n=>this.list.length+n<=this.cap,group=(k,p,h)=>{const R=FP_ROLES[k],a=this.mk(k,p[0],p[1],p[2],h);for(const w of R.w||[]){const b=this.mk(w[0],p[0],p[1],p[2],h);b.lead=a;b.ox=w[1];b.oz=w[2];if(R.b==='stand'){b.st='post';}}return a;};
     // the guard first: sentries in pairs at the doors and under the porticoes, then patrols of two

@@ -122,7 +122,7 @@ const FPG={n:0,nf:0,tuft:null,flower:null,
       const o=((N-1-j)*N+i)*4,r=col[o],g=col[o+1],b=col[o+2];if(g<22||g<r*1.06||g<b*1.3||(g-Math.max(r,b))<g*.1)continue;
       if(top[c]-y>.25||Math.abs(flo[c+1]-y)>.12||Math.abs(flo[c-1]-y)>.12||Math.abs(flo[c+N]-y)>.12||Math.abs(flo[c-N]-y)>.12)continue;
       if(i<3||j<3||i>N-4||j>N-4||Math.abs(flo[c+3]-y)>.3||Math.abs(flo[c-3]-y)>.3||Math.abs(flo[c+3*N]-y)>.3||Math.abs(flo[c-3*N]-y)>.3)continue;   // level for half a metre each way: a lawn or a bed, not the top of a clipped shrub
-      const x=FPM.x0+(i+hash2(wi0+i+911,wj0+j))*cs,z=FPM.z0+(j+hash2(wi0+i,wj0+j+577))*cs;if(Math.hypot(x-FP.x,z-FP.z)>R)continue;
+      const x=FPM.x0+(i+hash2(wi0+i+911,wj0+j))*cs,z=FPM.z0+(j+hash2(wi0+i,wj0+j+577))*cs;if(Math.hypot(x-FP.x,z-FP.z)>R||(typeof FPN!=='undefined'&&FPN.bad(x,z)))continue;
       const k=hash2(wi0+i+31,wj0+j+17),k2=hash2(wi0+i+71,wj0+j+113);
       if(k2<fl&&nf<maxF){const fc=FC[Math.floor(hash2(wi0+i+5,wj0+j+9)*FC.length)];fA.aG.setXYZW(nf,x,y-.01,z,.16+.2*k);fA.aT.setXYZW(nf,fc[0],fc[1],fc[2],k);nf++;}
       if(n<maxT){const v=(.85+.5*k)/255;gA.aG.setXYZW(n,x,y-.02,z,.17+.2*k);gA.aT.setXYZW(n,Math.min(.5,r*v),Math.min(.6,g*v*1.1),Math.min(.4,b*v),k2);n++;}}
