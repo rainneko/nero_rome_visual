@@ -135,7 +135,8 @@ def block_a(low=False):
 def block_b(low=False):
     """Long portico with shops and offices, 60 x 16 m. Low range y -8..0 (z -5): a two-storey range with a 15-bay
     arcaded portico on the street (y -8), shops behind with wooden shutters, an upper gallery of small columns.
-    High side y 0..8 (z 0): five small offices, each with its own lean roof, stepping up along the range.
+    High side y 0..8 (z 0): five small offices, each under its own lean-to that drains to the back wall (y 8),
+    stepping up along the range.
     Blank end walls so blocks can join end to end."""
     s = 1.7 if low else 0.0        # low=True: the low part stands 1.7 m higher, so the split is 3.3 m instead of 5 m
     G = GROUND + s                 # (R10: 0.75 of a 4.4 m storey); the high part, at z 0, is unchanged
@@ -161,16 +162,21 @@ def block_b(low=False):
     lean_roof(F, -30, -8.6, 30, -8.6, 3.4 + s, 1.6, 0.5)
     # low range roof over the whole range (hip ends)
     gable_roof(F, 0, -4, 3.6 + s, 60, 8.0, 22, 'x', 0.6)
-    # high side: five offices (y 0..8), each with a north facade, a lean roof of its own and a step up
+    # high side: five offices (y 0..8), stepping up along the range. Each has its back wall on y 8 (eave at zh) and a
+    # lean-to of its own that rises 1.6 m to the wall above the low range (y 0) and drains to the back.
+    # (Until 2026-11-21 the roof fell the other way inside an 8 m solid with a flat top at zh: from above, a grey slab.)
+    RISE = 1.6
     for k in range(5):
         x0 = -30 + 12 * k; x1 = x0 + 12
         zh = 3.8 + 0.6 * k
         facade(F, x1, 8, x0, 8, 0, zh, PL2, wins(12, 2, [1.2], w=1.0, hh=1.5, skip=()), t=8.0)
         band(F, x1, 8, x0, 8, zh - 0.6, 0.3, 0.4, RED)
-        lean_roof(F, x0, 8, x1, 8, zh, 8.0, 1.6)
-        if k > 0:                                                              # party wall between offices, capped
-            box(F, x0, 4.0, 0.0, 0.7, 8.0, zh + 0.5, 'plaster2')
-            box(F, x0, 4.0, zh + 0.5, 0.9, 8.2, 0.14, 'red')
+        v = [F.p(x0, 0, zh), F.p(x0, 8, zh), F.p(x0, 0, zh + RISE), F.p(x1, 0, zh), F.p(x1, 8, zh), F.p(x1, 0, zh + RISE)]
+        add_mesh(PL2, v, [(2, 1, 0), (4, 5, 3), (2, 5, 4, 1), (0, 3, 5, 2)])     # wedge under the roof: ends, top, the wall on y 0
+        lean_roof(F, x1, 0, x0, 0, zh + RISE + 0.04, 8.5, RISE * 8.5 / 8.0)
+        box(F, (x0 + x1) / 2, 0.1, zh + RISE, 12, 0.5, 0.14, RED)                # coping where the roof meets the wall on y 0
+        if k > 0:                                                              # party wall: a sloping coping on the step
+            beam(F, x0, 0, zh + RISE + 0.12, x0, 8.4, zh + 0.12 - RISE * 0.4 / 8.0, 0.5, 0.3, RED)
     # blank end walls: the core already closes both ends
     human(F, 0, -14, -5 + s)
     finish('rome_pal_block_b_low' if low else 'rome_pal_block_b', front='-Y', extra_cams=BACK_CAM)
