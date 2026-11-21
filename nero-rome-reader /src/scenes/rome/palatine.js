@@ -34,13 +34,14 @@ const PAL_PATCH=[-210,40,440,660];                 // world rect [x0,z0,x1,z1] o
 const PAL_DECK=51.4,PAL_TOP=56.4;
 const PAL_BASIN=[[-72,10,-106,26],[-72,-12,26,76]];  // [lx0,lx1,lz0,lz1]: carved to the deck, paved, walled where the neighbour is higher
 // footprints include the overhangs of the GLBs (a 38.8x32.8, b 62.8x18.6, c 32.9x30.8, d 36.8x28.3); stand-ins are drawn with the nominal sizes
-const PAL_BLK={a:{n:'rome_pal_block_a',w:39,d:33,dr:5},b:{n:'rome_pal_block_b',w:63,d:19,dr:5},c:{n:'rome_pal_block_c',w:33,d:31,dr:10},cf:{n:'rome_pal_block_c_flat',w:33,d:31,dr:0},bf:{n:'rome_pal_block_b_flat',w:63,d:19,dr:0},d:{n:'rome_pal_block_d',w:37,d:29,dr:5}};
+// dh: the corner-loggia house (rome_domus_h, 28.3 x 31.1, one level, its own base to -0.5); it keeps cf's reserved footprint (33 x 31), so the road bake does not change
+const PAL_BLK={a:{n:'rome_pal_block_a',w:39,d:33,dr:5},b:{n:'rome_pal_block_b',w:63,d:19,dr:5},c:{n:'rome_pal_block_c',w:33,d:31,dr:10},cf:{n:'rome_pal_block_c_flat',w:33,d:31,dr:0},dh:{n:'rome_domus_h',w:33,d:31,dr:0},bf:{n:'rome_pal_block_b_flat',w:63,d:19,dr:0},d:{n:'rome_pal_block_d',w:37,d:29,dr:5}};
 // [type, lx, lz, turn (0: front/low side faces +lz, 90: +lx, 180: -lz, 270: -lx), y of the HIGH floor, low: the low split variant (dr 3.3)]
 const PAL_BL_DWAS=PAL_PLAN.h51.blocks.was;   // d@34,8 and d@75,8 before H5.1 (the plateau strips' planting still reads them: palObstacles(1))
 const PAL_BL=[
   ['d',-46.5,-81.5,0,54.7,1],['cf',-8.5,-80.5,0,51.4],       // north row of the basin (the gallery runs along its north side); R10: low d, c flat on the deck (was c at 61.4, its garden 5 m over the plateau)
   ['d',-52,-48,180,54.7,1],['d',-12,-48,180,54.7,1],         // second row
-  ['a',-50.5,-14.5,0,54.7,1],['cf',-12,-14.5,0,51.4],        // third row
+  ['a',-50.5,-14.5,0,54.7,1],['dh',-12,-14.5,0,51.4],        // third row; B6 (2026-11-21, the author: "你来做规划 然后一步一步开始"): the corner-loggia house in place of the flat c (its tower and garden beds go; the lane to B7 4.5 m, was 9.4)
   ['b',-38,14,0,54.7,1],['a',-51,43,0,54.7,1],               // south basin
   ['bf',-130,39,0,56.4],                                     // south of the Tiberiana (plateau strip): its arcade faces south onto the plaza as before; the author (2026-11-15, "改回，做平院"): the flat
                                                              // variant (laughing-franklin, rome_pal_block_b_flat: one floor at its origin, the plaza's 56.4; the back 1.55 m over the lane, a stair of 9 down to it)
@@ -369,6 +370,7 @@ function palBlockStand(W,g,F,B){const dr=B.dr,L=-dr,R=RNG(Math.abs(Math.round(B.
   else if(B.t==='b'||B.t==='bf'){const t=L+4.2+3.6;rectWalls(g,F,0,3.5,60,9,L-2,t,L,fac({nSt:2,gH:4.2,sH:3.6,sty:11,fl:8|2|32}));roof(g,F,'gable',0,3.5,60,9,t,14*DEG,.6,sd,{part:0,seed:sd,nSt:2,gH:4.2,sH:3.6,floorY:L});
     arcade(g,F,0,L,8.3,60,4,15,1.1,2,{span:.34,attic:.8});
     for(let i=0;i<5;i++){const x=-24+12*i,yo=3.4+(i%3)*1.2;rectWalls(g,F,x,-4.5,11.4,7,L-2,yo,0,fac({nSt:1,gH:yo,sH:3,sty:3,fl:2|8|16,seed:sd+i*.07}));roof(g,F,'gableZ',x,-4.5,11.4,7,yo,22*DEG,.4,sd+i*.1,{part:0,seed:sd,nSt:1,gH:yo,sH:3,floorY:0});}}
+  else if(B.t==='dh'){g.set(6,.4);box(g,F,0,-.5,0,14,.5,15.5,31);rectWalls(g,F,0,0,28,31,0,7.6,0,fac({nSt:2,gH:3.8,sH:3.8}));roof(g,F,'hip',0,0,28,31,7.6,22*DEG,.6,sd,{part:0,seed:sd,nSt:2,gH:3.8,sH:3.8,floorY:0});}   // the corner-loggia house's stand-in
   else if(B.t==='cf'){g.set(6,.4);box(g,F,0,-1.2,-2.5,15,1.2,12.5,31);g.set(23,.5);g.poly([F.p(-15,.06,10),F.p(5,.06,10),F.p(5,.06,-6),F.p(-15,.06,-6)],[0,1,0]);   // the flat block's stand-in (rome_pal_block_c_flat: z -15..10, front +z): garden in the corner, the north range and the east range
     rectWalls(g,F,0,-10.5,30,9,0,8.4,0,fac({nSt:2,gH:4.2,sH:4.2}));roof(g,F,'hip',0,-10.5,30,9,8.4,22*DEG,.6,sd,{part:0,seed:sd,nSt:2,gH:4.2,sH:4.2,floorY:0});
     rectWalls(g,F,10,2,10,16,0,12.6,0,fac({nSt:3,gH:4.2,sH:4.2,seed:sd+.1}));roof(g,F,'hip',10,2,10,16,12.6,22*DEG,.6,sd+.1);
@@ -386,6 +388,8 @@ function palBlocks(W){const gF=new GB(1<<14);
   for(const B of palBL){const[x,z]=palW(B.lx,B.lz),rot=PALF.rot+B.tn*DEG;romeStand(W,B.n,x,z,B.y,rot,(g,F)=>palBlockStand(W,g,F,B));W.foot.add(x,z,B.hw,B.hd,rot);
     // solid foundation under the lowest floor: hidden inside the walls, shows only where the ground falls away
     const F=frame(x,B.y,z,rot);let m=1e9;for(const[sx,sz]of[[-1,-1],[1,-1],[1,1],[-1,1],[0,-1],[0,1],[-1,0],[1,0],[0,0]]){const q=F.p(sx*B.hw,0,sz*B.hd);m=Math.min(m,W.gy(q[0],q[2]));}
+    if(B.t==='dh'){(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // one level on the deck, as the flat blocks: a plain block under it only where the ground is lower than its own base (-0.5)
+      if(B.y-.5-m>.05){gF.set(6,.4);box(gF,F,0,m-1.5-B.y,0,14,B.y-.45-m+1.5,15.5,31);}continue;}
     if(B.t==='cf'){(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // R10: the flat block (on a terrace's floor or the deck: its own foundation to -1.2 is all it needs); a plain
       if(B.y-1.2-m>.05){gF.set(6,.4);box(gF,F,0,m-1.5-B.y,-2.5,15,B.y-1.15-m+1.5,12.5,31);}continue;}   // block under it where the ground falls away (c@156 on the rim), never stepped ledges
     if(B.t==='bf'){(ROME.supports=ROME.supports||[]).push({x,z,c:Math.cos(rot),s:Math.sin(rot),hw:B.hw,hd:B.hd});   // the flat b: its own foundation goes to -1.7 (its back, over the lane,
