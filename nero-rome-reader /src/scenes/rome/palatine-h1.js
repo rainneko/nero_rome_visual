@@ -1015,6 +1015,28 @@ function palWestClear(W){const R=(W.wallFeet||[]).filter(r=>r.west&&r.S.length>1
     if(!t[6])t[6]=3;if(LOW[t[3]])continue;t[3]='shrub';t[4]=.8+.4*teH(t[0],t[2],120);t[5]=null;n++;
     const p=PP.get(t[0]+','+t[2]);if(p)p[2]=Math.min(p[2],1.06*t[4]);}   // a plant of palWestSlope: its crown (W.palPlants, __palBareSlope's cover) is now the shrub's
   if(W.palWest)W.palWest.cleared=n;return n;}
+// Spring colour that reads from the air (the author, 2026-11-21: "春天也没花太奇怪了"; the reader's palatine bird view, 500 m off, showed only green trees:
+// the hill's almonds and pomegranates stand singly and are small, about 4 m across). After palWestClear (monuments.js), so the kinds stay as set here.
+// A few clumps, not more: each entry turns the imperial plane trees in squares (palPlaneSq) within r of its centre (hill grid) into its kind, in the same
+// squares, the crowns 6-7 m across (old trees); and the six box beds of the hemicycle garden are filled with roses round their flowering shrub.
+// The season is the shader's (builders.js DEC_GL, FLW_GL): almond blossom from late winter to mid spring (bare of flowers by 0.55), pomegranate scarlet
+// from late spring through early summer, then fruit; roses in the imperial beds from spring into summer, a few in winter.
+// 【史】Pliny gives the almond as the first tree to flower, in January (NH 16.103), and describes the pomegranate (malum Punicum, NH 13.112); roses were
+// the flower of rich gardens and feasts: one of Nero's banquets spent more on roses than another on silk turbans at four million sesterces (Suetonius, Nero 27.3).
+const PAL_SPRING=[
+  {k:'almond',c:[182,62],r:16},    // the south-east belt's double row, its east end (lx 168-196): nine almonds, the front left of the palatine bird view
+  {k:'pomegr',c:[147,77],r:16},    // the same rows further west (lx 132-161): pomegranates (green in early spring, scarlet in late spring and summer)
+  {k:'almond',c:[195,-48],r:6},    // the pair of plane squares north of the hemicycle garden, and the pair south of it: almonds either side of the roses
+  {k:'almond',c:[195,12.5],r:6},
+  {k:'almond',c:[195,-104],r:10},  // the east belt's double row further north: six almonds
+  {k:'pomegr',c:[190,-133],r:11}]; // the east belt's north end: pomegranates
+function palSpring(W){const st=W.palSpring={almond:0,pomegr:0,rose:0};
+  for(const t of W.trees){if(t[6]!==1||t[3]!=='plane')continue;const[lx,lz]=palL(t[0],t[2]),s=PAL_SPRING.find(s=>Math.hypot(lx-s.c[0],lz-s.c[1])<s.r);if(!s)continue;
+    t[3]=s.k;t[4]=(s.k==='almond'?1.55:1.35)+.2*teH(t[0],t[2],131);t[5]=null;st[s.k]++;}   // almond 0.6 and pomegranate 0.5 of a holm oak's crown (builders.js TKIND)
+  const H=PAL_HEMI,y=PAL_PLAN.levels.belt+.3;   // the beds' lawn (palBoxBed: floor + 0.24)
+  for(const lx of[184,191,198])for(const sg of[-1,1])for(const u of[-1.6,-.8,0,.8,1.6])for(const v of[-.8,0,.8]){if(!u&&!v)continue;   // the bed's own flowering shrub is in the middle
+    const q=PFR.p(lx+u,0,H.c[1]+sg*6+v);W.trees.push([q[0],y,q[2],'flower',.55+.15*teH(q[0],q[2],132),null,1]);st.rose++;}
+  return st;}
 // ---- H5.1 (round 4, built as b2: 32_h51_west_end) ----
 // The pieces of h51 that are not a terrace's floor, wall or stair. The solid fills (R12 15.5): W17 under the promenade's east edge (0.4 thick, its top the
 // saddle wall's coping 56.45 with the promenade's slab on it; on over d@34's tuff block from the block's top to 10.384, where d@34's own west wall starts),

@@ -32,6 +32,7 @@
     "src/scenes/rome/palatine-plan.js",
     "src/scenes/rome/palatine.js",
     "src/scenes/rome/palatine-h1.js",
+    "src/scenes/rome/palatine-mm.js",
     "src/scenes/rome/clivus-b.js",
     "src/scenes/rome/layers.js",
     "src/scenes/rome/assets.js",
@@ -45,6 +46,7 @@
     "src/ui/book.js",
     "src/ui/review.js",
     "src/ui/fp.js",
+    "src/ui/fp-people.js",
     "src/ui/app.js",
     "src/ui/empire.js"
   ],

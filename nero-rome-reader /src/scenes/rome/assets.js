@@ -158,6 +158,7 @@ function romePutModels(n,scene){if(ROME_WIN.test(n))(ROME.winLog||(ROME.winLog={
     const mk=()=>{const o=layTag(scene.clone(true),'models');o.position.set(p.x,p.y,p.z);o.rotation.y=p.r;if(p.o.sx||p.o.sy||p.o.sz)o.scale.set(p.o.sx||1,p.o.sy||1,p.o.sz||p.o.sx||1);return o;};
     if(share){p.ghost=mk;if(!byPar.has(par))byPar.set(par,[]);byPar.get(par).push(p);}else{p.obj=mk();par.add(p.obj);}
     if(p.stand)p.stand.visible=false;if(p.o.hide){ROME.hid=ROME.hid||{};ROME.hid[p.o.hide]=1;W0.scene.traverse(m=>{if(m.name===p.o.hide)m.visible=false;});}}
+  if(ROME.GLB.some(p=>p.o.slots&&p.o.slots.some(q=>q[1]===n)))(ROME.kit=ROME.kit||{})[n]=scene;romeSlots();
   if(byPar.size){scene.updateMatrixWorld(true);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
     for(const[par,L]of byPar)for(const I of instTiles(L.length,i=>[L[i].x,L[i].z],ROME_INST_CELL))scene.traverseVisible(m=>{if(!m.isMesh)return;const im=new THREE.InstancedMesh(m.geometry,m.material,I.length);
       I.forEach((j,i)=>{const p=L[j],sc=p.o.sx||p.o.sy||p.o.sz;S.set(sc?p.o.sx||1:1,sc?p.o.sy||1:1,sc?p.o.sz||p.o.sx||1:1);M.compose(T.set(p.x,p.y,p.z),Q.setFromEuler(E.set(0,p.r,0)),S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});   // the clone's own transform, as mk()
@@ -166,9 +167,14 @@ function romePutModels(n,scene){if(ROME_WIN.test(n))(ROME.winLog||(ROME.winLog={
     for(const p of inst)(byL[p.o.parentLayer||'']||(byL[p.o.parentLayer||'']=[])).push(p);
     for(const lk in byL){const inst=byL[lk],par=(lk&&W0.preLayers&&W0.preLayers[lk])||W0.scene;
     scene.traverse(m=>{if(!m.isMesh)return;const tn=m.material.name==='awning'&&inst.some(p=>p.o.tint),RK={rock:[.29,.235,.15],rock2:[.215,.172,.105],moss:[.13,.155,.06]}[m.material.name],mt=(tn||RK)?m.material.clone():m.material;if(tn){mt.color.setRGB(1,1,1);romeMat(mt);}if(RK&&!tn){mt.userData.rome=0;romeMat(mt);mt.color.setRGB(...RK);}/* a clone loses onBeforeCompile: the instanced rocks had no rock pattern or haze */const im=new THREE.InstancedMesh(m.geometry,mt,inst.length),cc=new THREE.Color();inst.forEach((p,i)=>{if(tn){const t=p.o.tint||[.8,.74,.6];im.setColorAt(i,cc.setRGB(t[0],t[1],t[2]));}Q.setFromEuler(E.set(p.o.tilt||0,p.r,0,'YXZ'));S.set(p.o.sx||1,p.o.sy||p.o.sx||1,p.o.sz||p.o.sx||1);T.set(p.x,p.y,p.z);M.compose(T,Q,S).multiply(m.matrixWorld);im.setMatrixAt(i,M);});layTag(im,'models');im.castShadow=false;im.receiveShadow=true;par.add(im);});}}}   // o.hide: name of an older object (e.g. the first Tiberiana GLB 'glb_dt') this model replaces
+// o.slots [[node name prefix, model]]: a placed model's empty nodes whose names begin with the prefix each get a clone of that model (the small pieces of a kit:
+// door leaves, statues). The models arrive in any order: this runs after each and fills what it can.
+function romeSlots(){const K=ROME.kit||{};for(const p of ROME.GLB){if(!p.o.slots||!p.obj)continue;const todo=[];
+  p.obj.traverse(m=>{if(m.isMesh||m.userData.slotFull||!m.name)return;const q=p.o.slots.find(q=>m.name.indexOf(q[0])===0);if(q&&K[q[1]])todo.push([m,K[q[1]]]);});
+  for(const[m,k]of todo){m.userData.slotFull=1;m.add(layTag(k.clone(true),'models'));}}}
 function romeLoadModels(){if(ROME.loadState||typeof W0==='undefined'||!W0)return;ROME.loadState=1;
   const go=async()=>{const D=window.ROME_GLB;if(!D)return;ROME.loadState=2;let left=0;const fin=()=>{if(--left<=0)window.__romeReady=true;};
-    const names=[...new Set(ROME.GLB.map(p=>p.n))].filter(n=>D[n]);left=names.length;
+    const names=[...new Set(ROME.GLB.flatMap(p=>[p.n].concat(p.o&&p.o.slots?p.o.slots.map(q=>q[1]):[])))].filter(n=>D[n]);left=names.length;
     for(const n of names){try{const raw=b64u8(D[n]),buf=window.ROME_GLB_gz?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;   // rome-assets.js holds gzipped, quantized GLBs (tools/glbopt.mjs)
       new THREE.GLTFLoader().parse(buf,'',gl=>{romePutModels(n,gl.scene);fin();},e=>{console.warn('rome glb',n,e);fin();});}catch(e){console.warn(e);fin();}}
     if(!left)window.__romeReady=true;};
@@ -252,7 +258,7 @@ window.__palBaseCheck=(opt={})=>{const W=W0,gy=W.gy,rows=[],LIM=.75,FL=.6;
   // reference floor y0): from the model scripts (rome_domus_a.py cut variant, rome_pal_blocks.py, rome_transitoria.py)
   const DOM={o:[-15,15,-14.5,23],f:(x,y)=>y>=-2.2?0:-3.4,st:4.5,own:[['garden face (y -2.2)',3.4],['W1 (y -14.5)',2.6]]};   // R10 乙 (round 4, laughing-franklin): T1 3.4 under the floor, W1 2.6 m down to the 36
   const BLK={a:{o:[-18,18,-15,15],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): along the block\'s inner lane',5]},b:{o:[-30,30,-8,8],f:(x,y)=>y>=0?0:-5,st:4.4,split:['split wall (y 0, z 0 to -5): behind the low range',5]},
-    c:{o:[-15,15,-15,15],f:(x,y)=>y>=-10?0:-10,st:4.2,own:[['garden drop (y -10, z 0 to -10): open to the lower terrace',10]]},cf:{o:[-15,15,-10,15],f:()=>0,st:4.2},dh:{o:[-14,14,-15.4,15.4],f:()=>0,st:3.8},do:{o:[-16,16,-15.4,15.4],f:()=>0,st:3.8},dk:{o:[-20.8,20.8,-11.6,11.8],f:()=>0,st:3.8},dm:{o:[-15.5,15.5,-19.3,19.7],f:()=>0,st:3.8},bf:{o:[-30,30,-8,8],f:()=>0,st:4.4},d:{o:[-17,17,-13,13],f:(x,y)=>y>=-3?0:-5,st:4.4,split:['split wall (y -3, z 0 to -5): 12 m of it open beside the archive',5]}};
+    c:{o:[-15,15,-15,15],f:(x,y)=>y>=-10?0:-10,st:4.2,own:[['garden drop (y -10, z 0 to -10): open to the lower terrace',10]]},cf:{o:[-15,15,-10,15],f:()=>0,st:4.2},dh:{o:[-14,14,-15.4,15.4],f:()=>0,st:3.8},do:{o:[-16,16,-15.4,15.4],f:()=>0,st:3.8},dk:{o:[-20.8,20.8,-11.6,11.8],f:()=>0,st:3.8},dm:{o:[-15.5,15.5,-19.3,19.7],f:()=>0,st:3.8},dj:{o:[-16,15.9,-17,17],f:()=>0,st:3.8},bf:{o:[-30,30,-8,8],f:()=>0,st:4.4},d:{o:[-17,17,-13,13],f:(x,y)=>y>=-3?0:-5,st:4.4,split:['split wall (y -3, z 0 to -5): 12 m of it open beside the archive',5]}};
   const L=[];
   for(const A of PAL_ASSETS){
     if(/^rome_domus_[ab]_belt$/.test(A.n))L.push({n:A.n,kind:'domus',lx:A.lx,lz:A.lz,t:A.turn,y0:A.y,...DOM});

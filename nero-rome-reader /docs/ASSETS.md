@@ -52,6 +52,23 @@ palace above z = 0 (`briefs/rome/tiberiana.md`, "v2 (2026-11)"). The tool lifts 
 is a bank up to 2.25 m above the model's own lowest surface, and it covers whatever of the model lies under it. Anything that
 has to meet the ground (the north-west stair's foot) is laid out against that bank (`NW_PAGE`, `_page` in `rome_tiberiana.py`).
 
+### Parts that are files of their own (2026-11-22)
+Some parts of the palace are assets of their own (work orders in `briefs/rome/tiberiana-v5/workorders/`), each written by
+`tools/models/rome/rome_tib_<name>.py` to `assets/models/rome/rome_tib_<name>.glb`. The page places them with `TIB_PARTS` in
+`src/scenes/rome/palatine.js` (origin in the palace's model coordinates, half sizes of the footprint, then optional height
+above the platform top, turn, slots); the palace script leaves their place free, so rebuild the palace model whenever a part
+is added or taken away.
+* `rome_tib_banquet_top` (work order 10): the banquet hall's nave from z 7.6 up. In `rome_tiberiana.py` block `M25` has
+  `wall_top 7.6`, `roof 'own'` and `cornice False`.
+* `rome_tib_gate_n` (work order 07): the north gate's porch on the forecourt. Its empty nodes `slot_...` are filled by the
+  page with pieces of the kit (`slots` in `TIB_PARTS`, `romeSlots()` in `assets.js`): `rome_tibkit_door_bronze`
+  (`tools/models/rome/rome_tib_kit.py`) and the horse-leaders `rome_tibkit_dioscuri_l/r`
+  (`tools/models/rome/rome_tibkit_figures.py`, which also writes the forecourt's `rome_tibkit_statue_a/b`). The palace script
+  no longer builds the old porch or the forecourt's statues, and the vestibule `N01` has no windows.
+* `rome_tib_gate_s` (work order 11): the south gatehouse through the south portico. In `rome_tiberiana.py` block `M10g` has
+  `asset True` (it keeps its place in the plan; no walls, no roof), `M10` has `split` (the lean-to roof in two pieces either
+  side of it), and the south platform wall's coping stops at x -4..4.
+
 ## East palace: the walkable inside (2026-11-20)
 `python3 tools/models/rome/rome_transitoria_interior.py` (plain Python and numpy, no Blender; geometry in `plan_interior.py`) builds
 `assets/models/rome/rome_transitoria_interior.glb` from `transitoria_plan.json` (rooms, roof blocks, and the `doors` and `vertical` that

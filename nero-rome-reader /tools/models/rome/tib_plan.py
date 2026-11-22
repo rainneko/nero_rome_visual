@@ -19,7 +19,7 @@ Model axes as in the plan: x east, y north, z up; z = 0 is the platform top.
 
 Options (opts[block id]): hip_ends 'E'; over 'M01m'; open [(storey, side, a, b)] an open bay between plan coordinates a..b along
 that side; gaps [(side, a, b)] in a flat roof's parapet; deck 'paving'; cross_walls [coordinates along the ridge];
-pediment 'NS'; gold True; wall_top z; roof 'own'; vault_mat; parapet False; col_mat, col_mat2 (upper order); shut [(storey, side)] (a face kept walled though a portico room lies behind it); on_floor, arch2, rail (upper order on the floor, its beam, the parapet's material); order1 (ground-floor order); low (a lean-to's low edge); windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
+pediment 'NS'; gold True; wall_top z; roof 'own'; cornice False (no cornice under the wall top); vault_mat; parapet False; col_mat, col_mat2 (upper order); shut [(storey, side)] (a face kept walled though a portico room lies behind it); on_floor, arch2, rail (upper order on the floor, its beam, the parapet's material); order1 (ground-floor order); low (a lean-to's low edge); windows {(storey, side) or storey: (w, h, z, kind[, bay]) or None}; doors [(side, at, w, h, z, kind)].
 
 How blocks meet: surf(b, x, y) is the height of a block's roof at a plan point. A wall face is drawn from the lowest roof
 height of whatever stands on the other side (0 for a court or the outside) up to the block's own wall top. Roofs are single
@@ -442,6 +442,8 @@ def block_walls(b, detail=True):
     band at every floor level of the block (the string courses), a cornice under the wall top. detail: the faces are skins with
     window recesses and doors, and a wall above a lower tiled roof gets its flashing course."""
     o = OPT.get(b['id'], {})
+    if o.get('asset'):                                           # an asset the page places stands here: the block only keeps its place in the plan
+        return
     for s in SIDES:
         top = wtop(b, s); W, L = _W(b, s); walls = []; opens = []; doors = _doors_on(b, s) if detail else []
         for iv in across(b, s):
@@ -507,7 +509,7 @@ def block_walls(b, detail=True):
             for u0, u1 in _minus(_union(hit), [(h0 - 0.1, h1 + 0.1) for h0, h1, z, h in holes + wins if z - 0.15 < zf < z + h + 0.15]):
                 _bar(W, u0, u1, zf - 0.15, 0.3, 0.08, 'red')
         part(PRE + '_f%d' % b['storeys']); tops = _union([w[:2] for w in walls if w[3] >= top - 0.01])
-        for u0, u1 in tops:
+        for u0, u1 in (tops if o.get('cornice', True) else []):      # cornice False: an asset stands on this wall and brings its own
             _bar(W, u0, u1, top - 0.52, 0.42, 0.22, 'travertine')        # 0.1 under the wall top: it stays below the eaves' soffit
             if detail and o.get('gold'):
                 _bar(W, u0, u1, top - 1.02, 0.5, 0.05, 'gold')           # the gilt band under the cornice
@@ -834,7 +836,11 @@ def _vault(b, seg=10):
 def roof(b):
     """The roof of a block by b['roof']."""
     part(PRE + '_roof')
-    if OPT.get(b['id'], {}).get('roof') == 'own':                # the palace script builds this roof itself
+    if OPT.get(b['id'], {}).get('roof') == 'own' or OPT.get(b['id'], {}).get('asset'):     # the palace script builds this roof itself, or an asset stands here
+        return
+    if b['roof'] == 'lean' and OPT.get(b['id'], {}).get('split'):      # a lean-to roof in pieces either side of an asset: [(x0, x1), ...] or (y0, y1) along its length
+        for a, c in OPT[b['id']]['split']:
+            _lean(dict(b, x0=a, x1=c) if b['ridge'] in 'NS' else dict(b, y0=a, y1=c))
         return
     {'gable': _ridge_roof, 'hip': _ridge_roof, 'pyramid': _ridge_roof, 'lean': _lean, 'compluviate': _compluviate,
      'flat': _flat, 'vault': _vault}[b['roof']](b)
