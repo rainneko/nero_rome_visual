@@ -60,6 +60,11 @@ above the platform top, turn, slots); the palace script leaves their place free,
 is added or taken away.
 * `rome_tib_banquet_top` (work order 10): the banquet hall's nave from z 7.6 up. In `rome_tiberiana.py` block `M25` has
   `wall_top 7.6`, `roof 'own'` and `cornice False`.
+* `rome_tib_gate_n` (work order 07): the north gate's porch on the forecourt. Its empty nodes `slot_...` are filled by the
+  page with pieces of the kit (`slots` in `TIB_PARTS`, `romeSlots()` in `assets.js`): `rome_tibkit_door_bronze`
+  (`tools/models/rome/rome_tib_kit.py`) and the horse-leaders `rome_tibkit_dioscuri_l/r`
+  (`tools/models/rome/rome_tibkit_figures.py`, which also writes the forecourt's `rome_tibkit_statue_a/b`). The palace script
+  no longer builds the old porch or the forecourt's statues, and the vestibule `N01` has no windows.
 
 ## East palace: the walkable inside (2026-11-20)
 `python3 tools/models/rome/rome_transitoria_interior.py` (plain Python and numpy, no Blender; geometry in `plan_interior.py`) builds

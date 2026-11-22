@@ -62,7 +62,9 @@ box(F, -68.0, 85.5, -16.0, 5.2, 3.0, 0.1, 'travertine')
 stair_on_base(F, -68.0, 84.0, -16.0, 66.5, -7.0)                   # upper flight, onto the corner pier and the mid terrace
 box(F, -68.0, 66.26, -7.5, 4.0, 0.56, 0.56, 'travertine')          # its head slab: the flight's top tread stopped 0.5 m short of the strip's paving (a slit one could not step over on foot)
 
-# ---- forecourt on the upper arcade, low parapet, statues, flower beds; entrance porch on the north door
+# ---- forecourt on the upper arcade, low parapet, flower beds. Its statues (two west of the gate, at x -36 and -24) and the north
+#      gate's porch are files of their own since 2026-11-21 (rome_tibkit_statue_a/b, rome_tib_gate_n: work orders 06 and 07), placed
+#      by the page (TIB_PARTS in palatine.js)
 box(F, 0, 55, 0, 130, 10, 0.12, 'paving')
 # The north door's way down (2026-11-19; our conjecture: no stair is attested on this face). The forecourt had no way off it:
 # two flights, one on each side of the porch, go down along the upper north wall from the forecourt (0.12) to the mid terrace
@@ -84,13 +86,8 @@ for sd in (-1, 1):
     for sy in (-1, 1):
         box(F, (xl0 + xl1) / 2, NGY + sy * (NGW / 2 + 0.3), -7.0, NGL, 0.6, 7.0 + NGZ[1] + 0.9, 'tuff')
     stair_flight(F, xf, NGY, xl1, NGY, NGZ[2], NGZ[1], width=NGW, mat='travertine', cheek_mat='tuff')
-for x in (-36, -12, 12, 36):
-    statue(F, x, 57.0, 0.12, 2.4, 'marble', pedestal=1.0, ped_mat='marble')
 flower_bed(F, -58, 54, 0.12, 8, 5)
 flower_bed(F, 58, 54, 0.12, 8, 5)
-# the porch of the north frontispiece (M02): 12 m wide, 4 columns, standing on the forecourt; its entablature ends at the
-# first-floor level (6.5), under the loggia
-pediment_front(F, 0, 53.9, 0.12, 12.0, 4, 5.23, order='corinthian', steps=0, rot=180)
 
 # ---- the palace above the platform (v2, 2026-11): built from tools/models/rome/tiberiana_plan.json by tib_plan.py.
 #      141 rooms on three floors and a basement, 35 roof blocks, six open courts; storeys 6.5 / 4.5 / 3.8 m; nothing over three storeys.
@@ -124,7 +121,7 @@ OPTS = {
 }
 DOORS = {'doorN': (2.6, 4.6, 'arch'), 'doorW': (1.8, 3.0, 'rect'), 'doorE': (2.2, 3.4, 'arch'), 'doorNW': (1.6, 2.6, 'rect'),
          'doorC': (2.2, 3.4, 'arch')}     # the cryptoporticus door at y 35.3: inside the page's gallery (PAL_CRYPTO: axis y 34.7, 5.8 m wide) and inside its room E10
-TP.load(opts=OPTS, extra=EXTRA, doors=DOORS, no_window=('W02b',))     # W02b 暗阁（密室）: thick stone walls, no window (N10 is the 文书库 now and has its windows again)
+TP.load(opts=OPTS, extra=EXTRA, doors=DOORS, no_window=('W02b', 'N01'))     # W02b 暗阁（密室）: thick stone walls, no window (N10 is the 文书库 now and has its windows again); N01 the vestibule: the north gate's pilasters stand where its windows were
 TP.massing(order='column' if ROUND > 1 else 'pier', detail=ROUND > 1, court_mats={'P05': 'gravel'})
 TP.part('tib_roof')
 _e = TP.FEAT['eagle']                               # the broken eagle on the west apex of M15's gable
