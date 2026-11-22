@@ -117,8 +117,10 @@ OPTS = {
     'M14': {'deck': 'paving'},                      # the solarium is a terrace people use: stone slabs
     'M17': {'doors': [('E', 9.7, 1.8, 3.4, 0.0, 'rect'), ('E', 17.0, 1.8, 3.4, 0.0, 'rect'), ('E', 24.3, 1.8, 3.4, 0.0, 'rect')]},   # west side hall: three doors to the pomegranate court
     'M22': {'cross_walls': [-16.0, 22.0]}, 'M23': {'cross_walls': [-16.0, 22.0]},      # parapet gables at the corners of the peristyle
-    'M25': {'pediment': 'NS', 'gold': True,         # the banquet hall: clerestory, a gilt band under the cornice, a pediment on each gable
-            'windows': {(2, 'W'): (1.2, 2.8, 9.0, 'arch'), (2, 'E'): (1.2, 2.8, 9.0, 'arch'), 2: None}},
+    # the banquet hall's nave above the aisles' roofs (z 7.6 and up: the clerestory, the two pediments, the roof with its square
+    # opening) is the asset rome_tib_banquet_top.glb (work order 10), placed by the page (palatine.js): here only the two
+    # gable walls from the lower roofs up to 7.6, without cornice, windows or roof
+    'M25': {'wall_top': 7.6, 'roof': 'own', 'cornice': False, 'windows': {2: None}},
 }
 DOORS = {'doorN': (2.6, 4.6, 'arch'), 'doorW': (1.8, 3.0, 'rect'), 'doorE': (2.2, 3.4, 'arch'), 'doorNW': (1.6, 2.6, 'rect'),
          'doorC': (2.2, 3.4, 'arch')}     # the cryptoporticus door at y 35.3: inside the page's gallery (PAL_CRYPTO: axis y 34.7, 5.8 m wide) and inside its room E10
@@ -258,12 +260,7 @@ if ROUND > 1:
     add_poly('tile', [F.p(49.3, _hy, 3.3), F.p(49.3, _hy - 1.1, 2.8), F.p(51.3, _hy - 1.1, 2.8), F.p(51.3, _hy, 3.3)])
     for _x in (49.4, 51.2):
         beam(F, _x, _hy, 2.55, _x, _hy - 1.0, 2.7, 0.1, 0.12, 'wood')
-    # the banquet hall's nave (M25): a square opening 3 x 3 m in the middle of its ridge with a kerb 0.3 m high
-    # (【书】“屋顶很高，顶上开着一个方口，能看见夜空。”). Drawn as a dark square inside its kerb: the roof under it is not cut.
-    TP.part('tib_roof'); _h = TP.BLOCK['M25']; _hx, _hym, _hz = (_h['x0'] + _h['x1']) / 2, (_h['y0'] + _h['y1']) / 2, _h['ridge_z']
-    for (cx, cy, sx, sy) in ((_hx, _hym - 1.65, 3.6, 0.3), (_hx, _hym + 1.65, 3.6, 0.3), (_hx - 1.65, _hym, 0.3, 3.0), (_hx + 1.65, _hym, 0.3, 3.0)):
-        box(F, cx, cy, _hz - 0.75, sx, sy, 1.05, 'travertine')
-    add_poly('dark', [F.p(_hx - 1.5, _hym - 1.5, _hz + 0.24), F.p(_hx + 1.5, _hym - 1.5, _hz + 0.24), F.p(_hx + 1.5, _hym + 1.5, _hz + 0.24), F.p(_hx - 1.5, _hym + 1.5, _hz + 0.24)])
+    # the banquet hall's square roof opening (【书】“屋顶很高，顶上开着一个方口，能看见夜空。”) is in the asset rome_tib_banquet_top.glb
 
 ROOMS_N = {}
 if ROUND > 2:
