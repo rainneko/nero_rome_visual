@@ -96,6 +96,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,label:focus-within
 
 /* first-person walk (src/ui/fp.js) */
 #fp{display:none}body.fp #fp{display:block}
+#fpWhite{position:fixed;z-index:28;inset:0;background:#fff;opacity:0;pointer-events:none}
+#fpRed{position:fixed;z-index:27;inset:0;background:radial-gradient(ellipse at center,rgba(150,0,0,.35) 0%,rgba(120,0,0,.8) 60%,rgba(70,0,0,1) 100%);opacity:0;pointer-events:none}
 body.fp #hud,body.fp #reader,body.fp #rtab,body.fp #dock,body.fp #timeline,body.fp #card,body.fp #labels{display:none!important}
 body.fp #gl{cursor:crosshair}
 #fpTop{position:fixed;z-index:30;left:14px;top:calc(12px + env(safe-area-inset-top,0px));padding:6px 8px 6px 12px;display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--gtext)}
@@ -198,9 +200,10 @@ body.fp #gl{cursor:crosshair}
 <div class="panel" id="fpNote" hidden></div>
 <div id="fp">
   <div class="panel" id="fpTop"><span id="fpWhere">第一人称</span><button class="tg" id="fpOut" title="回到鸟瞰">退出</button></div>
+  <div id="fpRed"></div><div id="fpWhite"></div>
   <div id="fpDot"></div>
   <div class="panel" id="fpWho"></div>
-  <div class="panel gone" id="fpHint">W A S D 行走 · Shift 快走 · 空格 跳 · 右键 穿过面前的门 · 鼠标转视角（点一下画面锁住鼠标）· Esc 暂停</div>
+  <div class="panel gone" id="fpHint">W A S D 行走 · Shift 快走 · 空格 跳（跳着能下高处，太高会摔）· 右键 穿过面前的门 · 鼠标转视角（点一下画面锁住鼠标）· Esc 暂停</div>
   <div id="fpPause"><div class="panel"><h3>暂停</h3><p>W A S D 行走，Shift 快走，鼠标转视角，Q / E 或左右键也能转身。<br>看向近处的人，会有一行说明。</p><button class="tg on" data-a="go">继续走</button> <button class="tg" data-a="out">回到鸟瞰</button></div></div>
 </div>
 <div id="loading"><div><div class="yr">ROMA · A.D. LIV</div><div id="loadmsg">正在铺设七丘……</div></div></div>

@@ -14,9 +14,9 @@
    People (FPN): three figures made here from boxes and cylinders, one InstancedMesh each, limbs swung in the vertex shader. They walk the same grid.
    Plants (FPG): one more picture from above, in plain ambient light, tells where the ground is green; tufts and a few flowers stand there and bend
    to the gusts (windGust, builders.js), which also move the tree crowns while the walk is on. Leaves drift past (FPL). */
-const FPC={N:512,SPAN:96,K:.5,UP:2,DOWN:14,STEP:.5,DROP:.75,DOWN1:1,DOOR:1.5,R:.3,EYE:1.62,WALK:2.1,RUN:5.4,FOV:62,NEAR:.15,MOVE:9,DY:.25,SNAP:3,
+const FPC={N:512,SPAN:96,K:.5,UP:2,DOWN:14,STEP:.5,DROP:.75,DOWN1:1,DOOR:1.5,HP:100,SAFE:1.5,HEAL:1.5,RED:60,R:.3,EYE:1.62,WALK:2.1,RUN:5.4,FOV:62,NEAR:.15,MOVE:9,DY:.25,SNAP:3,
   HILL:[0,280,230,320,200],HOME:[120,290],GRASS_R:34,GRASS_MAX:40000};
-const FP={on:false,paused:false,x:0,z:0,g:0,y:0,yaw:0,pitch:0,vx:0,vz:0,vy:0,jy:0,bob:0,trail:[],keys:new Set(),save:null,G:null,drag:null,hintT:0,sh:new THREE.Vector3(),moved:0,
+const FP={on:false,paused:false,x:0,z:0,g:0,y:0,yaw:0,pitch:0,vx:0,vz:0,vy:0,jy:0,hp:100,peak:-1e9,dead:0,voidf:0,flash:0,red:0,home:null,bob:0,trail:[],keys:new Set(),save:null,G:null,drag:null,hintT:0,sh:new THREE.Vector3(),moved:0,
   onHill(x,z){const H=FPC.HILL;return polyDist(x,z,[[H[0],H[1]],[H[2],H[3]]])[0]<H[4];}};
 
 /* ----- the height picture ----- */
@@ -160,7 +160,7 @@ function fpEnter(x,z){if(FP.on||!W0||PAGE!=='rome')return false;
   FP.save={tgt:view.tgt.clone(),yaw:view.yaw,pitch:view.pitch,dist:view.dist,fov:camera.fov,near:camera.near,far:camera.far,labels:settings.labels};
   // where to stand: the first of the level places from which one can walk some way (about 400 m2), so not a walled-in corner, a podium without steps or a roof
   FP.G.visible=false;const C=FPM.landing(x,z);let p=null,pn=-1;for(let i=0;i<C.length&&i<8;i++){const c=C[i];FPM.grid(c[0],c[2],c[1]);const s=fpSettle(c[0],c[2],c[1]);if(!s)continue;const n=FPM.reach(s[0],s[2],s[1],700);if(n>pn){pn=n;p=s;}if(n>=700)break;}
-  if(!p)p=C[0];FP.x=p[0];FP.z=p[2];FP.g=FP.y=p[1];FP.yaw=view.yaw;FP.pitch=0;FP.vx=FP.vz=0;FP.bob=0;FP.trail.length=0;FP.keys.clear();FP.moved=0;
+  if(!p)p=C[0];FP.x=p[0];FP.z=p[2];FP.g=FP.y=p[1];FP.yaw=view.yaw;FP.pitch=0;FP.vx=FP.vz=0;FP.bob=0;FP.trail.length=0;FP.keys.clear();FP.moved=0;FP.home=[p[0],p[1],p[2]];FP.hp=FPC.HP;FP.dead=0;FP.voidf=0;FP.flash=0;FP.peak=-1e9;FP.vy=FP.jy=0;fpWhite(0);
   FP.on=true;FP.paused=false;camT=null;U.uWind.value.z=1;U.uFP.value.set(1,FPC.GRASS_R-9,0,0);FPN.init();FPL.init();FPN.clear();FPG.n=0;
   FPM.now(FP.x,FP.z,FP.g);FP.G.visible=true;fpSides(true);FPS.t=performance.now();
   // face the way one can walk farthest (of 16), the bird's-eye heading breaking ties: not a wall or a tree in the face
@@ -179,7 +179,10 @@ function fpSettle(x,z,y){for(let r=0;r<6;r+=.125)for(let k=0;k<(r?12:1);k++){con
 function fpHud(){const el=$('#fpWhere');if(el)el.textContent='第一人称 · '+(FP.onHill(FP.x,FP.z)?'帕拉蒂尼山':'罗马城')+' · '+STATES[Math.max(0,curS)].t.split(' · ')[0];}
 function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
   {const n=performance.now();if(n-FPS.t>3000){FPS.t=n;fpSides(true);}}
-  if(!FP.paused){
+  // after a fall too far: the picture goes white, then the walk starts again where it began
+  if(FP.dead&&!FP.paused){FP.dead+=dt;FP.vx=FP.vz=0;if(FP.voidf)FP.y-=Math.min(30,14*FP.dead)*dt;fpWhite(Math.min(1,FP.dead/.45));
+    if(FP.dead>1.5){const h=FP.home;FP.x=h[0];FP.z=h[2];FP.g=FP.y=h[1];FP.vy=FP.jy=0;FP.hp=FPC.HP;FP.dead=0;FP.voidf=0;FP.flash=.999;FP.peak=-1e9;FP.trail.length=0;FP.keys.clear();FPN.clear();FPG.n=0;FPM.now(FP.x,FP.z,FP.g);}}
+  else if(!FP.paused){
     const run=K.has('shift'),sp=run?FPC.RUN:FPC.WALK;let mf=0,ms=0;if(K.has('w')||K.has('arrowup'))mf+=1;if(K.has('s')||K.has('arrowdown'))mf-=1;if(K.has('d'))ms+=1;if(K.has('a'))ms-=1;
     if(K.has('arrowleft')||K.has('q'))FP.yaw+=1.9*dt;if(K.has('arrowright')||K.has('e'))FP.yaw-=1.9*dt;
     const fx=-Math.sin(FP.yaw),fz=-Math.cos(FP.yaw),l=Math.hypot(mf,ms)||1,tvx=(fx*mf-fz*ms)/l*sp,tvz=(fz*mf+fx*ms)/l*sp,e=1-Math.exp(-9*dt);FP.vx+=(tvx-FP.vx)*e;FP.vz+=(tvz-FP.vz)*e;
@@ -193,7 +196,14 @@ function fpTick(t,dt){if(!FP.on)return;const K=FP.keys;
     // a jump (Space): 0.65 m up; in the air a ledge up to 0.45 m higher than a step can be reached
     {const d=FP.g-g0;if(FP.jy>0||d<-.3){FP.y+=d;FP.jy-=d;}}   // off a ledge (up to a metre down, on foot or in a jump): a fall, not a snap
     if(K.has(' ')&&FP.jy<=0&&!FP.vy&&FPM.ready)FP.vy=4.3;
-    if(FP.vy||FP.jy>0){FP.jy+=FP.vy*dt;FP.vy-=14*dt;if(FP.jy<=0){FP.jy=0;FP.vy=0;}}
+    if(FP.jy>0)FP.peak=Math.max(FP.peak,FP.g+FP.jy);
+    if(FP.vy||FP.jy>0){FP.jy+=FP.vy*dt;FP.vy-=14*dt;if(FP.jy<=0){FP.jy=0;FP.vy=0;
+        // landed. The unseen strength (100): a fall of h metres costs h^1.5 (the jump's own 0.65 m and falls under 1.5 m cost nothing); it comes back slowly
+        const h=FP.peak-FP.g-.66;FP.peak=-1e9;if(h>FPC.SAFE){const d=Math.pow(h,1.5);FP.hp-=d;if(FP.hp<=0){FP.hp=0;FP.dead=1e-3;}}}}
+    if(FP.voidf&&!FP.dead){FP.dead=1e-3;FP.hp=0;}   // jumped where there is no ground within sight below (more than 14 m): no landing
+    FP.hp=Math.min(FPC.HP,FP.hp+FPC.HEAL*dt);if(FP.flash>0&&!FP.dead){FP.flash=Math.max(0,FP.flash-dt*.9);fpWhite(FP.flash);}
+    {const r=FP.dead?0:Math.max(0,(FPC.RED-FP.hp)/FPC.RED)*.75;if(Math.abs(r-FP.red)>.004){FP.red=r;const el=$('#fpRed');if(el)el.style.opacity=r;}}   // badly hurt (under 60): the picture reddens, and clears as the strength comes back
+
     FP.y+=(FP.g-FP.y)*(1-Math.exp(-(FP.g>FP.y?13:18)*dt));
     FPM.want(FP.x,FP.z,FP.g);FPM.step();FPN.tick(dt);
     if(FP.moved>1.5&&performance.now()>FP.hintT-6500)FP.hintT=Math.min(FP.hintT,performance.now()+1200);}
@@ -212,7 +222,10 @@ function fpDoor(){if(!FP.on||FP.paused||!FPM.ready||FP.jy>0)return false;const f
       if(d-hit>FPC.DOOR+.8)break;if(t<-1e8||Math.abs(t-FP.g)>1)continue;const g=FPM.stand(x,z,t,FPC.R);if(g===g&&d-hit>=.3){FP.x=x;FP.z=z;FP.g=FP.y=g;FP.vx=FP.vz=0;FP.trail.length=0;return true;}}return false;};
   for(const o of[0,.15,-.15,.3,-.3])if(ray(o))return true;
   fpNote(any?'这里穿不过去（太厚，或者后面没有落脚的地方）。':'面前没有门或墙。');setTimeout(()=>{if(FP.on)fpNote('');},1600);return false;}
-function fpTry(x,z){if(FP.jy>.05){const g=FPM.stand(x,z,FP.g+Math.min(FP.jy,.45),FPC.R,FPC.DOWN1+.45);if(g===g)return g;}const g=FPM.stand(x,z,FP.g,FPC.R,FPC.DOWN1);if(!(g===g))return NaN;const T=FP.trail;if(T.length){const p=T[0],d=Math.hypot(x-p[0],z-p[1]);if(d>.3&&g-p[2]>1.19*d+.3)return NaN;}return g;}
+function fpWhite(a){const el=$('#fpWhite');if(el)el.style.opacity=a;}
+// in a jump (Space) one may go off any height: what the fall costs is settled on landing
+function fpTry(x,z){if(FP.jy>.05){const g=FPM.stand(x,z,FP.g+Math.min(FP.jy,.45),FPC.R,1e3);if(g===g)return g;
+    if(FPM.at(x,z)<-1e8&&FPM.cell(x,z)>=0){let v=1;for(let k=0;k<4;k++)if(FPM.at(x+Math.cos(k*1.5708)*FPC.R,z+Math.sin(k*1.5708)*FPC.R)>-1e8)v=0;if(v)FP.voidf=1;}}const g=FPM.stand(x,z,FP.g,FPC.R,FPC.DOWN1);if(!(g===g))return NaN;const T=FP.trail;if(T.length){const p=T[0],d=Math.hypot(x-p[0],z-p[1]);if(d>.3&&g-p[2]>1.19*d+.3)return NaN;}return g;}
 function fpCam(){const b=Math.abs(Math.sin(FP.bob))*.032*Math.min(1,Math.hypot(FP.vx,FP.vz)/FPC.WALK);camera.position.set(FP.x,FP.y+FP.jy+FPC.EYE-(FP.jy>0?0:b),FP.z);camera.rotation.set(FP.pitch,FP.yaw,0,'YXZ');
   if(camera.near!==FPC.NEAR){camera.near=FPC.NEAR;camera.updateProjectionMatrix();}view.tgt.set(FP.x,FP.y,FP.z);view.dist=60;
   const s=6;FP.sh.set(Math.round(FP.x/s)*s,Math.round(FP.y/2)*2,Math.round(FP.z/s)*s);}   // the shadow box moves in 6 m steps, so the map is drawn again on a step, not on every pace
@@ -229,5 +242,5 @@ function fpInit(){if(FP.inited)return;FP.inited=true;const b=$('#tWalk');if(b){i
   addEventListener('pointerup',()=>{FP.drag=null;});addEventListener('mousedown',e=>{if(FP.on&&!FP.paused&&e.button===2){fpDoor();e.preventDefault();}},true);
   const ov=$('#fpPause');if(ov){ov.querySelector('[data-a="go"]').onclick=()=>fpPause(false);ov.querySelector('[data-a="out"]').onclick=fpExit;}const x=$('#fpOut');if(x)x.onclick=fpExit;
   W0.anim.push(fpTick);
-  window.__fp={enter:fpEnter,exit:fpExit,state:()=>({on:FP.on,posts:FPN.list.filter(a=>a.post).length,x:FP.x,y:FP.y,z:FP.z,jy:FP.jy,yaw:FP.yaw,pitch:FP.pitch,ready:FPM.ready,people:FPN.list.map(a=>a.k).join(','),zones:FPN.zones,misplaced:FPM.ready?FPN.list.filter(a=>{const R=FP_ROLES[a.lead?a.lead.k:a.k],q=FPN.zone(a.x,a.z,a.y);return'EGM'.indexOf(q)>=0&&R.z&&R.z.indexOf(q)<0&&!(q==='M'&&R.z.indexOf('C')>=0);}).map(a=>a.k+'@'+FPN.zone(a.x,a.z,a.y)).join(','):'',zone:FPM.ready?FPN.zone(FP.x,FP.z,FP.g):'',tufts:FPG.n,flowers:FPG.nf,hill:FP.onHill(FP.x,FP.z)}),
+  window.__fp={enter:fpEnter,exit:fpExit,state:()=>({on:FP.on,posts:FPN.list.filter(a=>a.post).length,x:FP.x,y:FP.y,z:FP.z,jy:FP.jy,yaw:FP.yaw,pitch:FP.pitch,ready:FPM.ready,people:FPN.list.map(a=>a.k).join(','),hp:FP.hp,dead:FP.dead,zones:FPN.zones,misplaced:FPM.ready?FPN.list.filter(a=>{const R=FP_ROLES[a.lead?a.lead.k:a.k],q=FPN.zone(a.x,a.z,a.y);return'EGM'.indexOf(q)>=0&&R.z&&R.z.indexOf(q)<0&&!(q==='M'&&R.z.indexOf('C')>=0);}).map(a=>a.k+'@'+FPN.zone(a.x,a.z,a.y)).join(','):'',zone:FPM.ready?FPN.zone(FP.x,FP.z,FP.g):'',tufts:FPG.n,flowers:FPG.nf,hill:FP.onHill(FP.x,FP.z)}),
     look:(yaw,pitch)=>{FP.yaw=yaw;FP.pitch=pitch||0;},door:fpDoor,key:(k,on)=>{on?FP.keys.add(k):FP.keys.delete(k);},FP,FPM,FPN,FPG};}
