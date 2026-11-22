@@ -36,10 +36,40 @@ def _coping_gap(S, cx, cy, z0, sx, sy, sz, mat, *a, **k):          # the south w
             _rk_box(S, c, cy, z0, 61.1, sy, sz, mat, *a, **k)
         return
     return _rk_box(S, cx, cy, z0, sx, sy, sz, mat, *a, **k)
+def _coping_gap_e(S, cx, cy, z0, sx, sy, sz, mat, *a, **k):        # the east wall's coping (110.2 m from y -50) stops at the east door (y -30.6..-28.4): the lodge's threshold and the stair's head landing
+    if abs(sx - 110.2) < 1e-6 and abs(sz - 0.4) < 1e-6:
+        for u0, u1 in ((-0.1, 19.4), (21.6, 110.1)):
+            _rk_box(S, (u0 + u1) / 2, cy, z0, u1 - u0, sy, sz, mat, *a, **k)
+        return
+    return _rk_box(S, cx, cy, z0, sx, sy, sz, mat, *a, **k)
 for pts in ([(-65, 60), (-65, -50)], [(-65, -50), (65, -50)], [(65, -50), (65, 60)]):
-    _rk.box = _coping_gap if pts[0][1] == pts[1][1] else _rk_box
+    _rk.box = _coping_gap if pts[0][1] == pts[1][1] else (_coping_gap_e if pts[0][0] == 65 else _rk_box)
     retaining_wall(F, pts, 0.0, -7.0, buttress='square', every=10.0, parapet=None, courses=3.5)
 _rk.box = _rk_box
+# ---- The east door's way down to the lane (2026-11-22, the author: "加台阶"; our conjecture: no stair is attested here). A perron outside the
+#      line of the wall's buttresses (they stand every 10 m, at y -25, -35, -45, out to x 66.95): a head landing in front of the door,
+#      level with its threshold (0.05); 11 risers south; a landing round the buttress at y -35, which stands through it; 7 risers
+#      more; a foot landing 2 cm proud of the lane's paving deck (flat at -3.28 from about x 66 eastwards: the first-person ground,
+#      not the terrain under the deck, which is a metre lower). One steps off it to the east or the south. Travertine treads on a
+#      solid tuff base; a solid parapet 0.3 thick and 0.9 high on the open side and on the head landing's north and east sides; a
+#      short one on the foot landing's south side by the wall, where the deck stops and the ground falls away.
+ED_ZF = -3.26                                                          # the foot landing's top: the lane's paving deck (-3.28) + 0.02
+ED_X0, ED_X1, ED_XP = 64.6, 68.45, 68.75                            # treads from inside the wall's batter to the parapet; the parapet's outer face
+ED_N = 18; ED_RH = (0.05 - ED_ZF) / ED_N; ED_T = 0.30; ED_ZB = -7.0
+def _ed_floor(y0, y1, zt, east=True):
+    box(F, (ED_X0 + ED_X1) / 2, (y0 + y1) / 2, ED_ZB, ED_X1 - ED_X0, abs(y1 - y0), zt - 0.1 - ED_ZB, 'tuff')
+    box(F, (ED_X0 + ED_X1) / 2, (y0 + y1) / 2, zt - 0.1, ED_X1 - ED_X0, abs(y1 - y0) + 0.02, 0.1, 'travertine')
+    if east:
+        box(F, (ED_X1 + ED_XP) / 2, (y0 + y1) / 2, ED_ZB, ED_XP - ED_X1, abs(y1 - y0), zt + 0.9 - ED_ZB, 'tuff')
+_y = -30.6; _z = 0.05
+_ed_floor(-28.4, _y, _z)                                            # the head landing
+box(F, (64.8 + ED_XP) / 2, -28.25, ED_ZB, ED_XP - 64.8, 0.3, _z + 0.9 - ED_ZB, 'tuff')      # its north parapet
+for _n, _land in ((11, 2.6), (7, 1.5)):
+    for _i in range(_n - 1):
+        _z -= ED_RH; _ed_floor(_y, _y - ED_T, _z); _y -= ED_T
+    _z -= ED_RH; _ed_floor(_y, _y - _land, _z, east=_n == 11); _y -= _land
+box(F, (ED_X0 + 66.5) / 2, _y - 0.15, ED_ZB, 66.5 - ED_X0, 0.3, _z + 0.9 - ED_ZB, 'tuff')    # the foot landing's south parapet, by the wall only
+print('ED_STAIR', 'riser %.4f' % ED_RH, 'foot y %.2f..%.2f' % (_y, _y + 1.5), 'z %.3f' % _z)
 retaining_wall(F, [(-71, 66), (-71, -56)], -7.0, -25.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
 for pts in ([(-71, -56), (71, -56)], [(71, -56), (71, 66)]):
     retaining_wall(F, pts, -7.0, -14.0, buttress='square', every=10.0, parapet=None, courses=3.5, coping=True)
