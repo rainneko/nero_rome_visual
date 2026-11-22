@@ -136,3 +136,16 @@ walls and floors (`TRI`) come within 140 m and go beyond 220 m. Of a loaded pack
 to are shown (the room table is the walls' model's node extra `rooms`, written by `rome_transitoria_interior.py`), nearest first up to
 45 000 faces. The low tier and phones load no furnishings. Brief and measurements: `briefs/rome/transitoria-v3/item1-zone-packs.md`.
 `rome_tr_fit_S09.glb` is a stand-in of plain boxes (`rome_tr_fit_S09_standin.py`) until the real kitchen model arrives.
+
+A kit is the other kind of pack: pieces that are copied to many places. `rome_tr_kit_water.glb` (pack `transitoria-fit-c.js`) has one top
+object `kit` and under it seven pieces (`kit_wall_fountain`, `kit_round_basin`, `kit_labrum`, `kit_great_tazza`, `kit_spout`,
+`kit_cascade`, `kit_puteal`), each with its own origin and facing -y, laid out 5 m apart in the file. Each piece carries empties for the
+water that comes later: `slot_jet_n` (its own +Z is the way the water leaves; extra `kind` `up` or `arc`), `slot_water_n` (the middle of
+a still surface; extras `shape` `disc` / `rect` and `size`), `slot_fall_n` (the middle of a fall's upper edge; extra `size` [width, drop]).
+The places are the table `TR_WATER` in `palace-interior.js`: [piece, x, y, z, turn, site number, old basin]. The copies share the pieces'
+geometry; a copy shows within 60 m of the reader. Still water (the material `water`, as in the shell's basins) is laid on every `slot_water`
+when the copies are made; jets and falls are item 7. Mind the scale: the build's shrinker puts 1/64 on a piece's node and leaves the slots'
+offsets in metres, so anything hung on a piece from a slot divides the offset by the piece's scale (see `kit_water`). Two of the round basins stand where the shell
+has its two flat ones, which are taken out on foot (the author agreed on 2026-11-22; `?trbasin=old` keeps the old ones; from the air the
+shell still shows them). Work order: `briefs/rome/transitoria-v3/tr-kit-water-workorder.md`;
+pictures: `briefs/rome/transitoria-v3/water-kit/`.

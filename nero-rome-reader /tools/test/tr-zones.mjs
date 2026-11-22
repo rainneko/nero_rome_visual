@@ -7,7 +7,8 @@
 import puppeteer from 'puppeteer';import path from 'node:path';import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),GPU=!!process.env.GPU;
 const b=await puppeteer.launch({headless:'new',args:[...(GPU?['--enable-gpu','--use-angle=metal']:['--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--allow-file-access-from-files','--ignore-gpu-blocklist','--enable-precise-memory-info','--js-flags=--expose-gc']});
-const p=await b.newPage();await p.setViewport({width:1280,height:720});const errs=[];p.on('pageerror',e=>errs.push(e.message));
+const p=await b.newPage();if(process.env.THROTTLE)await p.emulateCPUThrottling(+process.env.THROTTLE);   // THROTTLE=2: other frame pacing, to see what depends on it
+await p.setViewport({width:1280,height:720});const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.goto('file://'+path.join(root,'dist/index.html'),{timeout:0});
 const t0=Date.now();while(Date.now()-t0<400000){if(await p.evaluate(()=>!!(window.__ready||window.__err)))break;await new Promise(r=>setTimeout(r,1000));}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -39,11 +40,22 @@ await ev(()=>{TRI.NEAR=TRI.NEAR0;TRF.NEAR=45;});
 await mv(out(250),out(150),40);await sleep(1200);const A0=await num();console.log('150 m out, before',JSON.stringify(A0));
 
 // ---- 1 three round trips
-const OUT=[],IN=[];
-for(let i=0;i<3;i++){await mv(out(150),K,40);await ev(a=>window.__put(a[0],a[1],.06),K);await sleep(2500);const ok=await ev(()=>window.__trf().zones[0].st===3&&window.__trf().shown>0);const n=await num();IN.push(n);console.log('in',i+1,ok?'':'(the pack never showed)',JSON.stringify(n));
-  await mv(K,out(150),40);await sleep(1500);const o=await num();OUT.push(o);console.log('out',i+1,JSON.stringify(o));}
+// which geometries the renderer takes on from here: it listens for 'dispose' on a geometry exactly when it starts counting it
+await ev(()=>{const L=window.__geoLive=new Map(),P=THREE.BufferGeometry.prototype,add=P.addEventListener,dis=P.dispose;
+  P.addEventListener=function(t,f){if(t==='dispose'&&!L.has(this.uuid)){L.set(this.uuid,this);
+      try{const T=LODS.find(q=>q.lo.geometry===this||q.hi.geometry===this),c=new THREE.Vector3();camera.getWorldPosition(c);const d=new THREE.Vector3();camera.getWorldDirection(d);   // when and where the renderer first drew it
+        (window.__geoLog=window.__geoLog||[]).push({id:this.uuid.slice(0,8),ms:Math.round(performance.now()),cam:c.toArray().map(v=>+v.toFixed(1)),dir:d.toArray().map(v=>+v.toFixed(3)),fp:[+window.__fp.FP.x.toFixed(1),+window.__fp.FP.z.toFixed(1)],trf:JSON.stringify(window.__trf().zones.map(z=>z.st)),
+          tile:T?{which:T.lo.geometry===this?'far copy':'near copy',near:T.near,far:T.far,n:T.hi.count,box:[T.hi.geometry.boundingBox.min.toArray().map(Math.round),T.hi.geometry.boundingBox.max.toArray().map(Math.round)],dist:+T.hi.geometry.boundingBox.distanceToPoint(c).toFixed(1)}:null});}catch(e){(window.__geoLog=window.__geoLog||[]).push({err:e.message});}}
+    return add.call(this,t,f);};P.dispose=function(){L.delete(this.uuid);return dis.call(this);};
+  window.__geoWho=()=>{const U=new Map();W0.scene.traverse(o=>{if(o.geometry&&L.has(o.geometry.uuid)){const ch=[];for(let q=o;q&&ch.length<5;q=q.parent)ch.push((q.name||q.type)+(q.userData&&q.userData.lay?'['+q.userData.lay+']':''));U.set(o.geometry.uuid,ch.join(' < '));}});
+    return [...L.values()].map(g=>g.uuid.slice(0,8)+' '+g.type+' '+(g.attributes.position?g.attributes.position.count:0)+'v '+(U.get(g.uuid)||'(not in the scene)'));};});
+const OUT=[],IN=[],WHO=[],NT=+process.env.TRIPS||3;   // TRIPS=6 TRIPS_ONLY=1: more round trips and stop after their row
+for(let i=0;i<NT;i++){await mv(out(150),K,40);await ev(a=>window.__put(a[0],a[1],.06),K);await sleep(2500);const ok=await ev(()=>window.__trf().zones[0].st===3&&window.__trf().shown>0);const n=await num();IN.push(n);console.log('in',i+1,ok?'':'(the pack never showed)',JSON.stringify(n));
+  await mv(K,out(150),40);await sleep(1500);const o=await num();OUT.push(o);console.log('out',i+1,JSON.stringify(o));WHO.push(await ev(()=>window.__geoWho()));{console.log('  tiles with the near and the far copy both switched on:',await ev(()=>LODS.filter(L=>L.hi.visible&&L.lo.visible).length),'; switched on against the LOD:',await ev(()=>LODS.filter(L=>L.hi.visible!==L.near||L.lo.visible===L.near).length));const w=await ev(()=>[performance.now()|0,JSON.stringify((window.__geoLog||[]).filter(x=>x.tile||x.err))]);console.log('  now',w[0],'ms; first draws of crowd tiles since the trips began:',w[1]);}
+  if(i){const was=new Set(WHO[i-1]);console.log('  geometries the renderer holds since the trips began:',WHO[i].length,'; new since the stop before:',JSON.stringify(WHO[i].filter(x=>!was.has(x))),'; gone:',JSON.stringify(WHO[i-1].filter(x=>!WHO[i].includes(x))));}else console.log('  geometries the renderer holds since the trips began:',JSON.stringify(WHO[0]));}
 row('1','in the kitchen: the pack is there and shown',`fit ${IN[0].fit} faces, shown ${IN[0].shown}, room ${IN[0].room}`,'shown > 0 in S09',IN.every(n=>n.shown>0&&/\bS09\b/.test(n.room)));
-row('1','150 m out, three times: geometries / textures / wall faces / fit faces',OUT.map(o=>[o.geo,o.tex,o.walls,o.fit].join('/')).join('  '),'the same three times',same(OUT[0],OUT[1],['geo','tex','walls','fit'])&&same(OUT[1],OUT[2],['geo','tex','walls','fit']));
+row('1','150 m out, three times: geometries / textures / wall faces / fit faces',OUT.map(o=>[o.geo,o.tex,o.walls,o.fit].join('/')).join('  '),'the same every time',OUT.every(o=>same(OUT[0],o,['geo','tex','walls','fit'])));
+if(process.env.TRIPS_ONLY){for(const r of rows)console.log('| '+r.join(' | ')+' |');await b.close();process.exit(fail.length?1:0);}
 row('1','150 m out: the pack\'s text and script tag are gone',OUT.map(o=>o.text+'/'+o.tag).join('  '),'false/false',OUT.every(o=>!o.text&&!o.tag&&o.fit===0));
 row('1','JS heap 150 m out, MB (after gc)',OUT.map(o=>o.heap).join('  '),'not higher each time',OUT[0].heap===null||!(OUT[1].heap>OUT[0].heap+.5&&OUT[2].heap>OUT[1].heap+.5));
 await mv(out(150),out(250),40);await sleep(1500);const N1=await num();console.log('250 m out, after',JSON.stringify(N1));
@@ -77,10 +89,11 @@ row('2','kitchen, slow turn, 300 frames, with the pack ('+sh.shown+' faces shown
 row('2','the same without the pack, two runs',f(B[0])+'   '+f(B[1]),'mean within 2 of the above',!GPU||Math.min(A[0].mean,A[1].mean)-Math.min(B[0].mean,B[1].mean)<=2);
 
 // ---- 1 (strict) release and load again on the spot, in the kitchen: the count moves by exactly the palace's own geometries
-{await ev(a=>window.__put(a[0],a[1],.06),K);await until(()=>window.__trf().shown>0);await sleep(3000);
- const own=await ev(()=>{let n=0;const S=new Set();for(const G of [TRI.G,...TRF.Z[0].G])G.traverse(o=>{if(o.isMesh)S.add(o.geometry);});return S.size;});
+{await ev(a=>window.__put(a[0],a[1],.06),K);await until(()=>window.__trf().shown>0&&window.__trf().zones.every(z=>z.st===3));await sleep(3000);
+ const own=await ev(()=>{const S=new Set(),held=g=>g._listeners&&g._listeners.dispose&&g._listeners.dispose.length;   // the renderer listens for 'dispose' on exactly the geometries it counts
+   for(const G of [TRI.G,...TRF.Z.flatMap(Z=>Z.G)])G.traverse(o=>{if(o.isMesh&&held(o.geometry))S.add(o.geometry);});return S.size;});   // (a kit copy or a water disc that was never on screen has not reached the card)
  const g1=(await num()).geo;await ev(()=>{TRI.NEAR0=TRI.NEAR;TRI.NEAR=-1;TRF.NEAR=-1;trfFreeAll();triFree(triPlace());});await sleep(400);const g2=(await num()).geo;
- await ev(()=>{TRI.NEAR=TRI.NEAR0;TRF.NEAR=45;});await until(()=>window.__trf().shown>0);await sleep(600);const g3=(await num()).geo;
+ await ev(()=>{TRI.NEAR=TRI.NEAR0;TRF.NEAR=45;});await until(()=>window.__trf().shown>0&&window.__trf().zones.every(z=>z.st===3));await sleep(1200);const g3=(await num()).geo;
  row('1','on the spot in the kitchen: geometries loaded / released / loaded again; the palace\'s own are '+own,g1+' / '+g2+' / '+g3,'drops by '+own+', comes back',g1-g2===own&&g3===g1);}
 
 // ---- 2b the middle of the south walk: how much shows at once

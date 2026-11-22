@@ -10,7 +10,7 @@
 2. **不用推倒重来。** 外壳、五条楼梯、敞廊和露台都留着。v3 做五件事：往屋里放“一眼认出”的东西；把三处做成通高；把水接起来（23 处喷泉水池）；把书里的旧偏殿和石榴小院画进东翼；**把地下一层做全**（作者 11-21 要求，见 B8）。
 3. **室内陈设按片区分包，靠近才加载，离开就释放。** 作者 11-21 在本会话说：面数不用卡那么死，可以多一点，只要多做一个“离开多少米就释放、靠近再加载”的功能。方案见 E1，要先批。
 4. **“上下神殿”按 `10_新方案6_高低双院` 办（作者 11-21 答“照建议”，没有另指别的图）。** 这张图是（上院一座四柱神殿式高厅，一道大台阶下到带水池的下院）。结论：**神殿正面不用，上下两院加大台阶这个关系用**，东宫的庭园和下沉水庭本来就是这个关系。如果作者说的是另一张，见 D 节和问题 1。
-5. **流水喷泉有，而且是【史】。** 过渡宫的遗址就是一座下沉庭院、一面剧场布景式的喷泉墙、对面一间柱子围着的餐室，楼上还有一间“一排喷泉、水流到下面去”的屋子。
+5. **流水喷泉有，而且是【史】。** 过渡宫的遗址就是一座下沉庭院、一面喷泉墙、庭院正中两座带小柱的亭子，楼上还有一间“一排喷泉、水流到下面去”的屋子（Platner-Ashby，11-22 重读）。“对面有一间餐室”只见于旅游页面，不当依据。
 
 文件都在 `briefs/rome/transitoria-v3/`：
 
@@ -260,7 +260,7 @@
 
 【史】（原文由史料核对任务从网页逐字读到，出处见文末）：
 
-* 遗址：“To the lower floor belongs a sunk garden; one wall of it is occupied by a magnificent nymphaeum, once decorated with polychrome marbles”（Platner-Ashby）。喷泉墙做成剧场布景，小壁龛、彩色大理石小柱，壁龛里出水（罗马旅游局页面）。对面是一间柱子围着的餐室，柱子是斑岩的。
+* 遗址：“To the lower floor belongs a sunk garden; one wall of it is occupied by a magnificent nymphaeum, once decorated with polychrome marbles”（Platner-Ashby）。喷泉墙做成剧场布景，小壁龛、彩色大理石小柱，壁龛里出水（罗马旅游局页面）。**更正（11-22 重读 Platner-Ashby 原文）：**原稿这里写“对面是一间柱子围着的餐室，柱子是斑岩的”，出处只有罗马旅游局页面，不算【史】，作废。Platner-Ashby 写的是：“In the centre were two pavilions with small columns”，以及“The wall opposite the nymphaeum is decorated with niches.”。东宫的水榭餐厅是【设】。
 * 楼上：“a room which once contained a series of fountains, the water from which ran down to the nymphaeum below.”
 * 楼梯：“From each end of the nymphaeum a flight of marble stairs ascended to the upper floor.”
 * 来水：弗朗提努斯 1.20 说克劳狄水道分一支上尼禄拱桥，水“in Palatium Aventinumque”分出去。**建成年份没有查到可靠出处**（只见到一处图片说明写“公元 64 年以后”）；水怎么过山谷上的帕拉蒂尼，尼禄时期没有记载（现存的过谷拱桥 Platner-Ashby 说“perhaps built by Domitian”）。在这以前帕拉蒂尼用什么水，弗朗提努斯没说；他那时（约公元 97 年）第十区有马尔奇亚和尤利亚两条水道，“以前也是”只是推断。
@@ -383,7 +383,7 @@
 | 扶壁拱券的台基 | `04` | 不用（东宫外观已验收） | — | — |
 | `参考_大皇宫`、`参考_大皇宫剖析` | 弗拉维和塞维鲁时期的帕拉蒂尼 | 不用，尼禄以后 | 不成立 | — |
 
-**斑岩的用法（全文统一；监督员 11-21 核过：尼禄时东宫里有斑岩墙面贴面，Domingo 2023）：** 斑岩可用于小件和墙面贴面，整根的大柱不用。小件指：下沉水庭亭子的小柱、喷泉墙壁龛的小柱、水盘、地面拼花里的小块。遗址的餐室就是斑岩小柱【史】（罗马旅游局页面：“colonne di porfido”）。门厅、餐厅的大柱一律不用斑岩，用黄色（giallo）或紫纹（pavonazzetto）大理石【设】。大件斑岩在尼禄时期有多少，我没有出处，不下结论（待核）。
+**斑岩的用法（全文统一；监督员 11-21 核过：尼禄时东宫里有斑岩墙面贴面，Domingo 2023）：** 斑岩可用于小件和墙面贴面，整根的大柱不用。小件指：水盘、桌面和盆沿的镶边、地面拼花里的小块。外壳喷泉墙上现有的斑岩小柱是已验收的样子，第 6 项重做喷泉墙时一并改。（原稿这里写“遗址的餐室就是斑岩小柱【史】”，出处只有旅游页面，11-22 作废；斑岩柱核到的最早出处是图密善时，Martial 8.36。所以柱子不论大小都不用斑岩。）门厅、餐厅的大柱一律不用斑岩，用黄色（giallo）或紫纹（pavonazzetto）大理石【设】。大件斑岩在尼禄时期有多少，我没有出处，不下结论（待核）。
 
 ### “上下神殿”
 
