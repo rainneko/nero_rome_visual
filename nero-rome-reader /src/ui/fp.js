@@ -40,17 +40,18 @@ wp=modelMatrix*wp;vY=wp.y;wp.x+=uSh.x*(wp.y-uSh.z);wp.z+=uSh.y*(wp.y-uSh.z);gl_P
   draw(J,i){const c=this.cam,m=this.mat,R=renderer,sc=W0.scene,N=FPC.N;c.position.set(J.cx,J.hi+60,J.cz);c.lookAt(J.cx,J.hi,J.cz);c.near=1;c.far=62+J.hi-J.lo;c.updateProjectionMatrix();c.updateMatrixWorld();
     m.uniforms.uSh.value.set(i===1?FPC.K:0,i===2?FPC.K:0,J.yRef);m.uniforms.uY.value.set(J.lo,J.hi);
     const rt0=R.getRenderTarget(),ov=sc.overrideMaterial,cc=R.getClearColor(new THREE.Color()),ca=R.getClearAlpha();
-    for(const o of J.hide)o.visible=false;const lm=J.veg.map(o=>o.layers.mask);for(const o of J.veg)o.layers.set(2);
+    const H=J.hide.filter(o=>o.visible);for(const o of H)o.visible=false;const lm=J.veg.map(o=>o.layers.mask);   // the list was made frames ago: what the LOD has switched off since stays off
+    for(const o of J.veg)o.layers.set(2);
     sc.overrideMaterial=m;R.setRenderTarget(this.rt);R.setClearColor(0x000000,0);m.uniforms.uK.value=1;c.layers.set(0);R.clear();R.render(sc,c);
     if(J.veg.length){const ac=R.autoClear;R.autoClear=false;m.uniforms.uK.value=.5;c.layers.set(2);R.render(sc,c);R.autoClear=ac;c.layers.set(0);}
     R.readRenderTargetPixels(this.rt,0,0,N,N,this.buf[i]);
-    sc.overrideMaterial=ov;for(const o of J.hide)o.visible=true;J.veg.forEach((o,k)=>o.layers.mask=lm[k]);R.setRenderTarget(rt0);R.setClearColor(cc,ca);},
+    sc.overrideMaterial=ov;for(const o of H)o.visible=true;J.veg.forEach((o,k)=>o.layers.mask=lm[k]);R.setRenderTarget(rt0);R.setClearColor(cc,ca);},
   // the same window in the scene's own materials, lit by a flat white sky only: about the surface colour, whatever the hour. For the plants.
   drawColour(J){const c=this.cam,R=renderer,sc=W0.scene,N=FPC.N;c.position.set(J.cx,J.hi,J.cz);c.lookAt(J.cx,J.hi-1,J.cz);c.near=.02;c.far=J.hi-J.lo+1;c.updateProjectionMatrix();c.updateMatrixWorld();
     const rt0=R.getRenderTarget(),cc=R.getClearColor(new THREE.Color()),ca=R.getClearAlpha(),si=sun.intensity,hi=hemi.intensity,hc=hemi.color.clone(),hg=hemi.groundColor.clone();
-    sun.intensity=0;hemi.intensity=Math.PI;hemi.color.setRGB(1,1,1);hemi.groundColor.setRGB(1,1,1);for(const o of J.hide)o.visible=false;
+    sun.intensity=0;hemi.intensity=Math.PI;hemi.color.setRGB(1,1,1);hemi.groundColor.setRGB(1,1,1);const H=J.hide.filter(o=>o.visible);for(const o of H)o.visible=false;
     R.setRenderTarget(this.rtC);R.setClearColor(0x000000,0);R.clear();R.render(sc,c);R.readRenderTargetPixels(this.rtC,0,0,N,N,this.col);
-    for(const o of J.hide)o.visible=true;sun.intensity=si;hemi.intensity=hi;hemi.color.copy(hc);hemi.groundColor.copy(hg);R.setRenderTarget(rt0);R.setClearColor(cc,ca);},
+    for(const o of H)o.visible=true;sun.intensity=si;hemi.intensity=hi;hemi.color.copy(hc);hemi.groundColor.copy(hg);R.setRenderTarget(rt0);R.setClearColor(cc,ca);},
   fold(J){const N=FPC.N,cs=this.cs,S=FPC.SPAN,top=this.top,flo=this.flo,vt=this.vt,veg=this.veg,rng=J.hi-J.lo,x0=J.cx-S/2,z0=J.cz-S/2,z1=J.cz+S/2,K=FPC.K;top.fill(-1e9);flo.fill(-1e9);vt.fill(-1e9);
     for(let p=0;p<3;p++){const B=this.buf[p],kx=p===1?K:0,kz=p===2?K:0;
       for(let j=0;j<N;j++){const zs=z1-(j+.5)*cs;for(let i=0;i<N;i++){const o=(j*N+i)*4,k=B[o+2];if(!k)continue;const y=J.lo+(B[o]*256+B[o+1])/65535*rng,T=k>200?top:vt;
