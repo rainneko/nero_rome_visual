@@ -65,6 +65,9 @@ is added or taken away.
   (`tools/models/rome/rome_tib_kit.py`) and the horse-leaders `rome_tibkit_dioscuri_l/r`
   (`tools/models/rome/rome_tibkit_figures.py`, which also writes the forecourt's `rome_tibkit_statue_a/b`). The palace script
   no longer builds the old porch or the forecourt's statues, and the vestibule `N01` has no windows.
+* `rome_tib_gate_s` (work order 11): the south gatehouse through the south portico. In `rome_tiberiana.py` block `M10g` has
+  `asset True` (it keeps its place in the plan; no walls, no roof), `M10` has `split` (the lean-to roof in two pieces either
+  side of it), and the south platform wall's coping stops at x -4..4.
 
 ## East palace: the walkable inside (2026-11-20)
 `python3 tools/models/rome/rome_transitoria_interior.py` (plain Python and numpy, no Blender; geometry in `plan_interior.py`) builds

@@ -442,6 +442,8 @@ def block_walls(b, detail=True):
     band at every floor level of the block (the string courses), a cornice under the wall top. detail: the faces are skins with
     window recesses and doors, and a wall above a lower tiled roof gets its flashing course."""
     o = OPT.get(b['id'], {})
+    if o.get('asset'):                                           # an asset the page places stands here: the block only keeps its place in the plan
+        return
     for s in SIDES:
         top = wtop(b, s); W, L = _W(b, s); walls = []; opens = []; doors = _doors_on(b, s) if detail else []
         for iv in across(b, s):
@@ -834,7 +836,11 @@ def _vault(b, seg=10):
 def roof(b):
     """The roof of a block by b['roof']."""
     part(PRE + '_roof')
-    if OPT.get(b['id'], {}).get('roof') == 'own':                # the palace script builds this roof itself
+    if OPT.get(b['id'], {}).get('roof') == 'own' or OPT.get(b['id'], {}).get('asset'):     # the palace script builds this roof itself, or an asset stands here
+        return
+    if b['roof'] == 'lean' and OPT.get(b['id'], {}).get('split'):      # a lean-to roof in pieces either side of an asset: [(x0, x1), ...] or (y0, y1) along its length
+        for a, c in OPT[b['id']]['split']:
+            _lean(dict(b, x0=a, x1=c) if b['ridge'] in 'NS' else dict(b, y0=a, y1=c))
         return
     {'gable': _ridge_roof, 'hip': _ridge_roof, 'pyramid': _ridge_roof, 'lean': _lean, 'compluviate': _compluviate,
      'flat': _flat, 'vault': _vault}[b['roof']](b)
