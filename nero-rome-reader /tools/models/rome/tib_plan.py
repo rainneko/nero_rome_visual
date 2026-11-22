@@ -838,6 +838,10 @@ def roof(b):
     part(PRE + '_roof')
     if OPT.get(b['id'], {}).get('roof') == 'own' or OPT.get(b['id'], {}).get('asset'):     # the palace script builds this roof itself, or an asset stands here
         return
+    if OPT.get(b['id'], {}).get('pieces'):                       # a flat or lean-to roof in pieces beside an asset: each piece is the block with these bounds changed
+        for p in OPT[b['id']]['pieces']:
+            {'lean': _lean, 'flat': _flat}[b['roof']](dict(b, **p))
+        return
     if b['roof'] == 'lean' and OPT.get(b['id'], {}).get('split'):      # a lean-to roof in pieces either side of an asset: [(x0, x1), ...] or (y0, y1) along its length
         for a, c in OPT[b['id']]['split']:
             _lean(dict(b, x0=a, x1=c) if b['ridge'] in 'NS' else dict(b, y0=a, y1=c))

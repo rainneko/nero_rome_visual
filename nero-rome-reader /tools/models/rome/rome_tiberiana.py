@@ -107,6 +107,8 @@ EXTRA = [  # parts that stand over a roof block of the plan (review of round 1: 
     dict(id='M06m', over='M06', x0=-10, y0=22, x1=10, y1=30, storeys=2, eaves=11.8, roof='gable', ridge='EW'),   # the council room, 0.8 m higher
     dict(id='M07m', over='M07', x0=-8, y0=-27, x1=8, y1=-16, storeys=2, eaves=11.8, roof='gable', ridge='EW'),   # the inner hall, 0.8 m higher
     dict(id='M09g', over='M09', x0=-4, y0=-44, x1=4, y1=-32, storeys=2, eaves=12.2, roof='gable', ridge='NS'),   # the south gate pavilion, 1.2 m over the eaves
+    dict(id='M08g', over='M08', x0=60, y0=-32, x1=65, y1=-27, storeys=2, eaves=9.6, roof='hip', ridge='NS'),     # the east lodge at the east end of the great portico: the asset rome_tib_lodge_e.glb (work order 11), placed by the page; south part
+    dict(id='M27g', over='M27a', x0=60, y0=-27, x1=65, y1=-21, storeys=2, eaves=9.6, roof='hip', ridge='NS'),    # ... and its north part, over the east portico's south end
     dict(id='M10g', over='M10', x0=-4, y0=-50, x1=4, y1=-44, storeys=2, eaves=12.2, roof='gable', ridge='NS'),   # the south gatehouse through the portico's lean-to: the asset rome_tib_gate_s.glb (work order 11), placed by the page; here it only keeps its place
 ]
 OPTS = {
@@ -115,7 +117,9 @@ OPTS = {
     'M16': {'hip_ends': 'S'},                       # 南端收成四坡
     'M02': {'over': 'M01m', 'pediment': 'N',        # the frontispiece: three arched openings on F3, a pediment on its north gable
             'windows': {(3, 'N'): (1.8, 2.6, 11.6, 'arch', 3.6)}},
-    'M08': {'gaps': [('N', -53.0, -51.0)]},         # the way from the solarium over the corridor's roof to the eagle
+    'M08': {'gaps': [('N', -53.0, -51.0)],          # the way from the solarium over the corridor's roof to the eagle
+            'pieces': [dict(x1=60)]},              # ... and its roof ends against the east lodge
+    'M08g': {'asset': True}, 'M27g': {'asset': True}, 'M27a': {'pieces': [dict(y0=-21)]},     # the lodge asset; the east portico's roof ends against it too
     'M10g': {'asset': True}, 'M10': {'split': [(-39, -4), (4, 44)]},     # the gatehouse asset; the portico's lean-to roof ends against its side walls
     'M11': {'open': [(1, 'E', -42.5, -33.5)], 'recess': 4.0},        # the Hermaeum opens to the fish-pond garden with four columns
     'M12': {'open': [(3, 'W', -43.5, -34.5)],                        # the tower: a three-bay loggia in front of the study on F3
