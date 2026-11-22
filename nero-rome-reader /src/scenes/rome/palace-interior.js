@@ -33,6 +33,7 @@ function triLoad(p){TRI.load=1;TRI.loads++;const gen=TRI.gen;
       const gl=await new Promise((ok,bad)=>new THREE.GLTFLoader().parse(buf,'',ok,bad)),G=layTag(gl.scene,'models');
       if(gen!==TRI.gen){triDispose(G);return;}
       G.traverse(o=>{if(o.userData&&o.userData.cuts){TRI.cuts=o.userData.cuts;TRI.rooms=o.userData.rooms||null;}if(!o.isMesh)return;o.castShadow=false;o.receiveShadow=true;romeMat(o.material);});
+      if(TR_BASIN_NEW&&TRI.cuts)for(const y of [11,-11])TRI.cuts.push([-21.7,y-2.7,.14,-16.3,y+2.7,3.6]);   // the old basin: rim, water and figure (the gravel round it stays)
       G.name='transitoria_interior';G.position.set(p.x,p.y,p.z);G.rotation.y=p.r;G.visible=false;W0.scene.add(G);TRI.G=G;TRI.load=3;}
     catch(e){console.warn('transitoria interior',e);TRI.load=4;}};
   if(window.TRI_GLB){go();return;}window.triAssetsLoaded=go;const s=TRI.tag=document.createElement('script');s.src='transitoria-interior.js';
@@ -60,23 +61,48 @@ window.__triW=(x,y,z)=>{const p=triPlace(),c=Math.cos(p.r),s=Math.sin(p.r),gx=x,
      beyond TRF.FAR m, or the walk ends          take it out, dispose it, drop the pack's text and its script tag
    Of what is loaded only the room the reader stands in and the rooms it opens to are shown (the room table comes with the walls'
    model, extras `rooms`), nearest first up to TRF.SHOW faces. The low tier and phones load none: the inside stays light there. */
-const TRF={NEAR:45,FAR:90,EVERY:.3,SHOW:45000,t:0,room:'',shown:0,held:0,
-  Z:[{k:'s',file:'transitoria-fit-s.js',v:'TRF_S_GLB',box:[-56,-46,56,-24],st:0,G:[],tag:null,gen:0,loads:0,frees:0}]};
+/* The water kit (rome_tr_kit_water: seven pieces under a top object `kit`, each with `slot_` empties: still water is laid on every `slot_water` here, the jets and falls come with item 7).
+   A kit is not a room: its pieces are copied to the places below, [piece, x, y, z, turn (degrees, anticlockwise from above; a piece
+   faces -y), site (the number on plan-v3-water.png), old basin]. A piece shows within TRF.KIT m of the reader. The last two stand where
+   the shell has its two flat basins with a figure: the author agreed to the swap on 2026-11-22 (on foot the old basins are taken out
+   and these stand in their place; ?trbasin=old keeps the old ones; from the air the shell still shows its flat basins). Not placed yet, their places are
+   not built: the cascade (stair f), the well head (the pomegranate court), the labra of the cool rooms, the spouts of the bath's pools. */
+const TR_BASIN_NEW=!/[?&]trbasin=old/.test(location.search);
+const TR_WATER=[['kit_wall_fountain',-4.2,23.76,.1,0,12],['kit_wall_fountain',4.2,23.76,.1,0,13],     // the portico wall, either side of the audience hall's arch
+  ['kit_round_basin',19,11,.15,0,9],['kit_round_basin',19,-11,.15,0,10],                              // the garden's east lawns
+  ['kit_round_basin',-19,11,.15,0,7,1],['kit_round_basin',-19,-11,.15,0,8,1],                         // the west lawns: in place of the shell's two flat basins (not with ?trbasin=old)
+  ['kit_labrum',-50,-40.5,.06,0,14],                                                                  // the hot room of the bath
+  ['kit_great_tazza',5,0,-4.05,0,5],                                                                  // the middle of the twelve-column pavilion
+  ['kit_spout',-7.99,9,-3.97,90,4],['kit_spout',-7.99,-9,-3.97,90,4],                                 // the long pool's two inlets, on the ledge's face
+  ['kit_spout',61.93,4.5,-3.4,90,21]];                                                                // the outlet on the east terrace wall
+const TRF={NEAR:45,FAR:90,EVERY:.3,SHOW:45000,KIT:60,t:0,room:'',shown:0,held:0,
+  Z:[{k:'s',file:'transitoria-fit-s.js',v:'TRF_S_GLB',box:[-56,-46,56,-24],st:0,G:[],tag:null,gen:0,loads:0,frees:0},
+     {k:'c',file:'transitoria-fit-c.js',v:'TRF_C_GLB',box:[-56,-46,62,36],st:0,G:[],tag:null,gen:0,loads:0,frees:0,place:TR_WATER}]};
 function trfOK(){return !(isTouch||small)&&perfMode!=='smooth';}
 // the reader's feet in the model's axes (x east, y north, z up)
 function triM(p){const c=Math.cos(p.r),s=Math.sin(p.r),dx=FP.x-p.x,dz=FP.z-p.z;return[c*dx-s*dz,-(s*dx+c*dz),FP.g-p.y];}
 function trfDist(m,b){return Math.hypot(Math.max(b[0]-m[0],0,m[0]-b[2]),Math.max(b[1]-m[1],0,m[1]-b[3]));}
 function trfTick(p){const now=performance.now()/1000;if(now-TRF.t<TRF.EVERY)return;TRF.t=now;const m=triM(p);let ch=false;
-  for(const Z of TRF.Z){const d=trfDist(m,Z.box);if(!Z.st&&d<=TRF.NEAR&&trfOK())trfLoad(Z,p);else if(Z.st&&Z.st<4&&d>TRF.FAR){trfFree(Z);ch=true;}}
+  let busy=TRF.Z.some(Z=>Z.st===1||Z.st===2);                                                // one pack at a time: two arriving together make one long frame
+  for(const Z of TRF.Z){const d=trfDist(m,Z.box);if(!Z.st&&d<=TRF.NEAR&&trfOK()){if(!busy){busy=true;trfLoad(Z,p);}}else if(Z.st&&Z.st<4&&d>TRF.FAR){trfFree(Z);ch=true;}}
   if(trfShow(m)||ch)triRedraw();}
 function trfLoad(Z,p){Z.st=1;Z.loads++;const gen=Z.gen;
   const go=async()=>{const D=window[Z.v];if(gen!==Z.gen)return;if(!D){Z.st=4;return;}Z.st=2;
     try{for(const n of Object.keys(D)){const raw=b64u8(D[n]),buf=window[Z.v+'_gz']?await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():raw.buffer;
-        const gl=await new Promise((ok,bad)=>new THREE.GLTFLoader().parse(buf,'',ok,bad)),G=layTag(gl.scene,'models');
+        const gl=await new Promise((ok,bad)=>new THREE.GLTFLoader().parse(buf,'',ok,bad));let G=layTag(gl.scene,'models');
         if(gen!==Z.gen){triDispose(G);return;}
         G.traverse(o=>{if(o.name&&o.name.indexOf('room_')===0&&!(o.parent&&o.parent.userData.room)){   // a room's own meshes are named after it too (room_S09_1): the room is the outer one
           o.visible=false;o.userData.room=o.name.slice(5);let t=0;o.traverse(q=>{if(q.isMesh)t+=(q.geometry.index?q.geometry.index.count:q.geometry.attributes.position.count)/3;});o.userData.tris=t;}
           if(!o.isMesh)return;o.castShadow=false;o.receiveShadow=true;romeMat(o.material);});
+        if(Z.place){const H=new THREE.Group(),wm=new THREE.MeshStandardMaterial({name:'water',color:0x092c37,metalness:0,roughness:.08,side:THREE.DoubleSide});romeMat(wm);                                                 // a kit: copies of its pieces at their places (they share the pieces' geometry)
+          for(const q of Z.place){if(q[6]&&!TR_BASIN_NEW)continue;const src=G.getObjectByName(q[0]);if(!src)continue;const o=src.clone(true);
+            o.position.set(q[1],q[3],-q[2]);o.rotation.set(0,q[4]*Math.PI/180,0);o.visible=false;o.userData.at=[q[1],q[2]];o.userData.site=q[5];
+            for(const e of o.children.slice())if(e.name.indexOf('slot_water')===0&&e.userData.size){const z=e.userData.size,   // still water where the piece marks it, 3 % wider so the edge is inside the stone
+              w=new THREE.Mesh(e.userData.shape==='rect'?new THREE.PlaneGeometry(z[0]*1.03,z[1]*1.03).rotateX(-Math.PI/2):new THREE.CircleGeometry(z[0]*1.03,24).rotateX(-Math.PI/2),wm);
+              w.name='kit_water';w.position.copy(e.position).divide(o.scale);w.scale.set(1/o.scale.x,1/o.scale.y,1/o.scale.z);   // the build's shrinker scales a piece's node by 1/64 and leaves its slots' offsets in metres
+              w.receiveShadow=true;o.add(w);}
+            let t=0;o.traverse(m=>{if(m.isMesh)t+=(m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count)/3;});o.userData.tris=t;H.add(o);}
+          G=H;}
         G.name='transitoria_fit_'+n;G.position.set(p.x,p.y,p.z);G.rotation.y=p.r;W0.scene.add(G);Z.G.push(G);
         await new Promise(requestAnimationFrame);if(gen!==Z.gen)return;}                       // one model a frame
       Z.st=3;TRF.t=0;}
@@ -89,7 +115,8 @@ function trfShow(m){const R=TRI.rooms;if(!R)return false;const here=[],want=new 
   for(const r of R)if(m[0]>=r[1]&&m[0]<=r[3]&&m[1]>=r[2]&&m[1]<=r[4]&&m[2]>=r[5]-.6&&m[2]<r[6]-.6)here.push(r);
   for(const r of here){want.set(r[0],0);for(const id of r[7])if(!want.has(id))want.set(id,1);}
   let held=0,ch=false;const L=[];
-  for(const Z of TRF.Z)for(const G of Z.G)G.traverse(o=>{const id=o.userData.room;if(!id)return;held+=o.userData.tris;const r=R.find(q=>q[0]===id),d=r?trfDist(m,r.slice(1,5)):1e9;
+  for(const Z of TRF.Z)for(const G of Z.G)G.traverse(o=>{if(o.userData.at){held+=o.userData.tris;const d=Math.hypot(m[0]-o.userData.at[0],m[1]-o.userData.at[1]);if(d<TRF.KIT)L.push([d,o]);else if(o.visible){o.visible=false;ch=true;}return;}
+    const id=o.userData.room;if(!id)return;held+=o.userData.tris;const r=R.find(q=>q[0]===id),d=r?trfDist(m,r.slice(1,5)):1e9;
     if(want.has(id)||(!here.length&&d<15))L.push([want.get(id)===0?-1:d,o]);else if(o.visible){o.visible=false;ch=true;}});
   L.sort((a,b)=>a[0]-b[0]);let n=0;
   for(const [d,o] of L){const on=d<0||n+o.userData.tris<=TRF.SHOW;if(on)n+=o.userData.tris;if(o.visible!==on){o.visible=on;ch=true;}}

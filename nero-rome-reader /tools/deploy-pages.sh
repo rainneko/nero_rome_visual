@@ -5,6 +5,6 @@
 set -e
 cd "$(dirname "$0")/.."
 D=$(mktemp -d)
-for f in index.html book.js rome-assets.js antium-assets.js aurea-assets.js oppian-assets.js construction-assets.js transitoria-interior.js transitoria-fit-s.js music-box-canon.m4a; do cp "dist/$f" "$D/"; done
+for f in index.html book.js rome-assets.js antium-assets.js aurea-assets.js oppian-assets.js construction-assets.js transitoria-interior.js transitoria-fit-s.js transitoria-fit-c.js music-box-canon.m4a; do cp "dist/$f" "$D/"; done
 npx --yes wrangler@3 pages deploy "$D" --project-name nero-rome-visual --branch main --commit-hash "$(git rev-parse HEAD)" --commit-message "$(git log -1 --format=%s)"
 rm -rf "$D"
