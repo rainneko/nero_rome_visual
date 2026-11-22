@@ -101,6 +101,7 @@ const TIB_PLANTS=[[-48.6,76.8,-19.42,"pomegr",0.8],[-56.4,74.6,-19.42,"flower",0
    same pack, so the light stand-in is not affected. The kit's pieces face south in their files: a turn of PI makes them look north. */
 const TIB_PARTS=[['rome_tib_banquet_top',52,-6,5.1,21.6],   // the banquet hall's nave above its aisles (z 7.6 and up): clerestory, two pediments, the roof with its square opening
   ['rome_tib_gate_n',0,54,8,4,.12,0,[['slot_door_','rome_tibkit_door_bronze'],['slot_dioscuri_L','rome_tibkit_dioscuri_l'],['slot_dioscuri_R','rome_tibkit_dioscuri_r']]],   // the north gate's porch on the forecourt (paving top 0.12): its bronze door leaves and the pair of horse-leaders come from the kit
+  ['rome_tib_gate_s',0,-47,4.6,3.6],   // the south gatehouse through the south portico (x -4..4, y -50..-44); the palace model leaves its place free
   ['rome_tibkit_statue_a',-36,57,.4,.4,.12,Math.PI],['rome_tibkit_statue_b',-24,57,.4,.4,.12,Math.PI]];   // the forecourt's two statues west of the gate
 /* models: stand-ins now, GLBs from rome-assets.js later */
 function palPlace(W,gP){const gy=(x,z)=>W.gy(x,z);if(typeof triInit==='function')triInit(W);   // the East palace's inside: palace-interior.js, loaded when a walker comes near
