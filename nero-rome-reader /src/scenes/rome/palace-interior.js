@@ -67,6 +67,26 @@ window.__triW=(x,y,z)=>{const p=triPlace(),c=Math.cos(p.r),s=Math.sin(p.r),gx=x,
    the shell has its two flat basins with a figure: the author agreed to the swap on 2026-11-22 (on foot the old basins are taken out
    and these stand in their place; ?trbasin=old keeps the old ones; from the air the shell still shows its flat basins). Not placed yet, their places are
    not built: the cascade (stair f), the well head (the pomegranate court), the labra of the cool rooms, the spouts of the bath's pools. */
+// still water where a piece or a room marks it (`slot_water`: extras shape disc / rect, size), 3 % wider so the edge is inside the stone.
+// The build's shrinker scales a kit piece's node by 1/64 and leaves its slots' offsets in metres: hence the division by the node's scale.
+function trfWater(o,wm){for(const e of o.children.slice())if(e.name.indexOf('slot_water')===0&&e.userData.size){const z=e.userData.size,
+    w=new THREE.Mesh(e.userData.shape==='rect'?new THREE.PlaneGeometry(z[0]*1.03,z[1]*1.03).rotateX(-Math.PI/2):new THREE.CircleGeometry(z[0]*1.03,24).rotateX(-Math.PI/2),wm);
+    w.name='kit_water';w.position.copy(e.position).divide(o.scale);w.scale.set(1/o.scale.x,1/o.scale.y,1/o.scale.z);w.receiveShadow=true;o.add(w);}}
+// under a roof the same water mirrors less of the sky (a trough in a room showed sky blue)
+const TRF_WATER_IN=.08;
+const trfWaterMat=roofed=>{const m=new THREE.MeshStandardMaterial({name:'water',color:0x092c37,metalness:0,roughness:.08,side:THREE.DoubleSide});romeMat(m);if(roofed)m.envMapIntensity=TRF_WATER_IN;return m;};
+// the furnishings' cloth and food (vertex colours on int_plaster), set right here for the room's light, which is the blue of the sky:
+// strong colours are dulled and darkened, pale warm ones stay (a bright couch read as a toy; 高级审查监督员 2026-11-22);
+// blue cloth becomes a faded, greyed purple (no blue cloth in AD 56, as romeMat does for the street's `blue`);
+// pale cool greys (the fish on the kitchen table, which showed bright blue) become a warm silver that the sky light brings back to grey.
+function trfCloth(g){const c=g.attributes.color;if(!c||c.normalized||g.userData.cloth)return;g.userData.cloth=1;const a=c.array,n=c.itemSize;
+  for(let i=0;i<a.length;i+=n){const r=a[i],gg=a[i+1],b=a[i+2],mx=Math.max(r,gg,b),mn=Math.min(r,gg,b),sat=mx>1e-4?(mx-mn)/mx:0,l=.2126*r+.7152*gg+.0722*b;
+    if(b>r&&b>gg&&sat>.25){a[i]=mx*.86;a[i+1]=mx*.40;a[i+2]=mx*.44;continue;}          // blue cloth -> faded greyed purple (indoor sky light is about .5,.7,1: red has to lead)
+    if(sat<.45&&gg>=r&&b>=r*.9&&sat>.04){a[i]=l*1.12;a[i+1]=l;a[i+2]=l*.82;continue;}
+    const k=Math.min(1,Math.max(0,(sat-.3)/.4));a[i]=r+((l+(r-l)*.82)*.74-r)*k;a[i+1]=gg+((l+(gg-l)*.82)*.74-gg)*k;a[i+2]=b+((l+(b-l)*.82)*.74-b)*k;}
+  c.needsUpdate=true;}
+// the walk's passers-by and guards keep out of the furnished dining room and kitchen (a praetorian stood at the hearth): the rooms' plan, in the model's axes
+const TRF_OUT=[[-16,-36,16,-24],[24,-46,32,-36]];
 const TR_BASIN_NEW=!/[?&]trbasin=old/.test(location.search);
 const TR_WATER=[['kit_wall_fountain',-4.2,23.76,.1,0,12],['kit_wall_fountain',4.2,23.76,.1,0,13],     // the portico wall, either side of the audience hall's arch
   ['kit_round_basin',19,11,.15,0,9],['kit_round_basin',19,-11,.15,0,10],                              // the garden's east lawns
@@ -83,6 +103,7 @@ function trfOK(){return !(isTouch||small)&&perfMode!=='smooth';}
 function triM(p){const c=Math.cos(p.r),s=Math.sin(p.r),dx=FP.x-p.x,dz=FP.z-p.z;return[c*dx-s*dz,-(s*dx+c*dz),FP.g-p.y];}
 function trfDist(m,b){return Math.hypot(Math.max(b[0]-m[0],0,m[0]-b[2]),Math.max(b[1]-m[1],0,m[1]-b[3]));}
 function trfTick(p){const now=performance.now()/1000;if(now-TRF.t<TRF.EVERY)return;TRF.t=now;const m=triM(p);let ch=false;
+  if(!TRF.out&&typeof FPN!=='undefined'&&FPN.out){TRF.out=1;const c=Math.cos(p.r),s=Math.sin(p.r);FPN.out.push((x,z)=>{const dx=x-p.x,dz=z-p.z,mx=c*dx-s*dz,my=-(s*dx+c*dz);for(const b of TRF_OUT)if(mx>b[0]&&mx<b[2]&&my>b[1]&&my<b[3])return true;return false;});}
   let busy=TRF.Z.some(Z=>Z.st===1||Z.st===2);                                                // one pack at a time: two arriving together make one long frame
   for(const Z of TRF.Z){const d=trfDist(m,Z.box);if(!Z.st&&d<=TRF.NEAR&&trfOK()){if(!busy){busy=true;trfLoad(Z,p);}}else if(Z.st&&Z.st<4&&d>TRF.FAR){trfFree(Z);ch=true;}}
   if(trfShow(m)||ch)triRedraw();}
@@ -92,15 +113,12 @@ function trfLoad(Z,p){Z.st=1;Z.loads++;const gen=Z.gen;
         const gl=await new Promise((ok,bad)=>new THREE.GLTFLoader().parse(buf,'',ok,bad));let G=layTag(gl.scene,'models');
         if(gen!==Z.gen){triDispose(G);return;}
         G.traverse(o=>{if(o.name&&o.name.indexOf('room_')===0&&!(o.parent&&o.parent.userData.room)){   // a room's own meshes are named after it too (room_S09_1): the room is the outer one
-          o.visible=false;o.userData.room=o.name.slice(5);let t=0;o.traverse(q=>{if(q.isMesh)t+=(q.geometry.index?q.geometry.index.count:q.geometry.attributes.position.count)/3;});o.userData.tris=t;}
-          if(!o.isMesh)return;o.castShadow=false;o.receiveShadow=true;romeMat(o.material);});
-        if(Z.place){const H=new THREE.Group(),wm=new THREE.MeshStandardMaterial({name:'water',color:0x092c37,metalness:0,roughness:.08,side:THREE.DoubleSide});romeMat(wm);                                                 // a kit: copies of its pieces at their places (they share the pieces' geometry)
+          o.visible=false;o.userData.room=o.name.slice(5);if(o.children.some(e=>e.name.indexOf('slot_water')===0))trfWater(o,trfWaterMat(1));let t=0;o.traverse(q=>{if(q.isMesh)t+=(q.geometry.index?q.geometry.index.count:q.geometry.attributes.position.count)/3;});o.userData.tris=t;}
+          if(!o.isMesh)return;o.castShadow=false;o.receiveShadow=true;if(!Z.place&&o.material.name==='int_plaster')trfCloth(o.geometry);romeMat(o.material);});
+        if(Z.place){const H=new THREE.Group(),wm=trfWaterMat(),wmIn=trfWaterMat(1);                                                 // a kit: copies of its pieces at their places (they share the pieces' geometry)
           for(const q of Z.place){if(q[6]&&!TR_BASIN_NEW)continue;const src=G.getObjectByName(q[0]);if(!src)continue;const o=src.clone(true);
             o.position.set(q[1],q[3],-q[2]);o.rotation.set(0,q[4]*Math.PI/180,0);o.visible=false;o.userData.at=[q[1],q[2]];o.userData.site=q[5];
-            for(const e of o.children.slice())if(e.name.indexOf('slot_water')===0&&e.userData.size){const z=e.userData.size,   // still water where the piece marks it, 3 % wider so the edge is inside the stone
-              w=new THREE.Mesh(e.userData.shape==='rect'?new THREE.PlaneGeometry(z[0]*1.03,z[1]*1.03).rotateX(-Math.PI/2):new THREE.CircleGeometry(z[0]*1.03,24).rotateX(-Math.PI/2),wm);
-              w.name='kit_water';w.position.copy(e.position).divide(o.scale);w.scale.set(1/o.scale.x,1/o.scale.y,1/o.scale.z);   // the build's shrinker scales a piece's node by 1/64 and leaves its slots' offsets in metres
-              w.receiveShadow=true;o.add(w);}
+            trfWater(o,q[0]==='kit_labrum'?wmIn:wm);                                                          // the labrum stands in the bath's hot room, under a vault
             let t=0;o.traverse(m=>{if(m.isMesh)t+=(m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count)/3;});o.userData.tris=t;H.add(o);}
           G=H;}
         G.name='transitoria_fit_'+n;G.position.set(p.x,p.y,p.z);G.rotation.y=p.r;W0.scene.add(G);Z.G.push(G);
