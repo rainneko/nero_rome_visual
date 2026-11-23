@@ -97,6 +97,7 @@ const TR_WATER=[['kit_wall_fountain',-4.2,23.76,.1,0,12],['kit_wall_fountain',4.
   ['kit_spout',61.93,4.5,-3.4,90,21]];                                                                // the outlet on the east terrace wall
 const TRF={NEAR:45,FAR:90,EVERY:.3,SHOW:45000,KIT:60,t:0,room:'',shown:0,held:0,
   Z:[{k:'s',file:'transitoria-fit-s.js',v:'TRF_S_GLB',box:[-56,-46,56,-24],st:0,G:[],tag:null,gen:0,loads:0,frees:0},
+     {k:'e',file:'transitoria-fit-e.js',v:'TRF_E_GLB',box:[32,-24,62,24],st:0,G:[],tag:null,gen:0,loads:0,frees:0},
      {k:'c',file:'transitoria-fit-c.js',v:'TRF_C_GLB',box:[-56,-46,62,36],st:0,G:[],tag:null,gen:0,loads:0,frees:0,place:TR_WATER}]};
 function trfOK(){return !(isTouch||small)&&perfMode!=='smooth';}
 // the reader's feet in the model's axes (x east, y north, z up)

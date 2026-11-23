@@ -115,6 +115,30 @@ for x0, x1, z0, z1 in ((vx - 0.92, vx + 0.92, vz0 - 0.12, vz0), (vx - 0.92, vx +
 for k in range(5):
     z = vz0 + 0.1 + k * 0.19; I.box('int_earth', vx - 0.8, vy - 0.07, vx + 0.8, vy + 0.07, z, z + 0.06)
 I.report.setdefault('vent', []).append(['S09', vx, vy, vz0, vz1])
+# The new bedroom 2E04 (v3 C, item 4): "sit in the light, sleep in the dark" 【设】. The north two thirds stay the high bright room; the south
+# end is a bed alcove behind a partition at y -20 with one arch (3.0 wide, 2.8 high): inside it the floor is a step up (+0.15), a wooden
+# ceiling is pressed down to 3.2 m, and the faces are dark (the page has no shadow indoors: the alcove's darkness is its materials).
+# The alcove is 7.7 m wide in a 12 m room: either side of it is closed (x 38-40, 48-50). Furnishings: rome_tr_fit_2E04 (the east pack).
+r = I.R['2E04']; zf = plan['levels']['F2'] + 0.06; ay, t = -20.0, 0.15; ax0, ax1, aw0, aw1 = 40.0, 48.0, 42.5, 45.5; zc = zf + 3.2; zp = zf + 0.15
+ctop = lambda u: I.ceil(2, 44.0, -12.0) - 0.02
+for u0, u1, ends, jamb in ((r['x0'] + h, aw0, (False, False), (None, None)), (aw1, r['x1'] - h, (False, False), (None, None))):
+    zd = zf + PI.DADO_H                                                        # the dado is the wall's own lower band here (a skin 6 mm off the face flickered from across the room)
+    I.wall('y', ay, u0, u1, zf, lambda u: zd, o0=-t, o1=t, ends=ends, face=('int_reveal', 'dado_red'))
+    I.wall('y', ay, u0, u1, zd, ctop, o0=-t, o1=t, ends=ends, face=('int_reveal', None))
+zs = zf + 2.8 - (aw1 - aw0) / 2
+I.endface('int_reveal', 'y', ay, aw0, -t, t, zf, zs, +1); I.endface('int_reveal', 'y', ay, aw1, -t, t, zf, zs, -1)
+seg, PI.ARCH_SEG = PI.ARCH_SEG, 16                                           # a 3 m arch seen from across the room: six segments read as a gable
+I.head('y', ay, aw0, aw1, zs, ctop, -t, t, True); PI.ARCH_SEG = seg
+ys = r['y0'] + h
+for c, side in ((ax0, 1), (ax1, -1)):                                          # the alcove's two side walls: the face towards the bed only
+    I.vface('int_reveal', 'x', c, side * t, ys, ay - t, zf, zf, zc, zc, side)
+I.vface('int_reveal', 'y', ys, 0.05, ax0 + t, ax1 - t, zf, zf, zc, zc, +1)    # a dark lining on the room's south wall, inside the alcove
+I.hrect('int_earth', ax0 + t, ys, ax1 - t, ay - t, zc, up=False)               # the low wooden ceiling
+I.box('int_trav', ax0 + t, ys, ax1 - t, ay - t, zf, zp, faces='tn')            # the step up
+zm = min(zf + 4.7, min(I.ceil(2, x, y) for x in (r['x0'] + h, 44.0, r['x1'] - h) for y in (ay + t, -12.0, r['y1'] - h)) - 0.06)   # 0.27 under the eaves: at 12.03 a red line of tile still showed along two walls
+I.hrect('int_plaster', r['x0'] + h, ay + t, r['x1'] - h, r['y1'] - h, zm, up=False)   # the main room's flat plaster ceiling (the red underside of the tiles showed)
+print('2E04 ceiling', round(zm, 3), 'floor', zf)
+I.report.setdefault('alcove', []).append(['2E04', ax0, ys, ax1, ay, zp, zc])
 print(json.dumps(I.report))
 for c in I.cuts: print('cut', c['fl'], c['line'], c['u'], c['tris'], 'tris', c['mats'])
 if I.report.get('blocked'): print('BLOCKED doors:', I.report['blocked'])

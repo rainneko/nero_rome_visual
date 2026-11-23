@@ -94,7 +94,7 @@ r('F2','2E03','东上层廊（北段）','pergula',50,6,56,24,'portico','架空�
 r('F2','2E04','寝殿','cubiculum',38,-24,50,-6,'private','新寝殿，12×18 m，东窗望韦利亚和埃斯奎利诺山。放在二层是设计安排：原文只写“他从寝殿那一层直接升到塔顶”。旧寝殿（无花果树、陶鹰）仍在提比略宫')
 r('F2','2E04a','寝侍·衣帽','',32,-24,38,-6,'private')
 r('F2','2E05','东上层廊（南段）','pergula',50,-24,56,-6,'portico')
-r('F2','2S15','“我”的书房','',38,-36,56,-24,'private','东南角亭上层。设计安排，原文没有；北墙一道挂帷幔的小拱门通寝殿，照旧宫的样子')
+r('F2','2S15','晨间起居·观景房','',38,-36,56,-24,'private','东南角亭上层。设计安排，原文没有。v3：“我”的书房和帷幔小拱门留在提比略宫（作者 11-21 定），这里通寝殿的小拱门去掉')
 r('F2','2S16','露台','solarium',38,-46,56,-36,'terrace','南敞廊的平顶，矮墙，可张遮阳篷')
 r('F2','2S14','过道·楼梯','',32,-46,38,-24,'stair')
 r('F2','2S01','上层餐室','cenatio superior',-16,-36,16,-24,'dining')
@@ -231,7 +231,7 @@ DOOR_LIST = [   # (room a, room b, size, kind, at)
     # B1: the sunken court and its side rooms (B02-B05 stay solid in the web model until step 3: data only)
     ('B05', 'B01', 'room', 'doorway', None), ('B03', 'B01', 'room', 'doorway', None), ('B04', 'B01', 'room', 'doorway', None), ('B02', 'B01', 'room', 'doorway', None),
     # F2: the private way (内路), the guards, the building office
-    ('2E04', '2T', 'room', 'doorway', None), ('2T', '2E02', 'room', 'doorway', None), ('2E04', '2S15', 'room', 'arch', None), ('2E04', '2E04a', 'room', 'doorway', None),
+    ('2E04', '2T', 'room', 'doorway', None), ('2T', '2E02', 'room', 'doorway', None), ('2E04', '2E04a', 'room', 'doorway', None),
     ('2E04a', '2S14', 'room', 'doorway', 35.0), ('2T', '2E01', 'room', 'doorway', None), ('2E01', '2P04', 'room', 'doorway', None),
     ('2E02', '2E02a', 'room', 'doorway', None), ('2E02a', '2P04', 'room', 'doorway', None), ('2E02', '2E03', 'room', 'doorway', None), ('2E04', '2E05', 'room', 'doorway', None),
     ('2S15', '2S14', 'room', 'doorway', -26.2), ('2S16', '2S14', 'room', 'doorway', -43.6), ('2S15', '2S16', 'room', 'doorway', None),
