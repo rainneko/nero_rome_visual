@@ -650,7 +650,9 @@ async function buildRome(msg){
    {const A=FF.sub(-60,0,16,Math.PI/2);arcade(gN,A,0,0,0,9,10,1,5,6,{span:.34,attic:3});statue(gN,A,0,10.2,0,2.6,true);}
    {const S=FF.sub(-66,0,-20,0);gN.set(13,.3);box(gN,S,0,0,0,2.4,4,3.2,31);roof(gN,S,'gableZ',0,0,4.8,6.4,4,15*DEG,.2,.3,{part:13,seed:.3,nSt:1,gH:4,sH:4,floorY:0});}
    // (the stand-in for the Temple of Victoria that stood at (-30, 392) is gone: the rome_victoria model on the Palatine is the temple, palatine.js PAL_ASSETS)
-   {const[cx,cz]=palW(-190,40),F=frame(cx,gy(cx,cz),cz,0);gN.set(21,.6);lathe(gN,F,0,0,0,[[3.4,0],[3.4,2.2],[2.6,3.6],[1.2,5],[0,5.6]],12);gN.set(3,.3);box(gN,F,0,0,3.3,.6,1.8,.15,1);fw(cx,cz,5,5);poi('罗慕路斯草屋','Casa Romuli',cx,cz,10,0,99,'传说中罗慕路斯住过的茅草屋，一直被保存。',700);}
+   // the casa Romuli is the thatched hut of palatine-mm.js (mmHut) below Victoria's corner, at the top of the Scalae Caci. The cone that stood here
+   // (150 m north, under the trees) was a second one and is gone (2026-11-23); its 5 x 5 footprint stays so the planting round it does not move
+   {const[cx,cz]=palW(-190,40);fw(cx,cz,5,5);const[hx,hz]=palW(-101.5,169.5);poi('罗慕路斯草屋','Casa Romuli',hx,hz,7,0,99,'【史】传说罗慕路斯住过的茅草屋，在帕拉蒂尼山西南角、下到大竞技场的台阶旁，一直照原样保存（普鲁塔克《罗慕路斯传》20.4）。这里的位置是大致的。',700);}
    for(let k=0;k<3;k++)T2(-388,70+k*24,80,{W:14,L:24,podH:2.5,colH:8,order:k===1?'ion':'dor',nf:6,rows:1,seed:.4+k*.05,sculpt:false});poi('蔬菜广场三神庙','Forum Holitorium',-388,94,24,0,99,'雅努斯、希望女神、救护者朱诺三座神庙并排。',1200);
    {const HF=frame(-418,gy(-418,160),160,0),gq=(x,z)=>{const q=HF.p(x,0,z);return gy(q[0],q[2])-HF.oy;};W.foot.add(-418,160,42,24,0,'road').marketSquare=true;   // the market square south of the three temples (the ground east of them is the Capitoline slope)
     sqF(HF,0,0,gq(0,0));bigBase(gN,HF,-22,-8,gq(-22,-8),4,2.6,2.4,{eq:true});bigBase(gN,HF,22,-8,gq(22,-8),4,2.6,2.4,{sh:5});honorCol2(W,gN,HF,-32,12,gq(-32,12));cypRow(W,HF,-38,19,38,19,7,gy);cypRow(W,HF,-38,-19,38,-19,7,gy);}
