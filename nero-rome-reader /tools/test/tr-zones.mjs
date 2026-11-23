@@ -75,18 +75,25 @@ row('4','the walls\' own pack through all of this: loads / releases',c1.wl+' / '
 await mv(out(46),out(150),40);await sleep(1500);await mv(out(150),out(60),40);await sleep(800);
 const hit=await ev((a,c)=>new Promise(res=>{let on=true,cross=0,seen=0;const D=[];let last=performance.now();
   const f=()=>{const now=performance.now();D.push([now,now-last]);last=now;const z=window.__trf().zones[0];if(!cross&&z.st)cross=now;if(!seen&&window.__trf().shown>0)seen=now;if(on)requestAnimationFrame(f);};requestAnimationFrame(f);
-  window.__mv(a[0],a[1],c[0],c[1],2.1*4).then(()=>setTimeout(()=>{on=false;const W=D.filter(d=>cross&&d[0]>=cross&&d[0]<=(seen||1e18)+300);res({cross:!!cross,seen:!!seen,wait:seen-cross,max:Math.max(0,...W.map(d=>d[1])),all:Math.max(...D.slice(5).map(d=>d[1])),n:W.length});},1500));}),out(60),K);
+  window.__mv(a[0],a[1],c[0],c[1],2.1*4).then(()=>setTimeout(()=>{on=false;const W=D.filter(d=>cross&&d[0]>=cross&&d[0]<=(seen||1e18)+300);const Pre=D.slice(5).filter(d=>cross&&d[0]<cross).map(d=>d[1]).sort((x,y)=>x-y);res({cross:!!cross,seen:!!seen,wait:seen-cross,max:Math.max(0,...W.map(d=>d[1])),all:Math.max(...D.slice(5).map(d=>d[1])),n:W.length,pre:Pre.length?Pre[Pre.length>>1]:0,preMax:Pre.length?Pre[Pre.length-1]:0});},1500));}),out(60),K);
 console.log('arrival',JSON.stringify(hit));
-row('3','from the 45 m line until the kitchen\'s things are on screen (+0.3 s): longest frame, ms',hit.max.toFixed(1)+' (waited '+Math.round(hit.wait)+' ms, '+hit.n+' frames; longest of the whole approach '+hit.all.toFixed(1)+')','<= 100',hit.cross&&hit.seen&&hit.max<=100);
+// The headless page boots into one of two paces on this machine (2026-11-22, eleven runs, also on the commit before the furnishings):
+// about 8 ms a frame, or 50-80 ms a frame with a 160 ms frame every half second all along the walk, before the 45 m line as well. In the
+// slow pace the longest frame says nothing about the pack arriving, so the row is not judged: the run ends INCONCLUSIVE (exit 2), never
+// "all pass". The limit itself stays 100 ms.
+const SLOW=GPU&&hit.pre>33;
+row('3','from the 45 m line until the kitchen\'s things are on screen (+0.3 s): longest frame, ms',hit.max.toFixed(1)+' (waited '+Math.round(hit.wait)+' ms, '+hit.n+' frames; longest of the whole approach '+hit.all.toFixed(1)+'; before the line: median '+hit.pre.toFixed(1)+', longest '+hit.preMax.toFixed(1)+')',SLOW?'<= 100 — NOT JUDGED: slow pace before the line (median > 33 ms)':'<= 100',SLOW||(hit.cross&&hit.seen&&hit.max<=100));
+if(SLOW)rows[rows.length-1][4]='not judged';
 
 // ---- 2 frame time: a slow turn in the kitchen, 300 frames, with the pack and without
 const turn=()=>ev(()=>new Promise(res=>{const F=window.__fp,y0=F.FP.yaw,D=[];let last=performance.now(),n=0;const f=()=>{const now=performance.now();if(n)D.push(now-last);last=now;F.look(y0+n/300*Math.PI*2,0);if(++n<=300)requestAnimationFrame(f);else{D.sort((a,c)=>a-c);res({mean:D.reduce((s,v)=>s+v,0)/D.length,max:D[D.length-1],p95:D[Math.floor(D.length*.95)]});}};requestAnimationFrame(f);}));
 await ev(a=>window.__put(a[0],a[1],.06),K);await until(()=>window.__trf().shown>0);await sleep(2500);
 const A=[],B=[];let sh;
-for(let i=0;i<2;i++){A.push(await turn());sh=await num();await ev(()=>{TRF.NEAR=-1;trfFreeAll();triRedraw();});await sleep(2500);B.push(await turn());await ev(()=>{TRF.NEAR=45;});await until(()=>window.__trf().shown>0);await sleep(2500);}
-const f=t=>t.mean.toFixed(2)+' / '+t.p95.toFixed(1)+' / '+t.max.toFixed(1);
-row('2','kitchen, slow turn, 300 frames, with the pack ('+sh.shown+' faces shown): mean / 95th / worst ms, two runs',f(A[0])+'   '+f(A[1]),'worst <= 33 (a real browser)',true);
-row('2','the same without the pack, two runs',f(B[0])+'   '+f(B[1]),'mean within 2 of the above',!GPU||Math.min(A[0].mean,A[1].mean)-Math.min(B[0].mean,B[1].mean)<=2);
+// five pairs, judged on the medians: one pair's difference wanders by 0-2 ms in headless Chrome (four runs on 2026-11-22: -0.4 … 2.2), which is the whole allowance
+for(let i=0;i<5;i++){A.push(await turn());sh=await num();await ev(()=>{TRF.NEAR=-1;trfFreeAll();triRedraw();});await sleep(2500);B.push(await turn());await ev(()=>{TRF.NEAR=45;});await until(()=>window.__trf().shown>0);await sleep(2500);}
+const f=t=>t.mean.toFixed(2)+' / '+t.p95.toFixed(1)+' / '+t.max.toFixed(1),med=T=>T.map(t=>t.mean).sort((a,c)=>a-c)[2];
+row('2','kitchen, slow turn, 300 frames, with the pack ('+sh.shown+' faces shown): mean / 95th / worst ms, five runs',A.map(f).join('   ')+'   median of the means '+med(A).toFixed(2),'worst <= 33 (a real browser)',true);
+row('2','the same without the pack, five runs',B.map(f).join('   ')+'   median of the means '+med(B).toFixed(2),'median within 2 of the above',!GPU||med(A)-med(B)<=2);
 
 // ---- 1 (strict) release and load again on the spot, in the kitchen: the count moves by exactly the palace's own geometries
 {await ev(a=>window.__put(a[0],a[1],.06),K);await until(()=>window.__trf().shown>0&&window.__trf().zones.every(z=>z.st===3));await sleep(3000);
@@ -102,4 +109,4 @@ row('2b','middle of the south walk (0, -22): room / faces shown / faces held',sw
 
 console.log('\n| item | what | measured | wanted | |\n|---|---|---|---|---|');for(const r of rows)console.log('| '+r.join(' | ')+' |');
 if(errs.length)console.log('page errors:',errs.slice(0,5));
-await b.close();if(fail.length||errs.length){console.log('FAILED:',fail.join('; '));process.exit(1);}console.log('all pass');
+await b.close();if(fail.length||errs.length){console.log('FAILED:',fail.join('; '));process.exit(1);}if(typeof SLOW!=='undefined'&&SLOW){console.log('INCONCLUSIVE: row 3 was not judged (slow pace); the other rows pass. Run again until the page boots at its fast pace.');process.exit(2);}console.log('all pass');
