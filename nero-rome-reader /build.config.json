@@ -103,6 +103,7 @@
         "rome_transitoria_interior",
         "rome_tr_fit_S01",
         "rome_tr_fit_S09",
+        "rome_tr_fit_2E04",
         "rome_tr_kit_water"
       ]
     },
@@ -124,6 +125,16 @@
       "only": [
         "rome_tr_fit_S01",
         "rome_tr_fit_S09"
+      ],
+      "optimize": true
+    },
+    {
+      "file": "transitoria-fit-e.js",
+      "var": "TRF_E_GLB",
+      "cb": "trfLoaded",
+      "dir": "assets/models/rome",
+      "only": [
+        "rome_tr_fit_2E04"
       ],
       "optimize": true
     },
